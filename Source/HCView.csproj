@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{101C0F99-3772-4F26-8F49-D753AE54A251}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HC.View</RootNamespace>
+    <AssemblyName>HCView</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="HCBarCodeItem.cs" />
+    <Compile Include="HCCanvas.cs" />
+    <Compile Include="HCCheckBoxItem.cs" />
+    <Compile Include="HCComboboxItem.cs" />
+    <Compile Include="HCCommon.cs" />
+    <Compile Include="HCCustomData.cs" />
+    <Compile Include="HCCustomRichData.cs" />
+    <Compile Include="HCDateTimePicker.cs" />
+    <Compile Include="HCDrawItem.cs" />
+    <Compile Include="HCEditItem.cs" />
+    <Compile Include="HCExpressItem.cs" />
+    <Compile Include="HCFloatItem.cs" />
+    <Compile Include="HCFloatLineItem.cs" />
+    <Compile Include="HCFractionItem.cs" />
+    <Compile Include="HCGifItem.cs" />
+    <Compile Include="HCImageItem.cs" />
+    <Compile Include="HCItem.cs" />
+    <Compile Include="HCPage.cs" />
+    <Compile Include="HCParaStyle.cs" />
+    <Compile Include="HCQRCodeItem.cs" />
+    <Compile Include="HCRadioGroup.cs" />
+    <Compile Include="HCRectItem.cs" />
+    <Compile Include="HCRichData.cs" />
+    <Compile Include="HCRichScrollBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="HCScrollBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="HCSection.cs" />
+    <Compile Include="HCSectionData.cs" />
+    <Compile Include="HCStyle.cs" />
+    <Compile Include="HCStyleMatch.cs" />
+    <Compile Include="HCTableCell.cs" />
+    <Compile Include="HCTableCellData.cs" />
+    <Compile Include="HCTableItem.cs" />
+    <Compile Include="HCTableRow.cs" />
+    <Compile Include="HCTextItem.cs" />
+    <Compile Include="HCTextStyle.cs" />
+    <Compile Include="HCUndo.cs" />
+    <Compile Include="HCUndoRichData.cs" />
+    <Compile Include="HCView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="HCLineItem.cs" />
+    <Compile Include="HCPageBreakItem.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="HCTabItem.cs" />
+    <Compile Include="Win32.cs" />
+    <Compile Include="Win32.ErrorCodes.cs" />
+    <Compile Include="Win32.GDI.cs" />
+    <Compile Include="Win32.Imm.cs" />
+    <Compile Include="Win32.Kernel.cs" />
+    <Compile Include="Win32.Multimedia.cs" />
+    <Compile Include="Win32.NetApi.cs" />
+    <Compile Include="Win32.Shell.cs" />
+    <Compile Include="Win32.User.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="HCView.resx">
+      <DependentUpon>HCView.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
