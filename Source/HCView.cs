@@ -1001,6 +1001,8 @@ namespace HC.View
             //
             FHScrollBar.Top = Height - FHScrollBar.Height;
             FHScrollBar.Width = Width - FVScrollBar.Width;
+
+            this.Refresh();
         }
 
         protected override void OnPaint(PaintEventArgs e)

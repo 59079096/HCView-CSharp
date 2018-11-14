@@ -59,17 +59,20 @@ namespace HC.View
         public override void SaveToStream(Stream AStream, int AStart, int AEnd)
         {
             base.SaveToStream(AStream, AStart, AEnd);
-            byte[] vBuffer = System.Text.Encoding.Default.GetBytes(FText);
-
-            ushort vSize = (ushort)vBuffer.Length;
-            if (vSize > ushort.MaxValue)
+            int vLen = System.Text.Encoding.Default.GetByteCount(FText);
+            if (vLen > ushort.MaxValue)
                 throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
 
-            byte[] vBytes = BitConverter.GetBytes(vSize);
-            AStream.Write(vBytes, 0, vBytes.Length);
+            ushort vSize = (ushort)vLen;
+
+            byte[] vBuffer = BitConverter.GetBytes(vSize);
+            AStream.Write(vBuffer, 0, vBuffer.Length);
 
             if (vSize > 0)
+            {
+                vBuffer = System.Text.Encoding.Default.GetBytes(FText);
                 AStream.Write(vBuffer, 0, vBuffer.Length);
+            }
         }
 
         public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)

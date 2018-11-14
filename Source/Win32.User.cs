@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -73,15 +73,17 @@ namespace HC.Win32
 		public short key;
 		public short cmd;
 	}
-	public struct PAINTSTRUCT 
-	{
-		public HDC hdc;
-		public int fErase;
-		public RECT rcPaint;
-		public int fRestore;
-		public int fIncUpdate;
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst=32)] public byte rgbReserved;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PAINTSTRUCT
+    {
+        public IntPtr hdc;
+        public bool fErase;
+        public RECT rcPaint;
+        public bool fRestore;
+        public bool fIncUpdate;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public byte[] rgbReserved;
+    }
 	public struct CREATESTRUCT 
 	{
 		public int lpCreateParams;
@@ -159,19 +161,7 @@ namespace HC.Win32
 		public int time;
 		public POINT pt;
 	}
-	public struct WNDCLASS 
-	{
-		public int style;
-		public int lpfnwndproc;
-		public int cbClsextra;
-		public int cbWndExtra2;
-		public HANDLE hInstance;
-		public HANDLE hIcon;
-		public HANDLE hCursor;
-		public HANDLE hbrBackground;
-		public string lpszMenuName;
-		public string lpszClassName;
-	}
+
 	public struct DLGTEMPLATE 
 	{
 		public int style;
@@ -458,21 +448,79 @@ namespace HC.Win32
 		public int lpfnMsgBoxCallback;
 		public int dwLanguageId;
 	}
-	public struct WNDCLASSEX 
-	{
-		public int cbSize;
-		public int style;
-		public int lpfnWndProc;
-		public int cbClsExtra;
-		public int cbWndExtra;
-		public HANDLE hInstance;
-		public HANDLE hIcon;
-		public HANDLE hCursor;
-		public HANDLE hbrBackground;
-		public string lpszMenuName;
-		public string lpszClassName;
-		public HANDLE hIconSm;
-	}
+
+    public struct MONITORINFO
+    {
+        public uint cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    public delegate int WNDPROC(IntPtr hWnd, int msg, int wParam, int lParam);
+
+    //public struct WNDCLASS 
+    //{
+    //    public int style;
+    //    public int lpfnwndproc;
+    //    public int cbClsextra;
+    //    public int cbWndExtra2;
+    //    public HANDLE hInstance;
+    //    public HANDLE hIcon;
+    //    public HANDLE hCursor;
+    //    public HANDLE hbrBackground;
+    //    public string lpszMenuName;
+    //    public string lpszClassName;
+    //}
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public class WNDCLASS
+    {
+        public int style = 0;
+        public WNDPROC lpfnWndProc = null;
+        public int cbClsExtra = 0;
+        public int cbWndExtra = 0;
+        public IntPtr hInstance = IntPtr.Zero;
+        public IntPtr hIcon = IntPtr.Zero;
+        public IntPtr hCursor = IntPtr.Zero;
+        public IntPtr hbrBackground = IntPtr.Zero;
+        public string lpszMenuName = null;
+        public string lpszClassName = null;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]     
+    public struct WNDCLASSEX      
+    {          
+        //[MarshalAs(UnmanagedType.U4)]
+        public int cbSize;
+        //[MarshalAs(UnmanagedType.U4)]
+        public int style;
+        public WNDPROC lpfnWndProc; // not WndProc
+        public int cbClsExtra;             
+        public int cbWndExtra;             
+        public IntPtr hInstance;             
+        public IntPtr hIcon;             
+        public IntPtr hCursor;             
+        public IntPtr hbrBackground;             
+        public string lpszMenuName;             
+        public string lpszClassName;             
+        public IntPtr hIconSm;         
+    }
+    //public struct WNDCLASSEX 
+    //{
+    //    public int cbSize;
+    //    public int style;
+    //    public int lpfnWndProc;
+    //    public int cbClsExtra;
+    //    public int cbWndExtra;
+    //    public HANDLE hInstance;
+    //    public HANDLE hIcon;
+    //    public HANDLE hCursor;
+    //    public HANDLE hbrBackground;
+    //    public string lpszMenuName;
+    //    public string lpszClassName;
+    //    public HANDLE hIconSm;
+    //}
+
 	public struct TPMPARAMS 
 	{
 		public int cbSize;
@@ -561,7 +609,9 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern int CreateMDIWindow(string lpClassName, string lpWindowName, int dwStyle, int x, int y, int nWidth, int nHeight, HWND hwndParent, HANDLE hInstance, int lParam);
 		[DllImport("user32")] public static extern int CreateMenu();
 		[DllImport("user32")] public static extern int CreatePopupMenu();
-		[DllImport("user32")] public static extern int CreateWindowEx(int dwExStyle, string lpClassName, string lpWindowName, int dwStyle, int x, int y, int nWidth, int nHeight, HWND hwndParent, HANDLE hMenu, HANDLE hInstance, IntPtr lpParam);
+		//[DllImport("user32")] public static extern int CreateWindowEx(int dwExStyle, string lpClassName, string lpWindowName, int dwStyle, int x, int y, int nWidth, int nHeight, HWND hwndParent, HANDLE hMenu, HANDLE hInstance, IntPtr lpParam);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr CreateWindowEx(int dwExStyle, string lpszClassName, string lpszWindowName, int style, int x, int y, int width, int height, IntPtr hWndParent, IntPtr hMenu, IntPtr hInst, [MarshalAs(UnmanagedType.AsAny)] object pvParam);
 		[DllImport("user32")] public static extern int DdeAbandonTransaction(int idInst, HANDLE hConv, int idTransaction);
 		[DllImport("user32")] public static extern int DdeAccessData(HANDLE hData, ref int pcbDataSize);
 		[DllImport("user32")] public static extern int DdeAddData(HANDLE hData, Byte pSrc, int cb, int cbOff);
@@ -651,8 +701,13 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern int GetCapture();
 		[DllImport("user32")] public static extern int GetCaretBlinkTime();
 		[DllImport("user32")] public static extern int GetCaretPos(ref POINT lpPoint);
-		[DllImport("user32")] public static extern int GetClassInfo(HANDLE hInstance, string lpClassName, out WNDCLASS lpWndClass);
-		[DllImport("user32")] public static extern int GetClassLong(HWND hwnd, int nIndex);
+        [DllImport("user32", CharSet = CharSet.Unicode)]
+        public static extern bool GetClassInfo(HANDLE hInstance, string lpClassName, out WNDCLASS lpWndClass);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool GetClassInfoEx(IntPtr hinst, string lpClassName, out WNDCLASSEX lpWndClassEX);
+
+        [DllImport("user32")] public static extern int GetClassLong(HWND hwnd, int nIndex);
 		[DllImport("user32")] public static extern int GetClassName(HWND hwnd, string lpClassName, int nMaxCount);
 		[DllImport("user32")] public static extern int GetClassWord(HWND hwnd, int nIndex);
 		[DllImport("user32")] public static extern int GetClientRect(HWND hwnd, ref RECT lpRect);
@@ -817,7 +872,7 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern int ScrollWindow(HWND hwnd, int XAmount, int YAmount, ref RECT lpRect, ref RECT lpClipRect);
 		[DllImport("user32")] public static extern int ScrollWindowEx(HWND hwnd, int dx, int dy, ref RECT lprcScroll, ref RECT lprcClip, HANDLE hrgnUpdate, ref RECT lprcUpdate, int fuScroll);
 		[DllImport("user32")] public static extern int SendDlgItemMessage(HANDLE hDlg, int nIDDlgItem, int wMsg, int wParam, int lParam);
-		[DllImport("user32")] public static extern int SendMessage(HWND hwnd, int wMsg, int wParam, IntPtr lParam);
+		[DllImport("user32")] public static extern int SendMessage(HWND hwnd, int wMsg, int wParam, int lParam);
 		[DllImport("user32")] public static extern int SendMessageCallback(HWND hwnd, int msg, int wParam, int lParam, ref int lpResultCallBack, int dwData);
 		[DllImport("user32")] public static extern int SendMessageTimeout(HWND hwnd, int msg, int wParam, int lParam, int fuFlags, int uTimeout, ref int lpdwResult);
 		[DllImport("user32")] public static extern int SendNotifyMessage(HWND hwnd, int msg, int wParam, int lParam);
@@ -905,7 +960,9 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern short GetAsyncKeyState(int vKey);
 		[DllImport("user32")] public static extern short GetKeyState(int nVirtKey);
 		[DllImport("user32")] public static extern short GetWindowWord(HWND hwnd, int nIndex);
-		[DllImport("user32")] public static extern short RegisterClassEx(ref WNDCLASSEX pcWndClassEx);
+
+        [DllImport("user32", CharSet = CharSet.Auto)]
+        public static extern short RegisterClassEx(ref WNDCLASSEX pcWndClassEx);
 		[DllImport("user32")] public static extern short TileWindows(HWND hwndParent, int wHow, ref RECT lpRect, int cKids, ref int lpKids);
 		[DllImport("user32")] public static extern short VkKeyScan(Byte cChar);
 		[DllImport("user32")] public static extern short VkKeyScanEx(Byte ch, int dwhkl);
@@ -919,7 +976,18 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern void SetDebugErrorLevel(int dwLevel);
 		[DllImport("user32")] public static extern void SetLastErrorEx(int dwErrCode, int dwType);
 
-		public const int APPCLASS_MASK = 0xF;
+        public enum MonitorOptions : uint
+        {
+            MONITOR_DEFAULTTONULL = 0x00000000,
+            MONITOR_DEFAULTTOPRIMARY = 0x00000001,
+            MONITOR_DEFAULTTONEAREST = 0x00000002
+        }
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern IntPtr MonitorFromPoint(POINT pt, MonitorOptions dwFlags);
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpMonitorInfo);
+
+        public const int APPCLASS_MASK = 0xF;
 		public const int APPCLASS_MONITOR = 0x1;
 		public const int APPCLASS_STANDARD = 0x0;
 		public const int APPCMD_CLIENTONLY = 0x10;
@@ -1107,6 +1175,7 @@ namespace HC.Win32
 		public const int CS_BYTEALIGNWINDOW = 0x2000;
 		public const int CS_CLASSDC = 0x40;
 		public const int CS_DBLCLKS = 0x8;
+        public const int CS_DROPSHADOW = 0x20000;
 		public const int CS_HREDRAW = 0x2;
 		public const int CS_KEYCVTWINDOW = 0x4;
 		public const int CS_NOCLOSE = 0x200;
@@ -2275,6 +2344,7 @@ namespace HC.Win32
 		public const int WM_MOUSEFIRST = 0x200;
 		public const int WM_MOUSELAST = 0x209;
 		public const int WM_MOUSEMOVE = 0x200;
+        public const int WM_MOUSEWHEEL = 0x20A;
 		public const int WM_MOVE = 0x3;
 		public const int WM_NCACTIVATE = 0x86;
 		public const int WM_NCCALCSIZE = 0x83;
@@ -2359,6 +2429,7 @@ namespace HC.Win32
 		public const int WS_EX_NOPARENTNOTIFY = 0x4;
 		public const int WS_EX_TOPMOST = 0x8;
 		public const int WS_EX_TRANSPARENT = 0x20;
+        public const int WS_EX_TOOLWINDOW = 0x80;
 		public const int WS_GROUP = 0x20000;
 		public const int WS_HSCROLL = 0x100000;
 		public const int WS_ICONIC = WS_MINIMIZE;

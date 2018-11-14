@@ -18,7 +18,7 @@ using HC.Win32;
 
 namespace HC.View
 {
-    enum Orientation : byte
+    public enum Orientation : byte
     {
         oriHorizontal, oriVertical
     }
@@ -36,10 +36,10 @@ namespace HC.View
 
     public delegate void ScrollEventHandler(object Sender, ScrollCode ScrollCode, int ScrollPos);
 
-    class HCScrollBar : UserControl
+    public class HCScrollBar : UserControl
     {
         public const int ButtonSize = 20;
-        private static Color LineColor = Color.FromArgb(0xA0, 0xA0, 0xA4);
+        private static Color LineColor = HC.clMedGray;
         private const int IconWidth = 16;
         private static Color TitleBackColor = Color.FromArgb(0xAA, 0xAB, 0xB3);
         private static Color ThumBackColor = Color.FromArgb(0xD0, 0xD1, 0xD5);
@@ -352,7 +352,7 @@ namespace HC.View
             (this.Parent as UserControl).Focus();
         }
 
-        protected override void OnMouseDown(MouseEventArgs e)
+        public void DoMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
 
@@ -364,28 +364,33 @@ namespace HC.View
                 ScrollStep(ScrollCode.scLineUp);  // 数据向上（左）滚动
             }
             else
-            if (HC.PtInRect(FThumRect, FMousePt))
-            {
-                FMouseDownControl = BarControl.cbcThum;
-            }
-            else
-            if (HC.PtInRect(FRightBtnRect, FMousePt))
-            {
-                FMouseDownControl = BarControl.cbcRightBtn;
-                ScrollStep(ScrollCode.scLineDown);  // 数据向下（右）滚动
-            }
-            else  // 鼠标在滚动条的其他区域
-            {
-                FMouseDownControl = BarControl.cbcBar;  // 滚动条其他区域类型
-                if ((FThumRect.Top > e.Y) || (FThumRect.Left > e.X))
-                    ScrollStep(ScrollCode.scPageUp); // 数据向上（左）翻页
+                if (HC.PtInRect(FThumRect, FMousePt))
+                {
+                    FMouseDownControl = BarControl.cbcThum;
+                }
                 else
-                    if ((FThumRect.Bottom < e.Y) || (FThumRect.Right < e.X))
-                        ScrollStep(ScrollCode.scPageDown);  // 数据向下（右）翻页
-            }
+                    if (HC.PtInRect(FRightBtnRect, FMousePt))
+                    {
+                        FMouseDownControl = BarControl.cbcRightBtn;
+                        ScrollStep(ScrollCode.scLineDown);  // 数据向下（右）滚动
+                    }
+                    else  // 鼠标在滚动条的其他区域
+                    {
+                        FMouseDownControl = BarControl.cbcBar;  // 滚动条其他区域类型
+                        if ((FThumRect.Top > e.Y) || (FThumRect.Left > e.X))
+                            ScrollStep(ScrollCode.scPageUp); // 数据向上（左）翻页
+                        else
+                            if ((FThumRect.Bottom < e.Y) || (FThumRect.Right < e.X))
+                                ScrollStep(ScrollCode.scPageDown);  // 数据向下（右）翻页
+                    }
         }
 
-        protected override void OnMouseMove(MouseEventArgs e)
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            DoMouseDown(e);
+        }
+
+        public void DoMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
 
@@ -397,7 +402,7 @@ namespace HC.View
                     if (FMouseDownControl == BarControl.cbcThum)
                     {
                         vOffs = e.X - FMousePt.X;
-                        Position = FPosition + (int)Math.Round(vOffs / FPercent);;
+                        Position = FPosition + (int)Math.Round(vOffs / FPercent); ;
                         FMousePt.X = e.X;  // 对水平坐标赋值
                     }
                 }
@@ -413,9 +418,18 @@ namespace HC.View
             }
         }
 
-        protected override void OnMouseUp(MouseEventArgs e)
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            DoMouseMove(e);
+        }
+
+        public void DoMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+        }
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            DoMouseUp(e);
         }
 
         protected override void OnPaint(PaintEventArgs e)

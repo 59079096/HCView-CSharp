@@ -37,8 +37,13 @@ namespace HC.View
           MinRowHeight = 20,
           MinColWidth = 20;
 
-        public static Color ColorActiveBorder = Color.FromArgb(180, 180, 180);
-        //public static Color ColorNone = Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF);
+        public static Color clActiveBorder = Color.FromArgb(180, 180, 180);
+        public static Color clBtnFace = Color.FromArgb(0xF0, 0xF0, 0xF0);
+        public static Color clMedGray = Color.FromArgb(0xA0, 0xA0, 0xA4);
+        public static Color clMenu = Color.FromArgb(0xF0, 0xF0, 0xF0);
+        public static Color clWindow = Color.FromArgb(0xFF, 0xFF, 0xFF);
+        public static Color clHighlight = Color.FromArgb(0x33, 0x99, 0xFF);
+        public static Color clInfoBk = Color.FromArgb(0xFF, 0xFF, 0xE1);
 
         public const uint HC_TEXTMAXSIZE = 4294967295;
 
@@ -311,13 +316,13 @@ namespace HC.View
             ushort vSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vSize);
             AStream.Read(vBuffer, 0, vBuffer.Length);
-            vSize = (ushort)BitConverter.ToInt32(vBuffer, 0);
+            vSize = BitConverter.ToUInt16(vBuffer, 0);
 
             if (vSize > 0)
             {
                 vBuffer = new byte[vSize];
                 AStream.Read(vBuffer, 0, vSize);
-                S = BitConverter.ToString(vBuffer, 0);
+                S = System.Text.Encoding.Default.GetString(vBuffer);
             }
             else
                 S = "";

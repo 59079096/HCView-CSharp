@@ -331,10 +331,13 @@ namespace HC.View
                     case HCStyle.RadioGroup: 
                         Result = new HCRadioGroup(this);
                         break;
+
+                    case HCStyle.SupSubScript:
+                        Result = new HCSupSubScriptItem(this, "", "");
+                        break;
                     
                     default:
                         throw new Exception("未找到类型 " + AStyleNo.ToString() + " 对应的创建Item代码！");
-                        break;
                 }
             }
             else
@@ -1633,7 +1636,7 @@ namespace HC.View
                             vCurItemNo = vCurItemNo + 1;
                             Items.Insert(vCurItemNo, AItem);
                             Undo_InsertItem(vCurItemNo, 0);
-                            ReFormatData_(vFormatFirstItemNo, vFormatLastItemNo, 1);
+                            ReFormatData_(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
                             ReSetSelectAndCaret(vCurItemNo);
                         }
                         else  // 同一段中插入
@@ -4621,7 +4624,7 @@ namespace HC.View
             bool Result = false;
 
             HCCustomRichData vTopData = GetTopLevelData();
-            HCLineItem vItem = new HCLineItem(vTopData, vTopData.Width, 1);
+            HCLineItem vItem = new HCLineItem(vTopData, vTopData.Width, ALineHeight);
             vItem.LineHeight = (byte)ALineHeight;
 
             Result = InsertItem(vItem);

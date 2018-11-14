@@ -419,7 +419,7 @@ namespace HC.View
                     try
                     {
                         ACanvas.Pen.Style = HCPenStyle.psSolid;
-                        ACanvas.Pen.Color = HC.ColorActiveBorder;
+                        ACanvas.Pen.Color = HC.clActiveBorder;
                     }
                     finally
                     {
@@ -436,7 +436,7 @@ namespace HC.View
                     try
                     {
                         ACanvas.Pen.Style = HCPenStyle.psSolid;
-                        ACanvas.Pen.Color = HC.ColorActiveBorder;
+                        ACanvas.Pen.Color = HC.clActiveBorder;
                     }
                     finally
                     {

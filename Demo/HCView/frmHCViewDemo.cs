@@ -263,5 +263,65 @@ namespace HCViewDemo
                     FHCView.Print(vPrintDlg.PrinterSettings.PrinterName);
             }
         }
+
+        private void comboboxToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCComboboxItem vCombobox = new HCComboboxItem(FHCView.ActiveSectionTopLevelData(), "默认值");
+            vCombobox.Items.Add("选项1");
+            vCombobox.Items.Add("选项2");
+            vCombobox.Items.Add("选项3");
+            vCombobox.Items.Add("选项4");
+            vCombobox.Items.Add("选项5");
+            vCombobox.Items.Add("选项6");
+            //vCombobox.OnPopupItem = DoComboboxPopupItem;
+            //vCombobox.ItemIndex := 0;
+            FHCView.InsertItem(vCombobox);
+        }
+
+        private void 分数分子分母ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCFractionItem vFractionItem = new HCFractionItem(FHCView.ActiveSectionTopLevelData(), "12", "2018");
+            FHCView.InsertItem(vFractionItem);
+        }
+
+        private void 分数上下左右ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCExpressItem vExpressItem = new HCExpressItem(FHCView.ActiveSectionTopLevelData(),
+                "12", "5-6", "2017-6-3", "28-30");
+            FHCView.InsertItem(vExpressItem);
+        }
+
+        private void 上下标ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCSupSubScriptItem vSupSubScriptItem = new HCSupSubScriptItem(FHCView.ActiveSectionTopLevelData(), "20g", "先煎");
+            FHCView.InsertItem(vSupSubScriptItem);
+        }
+
+        private void checkBoxToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCCheckBoxItem vCheckBox = new HCCheckBoxItem(FHCView.ActiveSectionTopLevelData(), "勾选框", false);
+            FHCView.InsertItem(vCheckBox);
+        }
+
+        private void editToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCEditItem vEdit = new HCEditItem(FHCView.ActiveSectionTopLevelData(), "文本框");
+            FHCView.InsertItem(vEdit);
+        }
+
+        private void dateTimePickerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //HCDateTimePicker vHCDateTimePicker = new HCDateTimePicker(FHCView.ActiveSectionTopLevelData(), DateTime.Now);
+            //FHCView.InsertItem(vHCDateTimePicker);
+        }
+
+        private void radioGroupToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCRadioGroup vHCRadioGroup = new HCRadioGroup(FHCView.ActiveSectionTopLevelData());
+            vHCRadioGroup.AddItem("选项1");
+            vHCRadioGroup.AddItem("选项2");
+            vHCRadioGroup.AddItem("选项3");
+            FHCView.InsertItem(vHCRadioGroup);
+        }
     }
 }

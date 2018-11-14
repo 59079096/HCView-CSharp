@@ -35,6 +35,7 @@ namespace HC.View
         public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
         {
             Width = (ARichData as HCCustomRichData).Width;
+            Height = FLineHeight;
         }
 
         protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, int ADataDrawTop, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
@@ -70,11 +71,11 @@ namespace HC.View
             FLineStyle = (HCPenStyle)AStream.ReadByte();
         }
 
-        public HCLineItem(HCCustomData AOwnerData, int AWidth, int AHeight) : base(AOwnerData)
+        public HCLineItem(HCCustomData AOwnerData, int AWidth, int ALineHeight) : base(AOwnerData)
         {
-            FLineHeight = 1;
+            FLineHeight = (byte)ALineHeight;
             Width = AWidth;
-            Height = AHeight;
+            Height = ALineHeight;
             FLineStyle = HCPenStyle.psSolid;
             StyleNo = HCStyle.Line;
         }

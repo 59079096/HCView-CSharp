@@ -20,6 +20,8 @@ namespace HC.View
 {
     public static class ColorHelper
     {
+        
+
         public static uint ToRGB_UInt(this Color color)
         {
             return (uint)(color.B << 16) + (uint)(color.G << 8) + color.R;  // (uint)(color.A << 24) + 
@@ -287,6 +289,9 @@ namespace HC.View
             if ((FColor != value) || (FStyle == HCBrushStyle.bsClear))
             {
                 FColor = value;
+                if (FColor.A == 0)
+                    FStyle = HCBrushStyle.bsClear;
+                else
                 if (FStyle == HCBrushStyle.bsClear)
                     FStyle = HCBrushStyle.bsSolid;
                 DoChange();
@@ -705,6 +710,13 @@ namespace HC.View
             return TextWidth(c.ToString());
         }
 
+        public SIZE TextExtent(string AText)
+        {
+            SIZE vSize = new SIZE();
+            GDI.GetTextExtentPoint32(FHandle, AText, AText.Length, ref vSize);
+            return vSize;
+        }
+
         public int TextWidth(string AText)
         {
             SIZE vSize = new SIZE(0, 0);
@@ -768,6 +780,15 @@ namespace HC.View
         public void LineTo(int x, int y)
         {
             GDI.LineTo(FHandle, x, y);
+        }
+
+        public void TextRect(RECT aRect, int x, int y, string aText)
+        {
+            int vOptions = GDI.ETO_CLIPPED;
+            int vlpDx = 0;
+            if (FBrush.Style != HCBrushStyle.bsClear)
+                vOptions |= GDI.ETO_OPAQUE;
+            GDI.ExtTextOut(Handle, x, y, vOptions, ref aRect, aText, aText.Length, ref vlpDx);
         }
 
         public void TextOut(int x, int y, string Text)

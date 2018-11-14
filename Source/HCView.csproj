@@ -48,7 +48,9 @@
     <Compile Include="HCBarCodeItem.cs" />
     <Compile Include="HCCanvas.cs" />
     <Compile Include="HCCheckBoxItem.cs" />
-    <Compile Include="HCComboboxItem.cs" />
+    <Compile Include="HCComboboxItem.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="HCCommon.cs" />
     <Compile Include="HCCustomData.cs" />
     <Compile Include="HCCustomRichData.cs" />
@@ -64,6 +66,7 @@
     <Compile Include="HCItem.cs" />
     <Compile Include="HCPage.cs" />
     <Compile Include="HCParaStyle.cs" />
+    <Compile Include="HCPopupForm.cs" />
     <Compile Include="HCQRCodeItem.cs" />
     <Compile Include="HCRadioGroup.cs" />
     <Compile Include="HCRectItem.cs" />
@@ -78,6 +81,7 @@
     <Compile Include="HCSectionData.cs" />
     <Compile Include="HCStyle.cs" />
     <Compile Include="HCStyleMatch.cs" />
+    <Compile Include="HCSupSubScriptItem.cs" />
     <Compile Include="HCTableCell.cs" />
     <Compile Include="HCTableCellData.cs" />
     <Compile Include="HCTableItem.cs" />

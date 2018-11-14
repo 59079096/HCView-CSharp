@@ -746,7 +746,7 @@ namespace HC.View
                                 else
                                     if (!APaintInfo.Print)
                                     {
-                                        ACanvas.Pen.Color = HC.ColorActiveBorder;
+                                        ACanvas.Pen.Color = HC.clActiveBorder;
                                         ACanvas.Pen.Style = HCPenStyle.psDot;
                                     }
                             }

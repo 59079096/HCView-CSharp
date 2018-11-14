@@ -325,7 +325,7 @@ namespace HC.View
             {
                 ACanvas.Pen.Width = 1;
                 ACanvas.Pen.Style = HCPenStyle.psSolid;
-                ACanvas.Pen.Color = HC.ColorActiveBorder;
+                ACanvas.Pen.Color = HC.clActiveBorder;
             }
             finally
             {
@@ -450,7 +450,7 @@ namespace HC.View
                 {
                     if (FDrawHotDomainRegion)
                     {
-                        ACanvas.Brush.Color = HC.ColorActiveBorder;
+                        ACanvas.Brush.Color = HC.clActiveBorder;
                         //FieldInfo vField = typeof(Brush).GetField("nativeBrush", BindingFlags.NonPublic | BindingFlags.Instance);
                         //IntPtr hbrush = (IntPtr)vField.GetValue(ACanvas.Brush);
                         GDI.FrameRgn(ACanvas.Handle, FHotDomainRGN, ACanvas.Brush.Handle, 1, 1);
