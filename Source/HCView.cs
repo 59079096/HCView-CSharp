@@ -1490,16 +1490,16 @@ namespace HC.View
             {
                 MemoryStream vStream = (MemoryStream)vIData.GetData(HC.HC_EXT);
                 vStream.Position = 0;
-                HCImageItem vImageItem = new HCImageItem(ActiveSectionTopLevelData());
+
+                HCCustomRichData vTopData = this.ActiveSectionTopLevelData();
+                HCImageItem vImageItem = new HCImageItem(vTopData);
                 vImageItem.Image = new Bitmap(vStream);
 
                 vImageItem.Width = vImageItem.Image.Width;
                 vImageItem.Height = vImageItem.Image.Height;
 
-                HCSection vSection = ActiveSection;
-                int vContentWidth = vSection.PageWidthPix - vSection.PageMarginLeftPix - vSection.PageMarginRightPix;
-                int vContentHeight = vSection.PageHeightPix - vSection.GetHeaderAreaHeight() - vSection.PageMarginBottomPix;
-                vImageItem.RestrainSize(vContentWidth, vContentHeight);
+
+                vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
 
                 this.InsertItem(vImageItem);
             }

@@ -183,8 +183,10 @@ namespace HCViewDemo
                 {
                     if (vOpenDlg.FileName != "")
                     {
-                        HCImageItem vImageItem = new HCImageItem(FHCView.ActiveSectionTopLevelData());
+                        HCCustomRichData vTopData = FHCView.ActiveSectionTopLevelData();
+                        HCImageItem vImageItem = new HCImageItem(vTopData);
                         vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
+                        vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
                         Application.DoEvents();
                         FHCView.InsertItem(vImageItem);
                     }
