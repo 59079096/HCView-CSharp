@@ -342,14 +342,13 @@ namespace HC.View
         /// <param name="APlaceWidth">呈放文本的宽度</param>
         /// <param name="ABasePos">vCharWidths中对应偏移的起始位置</param>
         private void DoFormatTextItemToDrawItems(string vText, int ACharOffset, int APlaceWidth, int ABasePos,
-            int AItemNo, int viLen, int vItemHeight, int AContentWidth, ref bool vParaFirst, 
-            ref bool vLineFirst, ref POINT APos, ref int[] vCharWidths, ref int vRemainderWidth,
+            int AItemNo, int viLen, int vItemHeight, int AContentWidth, int[] vCharWidths, ref bool vParaFirst, 
+            ref bool vLineFirst, ref POINT APos,  ref RECT vRect, ref int vRemainderWidth,
             ref int ALastDrawItemNo)
         {
             int viPlaceOffset,  // 能放下第几个字符
             viBreakOffset,  // 第几个字符放不下
             vFirstCharWidth;  // 第一个字符的宽度
-            RECT vRect = new RECT();
 
             vLineFirst = (APos.X == 0);
             viBreakOffset = 0;  // 换行位置，第几个字符放不下
@@ -397,8 +396,8 @@ namespace HC.View
                     if (viBreakOffset < viLen)
                     {
                         DoFormatTextItemToDrawItems(vText, viBreakOffset + 1, AContentWidth, vCharWidths[viBreakOffset - 1],
-                            AItemNo, viLen, vItemHeight, AContentWidth, ref vParaFirst, ref vLineFirst, ref APos, ref vCharWidths, 
-                            ref vRemainderWidth, ref ALastDrawItemNo);
+                            AItemNo, viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos, 
+                            ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
                     }
                 }
                 else  // Data的宽度足够一个字符
@@ -409,8 +408,8 @@ namespace HC.View
                     APos.X = 0;
                     APos.Y = FDrawItems[ALastDrawItemNo].Rect.Bottom;
                     DoFormatTextItemToDrawItems(vText, ACharOffset, AContentWidth, ABasePos,
-                        AItemNo, viLen, vItemHeight, AContentWidth, ref vParaFirst, ref vLineFirst, ref APos, ref vCharWidths, 
-                        ref vRemainderWidth, ref ALastDrawItemNo);
+                        AItemNo, viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos,
+                        ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
                 }
             }
             else  // 当前行剩余宽度能放下当前Text的一部分
@@ -456,8 +455,8 @@ namespace HC.View
                 if (viPlaceOffset < viLen)
                 {
                     DoFormatTextItemToDrawItems(vText, viPlaceOffset + 1, AContentWidth, vCharWidths[viPlaceOffset - 1],
-                        AItemNo, viLen, vItemHeight, AContentWidth, ref vParaFirst, ref vLineFirst, ref APos, ref vCharWidths,
-                        ref vRemainderWidth, ref ALastDrawItemNo);
+                        AItemNo, viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos,
+                        ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
                 }
             }
         }
@@ -691,7 +690,7 @@ namespace HC.View
 
         #region
         private void DoFormatRectItemToDrawItem(HCCustomRectItem vRectItem, int AItemNo, int AContentWidth, int AOffset,
-            bool vParaFirst, ref POINT APos, ref bool vLineFirst, ref int ALastDrawItemNo, ref int vRemainderWidth)
+            bool vParaFirst, ref POINT APos, ref RECT vRect, ref bool vLineFirst, ref int ALastDrawItemNo, ref int vRemainderWidth)
         {
             vRectItem.FormatToDrawItem(this, AItemNo);
             int vWidth = AContentWidth - APos.X;
@@ -705,7 +704,6 @@ namespace HC.View
             }
 
             // 当前行空余宽度能放下或放不下但已经是行首了
-            RECT vRect = new RECT();
             vRect.Left = APos.X;
             vRect.Top = APos.Y;
             vRect.Width = vRectItem.Width;
@@ -754,7 +752,8 @@ namespace HC.View
             if (vItem.StyleNo < HCStyle.Null)  // 是RectItem
             {
                 vRectItem = vItem as HCCustomRectItem;
-                DoFormatRectItemToDrawItem(vRectItem, AItemNo, AContentWidth, AOffset, vParaFirst, ref APos, ref vLineFirst, ref ALastDrawItemNo, ref vRemainderWidth);
+                DoFormatRectItemToDrawItem(vRectItem, AItemNo, AContentWidth, AOffset, vParaFirst, 
+                    ref APos, ref vRect, ref vLineFirst, ref ALastDrawItemNo, ref vRemainderWidth);
             }
             else  // 文本
             {
@@ -820,8 +819,8 @@ namespace HC.View
                     FStyle.DefCanvas.GetTextExtentExPoint(vText, viLen, vCharWidths, ref vSize);  // 超过65535数组元素取不到值
 
                     DoFormatTextItemToDrawItems(vText, AOffset, AContentWidth - APos.X, 0, AItemNo, 
-                        viLen, vItemHeight, AContentWidth, ref vParaFirst, ref vLineFirst, ref APos, 
-                        ref vCharWidths, ref vRemainderWidth, ref ALastDrawItemNo);
+                        viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos, 
+                        ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
                 }
             }
 
