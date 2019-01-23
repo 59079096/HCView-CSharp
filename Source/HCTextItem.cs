@@ -54,9 +54,9 @@ namespace HC.View
 
         }
 
-        public HCTextItem(string AText) : this()
+        public HCTextItem(string aText) : this()
         {
-            FText = AText;
+            FText = aText;
             FHyperLink = "";
         }
 

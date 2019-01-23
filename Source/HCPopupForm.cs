@@ -25,8 +25,8 @@ namespace HC.View
         private MouseEventHandler FOnMouseWheel;
         private MouseEventHandler FOnMouseWheelDown;
         private MouseEventHandler FOnMouseWheelUp;
+        private WNDPROC WndProc;
 
-        private static WNDPROC WndProc;
         // 窗口过程   
         private int WindowProcedure(IntPtr hwnd, int msg, int wParam, int lParam)
         {
@@ -81,7 +81,7 @@ namespace HC.View
         private void RegFormClass()
         {
             IntPtr hInstance = (IntPtr)Kernel.GetModuleHandle(null);
-            WNDCLASSEX vWndCls = new WNDCLASSEX();
+            WNDCLASSEX vWndCls = WNDCLASSEX.Build();
             if (!User.GetClassInfoEx(hInstance, "HCPopupForm", out vWndCls))
             {
                 vWndCls.cbSize = 48;
@@ -99,7 +99,7 @@ namespace HC.View
 
                 if (User.RegisterClassEx(ref vWndCls) == 0)
                 {
-                    throw new Exception("异常：注册THCPopupForm错误");
+                    throw new Exception("异常：注册HCPopupForm错误");
                 }
             }
         }
@@ -415,6 +415,7 @@ namespace HC.View
             }
 
             User.SetWindowPos(FPopupWindow, IntPtr.Zero, x, y, vW, vH, User.SWP_NOACTIVATE | User.SWP_SHOWWINDOW);
+            //User.BringWindowToTop(FPopupWindow);
             FOpened = true;
             MessageLoop();
         }

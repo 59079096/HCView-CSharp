@@ -422,30 +422,30 @@ namespace HC.View
         }  
      
         // =============== private end =============== //
-         protected void DoCaretChange()
+        private void DoCaretChange()
         {
              if (FOnCaretChange != null)
                  FOnCaretChange(this, null);
         }
 
-        protected void DoSectionDataChanged(Object Sender, EventArgs e)
+        private void DoSectionDataChanged(Object Sender, EventArgs e)
         {
             DoChange();
         }
 
         // 仅重绘和重建光标，不触发Change事件
-        protected void DoSectionDataCheckUpdateInfo(Object Sender, EventArgs e)
+        private void DoSectionDataCheckUpdateInfo(Object Sender, EventArgs e)
         {
             CheckUpdateInfo();
         }
 
-        protected  void DoLoadFromStream(Stream aStream, HCStyle aStyle, LoadSectionProcHandler aLoadSectionProc)
+        private void DoLoadFromStream(Stream aStream, HCStyle aStyle, LoadSectionProcHandler aLoadSectionProc)
         {
             aStream.Position = 0;
             string vFileExt = "";
             ushort vFileVersion = 0;
-            byte vLan = 0;
-            HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref vFileVersion, ref vLan);
+            byte vLang = 0;
+            HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref vFileVersion, ref vLang);
             if (vFileExt != HC.HC_EXT)
                 throw new Exception("加载失败，不是" + HC.HC_EXT + "文件！");
 
@@ -455,7 +455,7 @@ namespace HC.View
             DoMapChanged();
         }
 
-        protected HCUndo DoUndoNew()
+        private HCUndo DoUndoNew()
         {
             HCUndo Result = new HCSectionUndo();
             (Result as HCSectionUndo).SectionIndex = FActiveSectionIndex;
@@ -466,7 +466,7 @@ namespace HC.View
             return Result;
         }
 
-        protected HCUndoGroupBegin DoUndoGroupBegin(int aItemNo, int aOffset)
+        private HCUndoGroupBegin DoUndoGroupBegin(int aItemNo, int aOffset)
         {
             HCUndoGroupBegin Result = new HCSectionUndoGroupBegin();
             (Result as HCSectionUndoGroupBegin).SectionIndex = FActiveSectionIndex;
@@ -478,7 +478,7 @@ namespace HC.View
             return Result;
         }
 
-        protected HCUndoGroupEnd DoUndoGroupEnd(int aItemNo, int aOffset)
+        private HCUndoGroupEnd DoUndoGroupEnd(int aItemNo, int aOffset)
         {
             HCUndoGroupEnd Result = new HCSectionUndoGroupEnd();
             (Result as HCSectionUndoGroupEnd).SectionIndex = FActiveSectionIndex;
@@ -490,7 +490,7 @@ namespace HC.View
             return Result;
         }
 
-        protected void DoUndo(HCUndo sender)
+        private void DoUndo(HCUndo sender)
         {
             if (sender is HCSectionUndo)
             {
@@ -513,7 +513,7 @@ namespace HC.View
             ActiveSection.Undo(sender);
         }
 
-        protected void DoRedo(HCUndo sender)
+        private void DoRedo(HCUndo sender)
         {
             if (sender is HCSectionUndo)
             {
@@ -537,7 +537,7 @@ namespace HC.View
         }
 
         /// <summary> 文档"背板"变动(数据无变化，如对称边距，缩放视图) </summary>
-        protected void DoMapChanged()
+        private void DoMapChanged()
         {
             if (FUpdateCount == 0)
             {
@@ -546,61 +546,43 @@ namespace HC.View
             }
         }
 
-        protected virtual void DoChange()
-        {
-            SetIsChanged(true);
-            DoMapChanged();
-            if (FOnChange != null)
-                FOnChange(this, null);
-        }
-
-        protected void DoSectionCreateItem(Object sender, EventArgs e)
+        private void DoSectionCreateItem(Object sender, EventArgs e)
         {
             if (FOnSectionCreateItem != null)
                 FOnSectionCreateItem(this, null);
         }
 
-        protected void DoSectionReadOnlySwitch(Object sender, EventArgs e)
+        private void DoSectionReadOnlySwitch(Object sender, EventArgs e)
         {
             if (FOnSectionReadOnlySwitch != null)
                 FOnSectionReadOnlySwitch(this, null);
         }
 
-        protected POINT DoSectionGetScreenCoord(int x, int  y)
+        private POINT DoSectionGetScreenCoord(int x, int y)
         {
             Point vPt = this.PointToScreen(new Point(x, y));
             return new POINT(vPt.X , vPt.Y);
         }
 
-        protected void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        private void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnSectionInsertItem != null)
                 FOnSectionInsertItem(sender, aData, aItem);
         }
 
-        protected void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        private void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnSectionRemoveItem != null)
                 FOnSectionRemoveItem(sender, aData, aItem);
         }
 
-        protected void DoSectionItemMouseUp(object sender, HCCustomData aData,
+        private void DoSectionItemMouseUp(object sender, HCCustomData aData,
             int aItemNo, MouseEventArgs e)
         {
             // 转到超链接
         }
 
-        protected void DoSectionDrawItemAnnotate(object sender, HCCustomData aData,
-            int aDrawItemNo, RECT aDrawRect, HCDataAnnotate aDataAnnotate)
-        {
-            HCDrawAnnotate vDrawAnnotate = new HCDrawAnnotate();
-            vDrawAnnotate.Data = aData;
-            vDrawAnnotate.DrawRect = aDrawRect;
-            vDrawAnnotate.DataAnnotate = aDataAnnotate;
-            FAnnotate.AddDrawAnnotate(vDrawAnnotate);
-        }
-
-        protected void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
+        private void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnSectionDrawItemPaintBefor != null)
@@ -608,27 +590,19 @@ namespace HC.View
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
-        protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            if (FOnSectionDrawItemPaintAfter != null)
-                FOnSectionDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
-                    aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-        }
-
-        protected void DoSectionDrawItemPaintContent(HCCustomData aData, int aDrawItemNo,  RECT aDrawRect, RECT aClearRect, string aDrawText, 
+        private void DoSectionDrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, RECT aClearRect, string aDrawText,
             int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             // 背景处理完，绘制文本前触发，可处理高亮关键字
         }
 
-        protected void DoSectionPaintHeader(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private void DoSectionPaintHeader(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
             if (FOnSectionPaintHeader != null)
                 FOnSectionPaintHeader(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        protected void DoSectionPaintFooter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private void DoSectionPaintFooter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
             HCSection vSection = sender as HCSection;
             if (vSection.PageNoVisible)
@@ -640,10 +614,10 @@ namespace HC.View
                 {
                     if (i == vSectionIndex)
                         vSectionStartPageIndex = vAllPageCount;
-                
+
                     vAllPageCount = vAllPageCount + FSections[i].PageCount;
                 }
-                    
+
                 string vS = string.Format(FPageNoFormat, vSectionStartPageIndex + vSection.PageNoFrom + aPageIndex, vAllPageCount);
                 aCanvas.Brush.Style = HCBrushStyle.bsClear;
 
@@ -665,20 +639,20 @@ namespace HC.View
                 FOnSectionPaintFooter(vSection, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        protected void DoSectionPaintPage(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private void DoSectionPaintPage(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
             if (FOnSectionPaintPage != null)
                 FOnSectionPaintPage(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        protected void DoSectionPaintWholePageBefor(object sender, int aPageIndex,
+        private void DoSectionPaintWholePageBefor(object sender, int aPageIndex,
             RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
             if (FOnSectionPaintWholePageBefor != null)
                 FOnSectionPaintWholePageBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        protected void DoSectionPaintWholePageAfter(object sender, int aPageIndex,
+        private void DoSectionPaintWholePageAfter(object sender, int aPageIndex,
             RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
             if (FAnnotate.Count > 0)  // 当前页有批注，绘制批注尾巴
@@ -688,24 +662,50 @@ namespace HC.View
                 FOnSectionPaintWholePageAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        protected HCUndoList DoSectionGetUndoList()
+        private void DoSectionDrawItemAnnotate(object sender, HCCustomData aData,
+            int aDrawItemNo, RECT aDrawRect, HCDataAnnotate aDataAnnotate)
+        {
+            HCDrawAnnotate vDrawAnnotate = new HCDrawAnnotate();
+            vDrawAnnotate.Data = aData;
+            vDrawAnnotate.DrawRect = aDrawRect;
+            vDrawAnnotate.DataAnnotate = aDataAnnotate;
+            FAnnotate.AddDrawAnnotate(vDrawAnnotate);
+        }
+
+        private HCUndoList DoSectionGetUndoList()
         {
             return FUndoList;
         }
 
-        protected void DoSectionInsertAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
+        private void DoSectionInsertAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
         {
             FAnnotate.InsertDataAnnotate(aDataAnnotate);
         }
 
-        protected void DoSectionRemoveAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
+        private void DoSectionRemoveAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
         {
             FAnnotate.RemoveDataAnnotate(aDataAnnotate);
         }
 
-        protected void DoStyleInvalidateRect(RECT aRect)
+        private void DoStyleInvalidateRect(RECT aRect)
         {
             UpdateView(aRect);
+        }
+
+        protected virtual void DoChange()
+        {
+            SetIsChanged(true);
+            DoMapChanged();
+            if (FOnChange != null)
+                FOnChange(this, null);
+        }
+
+        protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
+            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            if (FOnSectionDrawItemPaintAfter != null)
+                FOnSectionDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+                    aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
         /// <summary> 是否上屏输入法输入的词条屏词条ID和词条 </summary>
@@ -1062,8 +1062,15 @@ namespace HC.View
             }
         }
 
+        /// <summary> 便于子类在构造函数前执行 </summary>
+        protected virtual void Create()
+        {
+
+        }
+
         public HCView()
         {
+            Create();  // 便于子类在构造函数前执行
             FHCExtFormat = DataFormats.GetFormat(HC.HC_EXT);
             SetStyle(ControlStyles.Selectable, true);
             this.BackColor = Color.FromArgb(82, 89, 107);
