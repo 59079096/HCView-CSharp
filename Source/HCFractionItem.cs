@@ -30,9 +30,9 @@ namespace HC.View
         protected bool FMouseLBDowning, FOutSelectInto;
         protected ExpressArea FActiveArea, FMouseMoveArea;
 
-        public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
-            HCStyle vStyle = ARichData.Style;
+            HCStyle vStyle = aRichData.Style;
             vStyle.TextStyles[TextStyleNo].ApplyStyle(vStyle.DefCanvas);
             int vH = vStyle.DefCanvas.TextHeight("H");
             int vTopW = Math.Max(vStyle.DefCanvas.TextWidth(FTopText), FPadding);
@@ -53,27 +53,23 @@ namespace HC.View
                 Height - FPadding - vH, vBottomW, vH);
         }
 
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, int ADataDrawTop, int ADataDrawBottom, 
-            int ADataScreenTop, int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
+            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            if (this.Active && (!APaintInfo.Print))
+            if (this.Active && (!aPaintInfo.Print))
             {
-                ACanvas.Brush.Color = HC.clBtnFace;
-                ACanvas.FillRect(ADrawRect);
+                aCanvas.Brush.Color = HC.clBtnFace;
+                aCanvas.FillRect(aDrawRect);
             }
-
-            AStyle.TextStyles[TextStyleNo].ApplyStyle(ACanvas, APaintInfo.ScaleY / APaintInfo.Zoom);
-            ACanvas.TextOut(ADrawRect.Left + FTopRect.Left, ADrawRect.Top + FTopRect.Top, FTopText);
-            ACanvas.TextOut(ADrawRect.Left + FBottomRect.Left, ADrawRect.Top + FBottomRect.Top, FBottomText);
             
             if (!FLineHide)
             {
-                ACanvas.Pen.Color = Color.Black;
-                ACanvas.MoveTo(ADrawRect.Left + FPadding, ADrawRect.Top + FTopRect.Bottom + FPadding);
-                ACanvas.LineTo(ADrawRect.Left + Width - FPadding, ADrawRect.Top + FTopRect.Bottom + FPadding);
+                aCanvas.Pen.Color = Color.Black;
+                aCanvas.MoveTo(aDrawRect.Left + FPadding, aDrawRect.Top + FTopRect.Bottom + FPadding);
+                aCanvas.LineTo(aDrawRect.Left + Width - FPadding, aDrawRect.Top + FTopRect.Bottom + FPadding);
             }
 
-            if (!APaintInfo.Print)
+            if (!aPaintInfo.Print)
             {
                 RECT vFocusRect = new RECT();
 
@@ -85,10 +81,10 @@ namespace HC.View
                         if (FActiveArea == ExpressArea.ceaBottom)
                             vFocusRect = FBottomRect;
 
-                    vFocusRect.Offset(ADrawRect.Left, ADrawRect.Top);
+                    vFocusRect.Offset(aDrawRect.Left, aDrawRect.Top);
                     vFocusRect.Inflate(2, 2);
-                    ACanvas.Pen.Color = Color.Blue;
-                    ACanvas.Rectangle(vFocusRect);
+                    aCanvas.Pen.Color = Color.Blue;
+                    aCanvas.Rectangle(vFocusRect);
                 }
 
                 if ((FMouseMoveArea != ExpressArea.ceaNone) && (FMouseMoveArea != FActiveArea))
@@ -99,34 +95,38 @@ namespace HC.View
                         if (FMouseMoveArea == ExpressArea.ceaBottom)
                             vFocusRect = FBottomRect;
 
-                    vFocusRect.Offset(ADrawRect.Left, ADrawRect.Top);
+                    vFocusRect.Offset(aDrawRect.Left, aDrawRect.Top);
                     vFocusRect.Inflate(2, 2);
-                    ACanvas.Pen.Color = HC.clMedGray;
-                    ACanvas.Rectangle(vFocusRect);
+                    aCanvas.Pen.Color = HC.clMedGray;
+                    aCanvas.Rectangle(vFocusRect);
                 }
             }
+
+            aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
+            aCanvas.TextOut(aDrawRect.Left + FTopRect.Left, aDrawRect.Top + FTopRect.Top, FTopText);
+            aCanvas.TextOut(aDrawRect.Left + FBottomRect.Left, aDrawRect.Top + FBottomRect.Top, FBottomText);
         }
 
-        public override int GetOffsetAt(int X)
+        public override int GetOffsetAt(int x)
         {
             if (FOutSelectInto)
-                return base.GetOffsetAt(X);
+                return base.GetOffsetAt(x);
             else
             {
-                if (X <= 0)
+                if (x <= 0)
                     return HC.OffsetBefor;
                 else
-                    if (X >= Width)
+                    if (x >= Width)
                         return HC.OffsetAfter;
                     else
                         return HC.OffsetInner;
             }
         }
 
-        protected override void SetActive(bool Value)
+        protected override void SetActive(bool value)
         {
-            base.SetActive(Value);
-            if (!Value)
+            base.SetActive(value);
+            if (!value)
                 FActiveArea = ExpressArea.ceaNone;
         }
 
@@ -168,7 +168,7 @@ namespace HC.View
             if (FActiveArea != ExpressArea.ceaNone)
             {
                 OwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(OwnerData.Style.DefCanvas);
-                vOffset = HC.GetCharOffsetByX(OwnerData.Style.DefCanvas, vS, vX);
+                vOffset = HC.GetCharOffsetAt(OwnerData.Style.DefCanvas, vS, vX);
             }
 
             if (vOffset != FCaretOffset)
@@ -285,25 +285,25 @@ namespace HC.View
             }
         }
 
-        public override void KeyPress(ref Char Key)
+        public override void KeyPress(ref Char key)
         {
             if (FActiveArea != ExpressArea.ceaNone)
-                InsertText(Key.ToString());
+                InsertText(key.ToString());
             else
-                Key = (Char)0;
+                key = (Char)0;
         }
 
-        public override bool InsertText(string AText)
+        public override bool InsertText(string aText)
         {
             if (FActiveArea != ExpressArea.ceaNone)
             {
                 if (FActiveArea == ExpressArea.ceaTop)
-                    FTopText = FTopText.Insert(FCaretOffset, AText);
+                    FTopText = FTopText.Insert(FCaretOffset, aText);
                 else
                     if (FActiveArea == ExpressArea.ceaBottom)
-                        FBottomText = FBottomText.Insert(FCaretOffset, AText);
+                        FBottomText = FBottomText.Insert(FCaretOffset, aText);
 
-                FCaretOffset += (short)AText.Length;
+                FCaretOffset += (short)aText.Length;
 
                 this.SizeChanged = true;
                 return true;
@@ -312,7 +312,7 @@ namespace HC.View
                 return false;
         }
 
-        public override void GetCaretInfo(ref HCCaretInfo ACaretInfo)
+        public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
         {
             if ((FActiveArea != ExpressArea.ceaNone) && (FCaretOffset >= 0))
             {
@@ -322,9 +322,9 @@ namespace HC.View
                     if (FCaretOffset < 0)
                         FCaretOffset = 0;
 
-                    ACaretInfo.Height = FTopRect.Bottom - FTopRect.Top;
-                    ACaretInfo.X = FTopRect.Left + OwnerData.Style.DefCanvas.TextWidth(FTopText.Substring(0, FCaretOffset));
-                    ACaretInfo.Y = FTopRect.Top;
+                    aCaretInfo.Height = FTopRect.Bottom - FTopRect.Top;
+                    aCaretInfo.X = FTopRect.Left + OwnerData.Style.DefCanvas.TextWidth(FTopText.Substring(0, FCaretOffset));
+                    aCaretInfo.Y = FTopRect.Top;
                 }
                 else
                     if (FActiveArea == ExpressArea.ceaBottom)
@@ -332,55 +332,46 @@ namespace HC.View
                         if (FCaretOffset < 0)
                             FCaretOffset = 0;
 
-                        ACaretInfo.Height = FBottomRect.Bottom - FBottomRect.Top;
-                        ACaretInfo.X = FBottomRect.Left + OwnerData.Style.DefCanvas.TextWidth(FBottomText.Substring(0, FCaretOffset));
-                        ACaretInfo.Y = FBottomRect.Top;
+                        aCaretInfo.Height = FBottomRect.Bottom - FBottomRect.Top;
+                        aCaretInfo.X = FBottomRect.Left + OwnerData.Style.DefCanvas.TextWidth(FBottomText.Substring(0, FCaretOffset));
+                        aCaretInfo.Y = FBottomRect.Top;
                     }
             }
             else
-                ACaretInfo.Visible = false;
+                aCaretInfo.Visible = false;
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
-            int vLen = System.Text.Encoding.Default.GetByteCount(FTopText);
-            if (vLen > ushort.MaxValue)
-                throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
-
-            ushort vSize = (ushort)vLen;
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-            if (vSize > 0)
-            {
-                vBuffer = System.Text.Encoding.Default.GetBytes(FTopText);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
-            }
-
-            vLen = System.Text.Encoding.Default.GetByteCount(FBottomText);
-            if (vLen > ushort.MaxValue)
-                throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
-
-            vSize = (ushort)vLen;
-            vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-            if (vSize > 0)
-            {
-                vBuffer = System.Text.Encoding.Default.GetBytes(FBottomText);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
-            }
+            base.SaveToStream(aStream, aStart, aEnd);
+            HC.HCSaveTextToStream(aStream, FTopText);
+            HC.HCSaveTextToStream(aStream, FBottomText);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
-            HC.HCLoadTextFromStream(AStream, ref FTopText);
-            HC.HCLoadTextFromStream(AStream, ref FBottomText);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FTopText);
+            HC.HCLoadTextFromStream(aStream, ref FBottomText);
         }
 
-        protected virtual ExpressArea GetExpressArea(int X, int Y)
+        public override void ParseXml(System.Xml.XmlElement aNode)
         {
-            POINT vPt = new POINT(X, Y);
+            base.ParseXml(aNode);
+            FTopText = aNode.Attributes["toptext"].Value;
+            FBottomText = aNode.Attributes["bottomtext"].Value;
+        }
+
+        public override void ToXml(System.Xml.XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["toptext"].Value = FTopText;
+            aNode.Attributes["bottomtext"].Value = FBottomText;
+        }
+
+        protected virtual ExpressArea GetExpressArea(int x, int y)
+        {
+            POINT vPt = new POINT(x, y);
             if (HC.PtInRect(FTopRect, vPt))
                 return ExpressArea.ceaTop;
             else
@@ -402,22 +393,22 @@ namespace HC.View
             set { FBottomRect = value; }
         }
 
-        public HCFractionItem(HCCustomData AOwnerData, string ATopText, string ABottomText) : base(AOwnerData)
+        public HCFractionItem(HCCustomData aOwnerData, string aTopText, string aBottomText) : base(aOwnerData)
         {
             this.StyleNo = HCStyle.Fraction;
             FPadding = 5;
             FActiveArea = ExpressArea.ceaNone;
             FCaretOffset = -1;
             FLineHide = false;
-            FTopText = ATopText;
-            FBottomText = ABottomText;
+            FTopText = aTopText;
+            FBottomText = aBottomText;
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FTopText = (Source as HCFractionItem).TopText;
-            FBottomText = (Source as HCFractionItem).BottomText;
+            base.Assign(source);
+            FTopText = (source as HCFractionItem).TopText;
+            FBottomText = (source as HCFractionItem).BottomText;
         }
 
         public byte Padding

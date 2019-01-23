@@ -16,6 +16,7 @@ using System.Text;
 using System.IO;
 using HC.Win32;
 using System.Drawing;
+using System.Xml;
 
 namespace HC.View
 {
@@ -24,67 +25,81 @@ namespace HC.View
         private byte FLineHeight;
         private HCPenStyle FLineStyle;
 
-        public override int GetOffsetAt(int X)
+        public override int GetOffsetAt(int x)
         {
-            if (X < Width / 2)
+            if (x < Width / 2)
                 return HC.OffsetBefor;
             else
                 return HC.OffsetAfter;
         }
 
-        public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
-            Width = (ARichData as HCCustomRichData).Width;
+            Width = (aRichData as HCRichData).Width;
             Height = FLineHeight;
         }
 
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, int ADataDrawTop, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            ACanvas.Pen.BeginUpdate();
+            aCanvas.Pen.BeginUpdate();
             try
             {
-                ACanvas.Pen.Width = FLineHeight;
-                ACanvas.Pen.Style = FLineStyle;
-                ACanvas.Pen.Color = Color.Black;
+                aCanvas.Pen.Width = FLineHeight;
+                aCanvas.Pen.Style = FLineStyle;
+                aCanvas.Pen.Color = Color.Black;
             }
             finally
             {
-                ACanvas.Pen.EndUpdate();
+                aCanvas.Pen.EndUpdate();
             }
 
-            int vTop = (ADrawRect.Top + ADrawRect.Bottom) / 2;
-            ACanvas.MoveTo(ADrawRect.Left, vTop);
-            ACanvas.LineTo(ADrawRect.Right, vTop);
+            int vTop = (aDrawRect.Top + aDrawRect.Bottom) / 2;
+            aCanvas.MoveTo(aDrawRect.Left, vTop);
+            aCanvas.LineTo(aDrawRect.Right, vTop);
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
-            AStream.WriteByte(FLineHeight);
-            AStream.WriteByte((byte)FLineStyle);
+            base.SaveToStream(aStream, aStart, aEnd);
+            aStream.WriteByte(FLineHeight);
+            aStream.WriteByte((byte)FLineStyle);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
-            FLineHeight = (byte)AStream.ReadByte();
-            FLineStyle = (HCPenStyle)AStream.ReadByte();
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            FLineHeight = (byte)aStream.ReadByte();
+            FLineStyle = (HCPenStyle)aStream.ReadByte();
         }
 
-        public HCLineItem(HCCustomData AOwnerData, int AWidth, int ALineHeight) : base(AOwnerData)
+        public override void ParseXml(XmlElement aNode)
         {
-            FLineHeight = (byte)ALineHeight;
-            Width = AWidth;
-            Height = ALineHeight;
+            base.ParseXml(aNode);
+            FLineHeight = byte.Parse(aNode.Attributes["height"].Value);
+            FLineStyle = (HCPenStyle)byte.Parse(aNode.Attributes["style"].Value);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["height"].Value = FLineHeight.ToString();
+            aNode.Attributes["style"].Value = ((byte)FLineStyle).ToString();
+        }
+
+        public HCLineItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData)
+        {
+            FLineHeight = 1;
+            Width = aWidth;
+            Height = aHeight;
             FLineStyle = HCPenStyle.psSolid;
             StyleNo = HCStyle.Line;
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FLineHeight = (Source as HCLineItem).LineHeight;
-            FLineStyle = (Source as HCLineItem).FLineStyle;
+            base.Assign(source);
+            FLineHeight = (source as HCLineItem).LineHeight;
+            FLineStyle = (source as HCLineItem).FLineStyle;
         }
 
         public HCPenStyle LineStyle

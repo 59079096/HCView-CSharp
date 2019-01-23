@@ -27,28 +27,28 @@ namespace HC.View
             return FText;
         }
 
-        protected override void SetText(string Value)
+        protected override void SetText(string value)
         {
-            if (FText != Value)
+            if (FText != value)
             {
-                FText = Value;
+                FText = value;
             }
         }
 
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, int ADataDrawTop, int ADataDrawBottom, 
-            int  ADataScreenTop, int  ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
+            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             // 绘制一维码
-            base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop, ADataScreenBottom,
-                ACanvas, APaintInfo);
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
+                aCanvas, aPaintInfo);
         }
 
-        public HCBarCodeItem(HCCustomData AOwnerData, string AText) : base(AOwnerData)
+        public HCBarCodeItem(HCCustomData aOwnerData, string aText) : base(aOwnerData)
         {
             StyleNo = HCStyle.BarCode;
             Width = 100;
             Height = 100;
-            SetText(AText);
+            SetText(aText);
         }
 
         ~HCBarCodeItem()
@@ -56,55 +56,32 @@ namespace HC.View
 
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
-            int vLen = System.Text.Encoding.Default.GetByteCount(FText);
-            if (vLen > ushort.MaxValue)
-                throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
-
-            ushort vSize = (ushort)vLen;
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-
-            if (vSize > 0)
-            {
-                vBuffer = System.Text.Encoding.Default.GetBytes(FText);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
-            }
+            base.SaveToStream(aStream, aStart, aEnd);
+            HC.HCSaveTextToStream(aStream, FText);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
-
-            ushort vSize = 0;
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
-            vSize = BitConverter.ToUInt16(vBuffer, 0);
-
-            if (vSize > 0)
-            {
-                vBuffer = new byte[vSize];
-                AStream.Read(vBuffer, 0, vBuffer.Length);
-                FText = System.Text.Encoding.Default.GetString(vBuffer);
-            }
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FText);
         }
 
         /// <summary> 约束到指定大小范围内 </summary>
-        public override void RestrainSize(int AWidth, int  AHeight)
+        public override void RestrainSize(int aWidth, int aHeight)
         {
-            if (Width > AWidth)
+            if (Width > aWidth)
             {
-                Single vBL = (float)Width / AWidth;
-                Width = AWidth;
+                Single vBL = (float)Width / aWidth;
+                Width = aWidth;
                 Height = (int)Math.Round(Height / vBL);
             }
 
-            if (Height > AHeight)
+            if (Height > aHeight)
             {
-                Single vBL = (float)Height / AHeight;
-                Height = AHeight;
+                Single vBL = (float)Height / aHeight;
+                Height = aHeight;
                 Width = (int)Math.Round(Width / vBL);
             }
         }

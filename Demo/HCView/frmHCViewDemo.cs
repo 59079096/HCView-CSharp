@@ -120,7 +120,7 @@ namespace HCViewDemo
                                 break;
 
                             case 2:
-                                FHCView.SaveAsPDF(vDlg.FileName);
+                                //FHCView.SaveAsPDF(vDlg.FileName);
                                 break;
                         }
                     }
@@ -183,7 +183,7 @@ namespace HCViewDemo
                 {
                     if (vOpenDlg.FileName != "")
                     {
-                        HCCustomRichData vTopData = FHCView.ActiveSectionTopLevelData();
+                        HCRichData vTopData = FHCView.ActiveSectionTopLevelData();
                         HCImageItem vImageItem = new HCImageItem(vTopData);
                         vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
                         vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
@@ -241,7 +241,7 @@ namespace HCViewDemo
         private void 批注ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (FHCView.ActiveSection.ActiveData.SelectExists())
-                FHCView.InsertAnnotate("aaaa");
+                FHCView.InsertAnnotate("title", "text");
         }
 
         private void 一维码ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -324,6 +324,27 @@ namespace HCViewDemo
             vHCRadioGroup.AddItem("选项2");
             vHCRadioGroup.AddItem("选项3");
             FHCView.InsertItem(vHCRadioGroup);
+        }
+
+        private void toolStripButton5_Click(object sender, EventArgs e)
+        {
+            FHCView.Undo();
+        }
+
+        private void toolStripButton6_Click(object sender, EventArgs e)
+        {
+            FHCView.Redo();
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            mniOpen_Click(sender, e);
+        }
+
+        private void toolStripButton2_Click(object sender, EventArgs e)
+        {
+            FHCView.FileName = "";
+            FHCView.Clear();
         }
     }
 }

@@ -17,19 +17,19 @@ using System.Drawing;
 
 namespace HC.View
 {
-    public delegate void OnTextStyle(int ACurStyleNo, ref HCTextStyle AWillStyle);
+    public delegate void OnTextStyle(int aCurStyleNo, ref HCTextStyle aWillStyle);
 
     public class HCStyleMatch  // 文本样式匹配类
     {
         private bool FAppend;  // True添加对应样式
         private OnTextStyle FOnTextStyle;
 
-        public virtual int GetMatchStyleNo(HCStyle AStyle, int ACurStyleNo)
+        public virtual int GetMatchStyleNo(HCStyle aStyle, int aCurStyleNo)
         {
             return HCStyle.Null;
         }
 
-        public virtual bool StyleHasMatch(HCStyle AStyle, int ACurStyleNo)
+        public virtual bool StyleHasMatch(HCStyle aStyle, int aCurStyleNo)
         {
             return false;
         }
@@ -51,13 +51,13 @@ namespace HC.View
     {
         private HCFontStyle FFontStyle;
 
-        public override int GetMatchStyleNo(HCStyle AStyle, int ACurStyleNo)
+        public override int GetMatchStyleNo(HCStyle aStyle, int aCurStyleNo)
         {
             int Result = HCStyle.Null;
             HCTextStyle vTextStyle = new HCTextStyle();
             try
             {
-                vTextStyle.AssignEx(AStyle.TextStyles[ACurStyleNo]);  // item当前的样式
+                vTextStyle.AssignEx(aStyle.TextStyles[aCurStyleNo]);  // item当前的样式
                 if (this.Append)
                 {
                     if (!vTextStyle.FontStyles.Contains((byte)FFontStyle))
@@ -72,19 +72,19 @@ namespace HC.View
                         vTextStyle.FontStyles.InClude((byte)FFontStyle);
                     }
                     else
-                        return ACurStyleNo;
+                        return aCurStyleNo;
                 }
                 else  // 减去
                 {
                     if (vTextStyle.FontStyles.Contains((byte)FFontStyle))
                         vTextStyle.FontStyles.ExClude((byte)FFontStyle);
                     else
-                        return ACurStyleNo;
+                        return aCurStyleNo;
                 }
 
                 if (this.OnTextStyle != null)
-                    this.OnTextStyle(ACurStyleNo, ref vTextStyle);
-                Result = AStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
+                    this.OnTextStyle(aCurStyleNo, ref vTextStyle);
+                Result = aStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
             }
             finally
             {
@@ -94,13 +94,13 @@ namespace HC.View
             return Result;
         }
 
-        public override bool StyleHasMatch(HCStyle AStyle, int ACurStyleNo)
+        public override bool StyleHasMatch(HCStyle aStyle, int aCurStyleNo)
         {
             bool Result = false;
             HCTextStyle vTextStyle = new HCTextStyle();
             try
             {
-                vTextStyle.AssignEx(AStyle.TextStyles[ACurStyleNo]);  // item当前的样式
+                vTextStyle.AssignEx(aStyle.TextStyles[aCurStyleNo]);  // item当前的样式
                 Result = vTextStyle.FontStyles.Contains((byte)FFontStyle);
             }
             finally
@@ -121,23 +121,23 @@ namespace HC.View
     {
         private string FFontName;
 
-        public override int GetMatchStyleNo(HCStyle AStyle, int ACurStyleNo)
+        public override int GetMatchStyleNo(HCStyle aStyle, int aCurStyleNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.TextStyles[ACurStyleNo].Family == FFontName)
+            if (aStyle.TextStyles[aCurStyleNo].Family == FFontName)
             {
-                Result = ACurStyleNo;
+                Result = aCurStyleNo;
                 return Result;
             }
             HCTextStyle vTextStyle = new HCTextStyle();
             try
             {
-                vTextStyle.AssignEx(AStyle.TextStyles[ACurStyleNo]);  // item当前的样式
+                vTextStyle.AssignEx(aStyle.TextStyles[aCurStyleNo]);  // item当前的样式
                 vTextStyle.Family = FFontName;
                 if (this.OnTextStyle != null)
-                    this.OnTextStyle(ACurStyleNo, ref vTextStyle);
+                    this.OnTextStyle(aCurStyleNo, ref vTextStyle);
             
-                Result = AStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
+                Result = aStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
             }
             finally
             {
@@ -158,22 +158,22 @@ namespace HC.View
     {
         private Single FFontSize;
 
-        public override int GetMatchStyleNo(HCStyle AStyle, int ACurStyleNo)
+        public override int GetMatchStyleNo(HCStyle aStyle, int aCurStyleNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.TextStyles[ACurStyleNo].Size == FFontSize)
+            if (aStyle.TextStyles[aCurStyleNo].Size == FFontSize)
             {
-                Result = ACurStyleNo;
+                Result = aCurStyleNo;
                 return Result;
             }
             HCTextStyle vTextStyle = new HCTextStyle();
             try
             {
-                vTextStyle.AssignEx(AStyle.TextStyles[ACurStyleNo]);  // item当前的样式
+                vTextStyle.AssignEx(aStyle.TextStyles[aCurStyleNo]);  // item当前的样式
                 vTextStyle.Size = FFontSize;
                 if (this.OnTextStyle != null)
-                    this.OnTextStyle(ACurStyleNo, ref vTextStyle);
-                Result = AStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
+                    this.OnTextStyle(aCurStyleNo, ref vTextStyle);
+                Result = aStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
             }
             finally
             {
@@ -194,22 +194,22 @@ namespace HC.View
     {
         private Color FColor;
 
-        public override int GetMatchStyleNo(HCStyle AStyle, int ACurStyleNo)
+        public override int GetMatchStyleNo(HCStyle aStyle, int aCurStyleNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.TextStyles[ACurStyleNo].Color == FColor)
+            if (aStyle.TextStyles[aCurStyleNo].Color == FColor)
             {
-                Result = ACurStyleNo;
+                Result = aCurStyleNo;
                 return Result;
             }
             HCTextStyle vTextStyle = new HCTextStyle();
             try
             {
-                vTextStyle.AssignEx(AStyle.TextStyles[ACurStyleNo]);  // item当前的样式
+                vTextStyle.AssignEx(aStyle.TextStyles[aCurStyleNo]);  // item当前的样式
                 vTextStyle.Color = FColor;
                 if (this.OnTextStyle != null)
-                    this.OnTextStyle(ACurStyleNo, ref vTextStyle);
-                Result = AStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
+                    this.OnTextStyle(aCurStyleNo, ref vTextStyle);
+                Result = aStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
             }
             finally
             {
@@ -230,22 +230,22 @@ namespace HC.View
     {
         private Color FColor;
 
-        public override int GetMatchStyleNo(HCStyle AStyle, int ACurStyleNo)
+        public override int GetMatchStyleNo(HCStyle aStyle, int aCurStyleNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.TextStyles[ACurStyleNo].BackColor == FColor)
+            if (aStyle.TextStyles[aCurStyleNo].BackColor == FColor)
             {
-                Result = ACurStyleNo;
+                Result = aCurStyleNo;
                 return Result;
             }
             HCTextStyle vTextStyle = new HCTextStyle();
             try
             {
-                vTextStyle.AssignEx(AStyle.TextStyles[ACurStyleNo]);  // item当前的样式
+                vTextStyle.AssignEx(aStyle.TextStyles[aCurStyleNo]);  // item当前的样式
                 vTextStyle.BackColor = FColor;
                 if (this.OnTextStyle != null)
-                    this.OnTextStyle(ACurStyleNo, ref vTextStyle);
-                Result = AStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
+                    this.OnTextStyle(aCurStyleNo, ref vTextStyle);
+                Result = aStyle.GetStyleNo(vTextStyle, true);  // 新样式编号
             }
             finally
             {
@@ -266,7 +266,7 @@ namespace HC.View
     {
         private bool FJoin;  // 添加对应样式
 
-        public virtual int GetMatchParaNo(HCStyle AStyle, int ACurParaNo)
+        public virtual int GetMatchParaNo(HCStyle aStyle, int aCurParaNo)
         {
             return HCStyle.Null;
         }
@@ -282,21 +282,21 @@ namespace HC.View
     {
         private ParaAlignHorz FAlign;
 
-        public override int GetMatchParaNo(HCStyle AStyle, int ACurParaNo)
+        public override int GetMatchParaNo(HCStyle aStyle, int aCurParaNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.ParaStyles[ACurParaNo].AlignHorz == FAlign)
+            if (aStyle.ParaStyles[aCurParaNo].AlignHorz == FAlign)
             {
-                Result = ACurParaNo;
+                Result = aCurParaNo;
                 return Result;
             }
 
             HCParaStyle vParaStyle = new HCParaStyle();
             try
             {
-                vParaStyle.AssignEx(AStyle.ParaStyles[ACurParaNo]);
+                vParaStyle.AssignEx(aStyle.ParaStyles[aCurParaNo]);
                 vParaStyle.AlignHorz = FAlign;
-                Result = AStyle.GetParaNo(vParaStyle, true);  // 新段样式
+                Result = aStyle.GetParaNo(vParaStyle, true);  // 新段样式
             }
             finally
             {
@@ -317,21 +317,21 @@ namespace HC.View
     {
         private ParaAlignVert FAlign;
 
-        public override int GetMatchParaNo(HCStyle AStyle, int ACurParaNo)
+        public override int GetMatchParaNo(HCStyle aStyle, int aCurParaNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.ParaStyles[ACurParaNo].AlignVert == FAlign)
+            if (aStyle.ParaStyles[aCurParaNo].AlignVert == FAlign)
             {
-                Result = ACurParaNo;
+                Result = aCurParaNo;
                 return Result;
             }
 
             HCParaStyle vParaStyle = new HCParaStyle();
             try
             {
-                vParaStyle.AssignEx(AStyle.ParaStyles[ACurParaNo]);
+                vParaStyle.AssignEx(aStyle.ParaStyles[aCurParaNo]);
                 vParaStyle.AlignVert = FAlign;
-                Result = AStyle.GetParaNo(vParaStyle, true);  // 新段样式
+                Result = aStyle.GetParaNo(vParaStyle, true);  // 新段样式
             }
             finally
             {
@@ -352,21 +352,21 @@ namespace HC.View
     {
         private ParaLineSpaceMode FSpaceMode;
 
-        public override int GetMatchParaNo(HCStyle AStyle, int ACurParaNo)
+        public override int GetMatchParaNo(HCStyle aStyle, int aCurParaNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.ParaStyles[ACurParaNo].LineSpaceMode == FSpaceMode)
+            if (aStyle.ParaStyles[aCurParaNo].LineSpaceMode == FSpaceMode)
             {
-                Result = ACurParaNo;
+                Result = aCurParaNo;
                 return Result;
             }
 
             HCParaStyle vParaStyle = new HCParaStyle();
             try
             {
-                vParaStyle.AssignEx(AStyle.ParaStyles[ACurParaNo]);
+                vParaStyle.AssignEx(aStyle.ParaStyles[aCurParaNo]);
                 vParaStyle.LineSpaceMode = FSpaceMode;
-                Result = AStyle.GetParaNo(vParaStyle, true);  // 新段样式
+                Result = aStyle.GetParaNo(vParaStyle, true);  // 新段样式
             }
             finally
             {
@@ -387,21 +387,21 @@ namespace HC.View
     {
         private Color FBackColor;
 
-        public override int GetMatchParaNo(HCStyle AStyle, int ACurParaNo)
+        public override int GetMatchParaNo(HCStyle aStyle, int aCurParaNo)
         {
             int Result = HCStyle.Null;
-            if (AStyle.ParaStyles[ACurParaNo].BackColor == FBackColor)
+            if (aStyle.ParaStyles[aCurParaNo].BackColor == FBackColor)
             {
-                Result = ACurParaNo;
+                Result = aCurParaNo;
                 return Result;
             }
 
             HCParaStyle vParaStyle = new HCParaStyle();
             try
             {
-                vParaStyle.AssignEx(AStyle.ParaStyles[ACurParaNo]);
+                vParaStyle.AssignEx(aStyle.ParaStyles[aCurParaNo]);
                 vParaStyle.BackColor = FBackColor;
-                Result = AStyle.GetParaNo(vParaStyle, true);  // 新段样式
+                Result = aStyle.GetParaNo(vParaStyle, true);  // 新段样式
             }
             finally
             {

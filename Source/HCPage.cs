@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace HC.View
 {
-    class HCPageSize : HCObject
+    public class HCPageSize : HCObject
     {
         private Single FPixelsPerMMX, FPixelsPerMMY;  // 1毫米像素数
         private PaperKind FPaperKind;  // 纸张大小如A4、B5等
@@ -27,11 +27,11 @@ namespace HC.View
         private Single FPaperMarginTop, FPaperMarginLeft, FPaperMarginRight, FPaperMarginBottom;  // 纸张边距（单位mm）
         private int FPageMarginTopPix, FPageMarginLeftPix, FPageMarginRightPix, FPageMarginBottomPix;  // 页边距
 
-        protected void SetPaperKind(PaperKind Value)
+        protected void SetPaperKind(PaperKind value)
         {
-            if (FPaperKind != Value)
+            if (FPaperKind != value)
             {
-                FPaperKind = Value;
+                FPaperKind = value;
 
                 switch (FPaperKind )
                 {
@@ -47,46 +47,46 @@ namespace HC.View
             }
         }
 
-        protected void SetPaperWidth(Single Value)
+        protected void SetPaperWidth(Single value)
         {
-            FPaperWidth = Value;
+            FPaperWidth = value;
             FPageWidthPix = (int)Math.Round(FPaperWidth * FPixelsPerMMX);
         }
 
-        protected void SetPaperHeight(Single Value)
+        protected void SetPaperHeight(Single value)
         {
-            FPaperHeight = Value;
+            FPaperHeight = value;
             FPageHeightPix = (int)Math.Round(FPaperHeight * FPixelsPerMMY);
         }
 
-        protected void SetPaperMarginTop(Single Value)
+        protected void SetPaperMarginTop(Single value)
         {
-            FPaperMarginTop = Value;
+            FPaperMarginTop = value;
             FPageMarginTopPix = (int)Math.Round(FPaperMarginTop * FPixelsPerMMY);
         }
 
-        protected void SetPaperMarginLeft(Single Value)
+        protected void SetPaperMarginLeft(Single value)
         {
-            FPaperMarginLeft = Value;
+            FPaperMarginLeft = value;
             FPageMarginLeftPix = (int)Math.Round(FPaperMarginLeft * FPixelsPerMMX);
         }
 
-        protected void SetPaperMarginRight(Single Value)
+        protected void SetPaperMarginRight(Single value)
         {
-            FPaperMarginRight = Value;
+            FPaperMarginRight = value;
             FPageMarginRightPix = (int)Math.Round(FPaperMarginRight * FPixelsPerMMX);
         }
 
-        protected void SetPaperMarginBottom(Single Value)
+        protected void SetPaperMarginBottom(Single value)
         {
-            FPaperMarginBottom = Value;
+            FPaperMarginBottom = value;
             FPageMarginBottomPix = (int)Math.Round(FPaperMarginBottom * FPixelsPerMMY);
         }
 
-        public HCPageSize(Single APixelsPerMMX, Single APixelsPerMMY)  // 屏幕1英寸dpi数
+        public HCPageSize(Single aPixelsPerMMX, Single aPixelsPerMMY)  // 屏幕1英寸dpi数
         {  
-            FPixelsPerMMX = APixelsPerMMX;
-            FPixelsPerMMY = APixelsPerMMY;
+            FPixelsPerMMX = aPixelsPerMMX;
+            FPixelsPerMMY = aPixelsPerMMY;
             PaperMarginLeft = 25;
             PaperMarginTop = 25;
             PaperMarginRight = 20;
@@ -94,78 +94,78 @@ namespace HC.View
             PaperKind = PaperKind.A4;  // 默认A4 210 297
         }
 
-        public void SaveToStream(Stream AStream)
+        public void SaveToStream(Stream aStream)
         {
             Int64 vBegPos, vEndPos;
-            vBegPos = AStream.Position;
+            vBegPos = aStream.Position;
 
             byte[] vBuffer = System.BitConverter.GetBytes(vBegPos);
-            AStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位
+            aStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位
 
             vBuffer = System.BitConverter.GetBytes((int)FPaperKind);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = System.BitConverter.GetBytes(FPaperWidth);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = System.BitConverter.GetBytes(FPaperHeight);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = System.BitConverter.GetBytes(FPaperMarginLeft);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = System.BitConverter.GetBytes(FPaperMarginTop);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = System.BitConverter.GetBytes(FPaperMarginRight);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = System.BitConverter.GetBytes(FPaperMarginBottom);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
   
-            vEndPos = AStream.Position;
-            AStream.Position = vBegPos;
+            vEndPos = aStream.Position;
+            aStream.Position = vBegPos;
             vBegPos = vEndPos - vBegPos - Marshal.SizeOf(vBegPos);
 
             vBuffer = System.BitConverter.GetBytes(vBegPos);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-            AStream.Position = vEndPos;
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Position = vEndPos;
         }
 
-        public void LoadToStream(Stream AStream, ushort AFileVersion)
+        public void LoadToStream(Stream aStream, ushort aFileVersion)
         {
             Int64 vDataSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vDataSize);
 
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             vDataSize = System.BitConverter.ToInt64(vBuffer, 0);
 
             vBuffer = System.BitConverter.GetBytes((int)FPaperKind);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             PaperKind = (PaperKind)BitConverter.ToInt32(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FPaperWidth);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             PaperWidth = System.BitConverter.ToSingle(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FPaperHeight);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             PaperHeight = System.BitConverter.ToSingle(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FPaperMarginLeft);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             PaperMarginLeft = System.BitConverter.ToSingle(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FPaperMarginTop);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             PaperMarginTop = System.BitConverter.ToSingle(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FPaperMarginRight);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             PaperMarginRight = System.BitConverter.ToSingle(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FPaperMarginBottom);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             PaperMarginBottom = System.BitConverter.ToSingle(vBuffer, 0);
         }
 
@@ -250,18 +250,35 @@ namespace HC.View
 
     public class HCPage
     {
-        public int StartDrawItemNo, EndDrawItemNo;    // 起始，结束item
+        private int FStartDrawItemNo, FEndDrawItemNo;    // 起始，结束item
 
         public HCPage()
         {
-            StartDrawItemNo = -1;    // 起始item
-            EndDrawItemNo = -1;      // 结束item
+            Clear();
         }
 
-        public void Assign(HCPage Source)
+        public void Assign(HCPage source)
         {
-            StartDrawItemNo = Source.StartDrawItemNo;  // 起始item
-            EndDrawItemNo = Source.EndDrawItemNo;  // 结束item
+            FStartDrawItemNo = source.StartDrawItemNo;  // 起始item
+            FEndDrawItemNo = source.EndDrawItemNo;  // 结束item
+        }
+
+        public void Clear()
+        {
+            FStartDrawItemNo = 0;
+            FEndDrawItemNo = 0;
+        }
+
+        public int StartDrawItemNo
+        {
+            get { return FStartDrawItemNo; }
+            set { FStartDrawItemNo = value; }
+        }
+
+        public int EndDrawItemNo
+        {
+            get { return FEndDrawItemNo; }
+            set { FEndDrawItemNo = value; }
         }
     }
 
@@ -270,6 +287,7 @@ namespace HC.View
         public void ClearEx()
         {
             this.RemoveRange(1, this.Count - 1);
+            this[0].Clear();
         }
     }
 }

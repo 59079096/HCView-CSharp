@@ -19,9 +19,7 @@ namespace HC.View
 {
     public delegate HCCustomData GetRootDataEventHandler();
 
-    public delegate bool GetEnableUndoEventHandler();
-
-    public class HCTableCellData : HCRichData
+    public class HCTableCellData : HCViewData
     {
 
         private bool FActive;
@@ -35,11 +33,9 @@ namespace HC.View
 
         private GetRootDataEventHandler FOnGetRootData;
 
-        private GetEnableUndoEventHandler FOnGetEnableUndo;
-
-        private bool PointInCellRect(POINT APt)
+        private bool PointInCellRect(POINT aPt)
         {
-            return HC.PtInRect(HC.Bounds(0, 0, Width, FCellHeight), APt);
+            return HC.PtInRect(HC.Bounds(0, 0, Width, FCellHeight), aPt);
         }
 
         protected override int GetHeight()
@@ -68,23 +64,15 @@ namespace HC.View
             return Result;
         }
 
-        protected override void _FormatReadyParam(int AStartItemNo, ref int APrioDrawItemNo, ref POINT APos)
+        protected override void _FormatReadyParam(int aStartItemNo, ref int aPrioDrawItemNo, ref POINT aPos)
         {
-            base._FormatReadyParam(AStartItemNo, ref APrioDrawItemNo, ref APos);
+            base._FormatReadyParam(aStartItemNo, ref aPrioDrawItemNo, ref aPos);
         }
 
-        protected override bool EnableUndo()
+        protected void SetActive(bool value)
         {
-            if (FOnGetEnableUndo != null)
-                return FOnGetEnableUndo();
-            else
-                return base.EnableUndo();
-        }
-
-        protected void SetActive(bool Value)
-        {
-            if (FActive != Value)
-                FActive = Value;
+            if (FActive != value)
+                FActive = value;
 
             if (!FActive)
             {
@@ -94,8 +82,8 @@ namespace HC.View
             }
         }
 
-        public HCTableCellData(HCStyle AStyle)
-            : base(AStyle)
+        public HCTableCellData(HCStyle aStyle)
+            : base(aStyle)
         {
 
         }
@@ -109,20 +97,20 @@ namespace HC.View
         }
 
         /// <summary> 坐标是否在AItem的选中区域中 </summary>
-        public override bool CoordInSelect(int X, int Y, int  AItemNo, int AOffset, bool ARestrain)
+        public override bool CoordInSelect(int x, int y, int  aItemNo, int aOffset, bool aRestrain)
         {
             if (FCellSelectedAll)
-                return PointInCellRect(new POINT(X, Y));
+                return PointInCellRect(new POINT(x, y));
             else
-                return base.CoordInSelect(X, Y, AItemNo, AOffset, ARestrain);
+                return base.CoordInSelect(x, y, aItemNo, aOffset, aRestrain);
         }
 
         /// <summary> 返回指定坐标下的Item和Offset </summary>
-        public override void GetItemAt(int X, int Y, ref int AItemNo, ref int AOffset, ref int ADrawItemNo, ref bool ARestrain)
+        public override void GetItemAt(int x, int y, ref int aItemNo, ref int aOffset, ref int aDrawItemNo, ref bool aRestrain)
         {
-            base.GetItemAt(X, Y, ref AItemNo, ref AOffset, ref ADrawItemNo, ref ARestrain);
+            base.GetItemAt(x, y, ref aItemNo, ref aOffset, ref aDrawItemNo, ref aRestrain);
             if (FCellSelectedAll)
-                ARestrain = !PointInCellRect(new POINT(X, Y));
+                aRestrain = !PointInCellRect(new POINT(x, y));
         }
 
         public override HCCustomData GetRootData()
@@ -218,12 +206,6 @@ namespace HC.View
         {
             get { return FOnGetRootData; }
             set { FOnGetRootData = value; }
-        }
-
-        public GetEnableUndoEventHandler OnGetEnableUndo
-        {
-            get { return FOnGetEnableUndo; }
-            set { FOnGetEnableUndo = value; }
         }
     }
 }

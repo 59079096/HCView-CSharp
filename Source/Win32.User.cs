@@ -910,7 +910,8 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern int SetSysColors(int nChanges, ref int lpSysColor, ref int lpColorValues);
 		[DllImport("user32")] public static extern int SetSystemCursor(HANDLE hcur, int id);
 		[DllImport("user32")] public static extern int SetThreadDesktop(HANDLE hDesktop);
-		[DllImport("user32")] public static extern int SetTimer(HWND hwnd, int nIDEvent, int uElapse, ref int lpTimerFunc);
+		//[DllImport("user32")] public static extern int SetTimer(HWND hwnd, int nIDEvent, int uElapse, ref int lpTimerFunc);
+        [DllImport("user32")] public static extern int SetTimer(HWND hwnd, int nIDEvent, int uElapse, IntPtr lpTimerFunc);
 		[DllImport("user32")] public static extern int SetUserObjectInformation(HANDLE hObj, int nIndex, IntPtr pvInfo, int nLength);
 		[DllImport("user32")] public static extern int SetUserObjectSecurity(HANDLE hObj, ref int pSIRequested, ref SECURITY_DESCRIPTOR pSd);
 		[DllImport("user32")] public static extern int SetWindowContextHelpId(HWND hwnd, int dw);

@@ -326,7 +326,7 @@ namespace HC.View
             }
         }
 
-        public HCScrollBar()
+        public HCScrollBar() : base()
         {
             SetStyle(ControlStyles.Selectable, false);
             FMin = 0;
@@ -339,6 +339,7 @@ namespace HC.View
             Height = 20;
 
             FOrientation = Orientation.oriHorizontal;
+            this.Cursor = Cursors.Default;
         }
 
         ~HCScrollBar()

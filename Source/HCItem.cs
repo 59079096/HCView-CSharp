@@ -17,6 +17,7 @@ using System.Drawing.Drawing2D;
 using System.Text;
 using System.IO;
 using HC.Win32;
+using System.Xml;
 
 namespace HC.View
 {
@@ -32,6 +33,11 @@ namespace HC.View
     public enum ItemOption : byte 
     { 
         ioParaFirst, ioSelectPart, ioSelectComplate 
+    }
+
+    public enum HCItemAction : byte
+    {
+        hiaRemove, hiaInsertChar, hiaBackDeleteChar, hiaDeleteChar
     }
 
     public class PaintInfo : HCObject
@@ -56,54 +62,54 @@ namespace HC.View
            
         }
 
-        public ScaleInfo ScaleCanvas(HCCanvas ACanvas)
+        public ScaleInfo ScaleCanvas(HCCanvas aCanvas)
         {
             ScaleInfo Result = new ScaleInfo();
-            Result.MapMode = GDI.GetMapMode(ACanvas.Handle);  // 返回映射方式，零则失败
-            GDI.SetMapMode(ACanvas.Handle, GDI.MM_ANISOTROPIC);  // 逻辑单位转换成具有任意比例轴的任意单位，用SetWindowsEx和SetViewportExtEx函数指定单位、方向和需要的比例
-            GDI.SetWindowOrgEx(ACanvas.Handle, 0, 0, ref Result.WindowOrg);  // 用指定的坐标设置设备环境的窗口原点
-            GDI.SetWindowExtEx(ACanvas.Handle, FWindowWidth, FWindowHeight, ref Result.WindowExt);  // 为设备环境设置窗口的水平的和垂直的范围
+            Result.MapMode = GDI.GetMapMode(aCanvas.Handle);  // 返回映射方式，零则失败
+            GDI.SetMapMode(aCanvas.Handle, GDI.MM_ANISOTROPIC);  // 逻辑单位转换成具有任意比例轴的任意单位，用SetWindowsEx和SetViewportExtEx函数指定单位、方向和需要的比例
+            GDI.SetWindowOrgEx(aCanvas.Handle, 0, 0, ref Result.WindowOrg);  // 用指定的坐标设置设备环境的窗口原点
+            GDI.SetWindowExtEx(aCanvas.Handle, FWindowWidth, FWindowHeight, ref Result.WindowExt);  // 为设备环境设置窗口的水平的和垂直的范围
 
-            GDI.SetViewportOrgEx(ACanvas.Handle, 0, 0, ref Result.ViewportOrg);  // 哪个设备点映射到窗口原点(0,0)
+            GDI.SetViewportOrgEx(aCanvas.Handle, 0, 0, ref Result.ViewportOrg);  // 哪个设备点映射到窗口原点(0,0)
             // 用指定的值来设置指定设备环境坐标的X轴、Y轴范围
-            GDI.SetViewportExtEx(ACanvas.Handle, (int)Math.Round(FWindowWidth * FScaleX),
+            GDI.SetViewportExtEx(aCanvas.Handle, (int)Math.Round(FWindowWidth * FScaleX),
                 (int)Math.Round(FWindowHeight * FScaleY), ref Result.ViewportExt);
 
             return Result;
         }
 
-        public void RestoreCanvasScale(HCCanvas ACanvas, ScaleInfo AOldInfo)
+        public void RestoreCanvasScale(HCCanvas aCanvas, ScaleInfo aOldInfo)
         {
             POINT pt = new POINT();
             SIZE size = new SIZE();
-            GDI.SetViewportOrgEx(ACanvas.Handle, AOldInfo.ViewportOrg.X, AOldInfo.ViewportOrg.Y, ref pt);
-            GDI.SetViewportExtEx(ACanvas.Handle, AOldInfo.ViewportExt.cx, AOldInfo.ViewportExt.cy, ref size);
-            GDI.SetWindowOrgEx(ACanvas.Handle, AOldInfo.WindowOrg.X, AOldInfo.WindowOrg.Y, ref pt);
-            GDI.SetWindowExtEx(ACanvas.Handle, AOldInfo.WindowExt.cx, AOldInfo.WindowExt.cy, ref size);
-            GDI.SetMapMode(ACanvas.Handle, AOldInfo.MapMode);
+            GDI.SetViewportOrgEx(aCanvas.Handle, aOldInfo.ViewportOrg.X, aOldInfo.ViewportOrg.Y, ref pt);
+            GDI.SetViewportExtEx(aCanvas.Handle, aOldInfo.ViewportExt.cx, aOldInfo.ViewportExt.cy, ref size);
+            GDI.SetWindowOrgEx(aCanvas.Handle, aOldInfo.WindowOrg.X, aOldInfo.WindowOrg.Y, ref pt);
+            GDI.SetWindowExtEx(aCanvas.Handle, aOldInfo.WindowExt.cx, aOldInfo.WindowExt.cy, ref size);
+            GDI.SetMapMode(aCanvas.Handle, aOldInfo.MapMode);
         }
 
-        public int GetScaleX(int AValue)
+        public int GetScaleX(int aValue)
         {
-            return (int)Math.Round(AValue * FScaleX);
+            return (int)Math.Round(aValue * FScaleX);
         }
 
-        public int GetScaleY(int AValue)
+        public int GetScaleY(int aValue)
         {
-            return (int)Math.Round(AValue * FScaleY);
+            return (int)Math.Round(aValue * FScaleY);
         }
 
-        public void DrawNoScaleLine(HCCanvas ACanvas, Point[] APoints)
+        public void DrawNoScaleLine(HCCanvas aCanvas, Point[] aPoints)
         {
             SIZE size = new SIZE();
-            GDI.SetViewportExtEx(ACanvas.Handle, FWindowWidth, FWindowHeight, ref size);
+            GDI.SetViewportExtEx(aCanvas.Handle, FWindowWidth, FWindowHeight, ref size);
             try
             {
-                ACanvas.DrawLines(APoints);
+                aCanvas.DrawLines(aPoints);
             }
             finally
             {
-                GDI.SetViewportExtEx(ACanvas.Handle, (int)Math.Round(FWindowWidth * FScaleX),
+                GDI.SetViewportExtEx(aCanvas.Handle, (int)Math.Round(FWindowWidth * FScaleX),
                     (int)Math.Round(FWindowHeight * FScaleY), ref size);
             }
         }
@@ -191,6 +197,13 @@ namespace HC.View
 
         protected virtual void SetText(string Value) { }
 
+        protected virtual string GetHyperLink()
+        {
+            return "";
+        }
+
+        protected virtual void SetHyperLink(string value) { }
+
         protected virtual void SetActive(bool Value)
         {
             FActive = Value;
@@ -201,9 +214,9 @@ namespace HC.View
             return 0;
         }
 
-        protected virtual void DoPaint(HCStyle AStyle, RECT ADrawRect,
-            int ADataDrawTop, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom,
-            HCCanvas ACanvas, PaintInfo APaintInfo) { }
+        protected virtual void DoPaint(HCStyle aStyle, RECT aDrawRect,
+            int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            HCCanvas aCanvas, PaintInfo aPaintInfo) { }
 
         public HCCustomItem()
         {
@@ -215,38 +228,39 @@ namespace HC.View
             FActive = false;
         }
 
-        public virtual void Assign(HCCustomItem Source)
+        public virtual void Assign(HCCustomItem source)
         {
-            this.FStyleNo = Source.StyleNo;
-            this.FParaNo = Source.ParaNo;
-            this.FOptions = Source.Options;
+            this.FStyleNo = source.StyleNo;
+            this.FParaNo = source.ParaNo;
+            this.FOptions = source.Options;
         }
 
         /// <summary>
         /// 绘制Item的事件
         /// </summary>
         /// <param name="ACanvas"></param>
-        /// <param name="ADrawRect">当前DrawItem的区域</param>
+        /// <param name="aDrawRect">当前DrawItem的区域</param>
         /// <param name="ADataDrawBottom">Item所在的Data本次绘制底部位置</param>
         /// <param name="ADataScreenTop"></param>
         /// <param name="ADataScreenBottom"></param>
-        public void PaintTo(HCStyle AStyle, RECT ADrawRect,
+        public void PaintTo(HCStyle aStyle, RECT aDrawRect,
             int APageDataDrawTop, int APageDataDrawBottom, int APageDataScreenTop, int APageDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)  // 不可继承
         {
             int vDCState = ACanvas.Save();
             try
             {
-                DoPaint(AStyle, ADrawRect, APageDataDrawTop, APageDataDrawBottom,
+                DoPaint(aStyle, aDrawRect, APageDataDrawTop, APageDataDrawBottom,
                     APageDataScreenTop, APageDataScreenBottom, ACanvas, APaintInfo);
             }
             finally
             {
                 ACanvas.Restore(vDCState);
+                ACanvas.Refresh();  // 处理下一个使用Pen时修改Pen的属性值和当前属性值一样时，不会触发Canvas重新SelectPen导致Pen的绘制失效的问题
             }
         }
 
-        public virtual void PaintTop(HCCanvas ACanvas) { }
+        public virtual void PaintTop(HCCanvas aCanvas) { }
 
         /// <summary>
         /// 将2个Item合并为同一个
@@ -254,9 +268,9 @@ namespace HC.View
         /// <param name="AItemA">ItemA</param>
         /// <param name="AItemB">ItemB</param>
         /// <returns>True合并成功，否则返回False</returns>
-        public virtual bool CanConcatItems(HCCustomItem AItem)
+        public virtual bool CanConcatItems(HCCustomItem aItem)
         {
-            return ((this.GetType() == AItem.GetType()) && (this.FStyleNo == AItem.StyleNo));
+            return ((this.GetType() == aItem.GetType()) && (this.FStyleNo == aItem.StyleNo));
         }
 
         public virtual void DisSelect()
@@ -304,10 +318,15 @@ namespace HC.View
             FOptions.Add(ItemOption.ioSelectPart);
         }
 
+        public virtual bool CanAccept(int aOffset, HCItemAction aAction)
+        {
+            return true;
+        }
+
         /// <summary> 从指定位置将当前item分成前后两部分 </summary>
-        /// <param name="AOffset">分裂位置</param>
+        /// <param name="aOffset">分裂位置</param>
         /// <returns>后半部分对应的Item</returns>
-        public virtual HCCustomItem BreakByOffset(int AOffset)
+        public virtual HCCustomItem BreakByOffset(int aOffset)
         {
             HCCustomItem Result = Activator.CreateInstance(this.GetType()) as HCCustomItem;
             Result.Assign(this);
@@ -316,47 +335,58 @@ namespace HC.View
             return Result;
         }
 
-        public void SaveToStream(Stream AStream)
+        public void SaveToStream(Stream aStream)
         {
-            SaveToStream(AStream, 0, this.Length);
+            SaveToStream(aStream, 0, this.Length);
         }
 
-        public virtual void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public virtual void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             byte[] buffer = System.BitConverter.GetBytes(FStyleNo);
-            AStream.Write(buffer, 0, buffer.Length);
+            aStream.Write(buffer, 0, buffer.Length);
 
             buffer = System.BitConverter.GetBytes(FParaNo);
-            AStream.Write(buffer, 0, buffer.Length);
+            aStream.Write(buffer, 0, buffer.Length);
 
             bool vParFirst = ParaFirst;
             buffer = System.BitConverter.GetBytes(vParFirst);
-            AStream.Write(buffer, 0, buffer.Length);
+            aStream.Write(buffer, 0, buffer.Length);
         }
 
-        public virtual void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public virtual void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             byte[] vBuffer = BitConverter.GetBytes(FParaNo);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FParaNo = System.BitConverter.ToInt32(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(ParaFirst);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             ParaFirst = BitConverter.ToBoolean(vBuffer, 0);
         }
 
-        // 撤销重做相关方法
-        public void Undo(object AObject)
+        public virtual string ToHtml(string aPath)
         {
-            if (AObject is HCUndoList)
-                (AObject as HCUndoList).Undo();
+            return "";
         }
 
-        public void Redo(object AObject)
+        public virtual void ToXml(XmlElement aNode)
         {
-            if (AObject is HCUndoList)
-                (AObject as HCUndoList).Redo();
+            aNode.Attributes["sno"].Value = FStyleNo.ToString();
+            aNode.Attributes["pno"].Value = FParaNo.ToString();
+            aNode.Attributes["parafirst"].Value = this.ParaFirst.ToString();
         }
+
+        public virtual void ParseXml(XmlElement aNode)
+        {
+            FStyleNo = int.Parse(aNode.Attributes["sno"].Value);
+            FParaNo = int.Parse(aNode.Attributes["pno"].Value);
+            this.ParaFirst = bool.Parse(aNode.Attributes["parafirst"].Value);
+        }
+
+        // 撤销重做相关方法
+        public virtual void Undo(HCCustomUndoAction aUndoAction) { }
+
+        public virtual void Redo(HCCustomUndoAction aRedoAction) { }
 
         public HashSet<ItemOption> Options
         {
@@ -378,6 +408,12 @@ namespace HC.View
         {
             get { return GetParaFirst(); }
             set { SetParaFirst(value); }
+        }
+
+        public string HyperLink
+        {
+            get { return GetHyperLink(); }
+            set { SetHyperLink(value); }
         }
 
         public bool IsSelectComplate
@@ -421,27 +457,40 @@ namespace HC.View
         }
     }
 
-    public delegate void ItemNotifyEventHandler(HCCustomItem AItem);
+    public delegate void ItemNotifyEventHandler(HCCustomItem aItem);
 
     public class HCItems : HCList<HCCustomItem>
     {
-        private ItemNotifyEventHandler FOnItemInsert;
+        private ItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
 
         private void HCItems_OnInsert(object sender, NListEventArgs<HCCustomItem> e)
         {
-            if (FOnItemInsert != null)
-                FOnItemInsert(e.Item);
+            if (FOnInsertItem != null)
+                FOnInsertItem(e.Item);
+        }
+
+        private void HCItems_OnRemove(object sender, NListEventArgs<HCCustomItem> e)
+        {
+            if (FOnRemoveItem != null)
+                FOnRemoveItem(e.Item);
         }
         
         public HCItems()
         {
             this.OnInsert += new EventHandler<NListEventArgs<HCCustomItem>>(HCItems_OnInsert);
+            this.OnDelete += new EventHandler<NListEventArgs<HCCustomItem>>(HCItems_OnRemove);
         }
 
-        public ItemNotifyEventHandler OnItemInsert
+        public ItemNotifyEventHandler OnInsertItem
         {
-            get { return FOnItemInsert; }
-            set { FOnItemInsert = value; }
+            get { return FOnInsertItem; }
+            set { FOnInsertItem = value; }
+        }
+
+        public ItemNotifyEventHandler OnRemoveItem
+        {
+            get { return FOnRemoveItem; }
+            set { FOnRemoveItem = value; }
         }
     }
 }

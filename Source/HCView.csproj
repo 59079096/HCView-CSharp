@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HCAnnotateData.cs" />
     <Compile Include="HCBarCodeItem.cs" />
     <Compile Include="HCCanvas.cs" />
     <Compile Include="HCCheckBoxItem.cs" />
@@ -53,12 +54,11 @@
     </Compile>
     <Compile Include="HCCommon.cs" />
     <Compile Include="HCCustomData.cs" />
-    <Compile Include="HCCustomRichData.cs" />
     <Compile Include="HCDateTimePicker.cs" />
     <Compile Include="HCDrawItem.cs" />
     <Compile Include="HCEditItem.cs" />
     <Compile Include="HCExpressItem.cs" />
-    <Compile Include="HCFloatItem.cs" />
+    <Compile Include="HCCustomFloatItem.cs" />
     <Compile Include="HCFloatLineItem.cs" />
     <Compile Include="HCFractionItem.cs" />
     <Compile Include="HCGifItem.cs" />
@@ -71,6 +71,7 @@
     <Compile Include="HCRadioGroup.cs" />
     <Compile Include="HCRectItem.cs" />
     <Compile Include="HCRichData.cs" />
+    <Compile Include="HCViewData.cs" />
     <Compile Include="HCRichScrollBar.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -89,12 +90,13 @@
     <Compile Include="HCTextItem.cs" />
     <Compile Include="HCTextStyle.cs" />
     <Compile Include="HCUndo.cs" />
-    <Compile Include="HCUndoRichData.cs" />
+    <Compile Include="HCUndoData.cs" />
     <Compile Include="HCView.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="HCLineItem.cs" />
     <Compile Include="HCPageBreakItem.cs" />
+    <Compile Include="HCViewDevData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HCTabItem.cs" />
     <Compile Include="Win32.cs" />

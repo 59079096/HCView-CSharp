@@ -15,6 +15,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.IO;
+using System.Xml;
 
 namespace HC.View
 {
@@ -24,10 +25,10 @@ namespace HC.View
         pahLeft, pahRight, pahCenter, pahJustify, pahScatter
     }
 
-    /// <summary> 段垂直对齐方式：下、居中、上) </summary>
+    /// <summary> 段垂直对齐方式：上、居中、下) </summary>
     public enum ParaAlignVert : byte 
     {
-        pavBottom, pavCenter, pavTop
+        pavTop, pavCenter, pavBottom
     }
 
     public enum ParaLineSpaceMode : byte
@@ -52,6 +53,7 @@ namespace HC.View
         {
             FFristIndent = 0;
             FLeftIndent = 0;
+            FLineSpaceMode = ParaLineSpaceMode.pls100;
             FBackColor = Color.Silver;
             FAlignHorz = ParaAlignHorz.pahJustify;
             FAlignVert = ParaAlignVert.pavCenter;
@@ -62,81 +64,245 @@ namespace HC.View
 
         }
 
-        public bool EqualsEx(HCParaStyle ASource)
+        public bool EqualsEx(HCParaStyle aSource)
         {
-            return (this.FLineSpaceMode == ASource.LineSpaceMode) 
-                && (this.FFristIndent == ASource.FristIndent)
-                && (this.LeftIndent == ASource.LeftIndent)
-                && (this.FBackColor == ASource.BackColor)
-                && (this.FAlignHorz == ASource.AlignHorz)
-                && (this.FAlignVert == ASource.AlignVert);
+            return (this.FLineSpaceMode == aSource.LineSpaceMode) 
+                && (this.FFristIndent == aSource.FristIndent)
+                && (this.LeftIndent == aSource.LeftIndent)
+                && (this.FBackColor == aSource.BackColor)
+                && (this.FAlignHorz == aSource.AlignHorz)
+                && (this.FAlignVert == aSource.AlignVert);
         }
 
-        public void AssignEx(HCParaStyle ASource)
+        public void AssignEx(HCParaStyle aSource)
         {
-            this.FLineSpaceMode = ASource.LineSpaceMode;
-            this.FFristIndent = ASource.FristIndent;
-            this.FLeftIndent = ASource.LeftIndent;
-            this.FBackColor = ASource.BackColor;
-            this.FAlignHorz = ASource.AlignHorz;
-            this.FAlignVert = ASource.AlignVert;
+            this.FLineSpaceMode = aSource.LineSpaceMode;
+            this.FFristIndent = aSource.FristIndent;
+            this.FLeftIndent = aSource.LeftIndent;
+            this.FBackColor = aSource.BackColor;
+            this.FAlignHorz = aSource.AlignHorz;
+            this.FAlignVert = aSource.AlignVert;
         }
 
-        public void SaveToStream(Stream AStream)
+        public void SaveToStream(Stream aStream)
         {
             byte vByte = (byte)FLineSpaceMode;
-            AStream.WriteByte(vByte);
+            aStream.WriteByte(vByte);
 
             byte[] vBuffer = BitConverter.GetBytes(FFristIndent);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FLeftIndent);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            HC.SaveColorToStream(AStream, FBackColor);  // save BackColor
+            HC.HCSaveColorToStream(aStream, FBackColor);  // save BackColor
 
             vByte = (byte)FAlignHorz;
-            AStream.WriteByte(vByte);
+            aStream.WriteByte(vByte);
 
             vByte = (byte)FAlignVert;
-            AStream.WriteByte(vByte);
+            aStream.WriteByte(vByte);
         }
 
-        public void LoadFromStream(Stream AStream, ushort AFileVersion)
+        public void LoadFromStream(Stream aStream, ushort aFileVersion)
         {
             byte[] vBuffer;
-            if (AFileVersion < 15)
+            if (aFileVersion < 15)
             {
                 int vLineSpace = 0;
                 vBuffer = BitConverter.GetBytes(vLineSpace);
-                AStream.Read(vBuffer, 0, vBuffer.Length);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
             }
 
             byte vByte = 0;
-            if (AFileVersion > 16)
+            if (aFileVersion > 16)
             {
-                vByte = (byte)AStream.ReadByte();
+                vByte = (byte)aStream.ReadByte();
                 FLineSpaceMode = (ParaLineSpaceMode)vByte;
             }
 
             vBuffer = BitConverter.GetBytes(FFristIndent);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FFristIndent = BitConverter.ToInt32(vBuffer, 0);
             //
             vBuffer = BitConverter.GetBytes(FLeftIndent);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FLeftIndent = BitConverter.ToInt32(vBuffer, 0);
             //
-            HC.LoadColorFromStream(AStream, ref FBackColor);
+            HC.HCLoadColorFromStream(aStream, ref FBackColor);
             //
-            vByte = (byte)AStream.ReadByte();
+            vByte = (byte)aStream.ReadByte();
             FAlignHorz = (ParaAlignHorz)vByte;
 
-            if (AFileVersion > 17)
+            if (aFileVersion > 17)
             {
-                vByte = (byte)AStream.ReadByte();
+                vByte = (byte)aStream.ReadByte();
                 FAlignVert = (ParaAlignVert)vByte;
             }
+        }
+
+        public string ToCSS()
+        {
+            string Result = " text-align: ";
+            switch (FAlignHorz)
+            {
+                case ParaAlignHorz.pahLeft:
+                    Result = Result + "left";
+                    break;
+
+                case ParaAlignHorz.pahRight:
+                    Result = Result + "right";
+                    break;
+
+                case ParaAlignHorz.pahCenter:
+                    Result = Result + "center";
+                    break;
+
+                case ParaAlignHorz.pahJustify:
+                case ParaAlignHorz.pahScatter:
+                    Result = Result + "justify";
+                    break;
+            }
+
+            switch (FLineSpaceMode)
+            {
+                case ParaLineSpaceMode.pls100:
+                    Result = Result + "; line-height: 100%";
+                    break;
+
+                case ParaLineSpaceMode.pls115:
+                    Result = Result + "; line-height: 115%";
+                    break;
+
+                case ParaLineSpaceMode.pls150:
+                    Result = Result + "; line-height: 150%";
+                    break;
+
+                case ParaLineSpaceMode.pls200:
+                    Result = Result + "; line-height: 200%";
+                    break;
+
+                case ParaLineSpaceMode.plsFix:
+                    Result = Result + "; line-height: 10px";
+                    break;
+            }
+
+            return Result;
+        }
+
+        private string GetLineSpaceModeXML_()
+        {
+            switch (FLineSpaceMode)
+            {
+                case ParaLineSpaceMode.pls100:
+                    return "100";
+
+                case ParaLineSpaceMode.pls115:
+                    return "115";
+
+                case ParaLineSpaceMode.pls150:
+                    return "150";
+
+                case ParaLineSpaceMode.pls200:
+                    return "200";
+
+                default:
+                    return "fix";
+            }
+        }
+
+        private string GetHorzXML_()
+        {
+            switch (FAlignHorz)
+            {
+                case ParaAlignHorz.pahLeft:
+                    return "left";
+
+                case ParaAlignHorz.pahRight:
+                    return "right";
+
+                case ParaAlignHorz.pahCenter:
+                    return "center";
+
+                case ParaAlignHorz.pahJustify:
+                    return "justify";
+
+                default:
+                    return "scatter";
+            }
+        }
+
+        private string GetVertXML_()
+        {
+            switch (FAlignVert)
+            {
+                case ParaAlignVert.pavTop:
+                    return "top";
+
+                case ParaAlignVert.pavCenter:
+                    return "center";
+
+                default:
+                    return "bottom";
+            }
+        }
+
+        public void ToXml(XmlElement aNode)
+        {
+            aNode.Attributes["fristindent"].Value = FFristIndent.ToString();
+            aNode.Attributes["leftindent"].Value = FLeftIndent.ToString();
+            aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackColor);
+            aNode.Attributes["spacemode"].Value = GetLineSpaceModeXML_();
+            aNode.Attributes["horz"].Value = GetHorzXML_();
+            aNode.Attributes["vert"].Value = GetVertXML_();
+        }
+
+        public void ParseXml(XmlElement aNode)
+        {
+            FFristIndent = int.Parse(aNode.Attributes["fristindent"].Value);
+            FLeftIndent = int.Parse(aNode.Attributes["leftindent"].Value);
+            FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
+            //GetXMLLineSpaceMode_;
+            if (aNode.Attributes["spacemode"].Value == "100")
+                FLineSpaceMode = ParaLineSpaceMode.pls100;
+            else
+            if (aNode.Attributes["spacemode"].Value == "115")
+                FLineSpaceMode = ParaLineSpaceMode.pls115;
+            else
+            if (aNode.Attributes["spacemode"].Value == "150")
+                FLineSpaceMode = ParaLineSpaceMode.pls150;
+            else
+            if (aNode.Attributes["spacemode"].Value == "200")
+                FLineSpaceMode = ParaLineSpaceMode.pls200;
+            else
+            if (aNode.Attributes["spacemode"].Value == "fix")
+                FLineSpaceMode = ParaLineSpaceMode.plsFix;
+
+            //GetXMLHorz_;
+            if (aNode.Attributes["horz"].Value == "left")
+                FAlignHorz = ParaAlignHorz.pahLeft;
+            else
+            if (aNode.Attributes["horz"].Value == "right")
+                FAlignHorz = ParaAlignHorz.pahRight;
+            else
+            if (aNode.Attributes["horz"].Value == "center")
+                FAlignHorz = ParaAlignHorz.pahCenter;
+            else
+            if (aNode.Attributes["horz"].Value == "justify")
+                FAlignHorz = ParaAlignHorz.pahJustify;
+            else
+            if (aNode.Attributes["horz"].Value == "scatter")
+                FAlignHorz = ParaAlignHorz.pahScatter;
+
+            //GetXMLVert_;
+            if (aNode.Attributes["vert"].Value == "top")
+                FAlignVert = ParaAlignVert.pavTop;
+            else
+            if (aNode.Attributes["vert"].Value == "center")
+                FAlignVert = ParaAlignVert.pavCenter;
+            else
+            if (aNode.Attributes["vert"].Value == "bottom")
+                FAlignVert = ParaAlignVert.pavBottom;
         }
         
         public ParaLineSpaceMode LineSpaceMode

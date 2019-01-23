@@ -17,6 +17,7 @@ using HC.Win32;
 using System.Windows.Forms;
 using System.IO;
 using System.Drawing;
+using System.Xml;
 
 namespace HC.View
 {
@@ -25,20 +26,20 @@ namespace HC.View
         cloNone, cloLine, cloLeftOrTop, cloRightOrBottom
     }
 
-    public class HCFloatLineItem : HCFloatItem  // 可浮动LineItem
+    public class HCFloatLineItem : HCCustomFloatItem  // 可浮动LineItem
     {
 
         private POINT FStartPt, FEndPt, FLeftTop;
 
         private HCLineObj FMouseDownObj;
 
-        private HCLineObj GetLineObjAt(int X, int  Y)
+        private HCLineObj GetLineObjAt(int x, int  y)
         {
             HCLineObj Result = HCLineObj.cloNone;
-            if (HC.PtInRect(new RECT(FStartPt.X - PointSize, FStartPt.Y - PointSize, FStartPt.X + PointSize, FStartPt.Y + PointSize), new POINT(X, Y)))
+            if (HC.PtInRect(new RECT(FStartPt.X - PointSize, FStartPt.Y - PointSize, FStartPt.X + PointSize, FStartPt.Y + PointSize), new POINT(x, y)))
                 Result = HCLineObj.cloLeftOrTop;
             else
-            if (HC.PtInRect(new RECT(FEndPt.X - PointSize, FEndPt.Y - PointSize, FEndPt.X + PointSize, FEndPt.Y + PointSize), new POINT(X, Y)))
+            if (HC.PtInRect(new RECT(FEndPt.X - PointSize, FEndPt.Y - PointSize, FEndPt.X + PointSize, FEndPt.Y + PointSize), new POINT(x, y)))
                 Result = HCLineObj.cloRightOrBottom;
             else
             {
@@ -50,7 +51,7 @@ namespace HC.View
                 IntPtr vRgn = (IntPtr)GDI.CreatePolygonRgn(ref vPointArr[0], 4, GDI.WINDING);
                 try
                 {
-                    if (GDI.PtInRegion(vRgn, X, Y) > 0)
+                    if (GDI.PtInRegion(vRgn, x, y) > 0)
                         Result = HCLineObj.cloLine;
                 }
                 finally
@@ -62,7 +63,7 @@ namespace HC.View
             return Result;
         }
 
-        public HCFloatLineItem(HCCustomData AOwnerData) : base(AOwnerData)
+        public HCFloatLineItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             this.StyleNo = HCFloatStyle.Line;
             FMouseDownObj = HCLineObj.cloNone;
@@ -72,18 +73,18 @@ namespace HC.View
             FEndPt = new POINT(Width, Height);
         }
 
-        public override bool PtInClient(POINT APoint)
+        public override bool PtInClient(POINT aPoint)
         {
-            return (GetLineObjAt(APoint.X, APoint.Y) != HCLineObj.cloNone);
+            return (GetLineObjAt(aPoint.X, aPoint.Y) != HCLineObj.cloNone);
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FStartPt.X = (Source as HCFloatLineItem).FStartPt.X;
-            FStartPt.Y = (Source as HCFloatLineItem).FStartPt.Y;
-            FEndPt.X = (Source as HCFloatLineItem).FEndPt.X;
-            FEndPt.Y = (Source as HCFloatLineItem).FEndPt.Y;
+            base.Assign(source);
+            FStartPt.X = (source as HCFloatLineItem).FStartPt.X;
+            FStartPt.Y = (source as HCFloatLineItem).FStartPt.Y;
+            FEndPt.X = (source as HCFloatLineItem).FEndPt.X;
+            FEndPt.Y = (source as HCFloatLineItem).FEndPt.Y;
         }
 
         public override void MouseDown(MouseEventArgs e)
@@ -178,64 +179,82 @@ namespace HC.View
             }
         }
 
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, 
-            int ADataDrawTop, int  ADataDrawBottom, int  ADataScreenTop, 
-            int  ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, 
+            int aDataDrawTop, int  aDataDrawBottom, int  aDataScreenTop, 
+            int  aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            ACanvas.Pen.BeginUpdate();
+            aCanvas.Pen.BeginUpdate();
             try
             {
-                ACanvas.Pen.Color = Color.Black;
-                ACanvas.Pen.Style = HCPenStyle.psSolid;
+                aCanvas.Pen.Color = Color.Black;
+                aCanvas.Pen.Style = HCPenStyle.psSolid;
             }
             finally
             {
-                ACanvas.Pen.EndUpdate();
+                aCanvas.Pen.EndUpdate();
             }
 
-            ACanvas.MoveTo(FStartPt.X + this.DrawRect.Left, FStartPt.Y + this.DrawRect.Top);
-            ACanvas.LineTo(FEndPt.X + this.DrawRect.Left, FEndPt.Y + this.DrawRect.Top);
+            aCanvas.MoveTo(FStartPt.X + this.DrawRect.Left, FStartPt.Y + this.DrawRect.Top);
+            aCanvas.LineTo(FEndPt.X + this.DrawRect.Left, FEndPt.Y + this.DrawRect.Top);
 
-            if ((this.Active) && (!APaintInfo.Print))  // 激活
+            if ((this.Active) && (!aPaintInfo.Print))  // 激活
             {
-                ACanvas.Rectangle(FStartPt.X + this.DrawRect.Left - PointSize, FStartPt.Y + this.DrawRect.Top - PointSize,
+                aCanvas.Rectangle(FStartPt.X + this.DrawRect.Left - PointSize, FStartPt.Y + this.DrawRect.Top - PointSize,
                     FStartPt.X + this.DrawRect.Left + PointSize, FStartPt.Y + this.DrawRect.Top + PointSize);
-                ACanvas.Rectangle(FEndPt.X + this.DrawRect.Left - PointSize, FEndPt.Y + this.DrawRect.Top - PointSize,
+                aCanvas.Rectangle(FEndPt.X + this.DrawRect.Left - PointSize, FEndPt.Y + this.DrawRect.Top - PointSize,
                     FEndPt.X + this.DrawRect.Left + PointSize, FEndPt.Y + this.DrawRect.Top + PointSize);
             }
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int  AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
+            base.SaveToStream(aStream, aStart, aEnd);
             byte[] vBuffer = BitConverter.GetBytes(FStartPt.X);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FStartPt.Y);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FEndPt.X);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FEndPt.X);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
             byte[] vBuffer = BitConverter.GetBytes(FStartPt.X);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FStartPt.X = BitConverter.ToInt32(vBuffer, 0);
 
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FStartPt.Y = BitConverter.ToInt32(vBuffer, 0);
 
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FEndPt.X = BitConverter.ToInt32(vBuffer, 0);
 
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FEndPt.X = BitConverter.ToInt32(vBuffer, 0);
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FStartPt.X = int.Parse(aNode.Attributes["sx"].Value);
+            FStartPt.Y = int.Parse(aNode.Attributes["sy"].Value);
+            FEndPt.X = int.Parse(aNode.Attributes["ex"].Value);
+            FEndPt.Y = int.Parse(aNode.Attributes["ex"].Value);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["sx"].Value = FStartPt.X.ToString();
+            aNode.Attributes["sy"].Value = FStartPt.Y.ToString();
+            aNode.Attributes["ex"].Value = FEndPt.X.ToString();
+            aNode.Attributes["ey"].Value = FEndPt.Y.ToString();
         }
     }
 }

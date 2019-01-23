@@ -17,6 +17,7 @@ using System.Windows.Forms;
 using HC.Win32;
 using System.Drawing;
 using System.IO;
+using System.Xml;
 
 namespace HC.View
 {
@@ -264,12 +265,17 @@ namespace HC.View
     
             FButtonDrawRect = FButtonRect;
             FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
+
+            if (IsSelectComplate)
+                ACanvas.Brush.Color = AStyle.SelColor;
+            else
             if (FMouseInButton)
                 ACanvas.Brush.Color = HC.clMenu;
             else
                 ACanvas.Brush.Color = HC.clWindow;
 
             ACanvas.FillRect(FButtonDrawRect);
+
             ACanvas.Pen.Color = Color.Black;
             int vLeft = FButtonDrawRect.Left + (BTNWIDTH - 7) / 2;
             int vTop = FButtonDrawRect.Top + (FButtonDrawRect.Height - 4) / 2;
@@ -339,27 +345,16 @@ namespace HC.View
 
             if (FSaveItem)
             {
-                string vTexts = "";
+                string vText = "";
 
                 if (FItems.Count > 0)
                 {
+                    vText = FItems[0];
                     for (int i = 1; i < FItems.Count; i++)
-                        vTexts += "\r\n" + FItems[i];
-
-                    int vLen = System.Text.Encoding.Default.GetByteCount(vTexts);
-                    if (vLen > ushort.MaxValue)
-                        throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
-
-                    vSize = (ushort)vLen;
+                        vText += HC.sLineBreak + FItems[i];
                 }
 
-                byte[] vBuffer = BitConverter.GetBytes(vSize);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
-                if (vSize > 0)
-                {
-                    vBuffer = System.Text.Encoding.Default.GetBytes(vTexts);
-                    AStream.Write(vBuffer, 0, vBuffer.Length);
-                }
+                HC.HCSaveTextToStream(AStream, vText); 
             }
             else
             {
@@ -371,20 +366,40 @@ namespace HC.View
         public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
         {
             base.LoadFromStream(AStream, AStyle, AFileVersion);
+            FItems.Clear();
+            string vText = "";
+            HC.HCLoadTextFromStream(AStream, ref vText);
+            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+            for (int i = 0; i < vStrings.Length; i++)
+                FItems.Add(vStrings[i]);
+        }
 
-            ushort vSize = 0;
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FItems.Clear();
+            string vText = aNode.Attributes["item"].Value;
+            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
 
-            if (vSize > 0)
+            for (int i = 0; i < vStrings.Length; i++)
+                FItems.Add(vStrings[i]);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            if (FSaveItem)
             {
-                vBuffer = new byte[vSize];
-                AStream.Read(vBuffer, 0, vBuffer.Length);
-                string vTexts = System.Text.Encoding.Default.GetString(vBuffer);
-                string[] vStrings = vTexts.Split(new string[] { "\r\n" }, StringSplitOptions.None);
-                
-                for (int i = 0; i < vStrings.Length; i++)
-                    FItems.Add(vStrings[i]);
+                string vText = "";
+
+                if (FItems.Count > 0)
+                {
+                    vText = FItems[0];
+                    for (int i = 1; i < FItems.Count - 1; i++)
+                        vText += HC.sLineBreak + FItems[i];
+                }
+
+                aNode.Attributes["item"].Value = vText;
             }
         }
 

@@ -20,8 +20,6 @@ namespace HC.View
 {
     public static class ColorHelper
     {
-        
-
         public static uint ToRGB_UInt(this Color color)
         {
             return (uint)(color.B << 16) + (uint)(color.G << 8) + color.R;  // (uint)(color.A << 24) + 
@@ -186,6 +184,11 @@ namespace HC.View
         {
             FUpdateCount--;
             DoChange();
+        }
+
+        public void Refresh()
+        {
+            ReCreateHandle();
         }
 
         public Color Color
@@ -700,9 +703,14 @@ namespace HC.View
             return GDI.SaveDC(FHandle);
         }
 
-        public int Restore(int ASavedDC)
+        public int Restore(int aSavedDC)
         {
-            return GDI.RestoreDC(FHandle, ASavedDC);
+            return GDI.RestoreDC(FHandle, aSavedDC);
+        }
+
+        public void Refresh()
+        {
+            DoPenChanged(this, null);
         }
 
         public int TextWidth(char c)
@@ -710,24 +718,24 @@ namespace HC.View
             return TextWidth(c.ToString());
         }
 
-        public SIZE TextExtent(string AText)
+        public SIZE TextExtent(string aText)
         {
             SIZE vSize = new SIZE();
-            GDI.GetTextExtentPoint32(FHandle, AText, AText.Length, ref vSize);
+            GDI.GetTextExtentPoint32(FHandle, aText, aText.Length, ref vSize);
             return vSize;
         }
 
-        public int TextWidth(string AText)
+        public int TextWidth(string aText)
         {
             SIZE vSize = new SIZE(0, 0);
-            GDI.GetTextExtentPoint32(FHandle, AText, AText.Length, ref vSize);
+            GDI.GetTextExtentPoint32(FHandle, aText, aText.Length, ref vSize);
             return vSize.cx;
         }
 
-        public int TextHeight(string AText)
+        public int TextHeight(string aText)
         {
             SIZE vSize = new SIZE(0, 0);
-            GDI.GetTextExtentPoint32(FHandle, AText, AText.Length, ref vSize);
+            GDI.GetTextExtentPoint32(FHandle, aText, aText.Length, ref vSize);
             return vSize.cy;
         }
 
@@ -737,39 +745,39 @@ namespace HC.View
             GDI.LineTo(FHandle, x2, y2);
         }
 
-        public void DrawLines(Point[] APoints)
+        public void DrawLines(Point[] aPoints)
         {
-            GDI.MoveToEx(FHandle, APoints[0].X, APoints[0].Y, IntPtr.Zero);
+            GDI.MoveToEx(FHandle, aPoints[0].X, aPoints[0].Y, IntPtr.Zero);
 
-            for (int i = 1; i < APoints.Length; i++)
+            for (int i = 1; i < aPoints.Length; i++)
             {
-                GDI.LineTo(FHandle, APoints[i].X, APoints[i].Y);
+                GDI.LineTo(FHandle, aPoints[i].X, aPoints[i].Y);
             }
         }
 
-        public void GetTextMetrics(ref TEXTMETRIC ATextMetric)
+        public void GetTextMetrics(ref TEXTMETRIC aTextMetric)
         {
-            GDI.GetTextMetrics(FHandle, ref ATextMetric);
+            GDI.GetTextMetrics(FHandle, ref aTextMetric);
         }
 
-        public void GetTextExtentExPoint(string AText, int ALen, int[] alpDx, ref SIZE ASize)  // 超过65535数组元素取不到值
+        public void GetTextExtentExPoint(string aText, int aLen, int[] alpDx, ref SIZE aSize)  // 超过65535数组元素取不到值
         {
-            GDI.GetTextExtentExPoint(FHandle, AText, ALen, 0, IntPtr.Zero, alpDx, ref ASize);
+            GDI.GetTextExtentExPoint(FHandle, aText, aLen, 0, IntPtr.Zero, alpDx, ref aSize);
         }
 
-        public void FillRect(RECT ARect)
+        public void FillRect(RECT aRect)
         {
-            User.FillRect(FHandle, ref ARect, FBrush.Handle);
+            User.FillRect(FHandle, ref aRect, FBrush.Handle);
         }
 
-        public void RoundRect(RECT ARect, int x, int y)
+        public void RoundRect(RECT aRect, int x, int y)
         {
-            GDI.RoundRect(FHandle, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, x, y);
+            GDI.RoundRect(FHandle, aRect.Left, aRect.Top, aRect.Right, aRect.Bottom, x, y);
         }
 
-        public void DrawFocuseRect(RECT ARect)
+        public void DrawFocuseRect(RECT aRect)
         {
-            User.DrawFocusRect(FHandle, ref ARect);
+            User.DrawFocusRect(FHandle, ref aRect);
         }
 
         public void MoveTo(int x, int y)
@@ -791,26 +799,46 @@ namespace HC.View
             GDI.ExtTextOut(Handle, x, y, vOptions, ref aRect, aText, aText.Length, ref vlpDx);
         }
 
-        public void TextOut(int x, int y, string Text)
+        public void TextOut(int x, int y, string text)
         {
-            GDI.ExtTextOut(FHandle, x, y, FTextFlags, IntPtr.Zero, Text, Text.Length, IntPtr.Zero);
-            MoveTo(x + TextWidth(Text), y);
+            GDI.ExtTextOut(FHandle, x, y, FTextFlags, IntPtr.Zero, text, text.Length, IntPtr.Zero);
+            MoveTo(x + TextWidth(text), y);
         }
 
-        public void Rectangle(RECT ARect)
+        public void Rectangle(RECT aRect)
         {
-            Rectangle(ARect.Left, ARect.Top, ARect.Right, ARect.Bottom);
+            Rectangle(aRect.Left, aRect.Top, aRect.Right, aRect.Bottom);
         }
 
-        public void Rectangle(int ALeft, int ATop, int ARight, int ABottom)
+        public void Rectangle(int aLeft, int aTop, int aRight, int aBottom)
         {
-            GDI.Rectangle(FHandle, ALeft, ATop, ARight, ABottom);
+            GDI.Rectangle(FHandle, aLeft, aTop, aRight, aBottom);
         }
 
-        public void StretchDraw(RECT ARect, Bitmap ABitmap)
+        public void StretchDraw(RECT aRect, Image aImage)
         {
-            Graphics vGraphics = Graphics.FromHdc(FHandle);
-            vGraphics.DrawImage(ABitmap, new Rectangle(ARect.Left, ARect.Top, ARect.Width, ARect.Height));
+            //Graphics grImage = Graphics.FromImage(aImage);
+            //IntPtr hdcSrc = grImage.GetHdc();
+            //try
+            //{
+            //    GDI.BitBlt(FHandle, aRect.Left, aRect.Top, aRect.Width, aRect.Height, hdcSrc, 0, 0, GDI.SRCCOPY);
+            //}
+            //finally
+            //{
+            //    grImage.ReleaseHdc(hdcSrc);
+            //}
+            using (Graphics vGraphics = Graphics.FromHdc(FHandle))
+            {
+                vGraphics.DrawImage(aImage, new Rectangle(aRect.Left, aRect.Top, aRect.Width, aRect.Height));
+            }
+        }
+
+        public void Draw(int x, int y, Image aImage)
+        {
+            using (Graphics vGraphics = Graphics.FromHdc(FHandle))
+            {
+                vGraphics.DrawImage(aImage, x, y);
+            }
         }
 
         public HCPen Pen

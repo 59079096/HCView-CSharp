@@ -17,6 +17,7 @@ using System.Windows.Forms;
 using HC.Win32;
 using System.IO;
 using System.Drawing;
+using System.Xml;
 
 namespace HC.View
 {
@@ -30,51 +31,52 @@ namespace HC.View
             return HC.Bounds(FMargin, (Height - CheckBoxSize) / 2, CheckBoxSize, CheckBoxSize);
         }
 
-        protected void SetChecked(bool Value)
+        protected void SetChecked(bool value)
         {
-            if (FChecked != Value)
-                FChecked = Value;
+            if (FChecked != value)
+                FChecked = value;
         }
 
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, int ADataDrawTop, int ADataDrawBottom,
-            int ADataScreenTop, int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom,
+            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop, ADataScreenBottom,
-                ACanvas, APaintInfo);
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
+                aCanvas, aPaintInfo);
 
-            if ((FMouseIn) && (!APaintInfo.Print))
+            if ((FMouseIn) && (!aPaintInfo.Print))
             {
-                ACanvas.Brush.Color = HC.clBtnFace;
-                ACanvas.FillRect(ADrawRect);
+                aCanvas.Brush.Color = HC.clBtnFace;
+                aCanvas.FillRect(aDrawRect);
             }
 
             RECT vBoxRect = GetBoxRect();
-            HC.OffsetRect(ref vBoxRect, ADrawRect.Left, ADrawRect.Top);
+            HC.OffsetRect(ref vBoxRect, aDrawRect.Left, aDrawRect.Top);
 
-            if (this.IsSelectComplate && (!APaintInfo.Print))
+            if (this.IsSelectComplate && (!aPaintInfo.Print))
             {
-                ACanvas.Brush.Color = AStyle.SelColor;
-                ACanvas.FillRect(ADrawRect);
+                aCanvas.Brush.Color = aStyle.SelColor;
+                aCanvas.FillRect(aDrawRect);
             }
 
-            AStyle.TextStyles[TextStyleNo].ApplyStyle(ACanvas, APaintInfo.ScaleY / APaintInfo.Zoom);
-            ACanvas.TextOut(ADrawRect.Left + FMargin + CheckBoxSize + FMargin, ADrawRect.Top + (Height - ACanvas.TextHeight("H")) / 2, FText);
+            aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
+            aCanvas.TextOut(aDrawRect.Left + FMargin + CheckBoxSize + FMargin, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
 
+            aCanvas.Brush.Style = HCBrushStyle.bsClear;
             if (FChecked)  // 勾选
-                User.DrawFrameControl(ACanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
+                User.DrawFrameControl(aCanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
 
-            if (FMouseIn && (!APaintInfo.Print))  // 鼠标在其中，且非打印
+            if (FMouseIn && (!aPaintInfo.Print))  // 鼠标在其中，且非打印
             {
-                ACanvas.Pen.Color = Color.Blue;
-                ACanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
+                aCanvas.Pen.Color = Color.Blue;
+                aCanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
                 HC.InflateRect(ref vBoxRect, 1, 1);
-                ACanvas.Pen.Color = HC.clBtnFace;
-                ACanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
+                aCanvas.Pen.Color = HC.clBtnFace;
+                aCanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
             }
             else  // 鼠标不在其中或打印
             {
-                ACanvas.Pen.Color = Color.Black;
-                ACanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
+                aCanvas.Pen.Color = Color.Black;
+                aCanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
             }
         }
         //
@@ -90,12 +92,12 @@ namespace HC.View
             FMouseIn = false;
         }
 
-        public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             if (this.AutoSize)
             {
-                ARichData.Style.TextStyles[TextStyleNo].ApplyStyle(ARichData.Style.DefCanvas);
-                SIZE vSize = ARichData.Style.DefCanvas.TextExtent(FText);
+                aRichData.Style.TextStyles[TextStyleNo].ApplyStyle(aRichData.Style.DefCanvas);
+                SIZE vSize = aRichData.Style.DefCanvas.TextExtent(FText);
                 Width = FMargin + CheckBoxSize + FMargin + vSize.cx;
                 Height = Math.Max(vSize.cy, CheckBoxSize);
             }
@@ -122,61 +124,54 @@ namespace HC.View
 
         public byte CheckBoxSize = 14;
 
-        public HCCheckBoxItem(HCCustomData AOwnerData, string AText, bool AChecked)
-            : base(AOwnerData)
+        public HCCheckBoxItem(HCCustomData aOwnerData, string aText, bool aChecked)
+            : base(aOwnerData)
         {
             this.StyleNo = HCStyle.CheckBox;
-            FChecked = AChecked;
-            FText = AText;
+            FChecked = aChecked;
+            FText = aText;
             FMouseIn = false;
             FMargin = 2;
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
+            base.SaveToStream(aStream, aStart, aEnd);
 
             byte[] vBuffer = BitConverter.GetBytes(FChecked);
-            AStream.Write(vBuffer, 0, vBuffer.Length);  // 存勾选状态
-            // 存Text
-            int vLen = System.Text.Encoding.Default.GetByteCount(FText);
-            if (vLen > ushort.MaxValue)
-                throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
-
-            ushort vSize = (ushort)vLen;
-            vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-            if (vSize > 0)
-            {
-                vBuffer = System.Text.Encoding.Default.GetBytes(FText);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
-            }
+            aStream.Write(vBuffer, 0, vBuffer.Length);  // 存勾选状态
+            HC.HCSaveTextToStream(aStream, FText);  // 存Text
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte[] vBuffer = BitConverter.GetBytes(FChecked);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FChecked = BitConverter.ToBoolean(vBuffer, 0);
-
-            ushort vSize = 0;
-            vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
-            if (vSize > 0)
-            {
-                vBuffer = new byte[vSize];
-                AStream.Read(vBuffer, 0, vBuffer.Length);
-                FText = System.Text.Encoding.Default.GetString(vBuffer);
-            }
+            HC.HCLoadTextFromStream(aStream, ref FText);
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void ParseXml(XmlElement aNode)
         {
-            base.Assign(Source);
-            FChecked = (Source as HCCheckBoxItem).Checked;  // 勾选状态
-            FText = (Source as HCCheckBoxItem).Text;
+            base.ParseXml(aNode);
+            FChecked = bool.Parse(aNode.Attributes["check"].Value);
+            FText = aNode.InnerText;
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["check"].Value = FChecked.ToString();
+            aNode.InnerText = FText;
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FChecked = (source as HCCheckBoxItem).Checked;  // 勾选状态
+            FText = (source as HCCheckBoxItem).Text;
         }
 
         public bool Checked

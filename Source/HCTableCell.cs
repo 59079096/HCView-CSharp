@@ -16,6 +16,7 @@ using System.Text;
 using System.Drawing;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Xml;
 
 namespace HC.View
 {
@@ -23,11 +24,6 @@ namespace HC.View
     public enum AlignVert : byte
     {
         cavTop, cavCenter, cavBottom
-    }
-
-    public class HCBorderSides : HCSet
-    {
-
     }
 
     public class HCTableCell : HCObject
@@ -56,19 +52,19 @@ namespace HC.View
                 return false;
         }
 
-        protected void SetActive(bool Value)
+        protected void SetActive(bool value)
         {
             if (FCellData != null)
-                FCellData.Active = Value;
+                FCellData.Active = value;
         }
 
-        protected void SetHeight(int Value)
+        protected void SetHeight(int value)
         {
-             if (FHeight != Value)
+             if (FHeight != value)
             {
-                FHeight = Value;
+                FHeight = value;
                 if (FCellData != null)
-                    FCellData.CellHeight = Value;
+                    FCellData.CellHeight = value;
             }
         }
 
@@ -122,74 +118,74 @@ namespace HC.View
             return Result;
         }
 
-        public virtual void SaveToStream(Stream AStream)
+        public virtual void SaveToStream(Stream aStream)
         {
             /* 因为可能是合并后的单元格，所以单独存宽、高 }*/
             byte[] vBuffer = BitConverter.GetBytes(FWidth);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FHeight);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FRowSpan);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FColSpan);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             byte vByte = (byte)FAlignVert;
-            AStream.WriteByte(vByte);  // 垂直对齐方式
+            aStream.WriteByte(vByte);  // 垂直对齐方式
 
-            HC.SaveColorToStream(AStream, FBackgroundColor); // 背景色
+            HC.HCSaveColorToStream(aStream, FBackgroundColor); // 背景色
 
-            AStream.WriteByte(FBorderSides.Value);
+            aStream.WriteByte(FBorderSides.Value);
 
             /* 存数据 }*/
             bool vNullData = (FCellData == null);
             vBuffer = BitConverter.GetBytes(vNullData);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
             if (!vNullData)
-                FCellData.SaveToStream(AStream);
+                FCellData.SaveToStream(aStream);
         }
 
-        public void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             byte[] vBuffer = BitConverter.GetBytes(FWidth);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FWidth = BitConverter.ToInt32(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FHeight);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FHeight = BitConverter.ToInt32(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FRowSpan);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FRowSpan = BitConverter.ToInt32(vBuffer, 0);
 
             vBuffer = BitConverter.GetBytes(FColSpan);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FColSpan = BitConverter.ToInt32(vBuffer, 0);
 
-            if (AFileVersion > 11)
+            if (aFileVersion > 11)
             {
                 byte vByte = 0;
-                vByte = (byte)AStream.ReadByte();
+                vByte = (byte)aStream.ReadByte();
                 FAlignVert = (View.AlignVert)vByte;  // 垂直对齐方式
 
-                HC.LoadColorFromStream(AStream, ref FBackgroundColor);  // 背景色
+                HC.HCLoadColorFromStream(aStream, ref FBackgroundColor);  // 背景色
             }
-            if (AFileVersion > 13)
+            if (aFileVersion > 13)
             {
-                FBorderSides.Value = (byte)AStream.ReadByte(); // load FBorderSides              
+                FBorderSides.Value = (byte)aStream.ReadByte(); // load FBorderSides              
             }
 
             bool vNullData = false;
             vBuffer = BitConverter.GetBytes(vNullData);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             vNullData = BitConverter.ToBoolean(vBuffer, 0);
             if (!vNullData)
             {
-                FCellData.LoadFromStream(AStream, AStyle, AFileVersion);
+                FCellData.LoadFromStream(aStream, aStyle, aFileVersion);
                 FCellData.CellHeight = FHeight;
             }
             else
@@ -199,34 +195,64 @@ namespace HC.View
             }
         }
 
-        public void GetCaretInfo(int AItemNo, int  AOffset, ref HCCaretInfo ACaretInfo)
+        public void ToXml(XmlElement aNode)
+        {
+            aNode.Attributes["width"].Value = FWidth.ToString();
+            aNode.Attributes["height"].Value = FHeight.ToString();
+            aNode.Attributes["rowspan"].Value = FRowSpan.ToString();
+            aNode.Attributes["colspan"].Value = FColSpan.ToString();
+            aNode.Attributes["vert"].Value = ((byte)FAlignVert).ToString();
+            aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackgroundColor);
+            aNode.Attributes["border"].Value = HC.GetBorderSidePro(FBorderSides);
+        }
+
+        public void ParseXml(XmlElement aNode)
+        {
+            FWidth = int.Parse(aNode.Attributes["width"].Value);
+            FHeight = int.Parse(aNode.Attributes["height"].Value);
+            FRowSpan = int.Parse(aNode.Attributes["rowspan"].Value);
+            FColSpan = int.Parse(aNode.Attributes["colspan"].Value);
+            FAlignVert = (AlignVert)(byte.Parse(aNode.Attributes["vert"].Value));
+            FBackgroundColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
+            HC.SetBorderSideByPro(aNode.Attributes["border"].Value, FBorderSides);
+
+            if ((FRowSpan < 0) || (FColSpan < 0))
+            {
+                FCellData.Dispose();
+                //FCellData = null;
+            }
+            else
+                FCellData.ParseXml(aNode.SelectSingleNode("items") as XmlElement);
+        }
+
+        public void GetCaretInfo(int aItemNo, int  aOffset, ref HCCaretInfo aCaretInfo)
         {
             if (FCellData != null)
             {
-                FCellData.GetCaretInfo(AItemNo, AOffset, ref ACaretInfo);
-                if (ACaretInfo.Visible)
+                FCellData.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
+                if (aCaretInfo.Visible)
                 {
                     if (FAlignVert == AlignVert.cavBottom)
-                        ACaretInfo.Y = ACaretInfo.Y + FHeight - FCellData.Height;
+                        aCaretInfo.Y = aCaretInfo.Y + FHeight - FCellData.Height;
                     else
                     if (FAlignVert == AlignVert.cavCenter)
-                        ACaretInfo.Y = ACaretInfo.Y + (FHeight - FCellData.Height) / 2;
+                        aCaretInfo.Y = aCaretInfo.Y + (FHeight - FCellData.Height) / 2;
                 }
             }
             else
-                ACaretInfo.Visible = false;
+                aCaretInfo.Visible = false;
         }
 
         /// <summary> 绘制数据 </summary>
-        /// <param name="ADataDrawLeft">绘制目标区域Left</param>
-        /// <param name="ADataDrawTop">绘制目标区域的Top</param>
-        /// <param name="ADataDrawBottom">绘制目标区域的Bottom</param>
-        /// <param name="ADataScreenTop">屏幕区域Top</param>
-        /// <param name="ADataScreenBottom">屏幕区域Bottom</param>
-        /// <param name="AVOffset">指定从哪个位置开始的数据绘制到目标区域的起始位置</param>
+        /// <param name="aDataDrawLeft">绘制目标区域Left</param>
+        /// <param name="aDataDrawTop">绘制目标区域的Top</param>
+        /// <param name="aDataDrawBottom">绘制目标区域的Bottom</param>
+        /// <param name="aDataScreenTop">屏幕区域Top</param>
+        /// <param name="aDataScreenBottom">屏幕区域Bottom</param>
+        /// <param name="aVOffset">指定从哪个位置开始的数据绘制到目标区域的起始位置</param>
         /// <param name="ACanvas">画布</param>
-        public  void PaintData(int ADataDrawLeft, int ADataDrawTop, int ADataDrawBottom, 
-            int ADataScreenTop, int ADataScreenBottom, int AVOffset, 
+        public  void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom, 
+            int aDataScreenTop, int aDataScreenBottom, int aVOffset, 
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FCellData != null)
@@ -235,20 +261,20 @@ namespace HC.View
                 switch (FAlignVert)
                 {
                     case View.AlignVert.cavTop: 
-                        vTop = ADataDrawTop;
+                        vTop = aDataDrawTop;
                         break;
 
                     case View.AlignVert.cavBottom: 
-                        vTop = ADataDrawTop + FHeight - FCellData.Height;
+                        vTop = aDataDrawTop + FHeight - FCellData.Height;
                         break;
 
                     case View.AlignVert.cavCenter: 
-                        vTop = ADataDrawTop + (FHeight - FCellData.Height) / 2;
+                        vTop = aDataDrawTop + (FHeight - FCellData.Height) / 2;
                         break;
                 }
             
-                FCellData.PaintData(ADataDrawLeft, vTop, ADataDrawBottom, ADataScreenTop,
-                    ADataScreenBottom, AVOffset, ACanvas, APaintInfo);
+                FCellData.PaintData(aDataDrawLeft, vTop, aDataDrawBottom, aDataScreenTop,
+                    aDataScreenBottom, aVOffset, ACanvas, APaintInfo);
             }
         }
 

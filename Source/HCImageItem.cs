@@ -23,7 +23,7 @@ namespace HC.View
     {
         private Bitmap FImage;
 
-        private void DoImageChange(Object Sender)
+        private void DoImageChange(Object sender)
         {
             if (FImage.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb)
                 FImage = FImage.Clone(new Rectangle(0, 0, FImage.Width, FImage.Height), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
@@ -47,9 +47,9 @@ namespace HC.View
             return Result;
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
+            base.SaveToStream(aStream, aStart, aEnd);
 
             // 图像不能直接写流，会导致流前面部分数据错误
             using (MemoryStream vImgStream = new MemoryStream())
@@ -59,48 +59,78 @@ namespace HC.View
                 // write bitmap data size
                 uint vSize = (uint)vImgStream.Length;
                 byte[] vBuffer = BitConverter.GetBytes(vSize);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
 
                 vBuffer = new byte[vImgStream.Length];
                 vImgStream.Seek(0, SeekOrigin.Begin);
                 vImgStream.Read(vBuffer, 0, vBuffer.Length);
 
-                AStream.Write(vBuffer, 0, vBuffer.Length);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
             }
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             // read bitmap data size
             uint vSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             vSize = BitConverter.ToUInt32(vBuffer, 0);
 
             vBuffer = new byte[vSize];
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
 
             using (MemoryStream vImgStream = new MemoryStream(vBuffer))
-            {  
+            {
                 FImage = new Bitmap(vImgStream);
             }
 
             DoImageChange(this);
         }
 
-        //
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, int ADataDrawTop, 
-            int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        public string ToHtml(string aPath)
         {
-            ACanvas.StretchDraw(ADrawRect, FImage);
+            if (aPath != "")  // 保存到指定的文件夹中
+            {
+                if (!Directory.Exists(aPath + "images"))
+                    Directory.CreateDirectory(aPath + "images");
 
-            base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenBottom, ADataScreenBottom,
-                ACanvas, APaintInfo);
+                string vFileName = OwnerData.Style.GetHtmlFileTempName() + ".bmp";
+                FImage.Save(aPath + "images\"" + vFileName);
+                return "<img width=\"" + Width.ToString() + "\" height=\"" + Height.ToString()
+                    + "\" src=\"images/" + vFileName + " alt=\"HCImageItem\" />";
+            }
+            else  // 保存为Base64
+                return "<img width=\"" + Width.ToString() + "\" height=\"" + Height.ToString()
+                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FImage) + "\" alt=\"HCImageItem\" />";
         }
 
-        public override void PaintTop(HCCanvas ACanvas)
+        public override void ToXml(System.Xml.XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.InnerText = HC.GraphicToBase64(FImage);
+        }
+
+        public override void ParseXml(System.Xml.XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            HC.Base64ToGraphic(aNode.InnerText, FImage);
+            DoImageChange(this);
+        }
+
+        //
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, 
+            int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            aCanvas.StretchDraw(aDrawRect, FImage);
+
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenBottom, aDataScreenBottom,
+                aCanvas, aPaintInfo);
+        }
+
+        public override void PaintTop(HCCanvas aCanvas)
         {
             using (Graphics vGraphicSrc = Graphics.FromImage(FImage))
             {
@@ -119,7 +149,7 @@ namespace HC.View
                     GDI.SelectObject(vMemDC, vBitmap);
 
                     GDI.AlphaBlend(
-                        ACanvas.Handle,
+                        aCanvas.Handle,
                         ResizeRect.Left,
                         ResizeRect.Top,
                         ResizeWidth,
@@ -140,16 +170,16 @@ namespace HC.View
                 }
             }
 
-            base.PaintTop(ACanvas);
+            base.PaintTop(aCanvas);
         }
 
-        public HCImageItem(HCCustomData AOwnerData) : base(AOwnerData)
+        public HCImageItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             FImage = new Bitmap(1, 1);
             StyleNo = HCStyle.Image;
         }
 
-        public HCImageItem(HCCustomData AOwnerData, int AWidth, int AHeight) : base(AOwnerData, AWidth, AHeight)
+        public HCImageItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
         {
             StyleNo = HCStyle.Image;
         }
@@ -159,33 +189,33 @@ namespace HC.View
             FImage.Dispose();
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FImage = new Bitmap((Source as HCImageItem).Image);
+            base.Assign(source);
+            FImage = new Bitmap((source as HCImageItem).Image);
         }
 
         /// <summary> 约束到指定大小范围内 </summary>
-        public override void RestrainSize(int AWidth, int AHeight)
+        public override void RestrainSize(int aWidth, int aHeight)
         {
-            if (Width > AWidth)
+            if (Width > aWidth)
             {
-                Single vBL = (float)Width / AWidth;
-                Width = AWidth;
+                Single vBL = (float)Width / aWidth;
+                Width = aWidth;
                 Height = (int)Math.Round(Height / vBL);
             }
 
-            if (Height > AHeight)
+            if (Height > aHeight)
             {
-                Single vBL = (float)Height / AHeight;
-                Height = AHeight;
+                Single vBL = (float)Height / aHeight;
+                Height = aHeight;
                 Width = (int)Math.Round(Width / vBL);
             }
         }
 
-        public void LoadFromBmpFile(string AFileName)
+        public void LoadFromBmpFile(string aFileName)
         {
-            FImage = new Bitmap(AFileName);
+            FImage = new Bitmap(aFileName);
             DoImageChange(this);
 
             this.Width = FImage.Width;

@@ -31,9 +31,9 @@ namespace HC.View
             return FOptions.Contains(DrawOption.doLineFirst);
         }
 
-        protected void SetLineFirst(bool Value)
+        protected void SetLineFirst(bool value)
         {
-            if (Value)
+            if (value)
             {
                 FOptions.Add(DrawOption.doLineFirst);
             }
@@ -48,9 +48,9 @@ namespace HC.View
             return FOptions.Contains(DrawOption.doParaFirst);
         }
 
-        protected void SetParaFirst(bool Value)
+        protected void SetParaFirst(bool value)
         {
-            if (Value)
+            if (value)
             {
                 FOptions.Add(DrawOption.doParaFirst);
             }
@@ -131,10 +131,10 @@ namespace HC.View
             ClearFormatMark();
         }
         /// <summary> 在格式化前标记要删除的起始和结束DrawItemNo </summary>
-        public void MarkFormatDelete(int AStartDrawItemNo, int AEndDrawItemNo)
+        public void MarkFormatDelete(int aStartDrawItemNo, int aEndDrawItemNo)
         {
-            FDeleteStartDrawItemNo = AStartDrawItemNo;
-            FDeleteCount = AEndDrawItemNo - AStartDrawItemNo + 1;
+            FDeleteStartDrawItemNo = aStartDrawItemNo;
+            FDeleteCount = aEndDrawItemNo - aStartDrawItemNo + 1;
         }
 
         /// <summary> 删除格式化前标记的起始和结束DrawItemNo </summary>

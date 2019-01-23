@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace HC.View
 {
-    public delegate void PopupPaintEventHandler(HCCanvas ACanvas, RECT AClientRect);
+    public delegate void PopupPaintEventHandler(HCCanvas aCanvas, RECT aClientRect);
 
     public class HCPopupForm : HCObject
     {
@@ -99,7 +99,7 @@ namespace HC.View
 
                 if (User.RegisterClassEx(ref vWndCls) == 0)
                 {
-                    throw new Exception("异常：注册HCPopupForm错误!");
+                    throw new Exception("异常：注册THCPopupForm错误");
                 }
             }
         }
@@ -370,7 +370,7 @@ namespace HC.View
             }
         }
 
-        public void Popup(int X, int Y)
+        public void Popup(int x, int y)
         {
             CreateFormHandle();
             RECT vBound = new RECT();
@@ -379,7 +379,7 @@ namespace HC.View
             int vW = vBound.Width;
             int vH = vBound.Height;
 
-            IntPtr vMonitor = User.MonitorFromPoint(new POINT(X, Y), User.MonitorOptions.MONITOR_DEFAULTTONEAREST);
+            IntPtr vMonitor = User.MonitorFromPoint(new POINT(x, y), User.MonitorOptions.MONITOR_DEFAULTTONEAREST);
 
             if (vMonitor != IntPtr.Zero)
             {
@@ -387,41 +387,41 @@ namespace HC.View
                 vMonInfo.cbSize = 40;
                 User.GetMonitorInfo(vMonitor, ref vMonInfo);
 
-                if (X + vW > vMonInfo.rcWork.Right)
-                    X = vMonInfo.rcWork.Right - vW;
-                if (Y + vH > vMonInfo.rcWork.Bottom)
-                    Y = vBound.Top - vH;
+                if (x + vW > vMonInfo.rcWork.Right)
+                    x = vMonInfo.rcWork.Right - vW;
+                if (y + vH > vMonInfo.rcWork.Bottom)
+                    y = vBound.Top - vH;
 
-                if (X < vMonInfo.rcWork.Left)
-                    X = vMonInfo.rcWork.Left;
-                if (Y < vMonInfo.rcWork.Top)
-                    Y = vMonInfo.rcWork.Top;
+                if (x < vMonInfo.rcWork.Left)
+                    x = vMonInfo.rcWork.Left;
+                if (y < vMonInfo.rcWork.Top)
+                    y = vMonInfo.rcWork.Top;
             }
             else
             {
                 int vScreenWidth = User.GetSystemMetrics(User.SM_CXSCREEN);
                 int vScreenHeight = User.GetSystemMetrics(User.SM_CYSCREEN);
 
-                if (X + vW > vScreenWidth)
-                    X = vScreenWidth - vW;
+                if (x + vW > vScreenWidth)
+                    x = vScreenWidth - vW;
 
-                if (Y + vH > vScreenHeight)
-                    Y = vBound.Top - vH;
+                if (y + vH > vScreenHeight)
+                    y = vBound.Top - vH;
 
-                if (X < 0)
-                    X = 0;
-                if (Y < 0)
-                    Y = 0;
+                if (x < 0)
+                    x = 0;
+                if (y < 0)
+                    y = 0;
             }
 
-            User.SetWindowPos(FPopupWindow, IntPtr.Zero, X, Y, vW, vH, User.SWP_NOACTIVATE | User.SWP_SHOWWINDOW);
+            User.SetWindowPos(FPopupWindow, IntPtr.Zero, x, y, vW, vH, User.SWP_NOACTIVATE | User.SWP_SHOWWINDOW);
             FOpened = true;
             MessageLoop();
         }
 
-        public void ClosePopup(bool ACancel)
+        public void ClosePopup(bool aCancel)
         {
-            if ((!ACancel) && (FOnPopupClose != null))
+            if ((!aCancel) && (FOnPopupClose != null))
                 FOnPopupClose(this, null);
 
             DestroyForm();

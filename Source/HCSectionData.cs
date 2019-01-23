@@ -16,41 +16,42 @@ using System.Text;
 using System.Drawing;
 using System.IO;
 using HC.Win32;
+using System.Xml;
 
 namespace HC.View
 {
-    public delegate POINT GetScreenCoordEventHandler(int X, int Y);
+    public delegate POINT GetScreenCoordEventHandler(int x, int y);
 
-    public class HCSectionData : HCRichData
+    public class HCSectionData : HCViewData
     {
         private EventHandler FOnReadOnlySwitch;
         private GetScreenCoordEventHandler FOnGetScreenCoord;
-        private List<HCFloatItem> FFloatItems;  // THCItems支持Add时控制暂时不用
+        private List<HCCustomFloatItem> FFloatItems;  // THCItems支持Add时控制暂时不用
         int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex, FMouseX, FMouseY;
 
-        private HCFloatItem CreateFloatItemByStyle(int AStyleNo)
+        private HCCustomFloatItem CreateFloatItemByStyle(int aStyleNo)
         {
-            HCFloatItem Result = null;
-            if (AStyleNo == HCFloatStyle.Line)
+            HCCustomFloatItem Result = null;
+            if (aStyleNo == HCFloatStyle.Line)
             {
                 Result = new HCFloatLineItem(this);
             }
             else
-                throw new Exception("未找到类型 " + AStyleNo.ToString() + " 对应的创建FloatItem代码！");
+                throw new Exception("未找到类型 " + aStyleNo.ToString() + " 对应的创建FloatItem代码！");
 
             return Result;
         }
 
-        private int GetFloatItemAt(int X, int Y)
+        private int GetFloatItemAt(int x, int y)
         {
             int Result = -1;
-            HCFloatItem vFloatItem = null;
+            HCCustomFloatItem vFloatItem = null;
 
             for (int i = 0; i <= FFloatItems.Count - 1; i++)
             {
                 vFloatItem = FFloatItems[i];
 
-                if (vFloatItem.PtInClient(X - vFloatItem.Left, Y - vFloatItem.Top))
+                if (vFloatItem.PtInClient(x - vFloatItem.Left, y - vFloatItem.Top))
                 {
                     Result = i;
                     break;
@@ -60,7 +61,7 @@ namespace HC.View
             return Result;
         }
 
-        private HCFloatItem GetActiveFloatItem()
+        private HCCustomFloatItem GetActiveFloatItem()
         {
             if (FFloatItemIndex < 0)
                 return null;
@@ -68,28 +69,28 @@ namespace HC.View
                 return FFloatItems[FFloatItemIndex];
         }
 
-        public override POINT GetScreenCoord(int X, int Y)
+        public override POINT GetScreenCoord(int x, int y)
         {
             if (FOnGetScreenCoord != null)
-                return FOnGetScreenCoord(X, Y);
+                return FOnGetScreenCoord(x, y);
             else
                 return new POINT();
         }
 
-        protected override void SetReadOnly(bool Value)
+        protected override void SetReadOnly(bool value)
         {
-            if (this.ReadOnly != Value)
+            if (this.ReadOnly != value)
             {
-                base.SetReadOnly(Value);
+                base.SetReadOnly(value);
 
                 if (FOnReadOnlySwitch != null)
                     FOnReadOnlySwitch(this, null);
             }
         }
 
-        public HCSectionData(HCStyle AStyle) : base(AStyle)
+        public HCSectionData(HCStyle aStyle) : base(aStyle)
         {
-            FFloatItems = new List<HCFloatItem>();
+            FFloatItems = new List<HCCustomFloatItem>();
             FFloatItemIndex = -1;
             FMouseDownIndex = -1;
             FMouseMoveIndex = -1;
@@ -144,9 +145,9 @@ namespace HC.View
         public bool MouseMoveFloatItem(MouseEventArgs e)
         {
             bool Result = true;
-            if (((Control.ModifierKeys & Keys.Shift) == Keys.Shift) && (FMouseDownIndex >= 0))
+            if ((e.Button == MouseButtons.Left) && (FMouseDownIndex >= 0))
             {
-                HCFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
+                HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, 
                     e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
                 vFloatItem.MouseMove(vMouseArgs);
@@ -177,7 +178,7 @@ namespace HC.View
                 
                 if (vItemIndex >= 0)
                 {
-                    HCFloatItem vFloatItem = FFloatItems[vItemIndex];
+                    HCCustomFloatItem vFloatItem = FFloatItems[vItemIndex];
                     MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
                     e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
                     vFloatItem.MouseMove(vMouseArgs);
@@ -195,7 +196,7 @@ namespace HC.View
 
             if (FMouseDownIndex >= 0)
             {
-                HCFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
+                HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
                     e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
                 vFloatItem.MouseUp(vMouseArgs);
@@ -260,19 +261,19 @@ namespace HC.View
             base.Clear();
         }
 
-        public override void GetCaretInfo(int AItemNo, int AOffset, ref HCCaretInfo ACaretInfo)
+        public override void GetCaretInfo(int aItemNo, int aOffset, ref HCCaretInfo aCaretInfo)
         {
             if (FFloatItemIndex >= 0)
             {
-                ACaretInfo.Visible = false;
+                aCaretInfo.Visible = false;
                 return;
             }
 
-            base.GetCaretInfo(AItemNo, AOffset, ref ACaretInfo);
+            base.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
         }
 
         /// <summary> 插入浮动Item </summary>
-        public bool InsertFloatItem(HCFloatItem AFloatItem)
+        public bool InsertFloatItem(HCCustomFloatItem aFloatItem)
         {
             int vStartNo = this.SelectInfo.StartItemNo;
             int vStartOffset = this.SelectInfo.StartItemOffset;
@@ -280,13 +281,13 @@ namespace HC.View
             // 取选中起始处的DrawItem
             int vDrawNo = this.GetDrawItemNoByOffset(vStartNo, vStartOffset);
             
-            AFloatItem.Left = this.DrawItems[vDrawNo].Rect.Left
+            aFloatItem.Left = this.DrawItems[vDrawNo].Rect.Left
                 + this.GetDrawItemOffsetWidth(vDrawNo, this.SelectInfo.StartItemOffset - this.DrawItems[vDrawNo].CharOffs + 1);
-            AFloatItem.Top = this.DrawItems[vDrawNo].Rect.Top;
+            aFloatItem.Top = this.DrawItems[vDrawNo].Rect.Top;
             
-            this.FloatItems.Add(AFloatItem);
+            this.FloatItems.Add(aFloatItem);
             FFloatItemIndex = this.FloatItems.Count - 1;
-            AFloatItem.Active = true;
+            aFloatItem.Active = true;
             
             if (!this.DisSelect())
                 Style.UpdateInfoRePaint();
@@ -294,35 +295,36 @@ namespace HC.View
             return true;
         }
 
-        public override void SaveToStream(Stream AStream, int AStartItemNo, int AStartOffset,
-            int AEndItemNo, int AEndOffset)
+        public override void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset,
+            int aEndItemNo, int aEndOffset)
         {
-            base.SaveToStream(AStream, AStartItemNo, AStartOffset, AEndItemNo, AEndOffset);
+            base.SaveToStream(aStream, aStartItemNo, aStartOffset, aEndItemNo, aEndOffset);
 
             byte[] vBuffer = BitConverter.GetBytes(FFloatItems.Count);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
             for (int i = 0; i <= FFloatItems.Count - 1; i++)
-                FFloatItems[i].SaveToStream(AStream, 0, HC.OffsetAfter);
+                FFloatItems[i].SaveToStream(aStream, 0, HC.OffsetAfter);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
-            if (AFileVersion > 12)
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            if (aFileVersion > 12)
             {
                 int vFloatCount = 0;
                 byte[] vBuffer = BitConverter.GetBytes(vFloatCount);
-                AStream.Read(vBuffer, 0, vBuffer.Length);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
                 vFloatCount = BitConverter.ToInt32(vBuffer, 0);
-                HCFloatItem vFloatItem = null;
+                HCCustomFloatItem vFloatItem = null;
                 
                 while (vFloatCount > 0)
                 {
                     int vStyleNo = HCStyle.Null;
                     vBuffer = BitConverter.GetBytes(vStyleNo);
-                    AStream.Read(vBuffer, 0, vBuffer.Length);
+                    aStream.Read(vBuffer, 0, vBuffer.Length);
+                    vStyleNo = BitConverter.ToInt32(vBuffer, 0);
                     vFloatItem = CreateFloatItemByStyle(vStyleNo);
-                    vFloatItem.LoadFromStream(AStream, AStyle, AFileVersion);
+                    vFloatItem.LoadFromStream(aStream, aStyle, aFileVersion);
                     FFloatItems.Add(vFloatItem);
 
                     vFloatCount--;
@@ -330,18 +332,54 @@ namespace HC.View
             }
         }
 
-        public virtual void PaintFloatItems(int APageIndex, int ADataDrawLeft, int ADataDrawTop,
-            int AVOffset, HCCanvas ACanvas, PaintInfo APaintInfo)
+        public override void ToXml(XmlElement aNode)
         {
-            HCFloatItem vFloatItem = null;
+            XmlElement vNode = aNode.OwnerDocument.CreateElement("items");
+            base.ToXml(vNode);
+            aNode.AppendChild(vNode);
+
+            vNode = aNode.OwnerDocument.CreateElement("floatitems");
+            vNode.Attributes["count"].Value = FFloatItems.Count.ToString();
+            for (int i = 0; i < FFloatItems.Count - 1; i++)
+            {
+                XmlElement vFloatItemNode = aNode.OwnerDocument.CreateElement("floatitem");
+                FFloatItems[i].ToXml(vFloatItemNode);
+                vNode.AppendChild(vFloatItemNode);
+            }
+            aNode.AppendChild(vNode);
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            XmlElement vItemsNode = aNode.SelectSingleNode("items") as XmlElement;
+            base.ParseXml(aNode);
+            vItemsNode = aNode.SelectSingleNode("floatitems") as XmlElement;
+            for (int i = 0; i <= vItemsNode.ChildNodes.Count - 1; i++)
+            {
+                XmlElement vNode = vItemsNode.ChildNodes[i] as XmlElement;
+                HCCustomFloatItem vFloatItem = CreateFloatItemByStyle(int.Parse(aNode.Attributes["sno"].Value));
+                vFloatItem.ParseXml(vNode);
+                FFloatItems.Add(vFloatItem);
+            }
+        }
+
+        public virtual void PaintFloatItems(int aPageIndex, int aDataDrawLeft, int aDataDrawTop,
+            int aVOffset, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            HCCustomFloatItem vFloatItem = null;
 
             for (int i = 0; i <= FFloatItems.Count - 1; i++)
             {
                 vFloatItem = FFloatItems[i];
-                vFloatItem.DrawRect = HC.Bounds(vFloatItem.Left, vFloatItem.Top, vFloatItem.Width, vFloatItem.Height);
-                vFloatItem.DrawRect.Offset(ADataDrawLeft, ADataDrawTop - AVOffset);  // 将数据起始位置映射到绘制位置
-                vFloatItem.PaintTo(this.Style, vFloatItem.DrawRect, ADataDrawTop, 0,
-                    0, 0, ACanvas, APaintInfo);
+                // 代替下面不生效的代码
+                RECT vRect = HC.Bounds(vFloatItem.Left, vFloatItem.Top, vFloatItem.Width, vFloatItem.Height);
+                vRect.Offset(aDataDrawLeft, aDataDrawTop - aVOffset);  // 将数据起始位置映射到绘制位置
+                vFloatItem.DrawRect = vRect;
+                // 下面的操作vFloatItemDraw.DrawRect.Offset并不生效
+                //vFloatItem.DrawRect = HC.Bounds(vFloatItem.Left, vFloatItem.Top, vFloatItem.Width, vFloatItem.Height);
+                //vFloatItem.DrawRect.Offset(aDataDrawLeft, aDataDrawTop - aVOffset);  // 将数据起始位置映射到绘制位置
+                vFloatItem.PaintTo(this.Style, vFloatItem.DrawRect, aDataDrawTop, 0,
+                    0, 0, aCanvas, aPaintInfo);
             }
         }
 
@@ -350,12 +388,12 @@ namespace HC.View
             get { return FFloatItemIndex; }
         }
 
-        public HCFloatItem ActiveFloatItem
+        public HCCustomFloatItem ActiveFloatItem
         {
             get { return GetActiveFloatItem(); }
         }
 
-        public List<HCFloatItem> FloatItems
+        public List<HCCustomFloatItem> FloatItems
         {
             get { return FFloatItems; }
         }
@@ -396,28 +434,28 @@ namespace HC.View
         private bool FShowLineNo;  // 行号
         private int FReFormatStartItemNo;
 
-        private int GetPageDataFmtTop(int APageIndex)
+        private int GetPageDataFmtTop(int aPageIndex)
         {
             return 0;
         }
 
-        protected override void ReFormatData_(int AStartItemNo, int ALastItemNo = -1, int AExtraItemCount = 0)
+        protected override void _ReFormatData(int aStartItemNo, int aLastItemNo = -1, int aExtraItemCount = 0)
         {
-            FReFormatStartItemNo = AStartItemNo;
-            base.ReFormatData_(AStartItemNo, ALastItemNo, AExtraItemCount);
+            FReFormatStartItemNo = aStartItemNo;
+            base._ReFormatData(aStartItemNo, aLastItemNo, aExtraItemCount);
         }
 
-        protected override void DoDrawItemPaintBefor(HCCustomData AData, int ADrawItemNo, 
-            RECT ADrawRect, int ADataDrawLeft, int ADataDrawBottom, int ADataScreenTop,
+        protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, 
+            RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintBefor(AData, ADrawItemNo, ADrawRect, ADataDrawLeft,
-            ADataDrawBottom, ADataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
+            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+            aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
             if (!APaintInfo.Print)
             {
                 if (FShowLineActiveMark)
                 {
-                    if (ADrawItemNo == GetSelectStartDrawItemNo())
+                    if (aDrawItemNo == GetSelectStartDrawItemNo())
                     {
                         ACanvas.Pen.BeginUpdate();
                         try
@@ -430,27 +468,27 @@ namespace HC.View
                             ACanvas.Pen.EndUpdate();
                         }
 
-                        int vTop = ADrawRect.Top + DrawItems[ADrawItemNo].Height() / 2;
-                        ACanvas.MoveTo(ADataDrawLeft - 10, vTop);
-                        ACanvas.LineTo(ADataDrawLeft - 11, vTop);
-                        ACanvas.MoveTo(ADataDrawLeft - 11, vTop - 1);
-                        ACanvas.LineTo(ADataDrawLeft - 11, vTop + 2);
-                        ACanvas.MoveTo(ADataDrawLeft - 12, vTop - 2);
-                        ACanvas.LineTo(ADataDrawLeft - 12, vTop + 3);
-                        ACanvas.MoveTo(ADataDrawLeft - 13, vTop - 3);
-                        ACanvas.LineTo(ADataDrawLeft - 13, vTop + 4);
-                        ACanvas.MoveTo(ADataDrawLeft - 14, vTop - 4);
-                        ACanvas.LineTo(ADataDrawLeft - 14, vTop + 5);
-                        ACanvas.MoveTo(ADataDrawLeft - 15, vTop - 2);
-                        ACanvas.LineTo(ADataDrawLeft - 15, vTop + 3);
-                        ACanvas.MoveTo(ADataDrawLeft - 16, vTop - 2);
-                        ACanvas.LineTo(ADataDrawLeft - 16, vTop + 3);
+                        int vTop = aDrawRect.Top + DrawItems[aDrawItemNo].Height() / 2;
+                        ACanvas.MoveTo(aDataDrawLeft - 10, vTop);
+                        ACanvas.LineTo(aDataDrawLeft - 11, vTop);
+                        ACanvas.MoveTo(aDataDrawLeft - 11, vTop - 1);
+                        ACanvas.LineTo(aDataDrawLeft - 11, vTop + 2);
+                        ACanvas.MoveTo(aDataDrawLeft - 12, vTop - 2);
+                        ACanvas.LineTo(aDataDrawLeft - 12, vTop + 3);
+                        ACanvas.MoveTo(aDataDrawLeft - 13, vTop - 3);
+                        ACanvas.LineTo(aDataDrawLeft - 13, vTop + 4);
+                        ACanvas.MoveTo(aDataDrawLeft - 14, vTop - 4);
+                        ACanvas.LineTo(aDataDrawLeft - 14, vTop + 5);
+                        ACanvas.MoveTo(aDataDrawLeft - 15, vTop - 2);
+                        ACanvas.LineTo(aDataDrawLeft - 15, vTop + 3);
+                        ACanvas.MoveTo(aDataDrawLeft - 16, vTop - 2);
+                        ACanvas.LineTo(aDataDrawLeft - 16, vTop + 3);
                     }
                 }
                 
                 if (FShowUnderLine)
                 {
-                    if (DrawItems[ADrawItemNo].LineFirst)
+                    if (DrawItems[aDrawItemNo].LineFirst)
                     {
                         ACanvas.Pen.BeginUpdate();
                         try
@@ -463,17 +501,17 @@ namespace HC.View
                             ACanvas.Pen.EndUpdate();
                         }
                             
-                        ACanvas.MoveTo(ADataDrawLeft, ADrawRect.Bottom);
-                        ACanvas.LineTo(ADataDrawLeft + this.Width, ADrawRect.Bottom);
+                        ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Bottom);
+                        ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Bottom);
                     }
                 }
 
                 if (FShowLineNo)
                 {
-                    if (DrawItems[ADrawItemNo].LineFirst)
+                    if (DrawItems[aDrawItemNo].LineFirst)
                     {
                         int vLineNo = 0;
-                        for (int i = 0; i <= ADrawItemNo; i++)
+                        for (int i = 0; i <= aDrawItemNo; i++)
                         {
                             if (DrawItems[i].LineFirst)
                                 vLineNo++;
@@ -498,8 +536,8 @@ namespace HC.View
 
                                 ACanvas.Brush.Color = Color.FromArgb(180, 180, 180);
                                 GDI.SelectObject(ACanvas.Handle, vFont.Handle);
-                                int vTop = ADrawRect.Top + (ADrawRect.Bottom - ADrawRect.Top - 16) / 2;
-                                ACanvas.TextOut(ADataDrawLeft - 50, vTop, vLineNo.ToString());
+                                int vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - 16) / 2;
+                                ACanvas.TextOut(aDataDrawLeft - 50, vTop, vLineNo.ToString());
                             }
                         }
                         finally
@@ -511,12 +549,12 @@ namespace HC.View
             }
         }
 
-        protected override void DoDrawItemPaintAfter(HCCustomData AData, int ADrawItemNo, RECT ADrawRect,
-            int ADataDrawLeft, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom,
+        protected override void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintAfter(AData, ADrawItemNo, ADrawRect, ADataDrawLeft, ADataDrawBottom, 
-                ADataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
+            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom, 
+                aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
         public override void MouseDown(MouseEventArgs e)
@@ -534,48 +572,48 @@ namespace HC.View
                 base.MouseDown(e);
         }
 
-        public override void SaveToStream(Stream AStream)
+        public override void SaveToStream(Stream aStream)
         {
             byte[] vBuffer = BitConverter.GetBytes(FShowUnderLine);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-            base.SaveToStream(AStream);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+            base.SaveToStream(aStream);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             byte[] vBuffer = BitConverter.GetBytes(FShowUnderLine);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FShowUnderLine = BitConverter.ToBoolean(vBuffer, 0);
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
         }
 
-        public override bool InsertStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            return base.InsertStream(AStream, AStyle, AFileVersion);
+            return base.InsertStream(aStream, aStyle, aFileVersion);
         }
 
-        public HCPageData(HCStyle AStyle) : base(AStyle)
+        public HCPageData(HCStyle aStyle) : base(aStyle)
         {
             FShowLineActiveMark = false;
             FShowUnderLine = false;
             FShowLineNo = false;
         }
 
-        public override void PaintFloatItems(int APageIndex, int ADataDrawLeft,
-            int ADataDrawTop, int AVOffset, HCCanvas ACanvas, PaintInfo APaintInfo)
+        public override void PaintFloatItems(int aPageIndex, int aDataDrawLeft,
+            int aDataDrawTop, int aVOffset, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            HCFloatItem vFloatItem = null;
+            HCCustomFloatItem vFloatItem = null;
 
             for (int i = 0; i <= this.FloatItems.Count - 1; i++)
             {
                 vFloatItem = this.FloatItems[i];
 
-                if (vFloatItem.PageIndex == APageIndex)
+                if (vFloatItem.PageIndex == aPageIndex)
                 {
                     vFloatItem.DrawRect = HC.Bounds(vFloatItem.Left, vFloatItem.Top, vFloatItem.Width, vFloatItem.Height);
-                    vFloatItem.DrawRect.Offset(ADataDrawLeft, ADataDrawTop - AVOffset);  // 将数据起始位置映射到绘制位置
-                    vFloatItem.PaintTo(this.Style, vFloatItem.DrawRect, ADataDrawTop, 0,
-                        0, 0, ACanvas, APaintInfo);
+                    vFloatItem.DrawRect.Offset(aDataDrawLeft, aDataDrawTop - aVOffset);  // 将数据起始位置映射到绘制位置
+                    vFloatItem.PaintTo(this.Style, vFloatItem.DrawRect, aDataDrawTop, 0,
+                        0, 0, aCanvas, aPaintInfo);
                 }
             }
         }
@@ -595,12 +633,6 @@ namespace HC.View
             return this.InsertItem(vPageBreak);
         }
 
-        /// <summary> 插入批注 </summary>
-        public bool InsertAnnotate(string AText)
-        {
-            return false;
-        }
-
         //
         // 保存
         public string GetTextStr()
@@ -612,12 +644,12 @@ namespace HC.View
             return Result;
         }
 
-        public void SaveToText(string AFileName, Encoding AEncoding)
+        public void SaveToText(string aFileName, Encoding aEncoding)
         {
-            FileStream vStream = new FileStream(AFileName, FileMode.Create, FileAccess.Write);
+            FileStream vStream = new FileStream(aFileName, FileMode.Create, FileAccess.Write);
             try
             {
-                SaveToTextStream(vStream, AEncoding);
+                SaveToTextStream(vStream, aEncoding);
             }
             finally
             {
@@ -625,25 +657,25 @@ namespace HC.View
             }
         }
 
-        public void SaveToTextStream(Stream AStream, Encoding AEncoding)
+        public void SaveToTextStream(Stream aStream, Encoding aEncoding)
         {
-            byte[] vBuffer = AEncoding.GetBytes(GetTextStr());
-            byte[] vPreamble = AEncoding.GetPreamble();
+            byte[] vBuffer = aEncoding.GetBytes(GetTextStr());
+            byte[] vPreamble = aEncoding.GetPreamble();
             if (vPreamble.Length > 0)
-                AStream.Write(vPreamble, 0, vPreamble.Length);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+                aStream.Write(vPreamble, 0, vPreamble.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
         // 读取
-        public void LoadFromText(string AFileName, Encoding AEncoding)
+        public void LoadFromText(string aFileName, Encoding aEncoding)
         {
-            FileStream vStream = new FileStream(AFileName, FileMode.Open, FileAccess.Read);
+            FileStream vStream = new FileStream(aFileName, FileMode.Open, FileAccess.Read);
             try
             {
-                string vFileFormat = Path.GetExtension(AFileName);
+                string vFileFormat = Path.GetExtension(aFileName);
                 vFileFormat = vFileFormat.ToLower();
                 if (vFileFormat == ".txt")
-                    LoadFromTextStream(vStream, AEncoding);
+                    LoadFromTextStream(vStream, aEncoding);
             }
             finally
             {
@@ -651,13 +683,13 @@ namespace HC.View
             }
         }
 
-        public void LoadFromTextStream(Stream AStream, Encoding AEncoding)
+        public void LoadFromTextStream(Stream aStream, Encoding aEncoding)
         {
             Clear();
-            long vSize = AStream.Length - AStream.Position;
+            long vSize = aStream.Length - aStream.Position;
             byte[] vBuffer = new byte[vSize];
-            AStream.Read(vBuffer, 0, (int)vSize);
-            string vS = AEncoding.GetString(vBuffer);
+            aStream.Read(vBuffer, 0, (int)vSize);
+            string vS = aEncoding.GetString(vBuffer);
             if (vS != "")
                 InsertText(vS);
         }

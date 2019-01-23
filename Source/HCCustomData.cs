@@ -18,20 +18,21 @@ using System.IO;
 using System.Drawing.Drawing2D;
 using HC.Win32;
 using System.Runtime.InteropServices;
+using System.Xml;
 
 namespace HC.View
 {
-    public delegate void TraverseItemEventHandle(HCCustomData AData, int AItemNo, int ATag, ref bool AStop);
+    public delegate void TraverseItemEventHandle(HCCustomData aData, int aItemNo, int aTag, ref bool aStop);
 
     public class HCItemTraverse
     {
-        public SectionArea Area;
+        public HCSet Area;
         public int Tag;
         public bool Stop;
         public TraverseItemEventHandle Process;
     }
 
-    public class SelectInfo
+    public class SelectInfo : object
     {
         private int FStartItemNo,  // 不能使用DrawItem记录，因为内容变动时Item的指定Offset对应的DrawItem，可能和变动前不一样
             FStartItemOffset,  // 选中起始在第几个字符后面，0表示在Item最前面
@@ -47,8 +48,8 @@ namespace HC.View
         {
 
         }
-    
-        public void Initialize()
+
+        public virtual void Initialize()
         {
             FStartItemNo = -1;
             FStartItemOffset = -1;
@@ -93,15 +94,15 @@ namespace HC.View
         int FCaretDrawItemNo;  // 当前Item光标处的DrawItem限定其只在相关的光标处理中使用(解决同一Item分行后Offset为行尾时不能区分是上行尾还是下行始)
         GetUndoListEventHandler FOnGetUndoList;
 
-        private void DrawItemPaintBefor(HCCustomData AData, int ADrawItemNo, RECT ADrawRect,
-            int ADataDrawLeft, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom,
+        private void DrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             int vDCState = ACanvas.Save();
             try
             {
-                this.DoDrawItemPaintBefor(AData, ADrawItemNo, ADrawRect, ADataDrawLeft, ADataDrawBottom, ADataScreenTop,
-                    ADataScreenBottom, ACanvas, APaintInfo);
+                this.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom, aDataScreenTop,
+                    aDataScreenBottom, ACanvas, APaintInfo);
             }
             finally
             {
@@ -109,19 +110,35 @@ namespace HC.View
             }
         }
 
-        private void DrawItemPaintAfter(HCCustomData AData, int ADrawItemNo, RECT ADrawRect,
-            int ADataDrawLeft, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom,
-            HCCanvas ACanvas, PaintInfo APaintInfo)
+        private void DrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            int vDCState = ACanvas.Save();
+            int vDCState = aCanvas.Save();
             try
             {
-                this.DoDrawItemPaintAfter(AData, ADrawItemNo, ADrawRect, ADataDrawLeft, ADataDrawBottom, ADataScreenTop,
-                    ADataScreenBottom, ACanvas, APaintInfo);
+                this.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom, aDataScreenTop,
+                    aDataScreenBottom, aCanvas, aPaintInfo);
             }
             finally
             {
-                ACanvas.Restore(vDCState);
+                aCanvas.Restore(vDCState);
+            }
+        }
+
+        private void DrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+            RECT aClearRect, string aDrawText, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
+            int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            int vDCState = aCanvas.Save();
+            try
+            {
+                this.DoDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
+                    aDataDrawLeft, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
+            }
+            finally
+            {
+                aCanvas.Restore(vDCState);
             }
         }
 
@@ -214,26 +231,66 @@ namespace HC.View
             }
         }
 
+        protected virtual HCCustomItem CreateItemByStyle(int aStyleNo)
+        {
+            return null;
+        }
+
+        /// <summary> 准备格式化参数 </summary>
+        /// <param name="AStartItemNo">开始格式化的Item</param>
+        /// <param name="APrioDItemNo">上一个Item的最后一个DrawItemNo</param>
+        /// <param name="APos">开始格式化位置</param>
+        protected virtual void _FormatReadyParam(int aStartItemNo, ref int aPrioDrawItemNo, ref POINT aPos) { }
+
+        // Format仅负责格式化Item，ReFormat负责格式化后对后面Item和DrawItem的关联处理
+        protected virtual void _ReFormatData(int aStartItemNo, int aLastItemNo = -1, int aExtraItemCount = 0) { }
+
+        /// <summary> 当前Item对应的格式化起始Item和结束Item(段最后一个Item) </summary>
+        /// <param name="AFirstItemNo">起始ItemNo</param>
+        /// <param name="ALastItemNo">结束ItemNo</param>
+        protected void GetReformatItemRange(ref int aFirstItemNo, ref int aLastItemNo)
+        {
+            GetReformatItemRange(ref aFirstItemNo, ref aLastItemNo, FSelectInfo.StartItemNo, FSelectInfo.StartItemOffset);
+        }
+
+        /// <summary> 指定Item对应的格式化起始Item和结束Item(段最后一个Item) </summary>
+        /// <param name="AFirstItemNo">起始ItemNo</param>
+        /// <param name="ALastItemNo">结束ItemNo</param>
+        protected void GetReformatItemRange(ref int aFirstItemNo, ref int aLastItemNo, int aItemNo, int aItemOffset)
+        {
+            if ((aItemNo > 0) && FDrawItems[FItems[aItemNo].FirstDItemNo].LineFirst && (aItemOffset == 0))  // 在开头
+            {
+                if (!FItems[aItemNo].ParaFirst)  // 不是段首
+                    aFirstItemNo = GetLineFirstItemNo(aItemNo - 1, FItems[aItemNo - 1].Length);
+                else  // 是段首
+                    aFirstItemNo = aItemNo;
+            }
+            else
+                aFirstItemNo = GetLineFirstItemNo(aItemNo, 0);  // 取行第一个DrawItem对应的ItemNo
+
+            aLastItemNo = GetParaLastItemNo(aItemNo);
+        }
+
         /// <summary> 式化时，记录起始DrawItem和段最后的DrawItem </summary>
-        /// <param name="AStartItemNo"></param>
-        protected void FormatItemPrepare(int AStartItemNo, int AEndItemNo = -1)
+        /// <param name="aStartItemNo"></param>
+        protected void _FormatItemPrepare(int aStartItemNo, int aEndItemNo = -1)
         {
             int vLastDrawItemNo = -1;
-            int vFirstDrawItemNo = FItems[AStartItemNo].FirstDItemNo;
-            if (AEndItemNo < 0)
+            int vFirstDrawItemNo = FItems[aStartItemNo].FirstDItemNo;
+            if (aEndItemNo < 0)
             {
-                vLastDrawItemNo = GetItemLastDrawItemNo(AStartItemNo);
+                vLastDrawItemNo = GetItemLastDrawItemNo(aStartItemNo);
             }
             else
             {
-                vLastDrawItemNo = GetItemLastDrawItemNo(AEndItemNo);
+                vLastDrawItemNo = GetItemLastDrawItemNo(aEndItemNo);
             }
 
             FDrawItems.MarkFormatDelete(vFirstDrawItemNo, vLastDrawItemNo);
             FDrawItems.FormatBeforBottom = FDrawItems[vLastDrawItemNo].Rect.Bottom;
         }
 
-        private static bool IsCharSameType(Char A, Char B)
+        private static bool IsCharSameType(Char a, char b)
         {
             //if A = B then
             //  Result := True
@@ -241,41 +298,41 @@ namespace HC.View
               return false;
         }
         /// <summary> 返回字符串AText的分散分隔数量和各分隔的起始位置 </summary>
-        /// <param name="AText">要计算的字符串</param>
-        /// <param name="ACharIndexs">记录各分隔的起始位置</param>
+        /// <param name="aText">要计算的字符串</param>
+        /// <param name="aCharIndexs">记录各分隔的起始位置</param>
         /// <returns>分散分隔数量</returns>
-        private static int GetJustifyCount(string AText, List<int> ACharIndexs)
+        private static int GetJustifyCount(string aText, List<int> aCharIndexs)
         {
             int Result = 0;
-            if (AText == "")
+            if (aText == "")
             {
                 throw new Exception("异常：不能对空字符串计算分散!");
             }
 
-            if (ACharIndexs != null)
+            if (aCharIndexs != null)
             {
-                ACharIndexs.Clear();
+                aCharIndexs.Clear();
             }
 
             Char vProvChar = (Char)0;
 
-            for (int i = 1; i <= AText.Length; i++)
+            for (int i = 1; i <= aText.Length; i++)
             {
-                if (!IsCharSameType(vProvChar, AText[i - 1]))
+                if (!IsCharSameType(vProvChar, aText[i - 1]))
                 {
                     Result++;
-                    if (ACharIndexs != null)
+                    if (aCharIndexs != null)
                     {
-                        ACharIndexs.Add(i);
+                        aCharIndexs.Add(i);
                     }
                 }
                 
-                vProvChar = AText[i - 1];
+                vProvChar = aText[i - 1];
             }
 
-            if (ACharIndexs != null)
+            if (aCharIndexs != null)
             {
-                ACharIndexs.Add(AText.Length + 1);
+                aCharIndexs.Add(aText.Length + 1);
             }
 
             return Result;
@@ -308,23 +365,23 @@ namespace HC.View
         /// <summary>
         /// 获取字符串排版时截断到下一行的位置
         /// </summary>
-        /// <param name="AText"></param>
+        /// <param name="aText"></param>
         /// <param name="APos">在第X个后面断开 X > 0</param>
-        private void FindLineBreak(string AText, int AStartPos, ref int APos)
+        private void FindLineBreak(string aText, int aStartPos, ref int APos)
         {
             CharType vPosType, vPrevType, vNextType;
-            GetHeadTailBreak(AText, ref APos);  // 根据行首、尾的约束条件找APos不符合时应该在哪一个位置并重新赋值给APos
-            vPosType = HC.GetCharType((ushort)(AText[APos - 1]));  // 当前类型
-            vNextType = HC.GetCharType((ushort)(AText[APos + 1 - 1]));  // 下一个字符类型
+            GetHeadTailBreak(aText, ref APos);  // 根据行首、尾的约束条件找APos不符合时应该在哪一个位置并重新赋值给APos
+            vPosType = HC.GetUnicodeCharType((ushort)(aText[APos - 1]));  // 当前类型
+            vNextType = HC.GetUnicodeCharType((ushort)(aText[APos + 1 - 1]));  // 下一个字符类型
 
-            if (HC.MatchBreak(vPosType, vNextType) != BreakPosition.jbpPrev)  // 不能在当前截断，当前往前找截断
+            if (HC.MatchBreak(vPosType, vNextType, aText, aStartPos) != BreakPosition.jbpPrev)  // 不能在当前截断，当前往前找截断
             {
                 if (vPosType != CharType.jctBreak)
                 {
-                    for (int i = APos - 1; i >= AStartPos + 1; i--)
+                    for (int i = APos - 1; i >= aStartPos + 1; i--)
                     {
-                        vPrevType = HC.GetCharType((ushort)(AText[i - 1]));
-                        if (HC.MatchBreak(vPrevType, vPosType) == BreakPosition.jbpPrev)
+                        vPrevType = HC.GetUnicodeCharType((ushort)(aText[i - 1]));
+                        if (HC.MatchBreak(vPrevType, vPosType, aText, aStartPos) == BreakPosition.jbpPrev)
                         {
                             APos = i;
                             break;
@@ -338,25 +395,25 @@ namespace HC.View
 #endregion
 
         /// <summary> 从指定偏移和指定位置开始格式化Text </summary>
-        /// <param name="ACharOffset">文本格式化的起始偏移</param>
-        /// <param name="APlaceWidth">呈放文本的宽度</param>
-        /// <param name="ABasePos">vCharWidths中对应偏移的起始位置</param>
-        private void DoFormatTextItemToDrawItems(string vText, int ACharOffset, int APlaceWidth, int ABasePos,
-            int AItemNo, int viLen, int vItemHeight, int AContentWidth, int[] vCharWidths, ref bool vParaFirst, 
-            ref bool vLineFirst, ref POINT APos,  ref RECT vRect, ref int vRemainderWidth,
-            ref int ALastDrawItemNo)
+        /// <param name="aCharOffset">文本格式化的起始偏移</param>
+        /// <param name="aPlaceWidth">呈放文本的宽度</param>
+        /// <param name="aBasePos">vCharWidths中对应偏移的起始位置</param>
+        private void DoFormatTextItemToDrawItems(string vText, int aCharOffset, int aPlaceWidth, int aBasePos,
+            int aItemNo, int viLen, int vItemHeight, int aContentWidth, int[] vCharWidths, ref bool vParaFirst, 
+            ref bool vLineFirst, ref POINT aPos,  ref RECT vRect, ref int vRemainderWidth,
+            ref int aLastDrawItemNo)
         {
             int viPlaceOffset,  // 能放下第几个字符
             viBreakOffset,  // 第几个字符放不下
             vFirstCharWidth;  // 第一个字符的宽度
 
-            vLineFirst = (APos.X == 0);
+            vLineFirst = (aPos.X == 0);
             viBreakOffset = 0;  // 换行位置，第几个字符放不下
-            vFirstCharWidth = vCharWidths[ACharOffset - 1] - ABasePos;  // 第一个字符的宽度
+            vFirstCharWidth = vCharWidths[aCharOffset - 1] - aBasePos;  // 第一个字符的宽度
 
-            for (int i = ACharOffset - 1; i <= viLen - 1; i++)
+            for (int i = aCharOffset - 1; i <= viLen - 1; i++)
             {
-                if (vCharWidths[i] - ABasePos > APlaceWidth)
+                if (vCharWidths[i] - aBasePos > aPlaceWidth)
                 {
                     viBreakOffset = i + 1;
                     break;
@@ -365,56 +422,56 @@ namespace HC.View
 
             if (viBreakOffset < 1)  // 当前行剩余空间把vText全放置下了
             {
-                vRect.Left = APos.X;
-                vRect.Top = APos.Y;
-                vRect.Width = vCharWidths[viLen - 1] - ABasePos;  // 使用自定义测量的结果
+                vRect.Left = aPos.X;
+                vRect.Top = aPos.Y;
+                vRect.Width = vCharWidths[viLen - 1] - aBasePos;  // 使用自定义测量的结果
                 vRect.Height = vItemHeight;
-                NewDrawItem(AItemNo, ACharOffset, viLen - ACharOffset + 1, vRect, vParaFirst, vLineFirst, ref ALastDrawItemNo);
+                NewDrawItem(aItemNo, aCharOffset, viLen - aCharOffset + 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
                 vParaFirst = false;
 
-                vRemainderWidth = AContentWidth - vRect.Right;  // 放入最多后的剩余量
+                vRemainderWidth = aContentWidth - vRect.Right;  // 放入最多后的剩余量
             }
             else
             if (viBreakOffset == 1)  // 当前行剩余空间连第一个字符也放不下
             {
-                if (vFirstCharWidth > AContentWidth)  // Data的宽度不足一个字符
+                if (vFirstCharWidth > aContentWidth)  // Data的宽度不足一个字符
                 {
-                    vRect.Left = APos.X;
-                    vRect.Top = APos.Y;
-                    vRect.Width = vCharWidths[viLen - 1] - ABasePos;  // 使用自定义测量的结果
+                    vRect.Left = aPos.X;
+                    vRect.Top = aPos.Y;
+                    vRect.Width = vCharWidths[viLen - 1] - aBasePos;  // 使用自定义测量的结果
                     vRect.Height = vItemHeight;
-                    NewDrawItem(AItemNo, ACharOffset, 1, vRect, vParaFirst, vLineFirst, ref ALastDrawItemNo);
+                    NewDrawItem(aItemNo, aCharOffset, 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
                     vParaFirst = false;
 
-                    vRemainderWidth = AContentWidth - vRect.Right;  // 放入最多后的剩余量
-                    FinishLine(AItemNo, ALastDrawItemNo, vRemainderWidth);
+                    vRemainderWidth = aContentWidth - vRect.Right;  // 放入最多后的剩余量
+                    FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
 
                     // 偏移到下一行顶端，准备另起一行
-                    APos.X = 0;
-                    APos.Y = FDrawItems[ALastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
+                    aPos.X = 0;
+                    aPos.Y = FDrawItems[aLastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
 
                     if (viBreakOffset < viLen)
                     {
-                        DoFormatTextItemToDrawItems(vText, viBreakOffset + 1, AContentWidth, vCharWidths[viBreakOffset - 1],
-                            AItemNo, viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos, 
-                            ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
+                        DoFormatTextItemToDrawItems(vText, viBreakOffset + 1, aContentWidth, vCharWidths[viBreakOffset - 1],
+                            aItemNo, viLen, vItemHeight, aContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, 
+                            ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     }
                 }
                 else  // Data的宽度足够一个字符
                 {
-                    vRemainderWidth = APlaceWidth;
-                    FinishLine(AItemNo, ALastDrawItemNo, vRemainderWidth);
+                    vRemainderWidth = aPlaceWidth;
+                    FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
                     // 偏移到下一行开始计算
-                    APos.X = 0;
-                    APos.Y = FDrawItems[ALastDrawItemNo].Rect.Bottom;
-                    DoFormatTextItemToDrawItems(vText, ACharOffset, AContentWidth, ABasePos,
-                        AItemNo, viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos,
-                        ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
+                    aPos.X = 0;
+                    aPos.Y = FDrawItems[aLastDrawItemNo].Rect.Bottom;
+                    DoFormatTextItemToDrawItems(vText, aCharOffset, aContentWidth, aBasePos,
+                        aItemNo, viLen, vItemHeight, aContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos,
+                        ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                 }
             }
             else  // 当前行剩余宽度能放下当前Text的一部分
             {
-                if (vFirstCharWidth > AContentWidth)  // Data的宽度不足一个字符
+                if (vFirstCharWidth > aContentWidth)  // Data的宽度不足一个字符
                 {
                     viPlaceOffset = viBreakOffset;
                 }
@@ -423,11 +480,11 @@ namespace HC.View
                     viPlaceOffset = viBreakOffset - 1;  // 第viBreakOffset个字符放不下，前一个能放下
                 }
 
-                FindLineBreak(vText, ACharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
+                FindLineBreak(vText, aCharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
 
-                if (viPlaceOffset < ACharOffset)  // 找不到截断位置，就在原位置截断(如整行文本都是逗号)
+                if (viPlaceOffset < aCharOffset)  // 找不到截断位置，就在原位置截断(如整行文本都是逗号)
                 {
-                    if (vFirstCharWidth > AContentWidth)  // Data的宽度不足一个字符
+                    if (vFirstCharWidth > aContentWidth)  // Data的宽度不足一个字符
                     {
                         viPlaceOffset = viBreakOffset;
                     }
@@ -437,34 +494,34 @@ namespace HC.View
                     }
                 }
 
-                vRect.Left = APos.X;
-                vRect.Top = APos.Y;
-                vRect.Width = vCharWidths[viPlaceOffset - 1] - ABasePos;  // 使用自定义测量的结果
+                vRect.Left = aPos.X;
+                vRect.Top = aPos.Y;
+                vRect.Width = vCharWidths[viPlaceOffset - 1] - aBasePos;  // 使用自定义测量的结果
                 vRect.Height = vItemHeight;
 
-                NewDrawItem(AItemNo, ACharOffset, viPlaceOffset - ACharOffset + 1, vRect, vParaFirst, vLineFirst, ref ALastDrawItemNo);
+                NewDrawItem(aItemNo, aCharOffset, viPlaceOffset - aCharOffset + 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
                 vParaFirst = false;
 
-                vRemainderWidth = AContentWidth - vRect.Right;  // 放入最多后的剩余量
-                FinishLine(AItemNo, ALastDrawItemNo, vRemainderWidth);
+                vRemainderWidth = aContentWidth - vRect.Right;  // 放入最多后的剩余量
+                FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
 
                 // 偏移到下一行顶端，准备另起一行
-                APos.X = 0;
-                APos.Y = FDrawItems[ALastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
+                aPos.X = 0;
+                aPos.Y = FDrawItems[aLastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
 
                 if (viPlaceOffset < viLen)
                 {
-                    DoFormatTextItemToDrawItems(vText, viPlaceOffset + 1, AContentWidth, vCharWidths[viPlaceOffset - 1],
-                        AItemNo, viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos,
-                        ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
+                    DoFormatTextItemToDrawItems(vText, viPlaceOffset + 1, aContentWidth, vCharWidths[viPlaceOffset - 1],
+                        aItemNo, viLen, vItemHeight, aContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos,
+                        ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                 }
             }
         }
         #region FinishLine
         /// <summary> 重整行 </summary>
         /// <param name="AEndDItemNo">行最后一个DItem</param>
-        /// <param name="ARemWidth">行剩余宽度</param>
-        private void FinishLine(int AItemNo, int ALineEndDItemNo, int ARemWidth)
+        /// <param name="aRemWidth">行剩余宽度</param>
+        private void FinishLine(int aItemNo, int aLineEndDItemNo, int aRemWidth)
         {
             int vLineBegDItemNo,  // 行第一个DItem
                 vMaxBottom,
@@ -476,8 +533,8 @@ namespace HC.View
                 vCountWillSplit;  // 当前行有几个DItem参与分份
 
             // 根据行中最高的DrawItem处理其他DrawItem的高度 
-            vLineBegDItemNo = ALineEndDItemNo;
-            for (int i = ALineEndDItemNo; i >= 0; i--)  // 得到行起始DItemNo
+            vLineBegDItemNo = aLineEndDItemNo;
+            for (int i = aLineEndDItemNo; i >= 0; i--)  // 得到行起始DItemNo
             {
                 if (FDrawItems[i].LineFirst)
                 {
@@ -487,9 +544,9 @@ namespace HC.View
             }
             //Assert((vLineBegDItemNo >= 0), '断言失败：行起始DItemNo小于0！');
             // 找行DrawItem中最高的
-            vMaxHiDrawItem = ALineEndDItemNo;  // 默认最后一个最高
-            vMaxBottom = FDrawItems[ALineEndDItemNo].Rect.Bottom;  // 先默认行最后一个DItem的Rect底位置最大
-            for (int i = ALineEndDItemNo - 1; i >= vLineBegDItemNo; i--)
+            vMaxHiDrawItem = aLineEndDItemNo;  // 默认最后一个最高
+            vMaxBottom = FDrawItems[aLineEndDItemNo].Rect.Bottom;  // 先默认行最后一个DItem的Rect底位置最大
+            for (int i = aLineEndDItemNo - 1; i >= vLineBegDItemNo; i--)
             {
                 if (FDrawItems[i].Rect.Bottom > vMaxBottom)
                 {
@@ -499,13 +556,13 @@ namespace HC.View
             }
 
             // 根据最高的处理行间距，并影响到同行DrawItem
-            for (int i = ALineEndDItemNo; i >= vLineBegDItemNo; i--)
+            for (int i = aLineEndDItemNo; i >= vLineBegDItemNo; i--)
             {
                 FDrawItems[i].Rect.Height = vMaxBottom - FDrawItems[i].Rect.Top;
             }
 
             // 处理对齐方式，放在这里，是因为方便计算行起始和结束DItem，避免绘制时的运算
-            HCParaStyle vParaStyle = FStyle.ParaStyles[FItems[AItemNo].ParaNo];
+            HCParaStyle vParaStyle = FStyle.ParaStyles[FItems[aItemNo].ParaNo];
             switch (vParaStyle.AlignHorz)  // 段内容水平对齐方式
             {
                 case ParaAlignHorz.pahLeft:  // 默认
@@ -513,17 +570,17 @@ namespace HC.View
 
                 case ParaAlignHorz.pahRight:
                     {
-                        for (int i = ALineEndDItemNo; i >= vLineBegDItemNo; i--)
+                        for (int i = aLineEndDItemNo; i >= vLineBegDItemNo; i--)
                         {
-                            FDrawItems[i].Rect.Offset(ARemWidth, 0);
+                            FDrawItems[i].Rect.Offset(aRemWidth, 0);
                         }
                     }
                     break;
 
                 case ParaAlignHorz.pahCenter:
                     {
-                        viSplitW = ARemWidth / 2;
-                        for (int i = ALineEndDItemNo; i >= vLineBegDItemNo; i--)
+                        viSplitW = aRemWidth / 2;
+                        for (int i = aLineEndDItemNo; i >= vLineBegDItemNo; i--)
                         {
                             FDrawItems[i].Rect.Offset(viSplitW, 0);
                         }
@@ -535,18 +592,18 @@ namespace HC.View
                     {
                         if (vParaStyle.AlignHorz == ParaAlignHorz.pahJustify)  // 两端对齐
                         {
-                            if (IsParaLastDrawItem(ALineEndDItemNo))  // 两端对齐，段最后一行不处理
+                            if (IsParaLastDrawItem(aLineEndDItemNo))  // 两端对齐，段最后一行不处理
                             {
                                 return;
                             }
                         }
                         else  // 分散对齐，空行或只有一个字符时居中
                         {
-                            if (vLineBegDItemNo == ALineEndDItemNo)  // 行只有一个DrawItem
+                            if (vLineBegDItemNo == aLineEndDItemNo)  // 行只有一个DrawItem
                             {
                                 if (FItems[FDrawItems[vLineBegDItemNo].ItemNo].Length < 2)  // 此DrawItem对应的内容长度不足2个按居中处理
                                 {
-                                    viSplitW = ARemWidth / 2;
+                                    viSplitW = aRemWidth / 2;
                                     FDrawItems[vLineBegDItemNo].Rect.Offset(viSplitW, 0);
                                     return;
                                 }
@@ -557,10 +614,10 @@ namespace HC.View
                         vLineSpaceCount = 0;
                         vExtraW = 0;
                         vModWidth = 0;
-                        viSplitW = ARemWidth;
-                        ushort[] vDrawItemSplitCounts = new ushort[ALineEndDItemNo - vLineBegDItemNo + 1];  // 当前行各DItem分几份
+                        viSplitW = aRemWidth;
+                        ushort[] vDrawItemSplitCounts = new ushort[aLineEndDItemNo - vLineBegDItemNo + 1];  // 当前行各DItem分几份
 
-                        for (int i = vLineBegDItemNo; i <= ALineEndDItemNo; i++)  // 计算空余分成几份
+                        for (int i = vLineBegDItemNo; i <= aLineEndDItemNo; i++)  // 计算空余分成几份
                         {
                             if (GetDrawItemStyle(i) < HCStyle.Null)  // RectItem
                             {
@@ -576,7 +633,7 @@ namespace HC.View
                             else  // TextItem
                             {
                                 vDItemSpaceCount = GetJustifyCount(GetDrawItemText(i), null);  // 当前DItem分了几份
-                                if ((i == ALineEndDItemNo) && (vDItemSpaceCount > 0))  // 行尾的DItem，少分一个
+                                if ((i == aLineEndDItemNo) && (vDItemSpaceCount > 0))  // 行尾的DItem，少分一个
                                 {
                                     vDItemSpaceCount--;
                                 }
@@ -592,8 +649,8 @@ namespace HC.View
 
                         if (vLineSpaceCount > 1)  // 份数大于1
                         {
-                            viSplitW = ARemWidth / vLineSpaceCount;  // 每一份的大小
-                            vDItemSpaceCount = ARemWidth % vLineSpaceCount;  // 余数，借用变量
+                            viSplitW = aRemWidth / vLineSpaceCount;  // 每一份的大小
+                            vDItemSpaceCount = aRemWidth % vLineSpaceCount;  // 余数，借用变量
                             if (vDItemSpaceCount > vCountWillSplit)  // 余数大于行中参与分的DItem的数量
                             {
                                 vExtraW = vDItemSpaceCount / vCountWillSplit;  // 参与分的每一个DItem额外再分的量
@@ -616,7 +673,7 @@ namespace HC.View
                             }
                         }
 
-                        for (int i = vLineBegDItemNo + 1; i <= ALineEndDItemNo; i++)  // 以第一个为基准，其余各DrawItem增加的空间
+                        for (int i = vLineBegDItemNo + 1; i <= aLineEndDItemNo; i++)  // 以第一个为基准，其余各DrawItem增加的空间
                         {
                             vW = FDrawItems[i].Width();  // DrawItem原来Width
                             if (vDrawItemSplitCounts[i - vLineBegDItemNo] > 0)  // 有分到间距
@@ -669,76 +726,74 @@ namespace HC.View
         #endregion
 
         #region NewDrawItem
-        private void NewDrawItem(int AItemNo, int AOffs, int ACharLen, RECT ARect, bool AParaFirst, bool ALineFirst,
+        private void NewDrawItem(int aItemNo, int aOffs, int aCharLen, RECT aRect, bool aParaFirst, bool aLineFirst,
             ref int vLastDrawItemNo)
         {
             HCCustomDrawItem vDrawItem = new HCCustomDrawItem();
-            vDrawItem.ItemNo = AItemNo;
-            vDrawItem.CharOffs = AOffs;
-            vDrawItem.CharLen = ACharLen;
-            vDrawItem.ParaFirst = AParaFirst;
-            vDrawItem.LineFirst = ALineFirst;
-            vDrawItem.Rect = ARect;
+            vDrawItem.ItemNo = aItemNo;
+            vDrawItem.CharOffs = aOffs;
+            vDrawItem.CharLen = aCharLen;
+            vDrawItem.ParaFirst = aParaFirst;
+            vDrawItem.LineFirst = aLineFirst;
+            vDrawItem.Rect = aRect;
             vLastDrawItemNo++;
             FDrawItems.Insert(vLastDrawItemNo, vDrawItem);
-            if (AOffs == 1)
-            {
-                FItems[AItemNo].FirstDItemNo = vLastDrawItemNo;
-            }    
+            if (aOffs == 1)
+                FItems[aItemNo].FirstDItemNo = vLastDrawItemNo;    
         }
         #endregion
 
         #region
-        private void DoFormatRectItemToDrawItem(HCCustomRectItem vRectItem, int AItemNo, int AContentWidth, int AOffset,
-            bool vParaFirst, ref POINT APos, ref RECT vRect, ref bool vLineFirst, ref int ALastDrawItemNo, ref int vRemainderWidth)
+        private void DoFormatRectItemToDrawItem(HCCustomRectItem vRectItem, int aItemNo, int aContentWidth, int aOffset,
+            bool vParaFirst, ref POINT aPos, ref RECT vRect, ref bool vLineFirst, ref int aLastDrawItemNo, ref int vRemainderWidth)
         {
-            vRectItem.FormatToDrawItem(this, AItemNo);
-            int vWidth = AContentWidth - APos.X;
+            vRectItem.FormatToDrawItem(this, aItemNo);
+            int vWidth = aContentWidth - aPos.X;
             if ((vRectItem.Width > vWidth) && (!vLineFirst))  // 当前行剩余宽度放不下且不是行首
             {
                 // 偏移到下一行
-                FinishLine(AItemNo, ALastDrawItemNo, vWidth);
-                APos.X = 0;
-                APos.Y = FDrawItems[ALastDrawItemNo].Rect.Bottom;
+                FinishLine(aItemNo, aLastDrawItemNo, vWidth);
+                aPos.X = 0;
+                aPos.Y = FDrawItems[aLastDrawItemNo].Rect.Bottom;
                 vLineFirst = true;  // 作为行首
             }
 
             // 当前行空余宽度能放下或放不下但已经是行首了
-            vRect.Left = APos.X;
-            vRect.Top = APos.Y;
+            vRect.Left = aPos.X;
+            vRect.Top = aPos.Y;
             vRect.Width = vRectItem.Width;
             vRect.Height = vRectItem.Height + HC.LineSpaceMin;
 
-            NewDrawItem(AItemNo, AOffset, 1, vRect, vParaFirst, vLineFirst, ref ALastDrawItemNo);
+            NewDrawItem(aItemNo, aOffset, 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
 
-            vRemainderWidth = AContentWidth - vRect.Right;  // 放入后的剩余量
+            vRemainderWidth = aContentWidth - vRect.Right;  // 放入后的剩余量
         }
         #endregion
 
         /// <summary>
         /// 转换指定Item指定Offs格式化为DItem
         /// </summary>
-        /// <param name="AItemNo">指定的Item</param>
-        /// <param name="AOffset">指定的格式化起始位置</param>
-        /// <param name="AContentWidth">当前Data格式化宽度</param>
+        /// <param name="aItemNo">指定的Item</param>
+        /// <param name="aOffset">指定的格式化起始位置</param>
+        /// <param name="aContentWidth">当前Data格式化宽度</param>
         /// <param name="APageContenBottom">当前页格式化底部位置</param>
-        /// <param name="APos">起始位置</param>
+        /// <param name="aPos">起始位置</param>
         /// <param name="ALastDNo">起始DItemNo前一个值</param>
         /// <param name="vPageBoundary">数据页底部边界</param>
-        protected void _FormatItemToDrawItems(int AItemNo, int AOffset, int AContentWidth,
-          ref POINT APos, ref int ALastDrawItemNo)
+        protected void _FormatItemToDrawItems(int aItemNo, int aOffset, int aContentWidth,
+          ref POINT aPos, ref int aLastDrawItemNo)
         {
-            if (!FItems[AItemNo].Visible) return;
+            if (!FItems[aItemNo].Visible) return;
 
             RECT vRect = new RECT();
             int vItemHeight;
             bool vParaFirst, vLineFirst;
             int vRemainderWidth = 0;
-            int vLastDrawItemNo = ALastDrawItemNo;
+            int vLastDrawItemNo = aLastDrawItemNo;
             HCCustomRectItem vRectItem = null;
-            HCCustomItem vItem = FItems[AItemNo];
+            HCCustomItem vItem = FItems[aItemNo];
 
-            if ((AOffset == 1) && (vItem.ParaFirst))  // 第一次处理段第一个Item
+            if ((aOffset == 1) && (vItem.ParaFirst))  // 第一次处理段第一个Item
             {
                 vParaFirst = true;
                 vLineFirst = true;
@@ -746,14 +801,14 @@ namespace HC.View
             else  // 非段第1个
             {
                 vParaFirst = false;
-                vLineFirst = (APos.X == 0);
+                vLineFirst = (aPos.X == 0);
             }
 
             if (vItem.StyleNo < HCStyle.Null)  // 是RectItem
             {
                 vRectItem = vItem as HCCustomRectItem;
-                DoFormatRectItemToDrawItem(vRectItem, AItemNo, AContentWidth, AOffset, vParaFirst, 
-                    ref APos, ref vRect, ref vLineFirst, ref ALastDrawItemNo, ref vRemainderWidth);
+                DoFormatRectItemToDrawItem(vRectItem, aItemNo, aContentWidth, aOffset, vParaFirst, 
+                    ref aPos, ref vRect, ref vLineFirst, ref aLastDrawItemNo, ref vRemainderWidth);
             }
             else  // 文本
             {
@@ -787,21 +842,21 @@ namespace HC.View
                         break;
                 }
 
-                vRemainderWidth = AContentWidth - APos.X;
+                vRemainderWidth = aContentWidth - aPos.X;
                 string vText = vItem.Text;
 
                 if (vText == "")  // 空item(肯定是空行)
                 {
                     //Assert(vItem.ParaFirst, HCS_EXCEPTION_NULLTEXT);
-                    vRect.Left = APos.X;
-                    vRect.Top = APos.Y;
+                    vRect.Left = aPos.X;
+                    vRect.Top = aPos.Y;
                     vRect.Width = 0;
                     vRect.Height = vItemHeight;  //DefaultCaretHeight;
                     vParaFirst = true;
                     vLineFirst = true;
-                    vLastDrawItemNo = ALastDrawItemNo;
-                    NewDrawItem(AItemNo, AOffset, 0, vRect, vParaFirst, vLineFirst, ref vLastDrawItemNo);
-                    ALastDrawItemNo = vLastDrawItemNo;
+                    vLastDrawItemNo = aLastDrawItemNo;
+                    NewDrawItem(aItemNo, aOffset, 0, vRect, vParaFirst, vLineFirst, ref vLastDrawItemNo);
+                    aLastDrawItemNo = vLastDrawItemNo;
                     vParaFirst = false;
                 }
                 else  // 非空Item
@@ -809,81 +864,79 @@ namespace HC.View
                     int viLen = vText.Length;
 
                     if (viLen > 65535)
-                    {
                         throw new Exception(HC.HCS_EXCEPTION_STRINGLENGTHLIMIT);
-                    }
 
                     int[] vCharWidths = new int[viLen];
  
                     SIZE vSize = new SIZE();
                     FStyle.DefCanvas.GetTextExtentExPoint(vText, viLen, vCharWidths, ref vSize);  // 超过65535数组元素取不到值
 
-                    DoFormatTextItemToDrawItems(vText, AOffset, AContentWidth - APos.X, 0, AItemNo, 
-                        viLen, vItemHeight, AContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref APos, 
-                        ref vRect, ref vRemainderWidth, ref ALastDrawItemNo);
+                    DoFormatTextItemToDrawItems(vText, aOffset, aContentWidth - aPos.X, 0, aItemNo, 
+                        viLen, vItemHeight, aContentWidth, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, 
+                        ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                 }
             }
 
             // 计算下一个的位置
-            if (AItemNo == FItems.Count - 1)
+            if (aItemNo == FItems.Count - 1)
             {
-                FinishLine(AItemNo, ALastDrawItemNo, vRemainderWidth);
+                FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
             }
             else  // 不是最后一个，则为下一个Item准备位置
             {
-                if (FItems[AItemNo + 1].ParaFirst)   // 下一个是段起始
+                if (FItems[aItemNo + 1].ParaFirst)   // 下一个是段起始
                 {
-                    FinishLine(AItemNo, ALastDrawItemNo, vRemainderWidth);
+                    FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
                     // 偏移到下一行顶端，准备另起一行
-                    APos.X = 0;
-                    APos.Y = FDrawItems[ALastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正其bottom
+                    aPos.X = 0;
+                    aPos.Y = FDrawItems[aLastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正其bottom
                 }
                 else  // 下一个不是段起始
                 {
-                    APos.X = vRect.Right;  // 下一个的起始坐标
+                    aPos.X = vRect.Right;  // 下一个的起始坐标
                 }
             }
         }
 
         /// <summary> 根据指定Item获取其所在段的起始和结束ItemNo </summary>
         /// <param name="AFirstItemNo1">指定</param>
-        /// <param name="AFirstItemNo">起始</param>
-        /// <param name="ALastItemNo">结束</param>
-        protected void GetParaItemRang(int AItemNo, ref int AFirstItemNo, ref int ALastItemNo)
+        /// <param name="aFirstItemNo">起始</param>
+        /// <param name="aLastItemNo">结束</param>
+        protected void GetParaItemRang(int aItemNo, ref int aFirstItemNo, ref int aLastItemNo)
         {
-            AFirstItemNo = AItemNo;
+            aFirstItemNo = aItemNo;
 
-            while (AFirstItemNo > 0)
+            while (aFirstItemNo > 0)
             {
-                if (FItems[AFirstItemNo].ParaFirst)
+                if (FItems[aFirstItemNo].ParaFirst)
                 {
                     break;
                 }
                 else
                 {
-                    AFirstItemNo--;
+                    aFirstItemNo--;
                 }
             }
 
-            ALastItemNo = AItemNo + 1;
-            while (ALastItemNo < FItems.Count)
+            aLastItemNo = aItemNo + 1;
+            while (aLastItemNo < FItems.Count)
             {
-                if (FItems[ALastItemNo].ParaFirst)
+                if (FItems[aLastItemNo].ParaFirst)
                 {
                     break;
                 }
                 else
                 {
-                    ALastItemNo++;
+                    aLastItemNo++;
                 }
             }
 
-            ALastItemNo--;
+            aLastItemNo--;
         }
 
-        protected int GetParaFirstItemNo(int AItemNo)
+        protected int GetParaFirstItemNo(int aItemNo)
         {
-            int Result = AItemNo;
+            int Result = aItemNo;
             while (Result > 0)
             {
                 if (FItems[Result].ParaFirst)
@@ -899,10 +952,10 @@ namespace HC.View
             return Result;
         }
 
-        protected int GetParaLastItemNo(int AItemNo)
+        protected int GetParaLastItemNo(int aItemNo)
         {
             // 目前需要外部自己约束AItemNo < FItems.Count
-            int Result = AItemNo + 1;
+            int Result = aItemNo + 1;
             while (Result < FItems.Count)
             {
                 if (FItems[Result].ParaFirst)
@@ -921,10 +974,10 @@ namespace HC.View
         }
 
         /// <summary> 取行第一个DrawItem对应的ItemNo(用于格式化时计算一个较小的ItemNo范围) </summary>
-        protected int GetLineFirstItemNo(int AItemNo, int AOffset)
+        protected int GetLineFirstItemNo(int aItemNo, int aOffset)
         {
-            int Result = AItemNo;
-            int vFirstDItemNo = GetDrawItemNoByOffset(AItemNo, AOffset);
+            int Result = aItemNo;
+            int vFirstDItemNo = GetDrawItemNoByOffset(aItemNo, aOffset);
 
             while (vFirstDItemNo > 0)
             {
@@ -944,10 +997,10 @@ namespace HC.View
         }
 
         /// <summary> 取行最后一个DrawItem对应的ItemNo(用于格式化时计算一个较小的ItemNo范围) </summary>
-        protected int GetLineLastItemNo(int AItemNo, int AOffset)
+        protected int GetLineLastItemNo(int aItemNo, int aOffset)
         {
-            int Result = AItemNo;
-            int vLastDItemNo = GetDrawItemNoByOffset(AItemNo, AOffset) + 1;  // 下一个开始，否则行第一个获取最后一个时还是行第一个
+            int Result = aItemNo;
+            int vLastDItemNo = GetDrawItemNoByOffset(aItemNo, aOffset) + 1;  // 下一个开始，否则行第一个获取最后一个时还是行第一个
             while (vLastDItemNo < FDrawItems.Count)
             {
                 if (FDrawItems[vLastDItemNo].LineFirst)
@@ -970,44 +1023,43 @@ namespace HC.View
         /// <param name="AFirstItemNo1">指定</param>
         /// <param name="AFirstItemNo">起始</param>
         /// <param name="ALastItemNo">结束</param>
-        protected virtual void GetLineDrawItemRang(ref int AFirstDItemNo, ref int ALastDItemNo)
+        protected virtual void GetLineDrawItemRang(ref int aFirstDItemNo, ref int aLastDItemNo)
         {
-            while (AFirstDItemNo > 0)
+            while (aFirstDItemNo > 0)
             {
-                if (FDrawItems[AFirstDItemNo].LineFirst)
+                if (FDrawItems[aFirstDItemNo].LineFirst)
                 {
                     break;
                 }
                 else
                 {
-                    AFirstDItemNo--;
+                    aFirstDItemNo--;
                 }
             }
 
-            ALastDItemNo = AFirstDItemNo + 1;
-            while (ALastDItemNo < FDrawItems.Count)
+            aLastDItemNo = aFirstDItemNo + 1;
+            while (aLastDItemNo < FDrawItems.Count)
             {
-                if (FDrawItems[ALastDItemNo].LineFirst)
+                if (FDrawItems[aLastDItemNo].LineFirst)
                 {
                     break;
                 }
                 else
                 {
-                    ALastDItemNo++;
+                    aLastDItemNo++;
                 }
             }
 
-            ALastDItemNo--;
+            aLastDItemNo--;
         }
 
         /// <summary> 获取指定DrawItem对应的Text </summary>
-        /// <param name="ADrawItemNo"></param>
+        /// <param name="aDrawItemNo"></param>
         /// <returns></returns>
-        protected string GetDrawItemText(int ADrawItemNo)
+        protected string GetDrawItemText(int aDrawItemNo)
         {
-            string vText = "";
-            HCCustomDrawItem vDrawItem = FDrawItems[ADrawItemNo];
-            vText = FItems[vDrawItem.ItemNo].Text;
+            HCCustomDrawItem vDrawItem = FDrawItems[aDrawItemNo];
+            string vText = FItems[vDrawItem.ItemNo].Text;
             if (vText != "")
             {
                 vText = vText.Substring(vDrawItem.CharOffs - 1, vDrawItem.CharLen);
@@ -1015,11 +1067,11 @@ namespace HC.View
             return vText;
         }
 
-        protected void SetCaretDrawItemNo(int Value)
+        protected void SetCaretDrawItemNo(int value)
         {
             int vItemNo;
 
-            if (FCaretDrawItemNo != Value)
+            if (FCaretDrawItemNo != value)
             {
                 if ((FCaretDrawItemNo >= 0) && (FCaretDrawItemNo < FDrawItems.Count))
                 {
@@ -1031,7 +1083,7 @@ namespace HC.View
                     vItemNo = -1;
                 }
 
-                FCaretDrawItemNo = Value;
+                FCaretDrawItemNo = value;
 
                 if ((FCaretDrawItemNo >= 0) && (FDrawItems[FCaretDrawItemNo].ItemNo != vItemNo))
                 {
@@ -1062,19 +1114,26 @@ namespace HC.View
             }
         }
 
-        protected virtual void DoDrawItemPaintBefor(HCCustomData AData, int ADrawItemNo, RECT ADrawRect,
-            int ADataDrawLeft, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom,
-            HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected virtual void DoItemAction(int aItemNo, int aOffset, HCItemAction aAction) { }
+
+        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            HCCanvas aCanvas, PaintInfo aPaintInfo)
         { }
 
-        protected virtual void DoDrawItemPaintAfter(HCCustomData AData, int ADrawItemNo, RECT ADrawRect,
-            int ADataDrawLeft, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom,
-            HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected virtual void DoDrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+            RECT aClearRect, string aDrawText, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
+            int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         { }
 
-        public HCCustomData(HCStyle AStyle)
+        protected virtual void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            HCCanvas aCanvas, PaintInfo aPaintInfo)
+        { }
+
+        public HCCustomData(HCStyle aStyle)
         {
-            FStyle = AStyle;
+            FStyle = aStyle;
             FDrawItems = new HCDrawItems();
             FItems = new HCItems();
             FCaretDrawItemNo = -1;
@@ -1115,22 +1174,24 @@ namespace HC.View
             return this;
         }
 
-        public virtual POINT GetScreenCoord(int X, int Y)
+        public virtual POINT GetScreenCoord(int x, int y)
         {
-            return this.GetRootData().GetScreenCoord(X, Y);
+            return this.GetRootData().GetScreenCoord(x, y);
         }
 
         public virtual HCCustomItem CreateDefaultTextItem()
         {
-            HCCustomItem vItem = new HCTextItem("");
+            Type[] vTypes = new Type[1];
+            vTypes[0] = typeof(string);
+            object[] vobj = new object[1];
+            vobj[0] = (object)"";
+            Type t = HCTextItem.HCDefaultTextItemClass;
+            HCCustomItem vItem = t.GetConstructor(vTypes).Invoke(vobj) as HCCustomItem;
+
             if (FStyle.CurStyleNo < HCStyle.Null)
-            {
                 vItem.StyleNo = 0;
-            }
             else
-            {
                 vItem.StyleNo = FStyle.CurStyleNo;
-            }
 
             vItem.ParaNo = FStyle.CurParaNo;
 
@@ -1139,63 +1200,66 @@ namespace HC.View
 
         public virtual HCCustomItem CreateDefaultDomainItem()
         {
-            HCCustomItem Result = new HCDomainItem(this);
+            object[] vobj = new object[1];
+            vobj[0] = this;
+            Type t = HCDomainItem.HCDefaultDomainItemClass;
+            HCCustomItem Result = t.GetConstructor(null).Invoke(vobj) as HCCustomItem;
             Result.ParaNo = FStyle.CurParaNo;
             return Result;
         }
 
-        private void GetRectItemInnerCaretInfo(HCCustomRectItem ARectItem, int AItemNo, int ADrawItemNo, HCCustomDrawItem ADrawItem, ref HCCaretInfo ACaretInfo)
+        private void GetRectItemInnerCaretInfo(HCCustomRectItem aRectItem, int aItemNo, int aDrawItemNo, HCCustomDrawItem aDrawItem, ref HCCaretInfo aCaretInfo)
         {
-            ARectItem.GetCaretInfo(ref ACaretInfo);
+            aRectItem.GetCaretInfo(ref aCaretInfo);
 
-            RECT vDrawRect = ADrawItem.Rect;
+            RECT vDrawRect = aDrawItem.Rect;
 
-            int vLineSpaceHalf = GetLineSpace(ADrawItemNo) / 2;
+            int vLineSpaceHalf = GetLineSpace(aDrawItemNo) / 2;
             vDrawRect.Inflate(0, -vLineSpaceHalf);
 
-            switch (FStyle.ParaStyles[FItems[AItemNo].ParaNo].AlignVert)  // 垂直对齐方式
+            switch (FStyle.ParaStyles[FItems[aItemNo].ParaNo].AlignVert)  // 垂直对齐方式
             {
                 case ParaAlignVert.pavCenter: 
-                    ACaretInfo.Y = ACaretInfo.Y + vLineSpaceHalf + (vDrawRect.Height - ARectItem.Height) / 2;
+                    aCaretInfo.Y = aCaretInfo.Y + vLineSpaceHalf + (vDrawRect.Height - aRectItem.Height) / 2;
                     break;
 
                 case ParaAlignVert.pavTop: 
-                    ACaretInfo.Y = ACaretInfo.Y + vLineSpaceHalf;
+                    aCaretInfo.Y = aCaretInfo.Y + vLineSpaceHalf;
                     break;
                 
                 default:
-                    ACaretInfo.Y = ACaretInfo.Y + vLineSpaceHalf + vDrawRect.Height - ARectItem.Height;
+                    aCaretInfo.Y = aCaretInfo.Y + vLineSpaceHalf + vDrawRect.Height - aRectItem.Height;
                     break;
             }
         }
 
-        public virtual void GetCaretInfo(int AItemNo, int AOffset, ref HCCaretInfo ACaretInfo)
+        public virtual void GetCaretInfo(int aItemNo, int aOffset, ref HCCaretInfo aCaretInfo)
         {
             int vDrawItemNo, vStyleItemNo;
        
             /* 注意：为处理RectItem往外迭代，这里位置处理为叠加，而不是直接赋值 }*/
             if (FCaretDrawItemNo < 0)
             {
-                if (FItems[AItemNo].StyleNo < HCStyle.Null)
-                    vDrawItemNo = FItems[AItemNo].FirstDItemNo;
+                if (FItems[aItemNo].StyleNo < HCStyle.Null)
+                    vDrawItemNo = FItems[aItemNo].FirstDItemNo;
                 else
-                    vDrawItemNo = GetDrawItemNoByOffset(AItemNo, AOffset);  // AOffset处对应的DrawItemNo
+                    vDrawItemNo = GetDrawItemNoByOffset(aItemNo, aOffset);  // AOffset处对应的DrawItemNo
             }
             else
                 vDrawItemNo = FCaretDrawItemNo;
 
             HCCustomDrawItem vDrawItem = FDrawItems[vDrawItemNo];
-            ACaretInfo.Height = vDrawItem.Height();  // 光标高度
+            aCaretInfo.Height = vDrawItem.Height();  // 光标高度
 
             if (FStyle.UpdateInfo.ReStyle)
             {
-                vStyleItemNo = AItemNo;
-                if (AOffset == 0)
+                vStyleItemNo = aItemNo;
+                if (aOffset == 0)
                 {
-                    if ((!FItems[AItemNo].ParaFirst)
-                    && (AItemNo > 0)
-                    && (Items[AItemNo - 1].StyleNo > HCStyle.Null))
-                        vStyleItemNo = AItemNo - 1;
+                    if ((!FItems[aItemNo].ParaFirst)
+                    && (aItemNo > 0)
+                    && (Items[aItemNo - 1].StyleNo > HCStyle.Null))
+                        vStyleItemNo = aItemNo - 1;
                 }
 
                 if ((Items[vStyleItemNo] is HCTextRectItem) && (FSelectInfo.StartItemOffset == HC.OffsetInner))
@@ -1206,87 +1270,94 @@ namespace HC.View
                 FStyle.CurParaNo = Items[vStyleItemNo].ParaNo;
             }
 
-            if (FItems[AItemNo].StyleNo < HCStyle.Null)
+            if (FItems[aItemNo].StyleNo < HCStyle.Null)
             {
-                HCCustomRectItem vRectItem = FItems[AItemNo] as HCCustomRectItem;
+                HCCustomRectItem vRectItem = FItems[aItemNo] as HCCustomRectItem;
 
-                if (AOffset == HC.OffsetBefor)
+                if (aOffset == HC.OffsetBefor)
                 {
                     if (vRectItem.CanPageBreak)
-                        GetRectItemInnerCaretInfo(vRectItem, AItemNo, vDrawItemNo, vDrawItem, ref ACaretInfo);
+                        GetRectItemInnerCaretInfo(vRectItem, aItemNo, vDrawItemNo, vDrawItem, ref aCaretInfo);
 
-                    ACaretInfo.X = ACaretInfo.X + vDrawItem.Rect.Left;
+                    aCaretInfo.X = aCaretInfo.X + vDrawItem.Rect.Left;
                 }
                 else
-                if (AOffset == HC.OffsetInner)
+                if (aOffset == HC.OffsetInner)
                 {
-                    GetRectItemInnerCaretInfo(vRectItem, AItemNo, vDrawItemNo, vDrawItem, ref ACaretInfo);
-                    ACaretInfo.X = ACaretInfo.X + vDrawItem.Rect.Left;
+                    GetRectItemInnerCaretInfo(vRectItem, aItemNo, vDrawItemNo, vDrawItem, ref aCaretInfo);
+                    aCaretInfo.X = aCaretInfo.X + vDrawItem.Rect.Left;
                 }
                 else  // 在其右侧
                 {
                     if (vRectItem.CanPageBreak)
-                        GetRectItemInnerCaretInfo(vRectItem, AItemNo, vDrawItemNo, vDrawItem, ref ACaretInfo);
+                        GetRectItemInnerCaretInfo(vRectItem, aItemNo, vDrawItemNo, vDrawItem, ref aCaretInfo);
 
-                    ACaretInfo.X = ACaretInfo.X + vDrawItem.Rect.Right;
+                    aCaretInfo.X = aCaretInfo.X + vDrawItem.Rect.Right;
                 }
             }
             else  // TextItem
-                ACaretInfo.X = ACaretInfo.X + vDrawItem.Rect.Left + GetDrawItemOffsetWidth(vDrawItemNo, AOffset - vDrawItem.CharOffs + 1);
+                aCaretInfo.X = aCaretInfo.X + vDrawItem.Rect.Left + GetDrawItemOffsetWidth(vDrawItemNo, aOffset - vDrawItem.CharOffs + 1);
 
-            ACaretInfo.Y = ACaretInfo.Y + vDrawItem.Rect.Top;
+            aCaretInfo.Y = aCaretInfo.Y + vDrawItem.Rect.Top;
         }
 
         /// <summary> 获取DItem中指定偏移处的内容绘制宽度 </summary>
-        /// <param name="ADrawItemNo"></param>
-        /// <param name="ADrawOffs">相对与DItem的CharOffs的Offs</param>
+        /// <param name="aDrawItemNo"></param>
+        /// <param name="aDrawOffs">相对与DItem的CharOffs的Offs</param>
         /// <returns></returns>
-        public int GetDrawItemOffsetWidth(int ADrawItemNo, int ADrawOffs)
+        public int GetDrawItemOffsetWidth(int aDrawItemNo, int aDrawOffs, HCCanvas aStyleCanvas = null)
         {
             int Result = 0;
-            if (ADrawOffs == 0)
+            if (aDrawOffs == 0)
                 return Result;
 
-            HCCustomDrawItem vDItem = FDrawItems[ADrawItemNo];
-            int vStyleNo = FItems[vDItem.ItemNo].StyleNo;
+            HCCustomDrawItem vDrawItem = FDrawItems[aDrawItemNo];
+            int vStyleNo = FItems[vDrawItem.ItemNo].StyleNo;
             if (vStyleNo < HCStyle.Null)
             {
-                if (ADrawOffs > HC.OffsetBefor)
-                    Result = FDrawItems[ADrawItemNo].Width();
+                if (aDrawOffs > HC.OffsetBefor)
+                    Result = FDrawItems[aDrawItemNo].Width();
             }
             else
             {
-                FStyle.TextStyles[vStyleNo].ApplyStyle(FStyle.DefCanvas);
+                HCCanvas vCanvas = null;
+                if (aStyleCanvas != null)
+                    vCanvas = aStyleCanvas;
+                else
+                {
+                    vCanvas = FStyle.DefCanvas;
+                    FStyle.TextStyles[vStyleNo].ApplyStyle(vCanvas);
+                }
 
-                ParaAlignHorz vAlignHorz = FStyle.ParaStyles[GetDrawItemParaStyle(ADrawItemNo)].AlignHorz;
+                ParaAlignHorz vAlignHorz = FStyle.ParaStyles[GetDrawItemParaStyle(aDrawItemNo)].AlignHorz;
                 switch (vAlignHorz)
                 {
                     case ParaAlignHorz.pahLeft:
                     case ParaAlignHorz.pahRight:
                     case ParaAlignHorz.pahCenter:
-                        Result = FStyle.DefCanvas.TextWidth(FItems[vDItem.ItemNo].Text.Substring(vDItem.CharOffs - 1, ADrawOffs));
+                        Result = vCanvas.TextWidth(FItems[vDrawItem.ItemNo].Text.Substring(vDrawItem.CharOffs - 1, aDrawOffs));
                         break;
 
                     case ParaAlignHorz.pahJustify:
                     case ParaAlignHorz.pahScatter:  // 20170220001 两端、分散对齐相关处理
                         if (vAlignHorz == ParaAlignHorz.pahJustify)
                         {
-                            if (IsParaLastDrawItem(ADrawItemNo))
+                            if (IsParaLastDrawItem(aDrawItemNo))
                             {
-                                Result = FStyle.DefCanvas.TextWidth(FItems[vDItem.ItemNo].Text.Substring(vDItem.CharOffs - 1, ADrawOffs));
+                                Result = vCanvas.TextWidth(FItems[vDrawItem.ItemNo].Text.Substring(vDrawItem.CharOffs - 1, aDrawOffs));
                                 return Result;
                                 //break;
                             }
                         }
 
-                        string vText = GetDrawItemText(ADrawItemNo);
-                        int viSplitW = vDItem.Width() - FStyle.DefCanvas.TextWidth(vText);  // 当前DItem的Rect中用于分散的空间
+                        string vText = GetDrawItemText(aDrawItemNo);
+                        int viSplitW = vDrawItem.Width() - vCanvas.TextWidth(vText);  // 当前DItem的Rect中用于分散的空间
                         int vMod = 0;
 
                         // 计算当前Ditem内容分成几份，每一份在内容中的起始位置
                         List<int> vSplitList = new List<int>();
                         int vSplitCount = GetJustifyCount(vText, vSplitList);
-                        bool vLineLast = IsLineLastDrawItem(ADrawItemNo);
+                        bool vLineLast = IsLineLastDrawItem(aDrawItemNo);
                         if (vLineLast && (vSplitCount > 0))
                             vSplitCount--;
 
@@ -1300,7 +1371,7 @@ namespace HC.View
                         for (int i = 0; i <= vSplitList.Count - 2; i++)  // vSplitList最后一个是字符串长度所以多减1
                         {
                             string vS = vText.Substring(vSplitList[i] - 1, vSplitList[i + 1] - vSplitList[i]);  // 当前分隔的一个字符串
-                            int vCharWidth = FStyle.DefCanvas.TextWidth(vS);
+                            int vCharWidth = vCanvas.TextWidth(vS);
                             if (vMod > 0)
                             {
                                 vCharWidth++;  // 多分的余数
@@ -1311,7 +1382,7 @@ namespace HC.View
                                 vSplitCount = 0;
 
                             int vDOffset = vSplitList[i] + vS.Length - 1;
-                            if (vDOffset <= ADrawOffs)
+                            if (vDOffset <= aDrawOffs)
                             {
                                 // 增加间距
                                 if (i != vSplitList.Count - 2)
@@ -1323,7 +1394,7 @@ namespace HC.View
                                 }
                                 Result = Result + vCharWidth;
 
-                                if (vDOffset == ADrawOffs)
+                                if (vDOffset == aDrawOffs)
                                     break;
                             }
                             else  // 当前字符结束位置在AOffs后，找具体位置
@@ -1331,10 +1402,10 @@ namespace HC.View
                                 // 准备处理  a b c d e fgh ijklm n opq的形式(多个字符为一个分隔串)
                                 for (int j = 1; j <= vS.Length; j++)  // 找在当前分隔的这串字符串中哪一个位置
                                 {
-                                    vCharWidth = FStyle.DefCanvas.TextWidth(vS[j].ToString());
+                                    vCharWidth = vCanvas.TextWidth(vS[j - 1].ToString());
                                     vDOffset = vSplitList[i] - 1 + j;
 
-                                    if (vDOffset == vDItem.CharLen)
+                                    if (vDOffset == vDrawItem.CharLen)
                                     {
                                         if (!vLineLast)
                                             vCharWidth = vCharWidth + viSplitW + vSplitCount;  // 当前DItem最后一个字符享受分隔间距和多分的余数
@@ -1342,7 +1413,7 @@ namespace HC.View
                                     }
                                     Result = Result + vCharWidth;
 
-                                    if (vDOffset == ADrawOffs)
+                                    if (vDOffset == aDrawOffs)
                                         break;
                                 }
 
@@ -1357,77 +1428,77 @@ namespace HC.View
         }
 
         /// <summary> 获取指定的Item最后面位置 </summary>
-        /// <param name="AItemNo">指定的Item</param>
+        /// <param name="aItemNo">指定的Item</param>
         /// <returns>最后面位置</returns>
-        public int GetItemAfterOffset(int AItemNo)
+        public int GetItemAfterOffset(int aItemNo)
         {
-            if (FItems[AItemNo].StyleNo < HCStyle.Null)
+            if (FItems[aItemNo].StyleNo < HCStyle.Null)
                 return HC.OffsetAfter;
             else
-                return FItems[AItemNo].Length;
+                return FItems[aItemNo].Length;
         }
 
         /// <summary>
         /// 根据给定的位置获取在此范围内的起始和结束DItem
         /// </summary>
-        /// <param name="ATop"></param>
-        /// <param name="ABottom"></param>
+        /// <param name="aTop"></param>
+        /// <param name="aBottom"></param>
         /// <param name="AFristDItemNo"></param>
-        /// <param name="ALastDItemNo"></param>
-        public void GetDataDrawItemRang(int ATop, int ABottom, ref int AFirstDItemNo, ref int ALastDItemNo)
+        /// <param name="aLastDItemNo"></param>
+        public void GetDataDrawItemRang(int aTop, int aBottom, ref int aFirstDItemNo, ref int aLastDItemNo)
         {
-            AFirstDItemNo = -1;
-            ALastDItemNo = -1;
+            aFirstDItemNo = -1;
+            aLastDItemNo = -1;
             // 获取第一个可显示的DrawItem
             for (int i = 0; i <= FDrawItems.Count - 1; i++)
             {
                 if ((FDrawItems[i].LineFirst)
-                  && (FDrawItems[i].Rect.Bottom > ATop)  // 底部超过区域上边
-                  && (FDrawItems[i].Rect.Top < ABottom))  // 顶部没超过区域下边
+                  && (FDrawItems[i].Rect.Bottom > aTop)  // 底部超过区域上边
+                  && (FDrawItems[i].Rect.Top < aBottom))  // 顶部没超过区域下边
                 {
-                    AFirstDItemNo = i;
+                    aFirstDItemNo = i;
                     break;
                 }
             }
 
-            if (AFirstDItemNo < 0)
+            if (aFirstDItemNo < 0)
                 return;
 
             // 获取最后一个可显示的DrawItem
-            for (int i = AFirstDItemNo; i <= FDrawItems.Count - 1; i++)
+            for (int i = aFirstDItemNo; i <= FDrawItems.Count - 1; i++)
             {
-                if ((FDrawItems[i].LineFirst) && (FDrawItems[i].Rect.Top >= ABottom))
+                if ((FDrawItems[i].LineFirst) && (FDrawItems[i].Rect.Top >= aBottom))
                 {
-                    ALastDItemNo = i - 1;
+                    aLastDItemNo = i - 1;
                     break;
                 }
             }
 
-            if (ALastDItemNo < 0)
-                ALastDItemNo = FDrawItems.Count - 1;
+            if (aLastDItemNo < 0)
+                aLastDItemNo = FDrawItems.Count - 1;
         }
 
         /// <summary>
         /// 返回指定坐标下的Item和Offset
         /// </summary>
-        /// <param name="X">水平坐标值X</param>
-        /// <param name="Y">垂直坐标值Y</param>
-        /// <param name="AItemNo">坐标处的Item</param>
-        /// <param name="AOffset">坐标在Item中的位置</param>
+        /// <param name="x">水平坐标值X</param>
+        /// <param name="y">垂直坐标值Y</param>
+        /// <param name="aItemNo">坐标处的Item</param>
+        /// <param name="aOffset">坐标在Item中的位置</param>
         /// <param name="ARestrain">True并不是在AItemNo范围内(在行最右侧或最后一行底部，通过约束坐标找到的)</param>
-        public virtual void GetItemAt(int X, int Y, ref int AItemNo, ref int AOffset, ref int ADrawItemNo,
+        public virtual void GetItemAt(int x, int y, ref int aItemNo, ref int aOffset, ref int aDrawItemNo,
             ref bool ARestrain)
         {
-            AItemNo = -1;
-            AOffset = -1;
-            ADrawItemNo = -1;
+            aItemNo = -1;
+            aOffset = -1;
+            aDrawItemNo = -1;
             ARestrain = true;  // 默认为约束找到(不在Item上面)
 
             if (IsEmptyData())
             {
-                AItemNo = 0;
-                AOffset = 0;
-                ADrawItemNo = 0;
+                aItemNo = 0;
+                aOffset = 0;
+                aDrawItemNo = 0;
                 return;
             }
 
@@ -1435,12 +1506,12 @@ namespace HC.View
             int vStartDItemNo, vEndDItemNo = -1, vi;
             RECT vDrawRect;
 
-            if (Y < 0)
+            if (y < 0)
                 vStartDItemNo = 0;
             else  // 判断在哪一行
             {
                 vDrawRect = FDrawItems[FDrawItems.Count - 1].Rect;
-                if (Y > vDrawRect.Bottom)
+                if (y > vDrawRect.Bottom)
                     vStartDItemNo = FDrawItems.Count - 1;
             else  // 二分法查找哪个Item
             {
@@ -1452,13 +1523,13 @@ namespace HC.View
                     if (vEndDItemNo - vStartDItemNo > 1)
                     {
                         vi = vStartDItemNo + (vEndDItemNo - vStartDItemNo) / 2;
-                        if (Y > FDrawItems[vi].Rect.Bottom)
+                        if (y > FDrawItems[vi].Rect.Bottom)
                         {
                             vStartDItemNo = vi + 1;  // 中间位置下一个
                             continue;
                         }
                         else
-                        if (Y < FDrawItems[vi].Rect.Top)
+                        if (y < FDrawItems[vi].Rect.Top)
                         {
                             vEndDItemNo = vi - 1;  // 中间位置上一个
                             continue;
@@ -1471,10 +1542,10 @@ namespace HC.View
                     }
                     else  // 相差1
                     {
-                        if (Y > FDrawItems[vEndDItemNo].Rect.Bottom)
+                        if (y > FDrawItems[vEndDItemNo].Rect.Bottom)
                             vStartDItemNo = vEndDItemNo;
                         else
-                        if (Y >= FDrawItems[vEndDItemNo].Rect.Top)
+                        if (y >= FDrawItems[vEndDItemNo].Rect.Top)
                             vStartDItemNo = vEndDItemNo;
 
                         //else 不处理即第一个
@@ -1483,57 +1554,57 @@ namespace HC.View
                     }
                 }
 
-                if (Y < FDrawItems[vStartDItemNo].Rect.Top)
+                if (y < FDrawItems[vStartDItemNo].Rect.Top)
                     vStartDItemNo--;
             }
 
             // 判断是指定行中哪一个Item
             GetLineDrawItemRang(ref vStartDItemNo, ref vEndDItemNo);  // 行起始和结束DrawItem
 
-            if (X <= FDrawItems[vStartDItemNo].Rect.Left)
+            if (x <= FDrawItems[vStartDItemNo].Rect.Left)
             {
-                ADrawItemNo = vStartDItemNo;
-                AItemNo = FDrawItems[vStartDItemNo].ItemNo;
-                if (FItems[AItemNo].StyleNo < HCStyle.Null)
-                    AOffset = HC.OffsetBefor;  // GetDrawItemOffset(vStartDItemNo, X)
+                aDrawItemNo = vStartDItemNo;
+                aItemNo = FDrawItems[vStartDItemNo].ItemNo;
+                if (FItems[aItemNo].StyleNo < HCStyle.Null)
+                    aOffset = HC.OffsetBefor;  // GetDrawItemOffsetAt(vStartDItemNo, X)
                 else
-                    AOffset = FDrawItems[vStartDItemNo].CharOffs - 1;  // DrawItem起始
+                    aOffset = FDrawItems[vStartDItemNo].CharOffs - 1;  // DrawItem起始
             }
             else
-            if (X >= FDrawItems[vEndDItemNo].Rect.Right)
+            if (x >= FDrawItems[vEndDItemNo].Rect.Right)
             {
-                ADrawItemNo = vEndDItemNo;
-                AItemNo = FDrawItems[vEndDItemNo].ItemNo;
-                if (FItems[AItemNo].StyleNo < HCStyle.Null)
-                    AOffset = HC.OffsetAfter;  // GetDrawItemOffset(vEndDItemNo, X)
+                aDrawItemNo = vEndDItemNo;
+                aItemNo = FDrawItems[vEndDItemNo].ItemNo;
+                if (FItems[aItemNo].StyleNo < HCStyle.Null)
+                    aOffset = HC.OffsetAfter;  // GetDrawItemOffsetAt(vEndDItemNo, X)
                 else
-                    AOffset = FDrawItems[vEndDItemNo].CharOffs + FDrawItems[vEndDItemNo].CharLen - 1;  // DrawItem最后
+                    aOffset = FDrawItems[vEndDItemNo].CharOffs + FDrawItems[vEndDItemNo].CharLen - 1;  // DrawItem最后
             }
             else
             {
                 for (int i = vStartDItemNo; i <= vEndDItemNo; i++)  // 行中间
                 {
                     vDrawRect = FDrawItems[i].Rect;
-                    if ((X >= vDrawRect.Left) && (X < vDrawRect.Right))
+                    if ((x >= vDrawRect.Left) && (x < vDrawRect.Right))
                     {
-                        ARestrain = ((Y < vDrawRect.Top) || (Y > vDrawRect.Bottom));
+                        ARestrain = ((y < vDrawRect.Top) || (y > vDrawRect.Bottom));
 
-                        ADrawItemNo = i;
-                        AItemNo = FDrawItems[i].ItemNo;
-                        if (FItems[AItemNo].StyleNo < HCStyle.Null)
+                        aDrawItemNo = i;
+                        aItemNo = FDrawItems[i].ItemNo;
+                        if (FItems[aItemNo].StyleNo < HCStyle.Null)
                         {
                             if (ARestrain)
                             {
-                                if (X < vDrawRect.Left + vDrawRect.Width / 2)
-                                    AOffset = HC.OffsetBefor;
+                                if (x < vDrawRect.Left + vDrawRect.Width / 2)
+                                    aOffset = HC.OffsetBefor;
                                 else
-                                    AOffset = HC.OffsetAfter;
+                                    aOffset = HC.OffsetAfter;
                             }
                             else
-                                AOffset = GetDrawItemOffset(i, X);
+                                aOffset = GetDrawItemOffsetAt(i, x);
                         }
                         else  // TextItem
-                            AOffset = FDrawItems[i].CharOffs + GetDrawItemOffset(i, X) - 1;
+                            aOffset = FDrawItems[i].CharOffs + GetDrawItemOffsetAt(i, x) - 1;
 
                         break;
                     }
@@ -1545,18 +1616,18 @@ namespace HC.View
         /// <summary>
         /// 获取Item对应的最后一个DItem
         /// </summary>
-        /// <param name="AItemNo"></param>
+        /// <param name="aItemNo"></param>
         /// <returns></returns>
-        public int GetItemLastDrawItemNo(int AItemNo)
+        public int GetItemLastDrawItemNo(int aItemNo)
         {
             int Result = -1;
-            if (FItems[AItemNo].FirstDItemNo < 0)                
+            if (FItems[aItemNo].FirstDItemNo < 0)                
                 return Result;  // 还没有格式化过
 
-            Result = FItems[AItemNo].FirstDItemNo + 1;
+            Result = FItems[aItemNo].FirstDItemNo + 1;
             while (Result < FDrawItems.Count)
             {
-                if (FDrawItems[Result].ParaFirst || (FDrawItems[Result].ItemNo != AItemNo))
+                if (FDrawItems[Result].ParaFirst || (FDrawItems[Result].ItemNo != aItemNo))
                     break;
                 else
                     Result++;
@@ -1569,19 +1640,19 @@ namespace HC.View
         /// <summary>
         /// Item指定偏移位置是否被选中(仅用于文本Item和粗略Rect)
         /// </summary>
-        /// <param name="AItemNo"></param>
-        /// <param name="AOffset"></param>
+        /// <param name="aItemNo"></param>
+        /// <param name="aOffset"></param>
         /// <returns></returns>
-        public bool OffsetInSelect(int AItemNo, int AOffset)
+        public bool OffsetInSelect(int aItemNo, int aOffset)
         {
             bool Result = false;
 
-            if ((AItemNo < 0) || (AOffset < 0))
+            if ((aItemNo < 0) || (aOffset < 0))
                 return Result;
 
-            if (FItems[AItemNo].StyleNo < HCStyle.Null)
+            if (FItems[aItemNo].StyleNo < HCStyle.Null)
             {
-                if ((AOffset == HC.OffsetInner) && FItems[AItemNo].IsSelectComplate)
+                if ((aOffset == HC.OffsetInner) && FItems[aItemNo].IsSelectComplate)
                     Result = true;
 
                 return Result;
@@ -1589,58 +1660,58 @@ namespace HC.View
 
             if (SelectExists())
             {
-                if ((AItemNo > FSelectInfo.StartItemNo) && (AItemNo < FSelectInfo.EndItemNo))
+                if ((aItemNo > FSelectInfo.StartItemNo) && (aItemNo < FSelectInfo.EndItemNo))
                     Result = true;
                 else
 
-                if (AItemNo == FSelectInfo.StartItemNo)
+                if (aItemNo == FSelectInfo.StartItemNo)
                 {
-                    if (AItemNo == FSelectInfo.EndItemNo)
-                        Result = (AOffset >= FSelectInfo.StartItemOffset) && (AOffset <= FSelectInfo.EndItemOffset);
+                    if (aItemNo == FSelectInfo.EndItemNo)
+                        Result = (aOffset >= FSelectInfo.StartItemOffset) && (aOffset <= FSelectInfo.EndItemOffset);
                     else
-                        Result = (AOffset >= FSelectInfo.StartItemOffset);
+                        Result = (aOffset >= FSelectInfo.StartItemOffset);
                 }
                 else
-                if (AItemNo == FSelectInfo.EndItemNo)
-                    Result = (AOffset <= FSelectInfo.EndItemOffset);
+                if (aItemNo == FSelectInfo.EndItemNo)
+                    Result = (aOffset <= FSelectInfo.EndItemOffset);
             }
 
             return Result;
        }
 
         /// <summary> 坐标是否在AItem的选中区域中 </summary>
-        /// <param name="X"></param>
-        /// <param name="Y"></param>
-        /// <param name="AItemNo">X、Y处的Item</param>
-        /// <param name="AOffset">X、Y处的Item偏移(供在RectItem上时计算)</param>
-        /// <param name="ARestrain">AItemNo, AOffset是X、Y位置约束后的(此参数为方便单元格Data处理)</param>
-        public virtual bool CoordInSelect(int X, int Y, int AItemNo, int AOffset, bool ARestrain)
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="aItemNo">X、Y处的Item</param>
+        /// <param name="aOffset">X、Y处的Item偏移(供在RectItem上时计算)</param>
+        /// <param name="aRestrain">AItemNo, AOffset是X、Y位置约束后的(此参数为方便单元格Data处理)</param>
+        public virtual bool CoordInSelect(int x, int y, int aItemNo, int aOffset, bool aRestrain)
         {
             bool Result = false;
 
-            if ((AItemNo < 0) || (AOffset < 0))
+            if ((aItemNo < 0) || (aOffset < 0))
                 return Result;
 
-            if (ARestrain)
+            if (aRestrain)
                 return Result;
 
             // 判断坐标是否在AItemNo对应的AOffset上
-            int vDrawItemNo = GetDrawItemNoByOffset(AItemNo, AOffset);
+            int vDrawItemNo = GetDrawItemNoByOffset(aItemNo, aOffset);
 
             RECT vDrawRect = DrawItems[vDrawItemNo].Rect;
-            Result = HC.PtInRect(vDrawRect, X, Y);
+            Result = HC.PtInRect(vDrawRect, x, y);
 
             if (Result)
             {
-                if (FItems[AItemNo].StyleNo < HCStyle.Null)
+                if (FItems[aItemNo].StyleNo < HCStyle.Null)
                 {
-                    int vX = X - vDrawRect.Left;
-                    int vY = Y - vDrawRect.Top - GetLineSpace(vDrawItemNo) / 2;
+                    int vX = x - vDrawRect.Left;
+                    int vY = y - vDrawRect.Top - GetLineSpace(vDrawItemNo) / 2;
 
-                    Result = (FItems[AItemNo] as HCCustomRectItem).CoordInSelect(vX, vY);
+                    Result = (FItems[aItemNo] as HCCustomRectItem).CoordInSelect(vX, vY);
                 }
                 else
-                    Result = OffsetInSelect(AItemNo, AOffset);  // 对应的AOffset在选中内容中
+                    Result = OffsetInSelect(aItemNo, aOffset);  // 对应的AOffset在选中内容中
             }
 
             return Result;
@@ -1649,39 +1720,39 @@ namespace HC.View
         /// <summary>
         /// 获取Data中的坐标X、Y处的Item和Offset，并返回X、Y相对DrawItem的坐标
         /// </summary>
-        /// <param name="X"></param>
-        /// <param name="Y"></param>
-        /// <param name="AItemNo"></param>
-        /// <param name="AOffset"></param>
-        /// <param name="AX"></param>
-        /// <param name="AY"></param>
-        public void CoordToItemOffset(int X, int Y, int AItemNo, int AOffset, ref int AX, ref int AY)
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="aItemNo"></param>
+        /// <param name="aOffset"></param>
+        /// <param name="aX"></param>
+        /// <param name="aY"></param>
+        public void CoordToItemOffset(int x, int y, int aItemNo, int aOffset, ref int aX, ref int aY)
         {
-            AX = X;
-            AY = Y;
-            if (AItemNo < 0)
+            aX = x;
+            aY = y;
+            if (aItemNo < 0)
                 return;
 
-            int vDrawItemNo = GetDrawItemNoByOffset(AItemNo, AOffset);
+            int vDrawItemNo = GetDrawItemNoByOffset(aItemNo, aOffset);
 
             RECT vDrawRect = FDrawItems[vDrawItemNo].Rect;
 
             vDrawRect.Inflate(0, -GetLineSpace(vDrawItemNo) / 2);
 
-            AX = AX - vDrawRect.Left;
-            AY = AY - vDrawRect.Top;
-            if (FItems[AItemNo].StyleNo < HCStyle.Null)
+            aX = aX - vDrawRect.Left;
+            aY = aY - vDrawRect.Top;
+            if (FItems[aItemNo].StyleNo < HCStyle.Null)
             {
-                switch (FStyle.ParaStyles[FItems[AItemNo].ParaNo].AlignVert)  // 垂直对齐方式
+                switch (FStyle.ParaStyles[FItems[aItemNo].ParaNo].AlignVert)  // 垂直对齐方式
                 {
                     case ParaAlignVert.pavCenter: 
-                        AY = AY - (vDrawRect.Height - (FItems[AItemNo] as HCCustomRectItem).Height) / 2;
+                        aY = aY - (vDrawRect.Height - (FItems[aItemNo] as HCCustomRectItem).Height) / 2;
                         break;
                     case ParaAlignVert.pavTop: 
                         break;
 
                     default:
-                        AY = AY - (vDrawRect.Height - (FItems[AItemNo] as HCCustomRectItem).Height);
+                        aY = aY - (vDrawRect.Height - (FItems[aItemNo] as HCCustomRectItem).Height);
                         break;
                 }
             }
@@ -1690,24 +1761,24 @@ namespace HC.View
         /// <summary>
         /// 返回Item中指定Offset处的DrawItem序号
         /// </summary>
-        /// <param name="AItemNo">指定Item</param>
-        /// <param name="AOffset">Item中指定Offset</param>
+        /// <param name="aItemNo">指定Item</param>
+        /// <param name="aOffset">Item中指定Offset</param>
         /// <returns>Offset处的DrawItem序号</returns>
-        public int GetDrawItemNoByOffset(int AItemNo, int AOffset)
+        public int GetDrawItemNoByOffset(int aItemNo, int aOffset)
         {
             int Result = -1;
 
-            if (FItems[AItemNo].StyleNo < HCStyle.Null)
-                Result = FItems[AItemNo].FirstDItemNo;
+            if (FItems[aItemNo].StyleNo < HCStyle.Null)
+                Result = FItems[aItemNo].FirstDItemNo;
             else  // TextItem
             {
-                for (int i = FItems[AItemNo].FirstDItemNo; i <= FDrawItems.Count - 1; i++)
+                for (int i = FItems[aItemNo].FirstDItemNo; i <= FDrawItems.Count - 1; i++)
                 {
                     HCCustomDrawItem vDrawItem = FDrawItems[i];
-                    if (vDrawItem.ItemNo != AItemNo)
+                    if (vDrawItem.ItemNo != aItemNo)
                         break;
 
-                    if (AOffset - vDrawItem.CharOffs < vDrawItem.CharLen)
+                    if (aOffset - vDrawItem.CharOffs < vDrawItem.CharLen)
                     {
                         Result = i;
                         break;
@@ -1718,31 +1789,31 @@ namespace HC.View
             return Result;
         }
 
-        public bool IsLineLastDrawItem(int ADrawItemNo)
+        public bool IsLineLastDrawItem(int aDrawItemNo)
         {
             // 不能在格式化进行中使用，因为DrawItems.Count可能只是当前格式化到的Item
-            return ((ADrawItemNo == FDrawItems.Count - 1) || (FDrawItems[ADrawItemNo + 1].LineFirst));
+            return ((aDrawItemNo == FDrawItems.Count - 1) || (FDrawItems[aDrawItemNo + 1].LineFirst));
         }
         
-        public bool IsParaLastDrawItem(int ADrawItemNo)
+        public bool IsParaLastDrawItem(int aDrawItemNo)
         {
             bool Result = false;
-            int vItemNo = FDrawItems[ADrawItemNo].ItemNo;
+            int vItemNo = FDrawItems[aDrawItemNo].ItemNo;
 
             if (vItemNo < FItems.Count - 1)
             {
                 if (FItems[vItemNo + 1].ParaFirst)
-                    Result = (FDrawItems[ADrawItemNo].CharOffsetEnd() == FItems[vItemNo].Length);  // 是Item最后一个DrawItem
+                    Result = (FDrawItems[aDrawItemNo].CharOffsetEnd() == FItems[vItemNo].Length);  // 是Item最后一个DrawItem
             }
             else  // 是最后一个Item
-                Result = (FDrawItems[ADrawItemNo].CharOffsetEnd() == FItems[vItemNo].Length);  // 是Item最后一个DrawItem
+                Result = (FDrawItems[aDrawItemNo].CharOffsetEnd() == FItems[vItemNo].Length);  // 是Item最后一个DrawItem
 
             return Result;
         }
 
-        public bool IsParaLastItem(int AItemNo)
+        public bool IsParaLastItem(int aItemNo)
         {
-            return ((AItemNo == FItems.Count - 1) || FItems[AItemNo + 1].ParaFirst);
+            return ((aItemNo == FItems.Count - 1) || FItems[aItemNo + 1].ParaFirst);
         }
 
         public int GetCurDrawItemNo()
@@ -1809,42 +1880,42 @@ namespace HC.View
         }
 
         /// <summary> 返回Item的文本样式 </summary>
-        public int GetItemStyle(int AItemNo)
+        public int GetItemStyle(int aItemNo)
         {
-            return FItems[AItemNo].StyleNo;
+            return FItems[aItemNo].StyleNo;
         }
 
         /// <summary> 返回DDrawItem对应的Item的文本样式 </summary>
-        public int GetDrawItemStyle(int ADrawItemNo)
+        public int GetDrawItemStyle(int aDrawItemNo)
         {
-            return GetItemStyle(FDrawItems[ADrawItemNo].ItemNo);
+            return GetItemStyle(FDrawItems[aDrawItemNo].ItemNo);
         }
 
         /// <summary> 返回Item对应的段落样式 </summary>
-        public int GetItemParaStyle(int AItemNo)
+        public int GetItemParaStyle(int aItemNo)
         {
-            return FItems[AItemNo].ParaNo;
+            return FItems[aItemNo].ParaNo;
         }
 
         /// <summary> 返回DDrawItem对应的Item的段落样式 </summary>
-        public int GetDrawItemParaStyle(int ADrawItemNo)
+        public int GetDrawItemParaStyle(int aDrawItemNo)
         {
-            return GetItemParaStyle(FDrawItems[ADrawItemNo].ItemNo);
+            return GetItemParaStyle(FDrawItems[aDrawItemNo].ItemNo);
         }
 
         /// <summary> 得到指定横坐标X处，是DItem内容的第几个字符 </summary>
-        /// <param name="ADrawItemNo">指定的DItem</param>
-        /// <param name="X">在Data中的横坐标</param>
+        /// <param name="aDrawItemNo">指定的DItem</param>
+        /// <param name="x">在Data中的横坐标</param>
         /// <returns>第几个字符</returns>
-        public int GetDrawItemOffset(int ADrawItemNo, int X)
+        public int GetDrawItemOffsetAt(int aDrawItemNo, int x)
         {
             int Result = 0;
 
-            HCCustomDrawItem vDrawItem = FDrawItems[ADrawItemNo];
+            HCCustomDrawItem vDrawItem = FDrawItems[aDrawItemNo];
             HCCustomItem vItem = FItems[vDrawItem.ItemNo];
 
             if (vItem.StyleNo < HCStyle.Null)
-                Result = (vItem as HCCustomRectItem).GetOffsetAt(X - vDrawItem.Rect.Left);
+                Result = (vItem as HCCustomRectItem).GetOffsetAt(x - vDrawItem.Rect.Left);
             else  // 文本
             {
                 Result = vDrawItem.CharLen;  // 赋值为最后，为方便行最右侧点击时返回为最后一个
@@ -1858,16 +1929,16 @@ namespace HC.View
                     case ParaAlignHorz.pahLeft:
                     case ParaAlignHorz.pahRight:
                     case ParaAlignHorz.pahCenter:
-                        Result = HC.GetCharOffsetByX(FStyle.DefCanvas, vText, X - vX);
+                        Result = HC.GetCharOffsetAt(FStyle.DefCanvas, vText, x - vX);
                         break;
 
                     case ParaAlignHorz.pahJustify:
                     case ParaAlignHorz.pahScatter:  // 20170220001 两端、分散对齐相关处理
                         if (vParaStyle.AlignHorz == ParaAlignHorz.pahJustify)
                         {
-                            if (IsParaLastDrawItem(ADrawItemNo))
+                            if (IsParaLastDrawItem(aDrawItemNo))
                             {
-                                Result = HC.GetCharOffsetByX(FStyle.DefCanvas, vText, X - vX);
+                                Result = HC.GetCharOffsetAt(FStyle.DefCanvas, vText, x - vX);
                                 return Result;
                             }
                         }
@@ -1876,7 +1947,7 @@ namespace HC.View
                         // 计算当前Ditem内容分成几份，每一份在内容中的起始位置
                         List<int> vSplitList = new List<int>();
                         int vSplitCount = GetJustifyCount(vText, vSplitList);
-                        bool vLineLast = IsLineLastDrawItem(ADrawItemNo);
+                        bool vLineLast = IsLineLastDrawItem(aDrawItemNo);
 
                         if (vLineLast && (vSplitCount > 0))
                             vSplitCount--;
@@ -1911,7 +1982,7 @@ namespace HC.View
                                     vCharWidth = vCharWidth + viSplitW;  // 分隔间距
                             }
 
-                            if (vX + vCharWidth > X)
+                            if (vX + vCharWidth > x)
                             {
                                 vMod = vS.Length;  // 借用变量，准备处理  a b c d e fgh ijklm n opq的形式(多个字符为一个分隔串)
 
@@ -1931,9 +2002,9 @@ namespace HC.View
                                     }
 
                                     vX = vX + vCharWidth;
-                                    if (vX > X)
+                                    if (vX > x)
                                     {
-                                        if (vX - vCharWidth / 2 > X)
+                                        if (vX - vCharWidth / 2 > x)
                                             Result = vSplitList[i] - 1 + j - 1;  // 计为前一个后面
                                         else
                                             Result = vSplitList[i] - 1 + j;
@@ -1949,7 +2020,6 @@ namespace HC.View
                         break;
                 }
             }
-
             return Result;
         }
 
@@ -1965,7 +2035,7 @@ namespace HC.View
             {
                 Result = GetDrawItemNoByOffset(FSelectInfo.StartItemNo, FSelectInfo.StartItemOffset);
 
-                if ((FSelectInfo.EndItemNo >= 0) && (FDrawItems[Result].CharOffsetEnd() == FSelectInfo.StartItemOffset))
+                if ((FSelectInfo.EndItemNo >= 0) && (Result < FItems.Count - 1) && (FDrawItems[Result].CharOffsetEnd() == FSelectInfo.StartItemOffset))
                     Result++;
             }
 
@@ -2119,42 +2189,42 @@ namespace HC.View
         }
 
         /// <summary> 为段应用对齐方式 </summary>
-        /// <param name="AAlign">对方方式</param>
-        public virtual void ApplyParaAlignHorz(ParaAlignHorz AAlign)
+        /// <param name="aAlign">对方方式</param>
+        public virtual void ApplyParaAlignHorz(ParaAlignHorz aAlign)
         {
             ParaAlignHorzMatch vMatchStyle = new ParaAlignHorzMatch();
-            vMatchStyle.Align = AAlign;
+            vMatchStyle.Align = aAlign;
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaAlignVert(ParaAlignVert AAlign)
+        public virtual void ApplyParaAlignVert(ParaAlignVert aAlign)
         {
             ParaAlignVertMatch vMatchStyle = new ParaAlignVertMatch();
-            vMatchStyle.Align = AAlign;
+            vMatchStyle.Align = aAlign;
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaBackColor(Color AColor)
+        public virtual void ApplyParaBackColor(Color aColor)
         {
             ParaBackColorMatch vMatchStyle = new ParaBackColorMatch();
-            vMatchStyle.BackColor = AColor;
+            vMatchStyle.BackColor = aColor;
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaLineSpace(ParaLineSpaceMode ASpaceMode)
+        public virtual void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode)
         {
             ParaLineSpaceMatch vMatchStyle = new ParaLineSpaceMatch();
-            vMatchStyle.SpaceMode = ASpaceMode;
+            vMatchStyle.SpaceMode = aSpaceMode;
             ApplySelectParaStyle(vMatchStyle);
         }
 
         // 选中内容应用样式
-        public virtual int ApplySelectTextStyle(HCStyleMatch AMatchStyle)
+        public virtual int ApplySelectTextStyle(HCStyleMatch aMatchStyle)
         {
             return -1;
         }
 
-        public virtual int ApplySelectParaStyle(HCParaMatch AMatchStyle)
+        public virtual int ApplySelectParaStyle(HCParaMatch aMatchStyle)
         {
             return -1;
         }
@@ -2166,63 +2236,63 @@ namespace HC.View
         }
 
         /// <summary> 为选中文本使用指定的文本样式 </summary>
-        /// <param name="AFontStyle">文本样式</param>
-        public virtual void ApplyTextStyle(HCFontStyle AFontStyle)
+        /// <param name="aFontStyle">文本样式</param>
+        public virtual void ApplyTextStyle(HCFontStyle aFontStyle)
         {
             TextStyleMatch vMatchStyle = new TextStyleMatch();
-            vMatchStyle.FontStyle = AFontStyle;
+            vMatchStyle.FontStyle = aFontStyle;
             ApplySelectTextStyle(vMatchStyle);
         }
 
-        public virtual void ApplyTextFontName(string AFontName)
+        public virtual void ApplyTextFontName(string aFontName)
         {
             FontNameStyleMatch vMatchStyle = new FontNameStyleMatch();
-            vMatchStyle.FontName = AFontName;
+            vMatchStyle.FontName = aFontName;
             ApplySelectTextStyle(vMatchStyle);
         }
 
-        public virtual void ApplyTextFontSize(Single AFontSize)
+        public virtual void ApplyTextFontSize(Single aFontSize)
         {
             FontSizeStyleMatch vMatchStyle = new FontSizeStyleMatch();
-            vMatchStyle.FontSize = AFontSize;
+            vMatchStyle.FontSize = aFontSize;
             ApplySelectTextStyle(vMatchStyle);
         }
 
-        public virtual void ApplyTextColor(Color AColor)
+        public virtual void ApplyTextColor(Color aColor)
         {
             ColorStyleMatch vMatchStyle = new ColorStyleMatch();
-            vMatchStyle.Color = AColor;
+            vMatchStyle.Color = aColor;
             ApplySelectTextStyle(vMatchStyle);
         }
 
-        public virtual void ApplyTextBackColor(Color AColor)
+        public virtual void ApplyTextBackColor(Color aColor)
         {
             BackColorStyleMatch vMatchStyle = new BackColorStyleMatch();
-            vMatchStyle.Color = AColor;
+            vMatchStyle.Color = aColor;
             ApplySelectTextStyle(vMatchStyle);
         }
 
 #region 当前显示范围内要绘制的DrawItem是否全选
-    private bool DrawItemSelectAll(int AFristDItemNo, int ALastDItemNo)
+    private bool DrawItemSelectAll(int aFristDItemNo, int aLastDItemNo)
     {
         int vSelStartDItemNo = GetSelectStartDrawItemNo();
         int vSelEndDItemNo = GetSelectEndDrawItemNo();
 
         return  // 当前页是否全选中了
             (
-                (vSelStartDItemNo < AFristDItemNo)
+                (vSelStartDItemNo < aFristDItemNo)
                 ||
                 (
-                    (vSelStartDItemNo == AFristDItemNo)
+                    (vSelStartDItemNo == aFristDItemNo)
                     && (SelectInfo.StartItemOffset == FDrawItems[vSelStartDItemNo].CharOffs)
                 )
             )
             &&
             (
-                (vSelEndDItemNo > ALastDItemNo)
+                (vSelEndDItemNo > aLastDItemNo)
                 ||
                 (
-                    (vSelEndDItemNo == ALastDItemNo)
+                    (vSelEndDItemNo == aLastDItemNo)
                     && (SelectInfo.EndItemOffset == FDrawItems[vSelEndDItemNo].CharOffs + FDrawItems[vSelEndDItemNo].CharLen)
                 )
             );
@@ -2230,15 +2300,15 @@ namespace HC.View
 #endregion
 
 #region DrawTextJsutify 20170220001 分散对齐相关处理
-        private void DrawTextJsutify(HCCanvas ACanvas, RECT ARect, string AText, bool ALineLast, int vTextDrawTop)
+        private void DrawTextJsutify(HCCanvas aCanvas, RECT aRect, string aText, bool aLineLast, int vTextDrawTop)
         {         
             int vMod = 0;
-            int vX = ARect.Left;
-            int viSplitW = (ARect.Right - ARect.Left) - FStyle.DefCanvas.TextWidth(AText);
+            int vX = aRect.Left;
+            int viSplitW = (aRect.Right - aRect.Left) - FStyle.DefCanvas.TextWidth(aText);
             // 计算当前Ditem内容分成几份，每一份在内容中的起始位置
             List<int> vSplitList = new List<int>();
-            int vSplitCount = GetJustifyCount(AText, vSplitList);
-            if (ALineLast && (vSplitCount > 0))  // 行最后DItem，少分一个
+            int vSplitCount = GetJustifyCount(aText, vSplitList);
+            if (aLineLast && (vSplitCount > 0))  // 行最后DItem，少分一个
                 vSplitCount--;
               if (vSplitCount > 0)  // 有分到间距
               {
@@ -2249,9 +2319,9 @@ namespace HC.View
               for (int i = 0; i <= vSplitList.Count - 2; i++)  // vSplitList最后一个是字符串长度所以多减1
               {
                   int vLen = vSplitList[i + 1] - vSplitList[i];
-                  string vS = AText.Substring(vSplitList[i] - 1, vLen);
+                  string vS = aText.Substring(vSplitList[i] - 1, vLen);
 
-                  GDI.ExtTextOut(ACanvas.Handle, vX, vTextDrawTop, GDI.ETO_OPAQUE, IntPtr.Zero, vS, vLen, IntPtr.Zero);
+                  GDI.ExtTextOut(aCanvas.Handle, vX, vTextDrawTop, GDI.ETO_OPAQUE, IntPtr.Zero, vS, vLen, IntPtr.Zero);
                   vX = vX + FStyle.DefCanvas.TextWidth(vS) + viSplitW;
                   if (vMod > 0)
                   {
@@ -2263,131 +2333,130 @@ namespace HC.View
 #endregion
 
         /// <summary> 绘制数据 </summary>
-        /// <param name="ADataDrawLeft">绘制目标区域Left</param>
-        /// <param name="ADataDrawTop">绘制目标区域的Top</param>
-        /// <param name="ADataDrawBottom">绘制目标区域的Bottom</param>
-        /// <param name="ADataScreenTop">屏幕区域Top</param>
-        /// <param name="ADataScreenBottom">屏幕区域Bottom</param>
-        /// <param name="AVOffset">指定从哪个位置开始的数据绘制到目标区域的起始位置</param>
-        /// <param name="ACanvas">画布</param>
-        public virtual void PaintData(int ADataDrawLeft, int ADataDrawTop, int ADataDrawBottom,
-            int ADataScreenTop, int ADataScreenBottom, int AVOffset, HCCanvas ACanvas, PaintInfo APaintInfo)
+        /// <param name="aDataDrawLeft">绘制目标区域Left</param>
+        /// <param name="aDataDrawTop">绘制目标区域的Top</param>
+        /// <param name="aDataDrawBottom">绘制目标区域的Bottom</param>
+        /// <param name="aDataScreenTop">屏幕区域Top</param>
+        /// <param name="aDataScreenBottom">屏幕区域Bottom</param>
+        /// <param name="aVOffset">指定从哪个位置开始的数据绘制到目标区域的起始位置</param>
+        /// <param name="aCanvas">画布</param>
+        public virtual void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom,
+            int aDataScreenTop, int aDataScreenBottom, int aVOffset, int aFirstDItemNo,
+            int aLastDItemNo, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            if (FItems.Count == 0)
+            if ((aFirstDItemNo < 0) || (aLastDItemNo < 0))
                 return;
 
-            int vVOffset = ADataDrawTop - AVOffset;  // 将数据起始位置映射到绘制位置
-            int vFristDItemNo = -1, vLastDItemNo = -1;
-            GetDataDrawItemRang(Math.Max(ADataDrawTop, ADataScreenTop) - vVOffset,  // 可显示出来的DItem范围
-                Math.Min(ADataDrawBottom, ADataScreenBottom) - vVOffset, ref vFristDItemNo, ref vLastDItemNo);
+            int vSelStartDNo = -1, vSelStartDOffs = -1, vSelEndDNo = -1, vSelEndDOffs = -1;
+            bool vDrawsSelectAll = false;
 
-            if ((vFristDItemNo < 0) || (vLastDItemNo < 0))
-                return;
+            if (!aPaintInfo.Print)
+            {
+                vSelStartDNo = GetSelectStartDrawItemNo();  // 选中起始DItem
+                if (vSelStartDNo < 0)
+                    vSelStartDOffs = -1;
+                else
+                    vSelStartDOffs = FSelectInfo.StartItemOffset - FDrawItems[vSelStartDNo].CharOffs + 1;
 
-            // 选中信息
-            int vSelStartDOffs;
-            int vSelStartDNo = GetSelectStartDrawItemNo();  // 选中起始DItem
-            if (vSelStartDNo < 0)
-                vSelStartDOffs = -1;
-            else
-                vSelStartDOffs = FSelectInfo.StartItemOffset - FDrawItems[vSelStartDNo].CharOffs + 1;
+                vSelEndDNo = GetSelectEndDrawItemNo();      // 选中结束DrawItem
+                if (vSelEndDNo < 0)
+                    vSelEndDOffs = -1;
+                else
+                    vSelEndDOffs = FSelectInfo.EndItemOffset - FDrawItems[vSelEndDNo].CharOffs + 1;
 
-            int vSelEndDOffs;
-            int vSelEndDNo = GetSelectEndDrawItemNo();      // 选中结束DrawItem
-            if (vSelEndDNo < 0)
-                vSelEndDOffs = -1;
-            else
-                vSelEndDOffs = FSelectInfo.EndItemOffset - FDrawItems[vSelEndDNo].CharOffs + 1;
+                vDrawsSelectAll = DrawItemSelectAll(aFirstDItemNo, aLastDItemNo);
+            }
 
-            bool vDrawsSelectAll = DrawItemSelectAll(vFristDItemNo, vLastDItemNo);
-
-            int vPrioStyleNo = -1;
-            int vPrioParaNo = -1;
+            int vPrioStyleNo = HCStyle.Null;
+            int vPrioParaNo = HCStyle.Null;
             int vTextHeight = 0;
 
-            int vDCState = ACanvas.Save();
+            int vVOffset = aDataDrawTop - aVOffset;  // 将数据起始位置映射到绘制位置
+
+            int vDCState = aCanvas.Save();
             try
             {
                 int vLineSpace = -1;
-                if (!FDrawItems[vFristDItemNo].LineFirst)
-                    vLineSpace = GetLineSpace(vFristDItemNo);
+                if (!FDrawItems[aFirstDItemNo].LineFirst)
+                    vLineSpace = GetLineSpace(aFirstDItemNo);
 
-                HCCustomDrawItem vDItem;
-                RECT vDrawRect;
+                HCCustomDrawItem vDrawItem;
+                RECT vDrawRect, vClearRect;
                 ParaAlignHorz vAlignHorz = ParaAlignHorz.pahLeft;
                 HCCustomItem vItem;
+                HCCustomRectItem vRectItem;
 
-                for (int i = vFristDItemNo; i <= vLastDItemNo; i++)  // 遍历要绘制的数据
+                for (int i = aFirstDItemNo; i <= aLastDItemNo; i++)  // 遍历要绘制的数据
                 {
-                    vDItem = FDrawItems[i];
-                    vItem = FItems[vDItem.ItemNo];
-                    HCCustomRectItem vRectItem;
-                    vDrawRect = vDItem.Rect;
-
-                    vDrawRect.Offset(ADataDrawLeft, vVOffset);  // 偏移到指定的画布绘制位置(SectionData时为页数据在格式化中可显示起始位置)
+                    vDrawItem = FDrawItems[i];
+                    vItem = FItems[vDrawItem.ItemNo];
+                    vDrawRect = vDrawItem.Rect;
+                    vDrawRect.Offset(aDataDrawLeft, vVOffset);  // 偏移到指定的画布绘制位置(SectionData时为页数据在格式化中可显示起始位置)
 
                     if (FDrawItems[i].LineFirst)
                         vLineSpace = GetLineSpace(i);
 
                     // 绘制内容前
-                    DrawItemPaintBefor(this, i, vDrawRect, ADataDrawLeft, ADataDrawBottom, ADataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
+                    DrawItemPaintBefor(this, i, vDrawRect, aDataDrawLeft, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
-                    if (vPrioParaNo != vItem.ParaNo)
+                    if (vPrioParaNo != vItem.ParaNo)  // 水平对齐方式
                     {
                         vPrioParaNo = vItem.ParaNo;
                         vAlignHorz = FStyle.ParaStyles[vItem.ParaNo].AlignHorz;  // 段内容水平对齐方式
                     }
 
-                    if (vItem.StyleNo < HCStyle.Null)
+                    vClearRect = vDrawRect;
+                    vClearRect.Inflate(0, -vLineSpace / 2);  // 除去行间距净Rect，即内容的显示区域
+                    if (vItem.StyleNo < HCStyle.Null)  // RectItem自行处理绘制
                     {
                         vRectItem = vItem as HCCustomRectItem;
 
                         vPrioStyleNo = vRectItem.StyleNo;
 
-                        if (vRectItem.IsSelectComplate)
-                        {
-                            ACanvas.Brush.Color = FStyle.SelColor;
-                            ACanvas.FillRect(vDrawRect);
-                        }
-
-                        // 除去行间距净Rect，即内容的显示区域
-                        vDrawRect.Inflate(0, -vLineSpace / 2);
-
-                        if (vRectItem.JustifySplit())
+                        if (vRectItem.JustifySplit())  // 分散占空间
                         {
                             if (((vAlignHorz == ParaAlignHorz.pahJustify)
                                      && (!IsLineLastDrawItem(i))
                                   )
                                   ||
-                                  (vAlignHorz == ParaAlignHorz.pahScatter)
-                                )  // 分散对齐
-                                vDrawRect.Inflate(-(vDrawRect.Width - vRectItem.Width) / 2, 0);
+                                  (vAlignHorz == ParaAlignHorz.pahScatter)  // 分散对齐
+                                )
+                                vClearRect.Inflate(-(vClearRect.Width - vRectItem.Width) / 2, 0);
                             else
-                                vDrawRect.Width = vRectItem.Width;
+                                vClearRect.Width = vClearRect.Width;
                         }
 
                         switch (FStyle.ParaStyles[vItem.ParaNo].AlignVert)  // 垂直对齐方式
                         {
                             case ParaAlignVert.pavCenter:
-                                vDrawRect.Inflate(0, -(vDrawRect.Height - vRectItem.Height) / 2);
+                                vClearRect.Inflate(0, -(vClearRect.Height - vRectItem.Height) / 2);
                                 break;
 
                             case ParaAlignVert.pavTop:
                                 break;
 
                             default:
-                                vDrawRect.Top = vDrawRect.Bottom - vRectItem.Height;
+                                vClearRect.Top = vClearRect.Bottom - vRectItem.Height;
                                 break;
                         }
 
-                        vItem.PaintTo(FStyle, vDrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
+                        DrawItemPaintContent(this, i, vDrawRect, vClearRect, "", aDataDrawLeft, aDataDrawBottom, 
+                            aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
+
+                        if (vRectItem.IsSelectComplate)  // 选中背景区域
+                        {
+                            aCanvas.Brush.Color = FStyle.SelColor;
+                            aCanvas.FillRect(vDrawRect);
+                        }
+
+                        vItem.PaintTo(FStyle, vClearRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
                     }
                     else  // 文本Item
                     {
                         if (vItem.StyleNo != vPrioStyleNo)
                         {
                             vPrioStyleNo = vItem.StyleNo;
-                            FStyle.TextStyles[vPrioStyleNo].ApplyStyle(ACanvas, APaintInfo.ScaleY / APaintInfo.Zoom);
+                            FStyle.TextStyles[vPrioStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
                             FStyle.TextStyles[vPrioStyleNo].ApplyStyle(FStyle.DefCanvas);//, APaintInfo.ScaleY / APaintInfo.Zoom);
 
                             vTextHeight = HCStyle.GetFontHeight(FStyle.DefCanvas);
@@ -2396,60 +2465,27 @@ namespace HC.View
                             {
                                 vTextHeight = vTextHeight + vTextHeight;
                             }
-                        }
 
-                        // 绘制文字、段、选中情况下的背景
-                        if (!APaintInfo.Print)
-                        {
-                            if (vDrawsSelectAll)
+                            if (vItem.HyperLink != "")
                             {
-                                ACanvas.Brush.Color = FStyle.SelColor;
-                                ACanvas.FillRect(new RECT(vDrawRect.Left, vDrawRect.Top, vDrawRect.Left + vDItem.Width(), Math.Min(vDrawRect.Bottom, ADataScreenBottom)));
+                                aCanvas.Font.Color = HC.HyperTextColor;
+                                aCanvas.Font.FontStyles.InClude((byte)HCFontStyle.tsUnderline);
                             }
-                            else  // 处理一部分选中
-                                if (vSelEndDNo >= 0)
-                                {
-                                    ACanvas.Brush.Color = FStyle.SelColor;
-                                    if ((vSelStartDNo == vSelEndDNo) && (i == vSelStartDNo))
-                                    {
-                                        ACanvas.FillRect(new RECT(vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelStartDOffs),
-                                            vDrawRect.Top, vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelEndDOffs),
-                                            Math.Min(vDrawRect.Bottom, ADataScreenBottom)));
-                                    }
-                                    else
-                                        if (i == vSelStartDNo)
-                                        {
-                                            ACanvas.FillRect(new RECT(vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelStartDOffs),
-                                            vDrawRect.Top, vDrawRect.Right, Math.Min(vDrawRect.Bottom, ADataScreenBottom)));
-                                        }
-                                        else
-                                            if (i == vSelEndDNo)
-                                            {
-                                                ACanvas.FillRect(new RECT(vDrawRect.Left,
-                                                vDrawRect.Top, vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelEndDOffs),
-                                                Math.Min(vDrawRect.Bottom, ADataScreenBottom)));
-                                            }
-                                            else
-                                                if ((i > vSelStartDNo) && (i < vSelEndDNo))
-                                                    ACanvas.FillRect(vDrawRect);
-                                }
                         }
 
-                        // 除去行间距净Rect，即内容的显示区域
-                        vDrawRect.Inflate(0, -(vDrawRect.Height - vTextHeight) / 2);//FStyle.ParaStyles[vItem.ParaNo].LineSpaceHalf);
                         int vTextDrawTop;
                         switch (FStyle.ParaStyles[vItem.ParaNo].AlignVert)  // 垂直对齐方式
                         {
                             case ParaAlignVert.pavCenter:
-                                vTextDrawTop = vDrawRect.Top + (vDrawRect.Bottom - vDrawRect.Top - vTextHeight) / 2;
+                                vTextDrawTop = vClearRect.Top + (vClearRect.Bottom - vClearRect.Top - vTextHeight) / 2;
                                 break;
 
                             case ParaAlignVert.pavTop:
-                                vTextDrawTop = vDrawRect.Top;
+                                vTextDrawTop = vClearRect.Top;
                                 break;
 
                             default:
-                                vTextDrawTop = vDrawRect.Bottom - vTextHeight;
+                                vTextDrawTop = vClearRect.Bottom - vTextHeight;
                                 break;
                         }
 
@@ -2459,35 +2495,72 @@ namespace HC.View
                         // 文字背景
                         if (FStyle.TextStyles[vPrioStyleNo].BackColor.A != 0)
                         {
-                            ACanvas.Brush.Color = FStyle.TextStyles[vPrioStyleNo].BackColor;
-                            ACanvas.FillRect(new RECT(vDrawRect.Left, vDrawRect.Top, vDrawRect.Left + vDItem.Width(), vDrawRect.Bottom));
+                            aCanvas.Brush.Color = FStyle.TextStyles[vPrioStyleNo].BackColor;
+                            aCanvas.FillRect(new RECT(vClearRect.Left, vClearRect.Top, vClearRect.Left + vDrawItem.Width(), vClearRect.Bottom));
                         }
 
-                        vItem.PaintTo(FStyle, vDrawRect, ADataDrawTop, ADataDrawBottom,
-                            ADataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);  // 触发Item绘制事件
+                        string vText = vItem.Text.Substring(vDrawItem.CharOffs - 1, vDrawItem.CharLen);  // 为减少判断，没有直接使用GetDrawItemText(i)
+                        DrawItemPaintContent(this, i, vDrawRect, vClearRect, vText, aDataDrawLeft,
+                            aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
-                        // 绘制文本
-                        ACanvas.Brush.Style = HCBrushStyle.bsClear;
+                        // 绘制优先级更高的选中情况下的背景
+                        if (!aPaintInfo.Print)
+                        {
+                            if (vDrawsSelectAll)
+                            {
+                                aCanvas.Brush.Color = FStyle.SelColor;
+                                aCanvas.FillRect(new RECT(vDrawRect.Left, vDrawRect.Top, vDrawRect.Left + vDrawItem.Width(), Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
+                            }
+                            else  // 处理一部分选中
+                                if (vSelEndDNo >= 0)  // 有选中内容，部分背景为选中
+                                {
+                                    aCanvas.Brush.Color = FStyle.SelColor;
+                                    if ((vSelStartDNo == vSelEndDNo) && (i == vSelStartDNo))  // 选中内容都在当前DrawItem
+                                    {
+                                        aCanvas.FillRect(new RECT(vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelStartDOffs),
+                                            vDrawRect.Top, vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelEndDOffs, FStyle.DefCanvas),
+                                            Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
+                                    }
+                                    else
+                                        if (i == vSelStartDNo)  // 选中在不同DrawItem，当前是起始
+                                        {
+                                            aCanvas.FillRect(new RECT(vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelStartDOffs, FStyle.DefCanvas),
+                                            vDrawRect.Top, vDrawRect.Right, Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
+                                        }
+                                        else
+                                            if (i == vSelEndDNo)  // 选中在不同的DrawItem，当前是结束
+                                            {
+                                                aCanvas.FillRect(new RECT(vDrawRect.Left,
+                                                vDrawRect.Top, vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelEndDOffs, FStyle.DefCanvas),
+                                                Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
+                                            }
+                                            else
+                                                if ((i > vSelStartDNo) && (i < vSelEndDNo))  // 选中起始和结束DrawItem之间的DrawItem
+                                                    aCanvas.FillRect(vDrawRect);
+                                }
+                        }
 
-                        string vText = "";
-                        if (vDItem.CharLen > 0)
-                          vText = vItem.Text.Substring(vDItem.CharOffs - 1, vDItem.CharLen);  // 为减少判断，没有直接使用GetDrawItemText(i)
+                        vItem.PaintTo(FStyle, vDrawRect, aDataDrawTop, aDataDrawBottom,
+                            aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);  // 触发Item绘制事件
 
+                        // 绘制文本                      
                         if (vText != "")
                         {
+                            aCanvas.Brush.Style = HCBrushStyle.bsClear;
+
                             switch (vAlignHorz)  // 水平对齐方式
                             {
                                 case ParaAlignHorz.pahLeft:
                                 case ParaAlignHorz.pahRight:
                                 case ParaAlignHorz.pahCenter:  // 一般对齐
                                     int vLen = vText.Length;
-                                    GDI.ExtTextOut(ACanvas.Handle, vDrawRect.Left, vTextDrawTop,
+                                    GDI.ExtTextOut(aCanvas.Handle, vClearRect.Left, vTextDrawTop,
                                         GDI.ETO_OPAQUE, IntPtr.Zero, vText, vLen, IntPtr.Zero);
                                     break;
 
                                 case ParaAlignHorz.pahJustify:
                                 case ParaAlignHorz.pahScatter:  // 两端、分散对齐
-                                    DrawTextJsutify(ACanvas, vDrawRect, vText, IsLineLastDrawItem(i), vTextDrawTop);
+                                    DrawTextJsutify(aCanvas, vClearRect, vText, IsLineLastDrawItem(i), vTextDrawTop);
                                     break;
                             }
                         }
@@ -2498,49 +2571,49 @@ namespace HC.View
                         }
                     }
 
-                    DrawItemPaintAfter(this, i, vDrawRect, ADataDrawLeft, ADataDrawBottom,
-                        ADataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);  // 绘制内容后
+                    DrawItemPaintAfter(this, i, vClearRect, aDataDrawLeft, aDataDrawBottom,
+                        aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);  // 绘制内容后
                 }
             }
             finally
             {
-                ACanvas.Restore(vDCState);
+                aCanvas.Restore(vDCState);
             }
         }
 
+        public virtual void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom,
+            int aDataScreenTop, int aDataScreenBottom, int aVOffset, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            if (FItems.Count == 0)
+                return;
+
+            int vFirstDItemNo = -1, vLastDItemNo = -1;
+            int vVOffset = aDataDrawTop - aVOffset;  // 将数据起始位置映射到绘制位置
+            GetDataDrawItemRang(Math.Max(aDataDrawTop, aDataScreenTop) - vVOffset,  // 可显示出来的DrawItem范围
+                Math.Min(aDataDrawBottom, aDataScreenBottom) - vVOffset, ref vFirstDItemNo, ref vLastDItemNo);
+
+            PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawBottom, aDataScreenTop,
+              aDataScreenBottom, aVOffset, vFirstDItemNo, vLastDItemNo, aCanvas, aPaintInfo);
+        }
+
         /// <summary> 根据行中某DrawItem获取当前行间距 </summary>
-        /// <param name="ADrawNo">行中指定的DrawItem</param>
+        /// <param name="aDrawNo">行中指定的DrawItem</param>
         /// <returns>行间距</returns>
-        public int GetLineSpace(int ADrawNo)
+        public int GetLineSpace(int aDrawNo)
         {
             int Result = 0;
-            int vFirst = -1;
-            for (int i = ADrawNo; i >= 0; i--)
-            {
-                if (FDrawItems[i].LineFirst)
-                {
-                    vFirst = i;
-                    break;
-                }
-            }
+            int vStyleNo = HCStyle.Null;
+            int vFirst = aDrawNo;
+            int vLast = -1;
+            GetLineDrawItemRang(ref vFirst, ref vLast);
 
-            int vLast = FDrawItems.Count - 1;
-
-            for (int i = ADrawNo + 1; i <= FDrawItems.Count - 1; i++)
-            {
-                if (FDrawItems[i].LineFirst)
-                {
-                    vLast = i - 1;
-                    break;
-                }
-            }
-
+            // 找行中最高的DrawItem
             int vMaxHi = 0;
-            int vMaxDrawNo;
+            int vMaxDrawItemNo;
 
             using (HCCanvas vCanvas = HCStyle.CreateStyleCanvas())
             {
-                vMaxDrawNo = vFirst;
+                vMaxDrawItemNo = vFirst;
                 for (int i = vFirst; i <= vLast; i++)
                 {
                     int vHi;
@@ -2548,41 +2621,46 @@ namespace HC.View
                         vHi = (FItems[FDrawItems[i].ItemNo] as HCCustomRectItem).Height;
                     else
                     {
-                        FStyle.TextStyles[FItems[FDrawItems[i].ItemNo].StyleNo].ApplyStyle(vCanvas);  // APaintInfo.ScaleY / APaintInfo.Zoom);
+                        if (FItems[FDrawItems[i].ItemNo].StyleNo != vStyleNo)
+                        {
+                            vStyleNo = FItems[FDrawItems[i].ItemNo].StyleNo;
+                            FStyle.TextStyles[vStyleNo].ApplyStyle(vCanvas);  // APaintInfo.ScaleY / APaintInfo.Zoom);
+                        }
+                        
                         vHi = HCStyle.GetFontHeight(vCanvas);
                     }
 
                     if (vHi > vMaxHi)
                     {
                         vMaxHi = vHi;  // 记下最大的高度
-                        vMaxDrawNo = i;
+                        vMaxDrawItemNo = i;  // 记下最高的DrawItemNo
                     }
                 }
             }
 
-            Result = GetDrawItemLineSpace(vMaxDrawNo);
+            Result = GetDrawItemLineSpace(vMaxDrawItemNo);  // 根据最高的DrawItem取行间距
 
             return Result;
         }
 
         /// <summary> 获取指定DrawItem的行间距 </summary>
-        /// <param name="ADrawNo">指定的DrawItem</param>
+        /// <param name="aDrawNo">指定的DrawItem</param>
         /// <returns>DrawItem的行间距</returns>
-        public int GetDrawItemLineSpace(int ADrawNo)
+        public int GetDrawItemLineSpace(int aDrawNo)
         {
             int Result = HC.LineSpaceMin;
 
-            if (GetDrawItemStyle(ADrawNo) >= HCStyle.Null)
+            if (GetDrawItemStyle(aDrawNo) >= HCStyle.Null)
             {
                 HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
 
                 try
                 {
-                    FStyle.TextStyles[GetDrawItemStyle(ADrawNo)].ApplyStyle(vCanvas);
+                    FStyle.TextStyles[GetDrawItemStyle(aDrawNo)].ApplyStyle(vCanvas);
                     TEXTMETRIC vTextMetric = new TEXTMETRIC();
                     Win32.GDI.GetTextMetrics(vCanvas.Handle, ref vTextMetric);  // 得到字体信息
 
-                    switch (FStyle.ParaStyles[GetDrawItemParaStyle(ADrawNo)].LineSpaceMode)
+                    switch (FStyle.ParaStyles[GetDrawItemParaStyle(aDrawNo)].LineSpaceMode)
                     {
                         case ParaLineSpaceMode.pls100:
                             Result = vTextMetric.tmExternalLeading; // Round(vTextMetric.tmHeight * 0.2);
@@ -2615,7 +2693,7 @@ namespace HC.View
         }
 
         /// <summary> 是否有选中 </summary>
-        public bool SelectExists(bool AIfRectItem = true)
+        public bool SelectExists(bool aIfRectItem = true)
         {
             bool Result = false;
 
@@ -2630,7 +2708,7 @@ namespace HC.View
                 }
                 else  // 当前光标仅在一个Item中(在Rect中即使有选中，相对当前层的Data也算在一个Item)
                 {
-                    if (AIfRectItem && (FItems[FSelectInfo.StartItemNo].StyleNo < HCStyle.Null))
+                    if (aIfRectItem && (FItems[FSelectInfo.StartItemNo].StyleNo < HCStyle.Null))
                     {
                         Result = (FItems[FSelectInfo.StartItemNo] as HCCustomRectItem).SelectExists();
                     }
@@ -2640,16 +2718,16 @@ namespace HC.View
             return Result;
         }
 
-        public void MarkStyleUsed(bool AMark)
+        public void MarkStyleUsed(bool aMark)
         {
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
                 HCCustomItem vItem = FItems[i];
-                if (AMark)
+                if (aMark)
                 {
                     FStyle.ParaStyles[vItem.ParaNo].CheckSaveUsed = true;
                     if (vItem.StyleNo < HCStyle.Null)
-                        (vItem as HCCustomRectItem).MarkStyleUsed(AMark);
+                        (vItem as HCCustomRectItem).MarkStyleUsed(aMark);
                     else
                         FStyle.TextStyles[vItem.StyleNo].CheckSaveUsed = true;
                 }
@@ -2657,54 +2735,54 @@ namespace HC.View
                 {
                     vItem.ParaNo = FStyle.ParaStyles[vItem.ParaNo].TempNo;
                     if (vItem.StyleNo < HCStyle.Null)
-                        (vItem as HCCustomRectItem).MarkStyleUsed(AMark);
+                        (vItem as HCCustomRectItem).MarkStyleUsed(aMark);
                     else
                         vItem.StyleNo = FStyle.TextStyles[vItem.StyleNo].TempNo;
                 }
             }
         }
 
-        public virtual void SaveToStream(Stream AStream)
+        public virtual void SaveToStream(Stream aStream)
         {
-            SaveToStream(AStream, 0, 0, FItems.Count - 1, Items[FItems.Count - 1].Length);
+            SaveToStream(aStream, 0, 0, FItems.Count - 1, Items[FItems.Count - 1].Length);
         }
 
-        public virtual void SaveToStream(Stream AStream, int AStartItemNo, int AStartOffset,
-            int AEndItemNo, int AEndOffset)
+        public virtual void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset,
+            int aEndItemNo, int aEndOffset)
         {
-            Int64 vBegPos = AStream.Position;
+            Int64 vBegPos = aStream.Position;
             byte[] vBuffer = System.BitConverter.GetBytes(vBegPos);
-            AStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位，便于越过
+            aStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位，便于越过
 
-            int vi = AEndItemNo - AStartItemNo + 1;
+            int vi = aEndItemNo - aStartItemNo + 1;
             vBuffer = System.BitConverter.GetBytes(vi);
-            AStream.Write(vBuffer, 0, vBuffer.Length);  // 数量
+            aStream.Write(vBuffer, 0, vBuffer.Length);  // 数量
 
             if (vi > 0)
             {
-                if (AStartItemNo != AEndItemNo)
+                if (aStartItemNo != aEndItemNo)
                 {
-                    FItems[AStartItemNo].SaveToStream(AStream, AStartOffset, FItems[AStartItemNo].Length);
-                    for (int i = AStartItemNo + 1; i <= AEndItemNo - 1; i++)
-                        FItems[i].SaveToStream(AStream);
+                    FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, FItems[aStartItemNo].Length);
+                    for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
+                        FItems[i].SaveToStream(aStream);
 
-                    FItems[AEndItemNo].SaveToStream(AStream, 0, AEndOffset);
+                    FItems[aEndItemNo].SaveToStream(aStream, 0, aEndOffset);
 
                 }
                 else
-                    FItems[AStartItemNo].SaveToStream(AStream, AStartOffset, AEndOffset);
+                    FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, aEndOffset);
 
             }
             //
-            Int64 vEndPos = AStream.Position;
+            Int64 vEndPos = aStream.Position;
 
-            AStream.Position = vBegPos;
+            aStream.Position = vBegPos;
 
             vBegPos = vEndPos - vBegPos - Marshal.SizeOf(vBegPos);
             vBuffer = System.BitConverter.GetBytes(vBegPos);
-            AStream.Write(vBuffer, 0, vBuffer.Length);  // 当前页数据大小
+            aStream.Write(vBuffer, 0, vBuffer.Length);  // 当前页数据大小
 
-            AStream.Position = vEndPos;
+            aStream.Position = vEndPos;
         }
 
         public string SaveToText()
@@ -2712,33 +2790,33 @@ namespace HC.View
             return SaveToText(0, 0, FItems.Count - 1, FItems[FItems.Count - 1].Length);
         }
 
-        public string SaveToText(int AStartItemNo, int AStartOffset, int AEndItemNo, int AEndOffset)
+        public string SaveToText(int aStartItemNo, int aStartOffset, int aEndItemNo, int aEndOffset)
         {
             string Result = "";
 
-            int vi = AEndItemNo - AStartItemNo + 1;
+            int vi = aEndItemNo - aStartItemNo + 1;
 
             if (vi > 0)
             {
-                if (AStartItemNo != AEndItemNo)
+                if (aStartItemNo != aEndItemNo)
                 {
-                    if (FItems[AStartItemNo].StyleNo > HCStyle.Null)
-                        Result = (FItems[AStartItemNo] as HCTextItem).GetTextPart(AStartOffset + 1, FItems[AStartItemNo].Length - AStartOffset);
+                    if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
+                        Result = (FItems[aStartItemNo] as HCTextItem).GetTextPart(aStartOffset + 1, FItems[aStartItemNo].Length - aStartOffset);
                     else
-                        Result = (FItems[AStartItemNo] as HCCustomRectItem).SaveSelectToText();
+                        Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();
 
-                    for (int i = AStartItemNo + 1; i <= AEndItemNo - 1; i++)
+                    for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
                         Result = Result + FItems[i].Text;
 
-                    if (FItems[AEndItemNo].StyleNo > HCStyle.Null)
-                        Result = Result + (FItems[AEndItemNo] as HCTextItem).GetTextPart(1, AEndOffset);
+                    if (FItems[aEndItemNo].StyleNo > HCStyle.Null)
+                        Result = Result + (FItems[aEndItemNo] as HCTextItem).GetTextPart(1, aEndOffset);
                     else
-                        Result = (FItems[AEndItemNo] as HCCustomRectItem).SaveSelectToText();
+                        Result = (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
                 }
                 else  // 选中在同一Item
                 {
-                    if (FItems[AStartItemNo].StyleNo > HCStyle.Null)
-                        Result = (FItems[AStartItemNo] as HCTextItem).GetTextPart(AStartOffset + 1, AEndOffset - AStartOffset);
+                    if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
+                        Result = (FItems[aStartItemNo] as HCTextItem).GetTextPart(aStartOffset + 1, aEndOffset - aStartOffset);
                 }
             }
 
@@ -2746,7 +2824,7 @@ namespace HC.View
         }
         
         /// <summary> 保存选中内容到流 </summary>
-        public virtual void SaveSelectToStream(Stream AStream)
+        public virtual void SaveSelectToStream(Stream aStream)
         {
             if (SelectExists())
             {
@@ -2755,14 +2833,14 @@ namespace HC.View
                 {
                     if ((FItems[FSelectInfo.StartItemNo] as HCCustomRectItem).IsSelectComplateTheory())
                     {
-                        this.SaveToStream(AStream, FSelectInfo.StartItemNo, HC.OffsetBefor, FSelectInfo.StartItemNo, HC.OffsetAfter);
+                        this.SaveToStream(aStream, FSelectInfo.StartItemNo, HC.OffsetBefor, FSelectInfo.StartItemNo, HC.OffsetAfter);
                     }
                     else
-                        (FItems[FSelectInfo.StartItemNo] as HCCustomRectItem).SaveSelectToStream(AStream);
+                        (FItems[FSelectInfo.StartItemNo] as HCCustomRectItem).SaveSelectToStream(aStream);
                 }
                 else
                 {
-                    this.SaveToStream(AStream, FSelectInfo.StartItemNo, FSelectInfo.StartItemOffset, FSelectInfo.EndItemNo, FSelectInfo.EndItemOffset);
+                    this.SaveToStream(aStream, FSelectInfo.StartItemNo, FSelectInfo.StartItemOffset, FSelectInfo.EndItemNo, FSelectInfo.EndItemOffset);
                 }
             }
         }
@@ -2785,14 +2863,60 @@ namespace HC.View
             return Result;
         }
 
-        public virtual bool InsertStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public virtual bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             return false;
         }
 
-        public virtual void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public virtual void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             Clear();
+        }
+
+        public string ToHtml(string aPath)
+        {
+            string Result = "";
+            for (int i = 0; i <= Items.Count - 1; i++)
+            {
+                if (Items[i].ParaFirst)
+                {
+                    if (i != 0)
+                        Result = Result + HC.sLineBreak + "</p>";
+
+                    Result = Result + HC.sLineBreak + "<p class=\"ps" + Items[i].ParaNo.ToString() + "\">";
+                }
+
+                Result = Result + HC.sLineBreak + Items[i].ToHtml(aPath);
+            }
+
+            return Result + HC.sLineBreak + "</p>";
+        }
+
+        public virtual void ToXml(XmlElement aNode)
+        {
+            aNode.Attributes["itemcount"].Value = FItems.Count.ToString();
+            for (int i = 0; i <= FItems.Count - 1; i++)
+            {
+                XmlElement vNode = aNode.OwnerDocument.CreateElement("item");
+                FItems[i].ToXml(vNode);
+                aNode.AppendChild(vNode);
+            }
+        }
+
+        public virtual void ParseXml(XmlElement aNode)
+        {
+            Clear();
+
+            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
+            {
+                XmlElement vItemNode = aNode.ChildNodes[i] as XmlElement;
+                HCCustomItem vItem = CreateItemByStyle(int.Parse(vItemNode.Attributes["sno"].Value));
+                vItem.ParseXml(vItemNode);
+                FItems.Add(vItem);
+            }
+
+            if (FItems[0].Length == 0)  // 删除Clear后默认的第一个空行Item
+                FItems.RemoveAt(0);
         }
 
         public HCStyle Style

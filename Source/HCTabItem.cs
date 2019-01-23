@@ -18,12 +18,12 @@ namespace HC.View
 {
     public class HCTabItem : HCTextRectItem
     {
-        public HCTabItem(HCCustomData AOwnerData) : base(AOwnerData)
+        public HCTabItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
 
         }
 
-        public HCTabItem(HCCustomData AOwnerData, int AWidth, int AHeight) : base(AOwnerData, AWidth, AHeight)
+        public HCTabItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
         {
             
         }

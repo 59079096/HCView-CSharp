@@ -16,6 +16,7 @@ using System.Text;
 using System.IO;
 using System.Drawing;
 using HC.Win32;
+using System.Xml;
 
 namespace HC.View
 {
@@ -31,14 +32,16 @@ namespace HC.View
             FCanPageBreak;  // 在当前页显示不下时是否可以分页截断显示
         GetUndoListEventHandler FOnGetMainUndoList;
 
+        protected bool FMangerUndo;  // 是否自己管理撤销恢复
+
         protected virtual int GetWidth()
         {
             return FWidth;
         }
 
-        protected virtual void SetWidth(int Value)
+        protected virtual void SetWidth(int value)
         {
-            FWidth = Value;
+            FWidth = value;
         }
 
         protected virtual int GetHeight()
@@ -46,58 +49,97 @@ namespace HC.View
             return FHeight;
         }
 
-        protected virtual void SetHeight(int Value)
+        protected virtual void SetHeight(int value)
         {
-            FHeight = Value;
+            FHeight = value;
         }
 
         // 撤销重做相关方法
-        protected virtual void DoNewUndo(HCUndo Sender) { }
-
-        protected virtual void DoUndoDestroy(HCUndo Sender)
+        public override void Undo(HCCustomUndoAction aUndoAction) 
         {
-            if (Sender.Data != null)
-                Sender.Data.Dispose();
+            if (aUndoAction is HCItemSelfUndoAction)
+            {
+                HCUndoList vUndoList = (aUndoAction as HCItemSelfUndoAction).Object as HCUndoList;
+                if (vUndoList != null)
+                    vUndoList.Undo();
+                else
+                    base.Undo(aUndoAction);
+            }
+            else
+                base.Undo(aUndoAction);
         }
 
-        protected virtual void DoUndo(HCUndo Sender)
+        public override void Redo(HCCustomUndoAction aRedoAction)
         {
+            if (aRedoAction is HCItemSelfUndoAction)
+            {
+                HCUndoList vUndoList = (aRedoAction as HCItemSelfUndoAction).Object as HCUndoList;
+                if (vUndoList != null)
+                {
+                    if (vUndoList.Seek < 0)
+                        SelfUndoListInitializate(vUndoList);
 
+                    vUndoList.Redo();
+                }
+                else
+                    base.Redo(aRedoAction);
+            }
+            else
+                base.Redo(aRedoAction);
         }
 
-        protected virtual void DoRedo(HCUndo Sende)
+        protected void SelfUndoListInitializate(HCUndoList aUndoList)
         {
-
+          aUndoList.OnUndoNew = DoSelfUndoNew;
+          aUndoList.OnUndo = DoSelfUndo;
+          aUndoList.OnRedo = DoSelfRedo;
         }
 
-        protected void Undo_StartRecord()
+        protected void SelfUndo_New()
         {
-            if (FOwnerData.Style.EnableUndo)
-                GetSelfUndoList().NewUndo();
+            HCUndoList vUndoList = GetSelfUndoList();
+            if ((vUndoList != null) && vUndoList.Enable)
+                vUndoList.UndoNew();
         }
 
         protected HCUndoList GetSelfUndoList()
         {
-            HCUndoList Result = null;
-            HCUndoList vMainUndoList = FOnGetMainUndoList();
-            int vActionCount = vMainUndoList[vMainUndoList.Count - 1].Actions.Count;
-            HCCustomUndoAction vLastAction = vMainUndoList[vMainUndoList.Count - 1].Actions[vActionCount - 1];
-            if (vLastAction is HCItemSelfUndoAction)
+            HCUndoList Result = FOnGetMainUndoList();
+
+            if ((Result != null) && Result.Enable)
             {
-                HCItemSelfUndoAction vItemAction = vLastAction as HCItemSelfUndoAction;
-                if (vItemAction.Object == null)
+                int vActionCount = Result[Result.Count - 1].Actions.Count;
+                HCCustomUndoAction vLastAction = Result[Result.Count - 1].Actions[vActionCount - 1];
+                if (vLastAction is HCItemSelfUndoAction)
                 {
-                    vItemAction.Object = new HCUndoList();
-                    (vItemAction.Object as HCUndoList).OnNewUndo = DoNewUndo;
-                    (vItemAction.Object as HCUndoList).OnUndo = DoUndo;
-                    (vItemAction.Object as HCUndoList).OnRedo = DoRedo;
+                    HCItemSelfUndoAction vItemAction = vLastAction as HCItemSelfUndoAction;
+                    if (vItemAction.Object == null)
+                    {
+                        vItemAction.Object = new HCUndoList();
+                        SelfUndoListInitializate(vItemAction.Object as HCUndoList);
+                    }
+
+                    Result = vItemAction.Object as HCUndoList;
                 }
-            
-                Result = vItemAction.Object as HCUndoList;
             }
 
             return Result;
+        }        
+        
+        protected virtual void DoSelfUndoDestroy(HCUndo aUndo)
+        {
+            if (aUndo.Data != null)
+                aUndo.Data.Dispose();
         }
+
+        protected virtual HCUndo DoSelfUndoNew()
+        {
+            return new HCUndo();
+        }
+
+        protected virtual void DoSelfUndo(HCUndo aUndo) { }
+
+        protected virtual void DoSelfRedo(HCUndo aRedo) { }
 
         public HCCustomRectItem() : base()
         {
@@ -105,34 +147,35 @@ namespace HC.View
         }
 
         /// <summary> 适用于工作期间创建 </summary>
-        public HCCustomRectItem(HCCustomData AOwnerData) : this()
+        public HCCustomRectItem(HCCustomData aOwnerData) : this()
         {
-            FOwnerData = AOwnerData;
-            this.ParaNo = AOwnerData.Style.CurParaNo;
+            FOwnerData = aOwnerData;
+            this.ParaNo = aOwnerData.Style.CurParaNo;
+            FOnGetMainUndoList = (aOwnerData as HCCustomData).OnGetUndoList;
             FWidth = 100;
             FHeight = 50;
             FTextWrapping = false;
             FSizeChanged = false;
             FCanPageBreak = false;
+            FMangerUndo = false;
         }
 
         /// <summary> 适用于加载时创建 </summary>
-        public HCCustomRectItem(HCCustomData AOwnerData, int AWidth, int AHeight) : this(AOwnerData)
+        public HCCustomRectItem(HCCustomData aOwnerData, int aWidth, int aHeight) : this(aOwnerData)
         {
-            Width = AWidth;
-            Height = AHeight;
+            Width = aWidth;
+            Height = aHeight;
         }
 
-        // 抽象方法，供继承
-        public virtual int ApplySelectTextStyle(HCStyle AStyle, HCStyleMatch AMatchStyl)
+        public virtual void ApplySelectParaStyle(HCStyle aStyle, HCParaMatch aMatchStyle) { }
+
+        public virtual int ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyl)
         {
             return HCStyle.Null;
         }
 
-        public virtual void ApplySelectParaStyle(HCStyle AStyle, HCParaMatch AMatchStyle) { }
-
         // 当前RectItem格式化时所属的Data(为松耦合请传入TCustomRichData类型)
-        public virtual void FormatToDrawItem(HCCustomData ARichData, int AItemNo) { }
+        public virtual void FormatToDrawItem(HCCustomData aRichData, int aItemNo) { }
 
         /// <summary> 清除并返回为处理分页比净高增加的高度(为重新格式化时后面计算偏移用) </summary>
         public virtual int ClearFormatExtraHeight()
@@ -145,7 +188,7 @@ namespace HC.View
             return false;
         }
 
-        public virtual void MarkStyleUsed(bool AMark) { }
+        public virtual void MarkStyleUsed(bool aMark) { }
 
         public virtual void SaveSelectToStream(Stream AStream) { }
 
@@ -170,19 +213,19 @@ namespace HC.View
         }
 
         /// <summary> 获取指定X位置对应的Offset </summary>
-        public virtual int GetOffsetAt(int X)
+        public virtual int GetOffsetAt(int x)
         {
-            if (X <= 0)
+            if (x <= 0)
                 return HC.OffsetBefor;
             else
-                if (X >= Width)
+                if (x >= Width)
                     return HC.OffsetAfter;
                 else
                     return HC.OffsetInner;
         }
 
         /// <summary> 获取坐标X、Y是否在选中区域中 </summary>
-        public virtual bool CoordInSelect(int X, int Y)
+        public virtual bool CoordInSelect(int x, int y)
         {
             return false;
         }
@@ -200,46 +243,43 @@ namespace HC.View
         }
 
         /// <summary> 更新光标位置 </summary>
-        public virtual void GetCaretInfo(ref HCCaretInfo ACaretInfo) { }
+        public virtual void GetCaretInfo(ref HCCaretInfo aCaretInfo) { }
 
         /// <summary> 获取在指定高度内的结束位置处最下端(暂时没用到注释了) </summary>
         /// <param name="AHeight">指定的高度范围</param>
         /// <param name="ADItemMostBottom">最底端DItem的底部位置</param>
         //procedure GetPageFmtBottomInfo(const AHeight: Integer; var ADItemMostBottom: Integer); virtual;
 
-        public virtual void CheckFormatPageBreakBefor()
-        {
-
-        }
+        public virtual void CheckFormatPageBreakBefor() { }
 
         /// <summary> 计算格式化后的分页位置 </summary>
-        /// <param name="ADrawItemRectTop">对应的DrawItem的Rect.Top往下行间距一半</param>
-        /// <param name="ADrawItemRectBottom">对应的DrawItem的Rect.Bottom往上行间距一半</param>
-        /// <param name="APageDataFmtTop">页数据Top</param>
-        /// <param name="APageDataFmtBottom">页数据Bottom</param>
-        /// <param name="AStartSeat">开始计算分页位置</param>
-        /// <param name="ABreakSeat">需要分页位置</param>
-        /// <param name="AFmtOffset">为了避开分页位置整体向下偏移的高度</param>
-        /// <param name="AFmtHeightInc">为了避开分页位置高度增加值</param>
-        public virtual void CheckFormatPageBreak(int APageIndex, int ADrawItemRectTop,
-            int ADrawItemRectBottom, int APageDataFmtTop, int APageDataFmtBottom, int AStartSeat,
-            ref int ABreakSeat, ref int AFmtOffset, ref int AFmtHeightInc)
+        /// <param name="aDrawItemRectTop">对应的DrawItem的Rect.Top往下行间距一半</param>
+        /// <param name="aDrawItemRectBottom">对应的DrawItem的Rect.Bottom往上行间距一半</param>
+        /// <param name="aPageDataFmtTop">页数据Top</param>
+        /// <param name="aPageDataFmtBottom">页数据Bottom</param>
+        /// <param name="aStartSeat">开始计算分页位置</param>
+        /// <param name="aBreakSeat">需要分页位置</param>
+        /// <param name="aFmtOffset">为了避开分页位置整体向下偏移的高度</param>
+        /// <param name="aFmtHeightInc">为了避开分页位置高度增加值</param>
+        public virtual void CheckFormatPageBreak(int aPageIndex, int aDrawItemRectTop,
+            int aDrawItemRectBottom, int aPageDataFmtTop, int aPageDataFmtBottom, int aStartSeat,
+            ref int aBreakSeat, ref int aFmtOffset, ref int aFmtHeightInc)
         {
-            ABreakSeat = -1;
-            AFmtOffset = 0;
-            AFmtHeightInc = 0;
+            aBreakSeat = -1;
+            aFmtOffset = 0;
+            aFmtHeightInc = 0;
 
             if (FCanPageBreak)
             {
-                ABreakSeat = Height - AStartSeat - (APageDataFmtBottom - ADrawItemRectTop);
-                if (ADrawItemRectBottom > APageDataFmtBottom)
-                    AFmtHeightInc = APageDataFmtBottom - ADrawItemRectBottom;
+                aBreakSeat = Height - aStartSeat - (aPageDataFmtBottom - aDrawItemRectTop);
+                if (aDrawItemRectBottom > aPageDataFmtBottom)
+                    aFmtHeightInc = aPageDataFmtBottom - aDrawItemRectBottom;
             }
             else
             {
-                ABreakSeat = 0;
-                if (ADrawItemRectBottom > APageDataFmtBottom)
-                    AFmtOffset = APageDataFmtBottom - ADrawItemRectTop;
+                aBreakSeat = 0;
+                if (aDrawItemRectBottom > aPageDataFmtBottom)
+                    aFmtOffset = aPageDataFmtBottom - aDrawItemRectTop;
             }
         }
 
@@ -248,22 +288,22 @@ namespace HC.View
             return false;
         }
 
-        public virtual bool InsertItem(HCCustomItem AItem)
+        public virtual bool InsertItem(HCCustomItem aItem)
         {
             return false;
         }
 
-        public virtual bool InsertText(string AText)
+        public virtual bool InsertText(string aText)
         {
             return false;
         }
 
-        public virtual bool InsertGraphic(Image AGraphic, bool ANewPara)
+        public virtual bool InsertGraphic(Image aGraphic, bool aNewPara)
         {
             return false;
         }
 
-        public virtual bool InsertStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public virtual bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             return false;
         }
@@ -273,9 +313,9 @@ namespace HC.View
             e.Handled = true;
         }
 
-        public virtual void KeyPress(ref Char Key)
+        public virtual void KeyPress(ref Char key)
         {
-            Key = (char)0;
+            key = (char)0;
         }
 
         /// <summary> “理论”上全选中(适用于仅RectItem点击选中情况下的选中判断) </summary>
@@ -290,11 +330,11 @@ namespace HC.View
         }
 
         /// <summary> 当前位置开始查找指定的内容 </summary>
-        /// <param name="AKeyword">要查找的关键字</param>
-        /// <param name="AForward">True：向前，False：向后</param>
-        /// <param name="AMatchCase">True：区分大小写，False：不区分大小写</param>
+        /// <param name="aKeyword">要查找的关键字</param>
+        /// <param name="aForward">True：向前，False：向后</param>
+        /// <param name="aMatchCase">True：区分大小写，False：不区分大小写</param>
         /// <returns>True：找到</returns>
-        public virtual bool Search(string AKeyword, bool AForward, bool AMatchCase)
+        public virtual bool Search(string aKeyword, bool aForward, bool aMatchCase)
         {
             return false;
         }
@@ -306,53 +346,127 @@ namespace HC.View
         }
 
         /// <summary> 返回指定位置处的顶层Data(为松耦合请返回TCustomRichData类型) </summary>
-        public virtual HCCustomData GetTopLevelDataAt(int X, int Y)
+        public virtual HCCustomData GetTopLevelDataAt(int x, int y)
         {
             return null;
         }
 
         public virtual void TraverseItem(HCItemTraverse ATraverse) { }
+
+        public virtual void SaveToBitmap(ref Bitmap aBitmap) 
+        {
+            aBitmap = new Bitmap(FWidth, FHeight);
+            PaintInfo vPaintInfo = new PaintInfo();
+            vPaintInfo.Print = true;
+            vPaintInfo.WindowWidth = aBitmap.Width;
+            vPaintInfo.WindowHeight = aBitmap.Height;
+            vPaintInfo.ScaleX = 1;
+            vPaintInfo.ScaleY = 1;
+            vPaintInfo.Zoom = 1;
+            
+            Graphics vGraphic = Graphics.FromImage(aBitmap);
+            IntPtr vDC = vGraphic.GetHdc();
+            try
+            {
+                HCCanvas vCanvas = new HCCanvas(vDC);
+                try
+                {
+                this.DoPaint(OwnerData.Style, new RECT(0, 0, aBitmap.Width, aBitmap.Height),
+                    0, aBitmap.Height, 0, aBitmap.Height, vCanvas, vPaintInfo);
+                }
+                finally
+                {
+                    vCanvas.Dispose();
+                }
+            }
+            finally
+            {
+                vGraphic.ReleaseHdc();
+            }
+        }
         //
         public override void MouseDown(MouseEventArgs e)
         {
             this.Active = HC.PtInRect(new RECT(0, 0, FWidth, FHeight), e.X, e.Y);
         }
 
-        public override HCCustomItem BreakByOffset(int AOffset)
+        public override HCCustomItem BreakByOffset(int aOffset)
         {
             return null;
         }
   
-        public override bool CanConcatItems(HCCustomItem AItem)
+        public override bool CanConcatItems(HCCustomItem aItem)
         {
             return false;
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FWidth = (Source as HCCustomRectItem).Width;
-            FHeight = (Source as HCCustomRectItem).Height;
+            base.Assign(source);
+            FWidth = (source as HCCustomRectItem).Width;
+            FHeight = (source as HCCustomRectItem).Height;
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
+            base.SaveToStream(aStream, aStart, aEnd);
             byte[] vBuffer = BitConverter.GetBytes(FWidth);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FHeight);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+
             byte[] vBuffer = BitConverter.GetBytes(FWidth);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FWidth = BitConverter.ToInt32(vBuffer, 0);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FHeight = BitConverter.ToInt32(vBuffer, 0);
+        }
+
+        public override string ToHtml(string aPath) 
+        {
+            string Result = "";
+            Bitmap vBitmap = null;
+            SaveToBitmap(ref vBitmap);
+
+            if (aPath != "")
+            {
+                if (!Directory.Exists(aPath + "images"))
+                    Directory.CreateDirectory(aPath + "images");
+
+                string vFileName = OwnerData.Style.GetHtmlFileTempName() + ".bmp";
+                vBitmap.Save(aPath + "images\\" + vFileName);
+
+                Result = "<img width=\"" + FWidth.ToString() + "\" height=\"" + FHeight.ToString()
+                    + "\" src=\"images/" + vFileName + "\" alt=\"" + this.GetType().Name + "\" />";
+            }
+            else  // 保存为Base64
+            {
+                Result = "<img width=\"" + FWidth.ToString() + "\" height=\"" + FHeight.ToString()
+                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(vBitmap) + "\" alt=\"THCImageItem\" />";
+            }
+
+            return Result;
+        }
+
+        public override void ToXml(XmlElement aNode) 
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["width"].Value = FWidth.ToString();
+            aNode.Attributes["height"].Value = FHeight.ToString();
+        }
+
+        public override void ParseXml(XmlElement aNode) 
+        {
+            base.ParseXml(aNode);
+            FWidth = int.Parse(aNode.Attributes["width"].Value);
+            FHeight = int.Parse(aNode.Attributes["height"].Value);
         }
 
         public override int GetLength()
@@ -395,6 +509,11 @@ namespace HC.View
         {
             get { return FOwnerData; }
         }
+
+        public bool MangerUndo
+        {
+            get { return FMangerUndo; }
+        }
     }
 
     public class HCDomainItem : HCCustomRectItem  // 域
@@ -404,66 +523,65 @@ namespace HC.View
 
         public static Type HCDefaultDomainItemClass = typeof(HCDomainItem);
 
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, 
-            int ADataDrawTop, int ADataDrawBottom, int ADataScreenTop, int ADataScreenBottom,
-            HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
+            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop, ADataScreenBottom,
-                ACanvas, APaintInfo);
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
+                aCanvas, aPaintInfo);
 
-            if (!APaintInfo.Print)
+            if (!aPaintInfo.Print)
             {
                 if (FMarkType == View.MarkType.cmtBeg)
                 {
-                    ACanvas.Pen.BeginUpdate();
+                    aCanvas.Pen.BeginUpdate();
                     try
                     {
-                        ACanvas.Pen.Style = HCPenStyle.psSolid;
-                        ACanvas.Pen.Color = HC.clActiveBorder;
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
+                        aCanvas.Pen.Color = HC.clActiveBorder;
                     }
                     finally
                     {
-                        ACanvas.Pen.EndUpdate();
+                        aCanvas.Pen.EndUpdate();
                     }
-                    ACanvas.MoveTo(ADrawRect.Left + 2, ADrawRect.Top - 1);
-                    ACanvas.LineTo(ADrawRect.Left, ADrawRect.Top - 1);
-                    ACanvas.LineTo(ADrawRect.Left, ADrawRect.Bottom + 1);
-                    ACanvas.LineTo(ADrawRect.Left + 2, ADrawRect.Bottom + 1);
+                    aCanvas.MoveTo(aDrawRect.Left + 2, aDrawRect.Top - 1);
+                    aCanvas.LineTo(aDrawRect.Left, aDrawRect.Top - 1);
+                    aCanvas.LineTo(aDrawRect.Left, aDrawRect.Bottom + 1);
+                    aCanvas.LineTo(aDrawRect.Left + 2, aDrawRect.Bottom + 1);
                 }
                 else
                 {
-                    ACanvas.Pen.BeginUpdate();
+                    aCanvas.Pen.BeginUpdate();
                     try
                     {
-                        ACanvas.Pen.Style = HCPenStyle.psSolid;
-                        ACanvas.Pen.Color = HC.clActiveBorder;
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
+                        aCanvas.Pen.Color = HC.clActiveBorder;
                     }
                     finally
                     {
-                        ACanvas.Pen.EndUpdate();
+                        aCanvas.Pen.EndUpdate();
                     }
 
-                    ACanvas.MoveTo(ADrawRect.Right - 2, ADrawRect.Top - 1);
-                    ACanvas.LineTo(ADrawRect.Right, ADrawRect.Top - 1);
-                    ACanvas.LineTo(ADrawRect.Right, ADrawRect.Bottom + 1);
-                    ACanvas.LineTo(ADrawRect.Right - 2, ADrawRect.Bottom + 1);
+                    aCanvas.MoveTo(aDrawRect.Right - 2, aDrawRect.Top - 1);
+                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Top - 1);
+                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom + 1);
+                    aCanvas.LineTo(aDrawRect.Right - 2, aDrawRect.Bottom + 1);
                 }
             }
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
-            AStream.WriteByte((byte)FMarkType);
+            base.SaveToStream(aStream, aStart, aEnd);
+            aStream.WriteByte((byte)FMarkType);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
-            FMarkType = (MarkType)AStream.ReadByte();
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            FMarkType = (MarkType)aStream.ReadByte();
         }
 
-        public HCDomainItem(HCCustomData AOwnerData) : base(AOwnerData)
+        public HCDomainItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             this.StyleNo = HCStyle.Domain;
             FLevel = 0;
@@ -471,9 +589,31 @@ namespace HC.View
             Height = 10;
         }
 
-        public override int GetOffsetAt(int X)
+        public static bool IsBeginMark(HCCustomItem aItem)
         {
-            if ((X >= 0) && (X <= Width))
+            return (aItem is HCDomainItem) && ((aItem as HCDomainItem).MarkType == MarkType.cmtBeg);
+        }
+
+        public static bool IsEndMark(HCCustomItem aItem)
+        {
+            return (aItem is HCDomainItem) && ((aItem as HCDomainItem).MarkType == MarkType.cmtEnd);
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FMarkType = (MarkType)byte.Parse(aNode.Attributes["mark"].Value);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["mark"].Value = ((byte)FMarkType).ToString();
+        }
+
+        public override int GetOffsetAt(int x)
+        {
+            if ((x >= 0) && (x <= Width))
             {
                 if (FMarkType == View.MarkType.cmtBeg)
                     return HC.OffsetAfter;
@@ -481,7 +621,7 @@ namespace HC.View
                     return HC.OffsetBefor;
             }
             else
-                return base.GetOffsetAt(X);
+                return base.GetOffsetAt(x);
         }
 
         public override bool JustifySplit()
@@ -490,23 +630,23 @@ namespace HC.View
         }
 
         // 当前RectItem格式化时所属的Data(为松耦合请传入TCustomRichData类型)
-        public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             this.Width = 0;
             this.Height = 5;  // 默认大小
             if (this.MarkType == MarkType.cmtBeg)
             {
-                if (AItemNo < ARichData.Items.Count - 1)
+                if (aItemNo < aRichData.Items.Count - 1)
                 {
-                    HCCustomItem vItem = ARichData.Items[AItemNo + 1];
+                    HCCustomItem vItem = aRichData.Items[aItemNo + 1];
                     if ((vItem.StyleNo == this.StyleNo)  // 下一个是组标识)
                         && ((vItem as HCDomainItem).MarkType == MarkType.cmtEnd)) // 下一个是结束标识
                         this.Width = 10;  // 增加宽度以便输入时光标可方便点击
                     else
                     if (vItem.StyleNo > HCStyle.Null)
                     {
-                        ARichData.Style.TextStyles[vItem.StyleNo].ApplyStyle(ARichData.Style.DefCanvas);
-                        this.Height = ARichData.Style.DefCanvas.TextHeight("H");
+                        aRichData.Style.TextStyles[vItem.StyleNo].ApplyStyle(aRichData.Style.DefCanvas);
+                        this.Height = aRichData.Style.DefCanvas.TextHeight("H");
                     }
                 }
                 else
@@ -514,15 +654,15 @@ namespace HC.View
             }
             else  // 域结束标识
             {
-                HCCustomItem vItem = ARichData.Items[AItemNo - 1];
+                HCCustomItem vItem = aRichData.Items[aItemNo - 1];
                 if ((vItem.StyleNo == this.StyleNo)
                     && ((vItem as HCDomainItem).MarkType == MarkType.cmtBeg))
                     this.Width = 10;
                 else
                 if (vItem.StyleNo > HCStyle.Null)
                 {
-                    ARichData.Style.TextStyles[vItem.StyleNo].ApplyStyle(ARichData.Style.DefCanvas);
-                    this.Height = ARichData.Style.DefCanvas.TextHeight("H");
+                    aRichData.Style.TextStyles[vItem.StyleNo].ApplyStyle(aRichData.Style.DefCanvas);
+                    this.Height = aRichData.Style.DefCanvas.TextHeight("H");
                 }
             }
         }
@@ -544,49 +684,61 @@ namespace HC.View
     {
         private int FTextStyleNo;
 
-        public override void SaveToStream(Stream AStream, int AStart, int  AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
+            base.SaveToStream(aStream, aStart, aEnd);
             byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
             byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FTextStyleNo = BitConverter.ToInt32(vBuffer, 0);
         }
 
-        protected virtual void SetTextStyleNo(int Value)
+        public override void ParseXml(XmlElement aNode)
         {
-            if (FTextStyleNo != Value)
-                FTextStyleNo = Value;
+            base.ParseXml(aNode);
+            FTextStyleNo = int.Parse(aNode.Attributes["textsno"].Value);
         }
 
-        public HCTextRectItem(HCCustomData AOwnerData) : base(AOwnerData)
+        public override void ToXml(XmlElement aNode)
         {
-            if (AOwnerData.Style.CurStyleNo > HCStyle.Null)
-                FTextStyleNo = AOwnerData.Style.CurStyleNo;
+            base.ToXml(aNode);
+            aNode.Attributes["textsno"].Value = FTextStyleNo.ToString();
+        }
+
+        protected virtual void SetTextStyleNo(int value)
+        {
+            if (FTextStyleNo != value)
+                FTextStyleNo = value;
+        }
+
+        public HCTextRectItem(HCCustomData aOwnerData) : base(aOwnerData)
+        {
+            if (aOwnerData.Style.CurStyleNo > HCStyle.Null)
+                FTextStyleNo = aOwnerData.Style.CurStyleNo;
             else
                 FTextStyleNo = 0;
         }
 
-        public HCTextRectItem(HCCustomData AOwnerData, int AWidth, int AHeight) : base(AOwnerData, AWidth, AHeight)
+        public HCTextRectItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
         {
 
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FTextStyleNo = (Source as HCTextRectItem).TextStyleNo;
+            base.Assign(source);
+            FTextStyleNo = (source as HCTextRectItem).TextStyleNo;
         }
 
-        public override int GetOffsetAt(int X)
+        public override int GetOffsetAt(int x)
         {
-            if (X < Width / 2)
+            if (x < Width / 2)
                 return HC.OffsetBefor;
             else
                 return HC.OffsetAfter;
@@ -597,9 +749,9 @@ namespace HC.View
             return false;
         }
 
-        public override int ApplySelectTextStyle(HCStyle AStyle, HCStyleMatch AMatchStyle)
+        public override int ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyle)
         {
-            FTextStyleNo = AMatchStyle.GetMatchStyleNo(AStyle, FTextStyleNo);
+            FTextStyleNo = aMatchStyle.GetMatchStyleNo(aStyle, FTextStyleNo);
             return FTextStyleNo;
         }
 
@@ -622,7 +774,7 @@ namespace HC.View
         protected byte FMargin;
         protected int FMinWidth, FMinHeight;
 
-        public HCControlItem(HCCustomData AOwnerData) : base(AOwnerData)
+        public HCControlItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             FAutoSize = true;
             FMargin = 5;
@@ -630,25 +782,38 @@ namespace HC.View
             FMinHeight = 10;
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FAutoSize = (Source as HCControlItem).AutoSize;
+            base.Assign(source);
+            FAutoSize = (source as HCControlItem).AutoSize;
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int  AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
+            base.SaveToStream(aStream, aStart, aEnd);
             byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
             byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             FAutoSize = BitConverter.ToBoolean(vBuffer, 0);
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FAutoSize = bool.Parse(aNode.Attributes["autosize"].Value);
+
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["autosize"].Value = FAutoSize.ToString();
         }
 
         public bool AutoSize
@@ -672,9 +837,9 @@ namespace HC.View
         private RECT FResizeRect;
         private int FResizeWidth, FResizeHeight;  // 缩放后的宽、高
 
-        private GripType GetGripType(int X, int  Y)
+        private GripType GetGripType(int x, int  y)
         {
-            POINT vPt = new POINT(X, Y);
+            POINT vPt = new POINT(x, y);
 
             if (HC.PtInRect(HC.Bounds(0, 0, GripSize, GripSize), vPt))
                 return GripType.gtLeftTop;
@@ -693,48 +858,48 @@ namespace HC.View
 
         protected int FResizeX, FResizeY;  // 拖动缩放时起始位置
 
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, 
-            int ADataDrawTop, int  ADataDrawBottom, int  ADataScreenTop, int  ADataScreenBottom,
-            HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, 
+            int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop, ADataScreenBottom,
-                ACanvas, APaintInfo);
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
+                aCanvas, aPaintInfo);
 
-            if ((!APaintInfo.Print) && Active)
+            if ((!aPaintInfo.Print) && Active)
             {
                 if (Resizing)
                 {
                     switch (FResizeGrip)
                     {
                         case GripType.gtLeftTop:
-                            FResizeRect = HC.Bounds(ADrawRect.Left + Width - FResizeWidth,
-                                ADrawRect.Top + Height - FResizeHeight, FResizeWidth, FResizeHeight);
+                            FResizeRect = HC.Bounds(aDrawRect.Left + Width - FResizeWidth,
+                                aDrawRect.Top + Height - FResizeHeight, FResizeWidth, FResizeHeight);
                             break;
 
                         case GripType.gtRightTop:
-                            FResizeRect = HC.Bounds(ADrawRect.Left,
-                                ADrawRect.Top + Height - FResizeHeight, FResizeWidth, FResizeHeight);
+                            FResizeRect = HC.Bounds(aDrawRect.Left,
+                                aDrawRect.Top + Height - FResizeHeight, FResizeWidth, FResizeHeight);
                             break;
 
                         case GripType.gtLeftBottom:
-                            FResizeRect = HC.Bounds(ADrawRect.Left + Width - FResizeWidth,
-                                ADrawRect.Top, FResizeWidth, FResizeHeight);
+                            FResizeRect = HC.Bounds(aDrawRect.Left + Width - FResizeWidth,
+                                aDrawRect.Top, FResizeWidth, FResizeHeight);
                             break;
 
                         case GripType.gtRightBottom:
-                            FResizeRect = HC.Bounds(ADrawRect.Left, ADrawRect.Top, FResizeWidth, FResizeHeight);
+                            FResizeRect = HC.Bounds(aDrawRect.Left, aDrawRect.Top, FResizeWidth, FResizeHeight);
                             break;
                     }
                 
-                APaintInfo.TopItems.Add(this);
+                aPaintInfo.TopItems.Add(this);
             }
 
             // 绘制缩放拖动提示锚点
-            ACanvas.Brush.Color = Color.Gray;
-            ACanvas.FillRect(HC.Bounds(ADrawRect.Left, ADrawRect.Top, GripSize, GripSize));
-            ACanvas.FillRect(HC.Bounds(ADrawRect.Right - GripSize, ADrawRect.Top, GripSize, GripSize));
-            ACanvas.FillRect(HC.Bounds(ADrawRect.Left, ADrawRect.Bottom - GripSize, GripSize, GripSize));
-            ACanvas.FillRect(HC.Bounds(ADrawRect.Right - GripSize, ADrawRect.Bottom - GripSize, GripSize, GripSize));
+            aCanvas.Brush.Color = Color.Gray;
+            aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Top, GripSize, GripSize));
+            aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Top, GripSize, GripSize));
+            aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Bottom - GripSize, GripSize, GripSize));
+            aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Bottom - GripSize, GripSize, GripSize));
             }
         }
 
@@ -758,55 +923,56 @@ namespace HC.View
         }
 
         // 撤销恢复相关方法
-        protected  void Undo_Resize(int ANewWidth, int  ANewHeight)
+        protected void SelfUndo_Resize(int aNewWidth, int aNewHeight)
         {
-            if (OwnerData.Style.EnableUndo)
+            HCUndoList vUndoList = GetSelfUndoList();
+            if ((vUndoList != null) && vUndoList.Enable)
             {
-                Undo_StartRecord();
-                HCUndoList vUndoList = GetSelfUndoList();
+                SelfUndo_New();
                 HCUndo vUndo = vUndoList[vUndoList.Count - 1];
                 if (vUndo != null)
                 {
-                    HCUndoSize vUndoSize = new HCUndoSize();
-                    vUndoSize.OldWidth = this.Width;
-                    vUndoSize.OldHeight = this.Height;
-                    vUndoSize.NewWidth = ANewWidth;
-                    vUndoSize.NewHeight = ANewHeight;
-                    vUndo.Data = vUndoSize;
+                    HCSizeUndoData vSizeUndoData = new HCSizeUndoData();
+                    vSizeUndoData.OldWidth = this.Width;
+                    vSizeUndoData.OldHeight = this.Height;
+                    vSizeUndoData.NewWidth = aNewWidth;
+                    vSizeUndoData.NewHeight = aNewHeight;
+
+                    vUndo.Data = vSizeUndoData;
                 }
             }
         }
 
-        protected override void DoUndoDestroy(HCUndo Sender)
+        protected override void DoSelfUndoDestroy(HCUndo aUndo)
         {
-            if (Sender.Data is HCUndoSize)
-                (Sender.Data as HCUndoSize).Dispose();
+            if (aUndo.Data is HCSizeUndoData)
+                (aUndo.Data as HCSizeUndoData).Dispose();
 
-            base.DoUndoDestroy(Sender);
+            base.DoSelfUndoDestroy(aUndo);
         }
 
-        protected override void DoUndo(HCUndo Sender)
+        protected override void DoSelfUndo(HCUndo aUndo)
         {
-            if (Sender.Data is HCUndoSize)
+            if (aUndo.Data is HCSizeUndoData)
             {
-                HCUndoSize vSizeAction = Sender.Data as HCUndoSize;
+                HCSizeUndoData vSizeAction = aUndo.Data as HCSizeUndoData;
                 this.Width = vSizeAction.OldWidth;
                 this.Height = vSizeAction.OldHeight;
             }
             else
-                base.DoUndo(Sender);
+                base.DoSelfUndo(aUndo);
         }
 
-        protected override void DoRedo(HCUndo Sender)
+        protected override void DoSelfRedo(HCUndo aRedo)
         {
-            if (Sender.Data is HCUndoSize)
+            if (aRedo.Data is HCSizeUndoData)
             {
-                HCUndoSize vSizeAction = Sender.Data as HCUndoSize;
+                HCSizeUndoData vSizeAction = aRedo.Data as HCSizeUndoData;
                 this.Width = vSizeAction.NewWidth;
                 this.Height = vSizeAction.NewHeight;
             }
             else
-                base.DoRedo(Sender);
+                base.DoSelfRedo(aRedo);
         }
 
         protected virtual bool GetResizing()
@@ -814,10 +980,10 @@ namespace HC.View
             return FResizing;
         }
 
-        protected virtual void SetResizing(bool Value)
+        protected virtual void SetResizing(bool value)
         {
-            if (FResizing != Value)
-                FResizing = Value;
+            if (FResizing != value)
+                FResizing = value;
         }
 
         protected GripType ResizeGrip
@@ -830,29 +996,29 @@ namespace HC.View
             get { return FResizeRect; }
         }
 
-        public HCResizeRectItem(HCCustomData AOwnerData) : base(AOwnerData)
+        public HCResizeRectItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             FCanResize = true;
             FGripSize = 8;
         }
 
-        public HCResizeRectItem(HCCustomData AOwnerData, int AWidth, int AHeight) : base(AOwnerData, AWidth, AHeight)
+        public HCResizeRectItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
         {
             FCanResize = true;
             FGripSize = 8;
         }
 
         /// <summary> 获取坐标X、Y是否在选中区域中 </summary>
-        public override bool CoordInSelect(int X, int  Y)
+        public override bool CoordInSelect(int x, int  y)
         {
-            return SelectExists() && HC.PtInRect(HC.Bounds(0, 0, Width, Height), X, Y) && (GetGripType(X, Y) == GripType.gtNone);
+            return SelectExists() && HC.PtInRect(HC.Bounds(0, 0, Width, Height), x, y) && (GetGripType(x, y) == GripType.gtNone);
         }
 
-        public override void PaintTop(HCCanvas ACanvas)
+        public override void PaintTop(HCCanvas aCanvas)
         {
-            base.PaintTop(ACanvas);
-            ACanvas.Brush.Style = HCBrushStyle.bsClear;
-            ACanvas.Rectangle(FResizeRect);
+            base.PaintTop(aCanvas);
+            aCanvas.Brush.Style = HCBrushStyle.bsClear;
+            aCanvas.Rectangle(FResizeRect);
         }
 
         // 继承THCCustomItem抽象方法
@@ -990,7 +1156,7 @@ namespace HC.View
                 if ((FResizeWidth < 0) || (FResizeHeight < 0))
                     return;
 
-                Undo_Resize(FResizeWidth, FResizeHeight);
+                SelfUndo_Resize(FResizeWidth, FResizeHeight);
                 Width = FResizeWidth;
                 Height = FResizeHeight;
             }
@@ -1014,7 +1180,7 @@ namespace HC.View
         }
 
         /// <summary> 约束到指定大小范围内 </summary>
-        public virtual void RestrainSize(int AWidth, int  AHeight) { }
+        public virtual void RestrainSize(int aWidth, int aHeight) { }
 
         public ushort GripSize
         {
@@ -1047,12 +1213,18 @@ namespace HC.View
 
     public class HCAnimateRectItem : HCCustomRectItem  // 动画RectItem
     {
-        public override int GetOffsetAt(int X)
+        public override int GetOffsetAt(int x)
         {
-            if (X < Width / 2)
+            if (x < Width / 2)
                 return HC.OffsetBefor;
             else
                 return HC.OffsetAfter;
         }
+
+        public HCAnimateRectItem(HCCustomData aOwnerData)
+            : base(aOwnerData) { }
+
+        public HCAnimateRectItem(HCCustomData aOwnerData, int aWidth, int aHeight)
+            : base(aOwnerData, aWidth, aHeight) { }
     }
 }

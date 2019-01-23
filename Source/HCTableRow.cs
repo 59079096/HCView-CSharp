@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Xml;
 
 namespace HC.View
 {
@@ -23,12 +24,12 @@ namespace HC.View
 
         private bool FAutoHeight;  // True根据内容自动匹配合适的高度 False用户拖动后的自定义高度
 
-        public HCTableRow(HCStyle AStyle, int AColCount) : this()
+        public HCTableRow(HCStyle aStyle, int aColCount) : this()
         {
             HCTableCell vCell = null;
-            for (int i = 0; i <= AColCount - 1; i++)
+            for (int i = 0; i <= aColCount - 1; i++)
             {
-                vCell = new HCTableCell(AStyle);
+                vCell = new HCTableCell(aStyle);
                 this.Add(vCell);
             }
             FAutoHeight = true;
@@ -65,20 +66,20 @@ namespace HC.View
 
         //
         //function CalcFormatHeight: Integer;
-        public void SetRowWidth(int AWidth)
+        public void SetRowWidth(int aWidth)
         {
-            int vWidth = AWidth / this.Count;
+            int vWidth = aWidth / this.Count;
             for (int i = 0; i <= this.Count - 2; i++)
             {
                 this[i].Width = vWidth;
             }
 
-            this[this.Count - 1].Width = AWidth - (this.Count - 1) * vWidth;
+            this[this.Count - 1].Width = aWidth - (this.Count - 1) * vWidth;
         }
 
-        public void SetHeight(int Value)
+        public void SetHeight(int value)
         {
-            if (FHeight != Value)
+            if (FHeight != value)
             {
                 int vMaxDataHeight = 0;
                 for (int i = 0; i <= this.Count - 1; i++)  // 找行中最高的单元
@@ -90,13 +91,33 @@ namespace HC.View
                     }
                 }
 
-                if (vMaxDataHeight < Value)
-                    FHeight = Value;
+                if (vMaxDataHeight < value)
+                    FHeight = value;
                 else
                     FHeight = vMaxDataHeight;
                 
                 for (int i = 0; i <= this.Count - 1; i++)
                     this[i].Height = FHeight;
+            }
+        }
+
+        public void ParseXml(XmlElement aNode)
+        {
+            FAutoHeight = bool.Parse(aNode.Attributes["autoheight"].Value);
+            FHeight = int.Parse(aNode.Attributes["height"].Value);
+            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
+                this[i].ParseXml(aNode.ChildNodes[i] as XmlElement);
+        }
+
+        public void ToXml(XmlElement aNode)
+        {
+            aNode.Attributes["autoheight"].Value = FAutoHeight.ToString();
+            aNode.Attributes["height"].Value = FHeight.ToString();
+            for (int i = 0; i <= this.Count - 1; i++)
+            {
+                XmlElement vNode = aNode.OwnerDocument.CreateElement("cell");
+                this[i].ToXml(vNode);
+                aNode.AppendChild(vNode);
             }
         }
 

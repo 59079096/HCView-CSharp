@@ -16,6 +16,7 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using HC.Win32;
 using System.Runtime.InteropServices;
+using System.Xml;
 
 namespace HC.View
 {
@@ -39,7 +40,7 @@ namespace HC.View
         }
     }
 
-    public delegate void InvalidateRectEventHandler(RECT ARect);
+    public delegate void InvalidateRectEventHandler(RECT aRect);
 
     public class HCStyle : HCObject
     {
@@ -56,16 +57,16 @@ namespace HC.View
         private List<HCParaStyle> FParaStyles;
         private Single FPixelsPerMMX, FPixelsPerMMY;  // 1毫米dpi数
         private UpdateInfo FUpdateInfo;
-        private bool FShowLineLastMark,  // 是否显示换行符
-            FEnableUndo;
+        private bool FShowParaLastMark;  // 是否显示换行符
+        private int FHtmlFileTempName;
 
         private InvalidateRectEventHandler FOnInvalidateRect;
 
-        protected void SetShowLineLastMark(bool Value)
+        protected void SetShowParaLastMark(bool value)
         {
-            if (FShowLineLastMark != Value)
+            if (FShowParaLastMark != value)
             {
-                FShowLineLastMark = Value;
+                FShowParaLastMark = value;
                 UpdateInfoRePaint();
             }
         }
@@ -102,19 +103,18 @@ namespace HC.View
 
             FBackgroudColor = Color.FromArgb(255, 255, 255);
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
-            FShowLineLastMark = true;
-            FEnableUndo = false;
+            FShowParaLastMark = true;
             FUpdateInfo = new UpdateInfo();
             FTextStyles = new List<HCTextStyle>();
             FParaStyles = new List<HCParaStyle>();
         }
 
-        public HCStyle(bool ADefTextStyle, bool ADefParaStyle) : this()
+        public HCStyle(bool aDefTextStyle, bool aDefParaStyle) : this()
         {
-            if (ADefTextStyle)
+            if (aDefTextStyle)
                 NewDefaultTextStyle();
 
-            if (ADefParaStyle)
+            if (aDefParaStyle)
                 NewDefaultParaStyle();
         }
 
@@ -156,23 +156,23 @@ namespace HC.View
         }
 
         /// <summary> 更新光标位置/summary>
-        /// <param name="ACaretStyle">重新获取光标处样式</param>
-        public void UpdateInfoReCaret(bool ACaretStyle = true)
+        /// <param name="aCaretStyle">重新获取光标处样式</param>
+        public void UpdateInfoReCaret(bool aCaretStyle = true)
         {
             FUpdateInfo.ReCaret = true;
-            if (ACaretStyle)
+            if (aCaretStyle)
                 FUpdateInfo.ReStyle = true;
         }
 
-        public int AddTextStyle(HCTextStyle ATextStyle)
+        public int AddTextStyle(HCTextStyle aTextStyle)
         {
-            FTextStyles.Add(ATextStyle);
+            FTextStyles.Add(aTextStyle);
             return FTextStyles.Count - 1;
         }
 
-        public static int GetFontHeight(HCCanvas ACanvas)
+        public static int GetFontHeight(HCCanvas aCanvas)
         {
-            return ACanvas.TextHeight("H");
+            return aCanvas.TextHeight("H");
         }
 
         public static HCCanvas CreateStyleCanvas()
@@ -185,9 +185,9 @@ namespace HC.View
             return Result;
         }
 
-        public static void DestroyStyleCanvas(HCCanvas ACanvas)
+        public static void DestroyStyleCanvas(HCCanvas aCanvas)
         {
-            ACanvas.Dispose();
+            aCanvas.Dispose();
         }
 
         /// <summary> 创建一个新字体样式 </summary>
@@ -206,22 +206,22 @@ namespace HC.View
             return FParaStyles.Count - 1;
         }
 
-        public int GetStyleNo(HCTextStyle ATextStyle, bool ACreateIfNull)
+        public int GetStyleNo(HCTextStyle aTextStyle, bool aCreateIfNull)
         {
             int Result = -1;
             for (int i = 0; i <= FTextStyles.Count - 1; i++)
             {
-                if (FTextStyles[i].EqualsEx(ATextStyle))
+                if (FTextStyles[i].EqualsEx(aTextStyle))
                 {
                     Result = i;
                     return Result;
                 }
             }
 
-            if (ACreateIfNull && (Result < 0))
+            if (aCreateIfNull && (Result < 0))
             {
                 HCTextStyle vTextStyle = new HCTextStyle();
-                vTextStyle.AssignEx(ATextStyle);
+                vTextStyle.AssignEx(aTextStyle);
                 FTextStyles.Add(vTextStyle);
                 Result = FTextStyles.Count - 1;
             }
@@ -229,22 +229,22 @@ namespace HC.View
             return Result;
         }
 
-        public int GetParaNo(HCParaStyle AParaStyle, bool ACreateIfNull)
+        public int GetParaNo(HCParaStyle aParaStyle, bool aCreateIfNull)
         {
             int Result = -1;
             for (int i = 0; i <= FParaStyles.Count - 1; i++)
             {
-                if (FParaStyles[i].EqualsEx(AParaStyle))
+                if (FParaStyles[i].EqualsEx(aParaStyle))
                 {
                     Result = i;
                     return Result;
                 }
             }
 
-            if (ACreateIfNull && (Result < 0))
+            if (aCreateIfNull && (Result < 0))
             {
                 HCParaStyle vParaStyle = new HCParaStyle();
-                vParaStyle.AssignEx(AParaStyle);
+                vParaStyle.AssignEx(aParaStyle);
                 FParaStyles.Add(vParaStyle);
                 Result = FParaStyles.Count - 1;
             }
@@ -252,77 +252,151 @@ namespace HC.View
             return Result;
         }
 
-        private void SaveParaStyles(Stream AStream)
+        private void SaveParaStyles(Stream aStream)
         {
             byte[] vBuffer = BitConverter.GetBytes(FParaStyles.Count);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
             for (int i = 0; i <= FParaStyles.Count - 1; i++)
-                FParaStyles[i].SaveToStream(AStream);
+                FParaStyles[i].SaveToStream(aStream);
         }
 
-        private void SaveTextStyles(Stream AStream)
+        private void SaveTextStyles(Stream aStream)
         {
             byte[] vBuffer = BitConverter.GetBytes(FTextStyles.Count);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
             for (int i = 0; i <= FTextStyles.Count - 1; i++)
-                FTextStyles[i].SaveToStream(AStream);
+                FTextStyles[i].SaveToStream(aStream);
         }
 
-        public void SaveToStream(Stream AStream)
+        public void SaveToStream(Stream aStream)
         {
-            Int64 vBegPos = AStream.Position;
+            Int64 vBegPos = aStream.Position;
             byte[] vBuffer = BitConverter.GetBytes(vBegPos);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            SaveParaStyles(AStream);
-            SaveTextStyles(AStream);
+            SaveParaStyles(aStream);
+            SaveTextStyles(aStream);
 
-            Int64 vEndPos = AStream.Position;
-            AStream.Position = vBegPos;
+            Int64 vEndPos = aStream.Position;
+            aStream.Position = vBegPos;
             vBegPos = vEndPos - vBegPos - Marshal.SizeOf(vBegPos);
             vBuffer = BitConverter.GetBytes(vBegPos);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-            AStream.Position = vEndPos;
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.Position = vEndPos;
         }
 
-        private void LoadParaStyles(Stream AStream, ushort AFileVersion)
+        private void LoadParaStyles(Stream aStream, ushort aFileVersion)
         {
             FParaStyles.Clear();
             int vStyleCount = 0;
             byte[] vBuffer = BitConverter.GetBytes(vStyleCount);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             vStyleCount = BitConverter.ToInt32(vBuffer, 0);
 
             for (int i = 0; i <= vStyleCount - 1; i++)
-                FParaStyles[NewDefaultParaStyle()].LoadFromStream(AStream, AFileVersion);
+                FParaStyles[NewDefaultParaStyle()].LoadFromStream(aStream, aFileVersion);
         }
 
-        private void LoadTextStyles(Stream AStream, ushort AFileVersion)
+        private void LoadTextStyles(Stream aStream, ushort aFileVersion)
         {
             FTextStyles.Clear();
             int vStyleCount = 0;
             byte[] vBuffer = BitConverter.GetBytes(vStyleCount);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             vStyleCount = BitConverter.ToInt32(vBuffer, 0);
 
             for (int i = 0; i <= vStyleCount - 1; i++)
-                FTextStyles[NewDefaultTextStyle()].LoadFromStream(AStream, AFileVersion);
+                FTextStyles[NewDefaultTextStyle()].LoadFromStream(aStream, aFileVersion);
         }
 
-        public void LoadFromStream(Stream AStream, ushort AFileVersion)
+        public void LoadFromStream(Stream aStream, ushort aFileVersion)
         {
             Int64 vDataSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vDataSize);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
             //
-            LoadParaStyles(AStream, AFileVersion);
-            LoadTextStyles(AStream, AFileVersion);
+            LoadParaStyles(aStream, aFileVersion);
+            LoadTextStyles(aStream, aFileVersion);
         }
 
-        public void InvalidateRect(RECT ARect)
+        public string GetHtmlFileTempName(bool aReset = false)
+        {
+            if (aReset)
+                FHtmlFileTempName = 0;
+            else
+                FHtmlFileTempName++;
+
+            return FHtmlFileTempName.ToString();
+        }
+
+        public string ToCSS()
+        {
+            string Result = "<style type=\"text/css\">";
+            for (int i = 0; i <= FTextStyles.Count - 1; i++)
+            {
+                Result = Result + HC.sLineBreak + "a.fs" + i.ToString() + " {";
+                Result = Result + FTextStyles[i].ToCSS() + " }"; 
+            }
+
+            for (int i = 0; i <= FParaStyles.Count - 1; i++)
+            {
+                Result = Result + HC.sLineBreak + "p.ps" + i.ToString() + " {";
+                Result = Result + FParaStyles[i].ToCSS() + " }";
+            }
+
+            return Result + HC.sLineBreak + "</style>";
+        }
+
+        public void ToXml(XmlElement aNode)
+        {
+            aNode.Attributes["fscount"].Value = FTextStyles.Count.ToString();
+            aNode.Attributes["pscount"].Value = FParaStyles.Count.ToString();
+
+            XmlElement vNode = aNode.OwnerDocument.CreateElement("textstyles");
+            for (int i = 0; i <= FTextStyles.Count - 1; i++)
+            {
+                XmlElement vStyleNode = vNode.OwnerDocument.CreateElement("ts");
+                FTextStyles[i].ToXml(vStyleNode);
+                vNode.AppendChild(vStyleNode);
+            }
+            aNode.AppendChild(vNode);
+
+            vNode = aNode.OwnerDocument.CreateElement("parastyles");
+            for (int i = 0; i <= FParaStyles.Count - 1; i++)
+            {
+                XmlElement vParaNode = vNode.OwnerDocument.CreateElement("ps");
+                FParaStyles[i].ToXml(vParaNode);
+                vNode.AppendChild(vParaNode);
+            }
+            aNode.AppendChild(vNode);
+        }
+
+        public void ParseXml(XmlElement aNode)
+        {
+            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
+            {
+                if (aNode.ChildNodes[i].Name == "textstyles")
+                {
+                    FTextStyles.Clear();
+                    XmlElement vNode = aNode.ChildNodes[i] as XmlElement;
+                    for (int j = 0; j < vNode.ChildNodes.Count - 1; i++)
+                        FTextStyles[NewDefaultTextStyle()].ParseXml(vNode.ChildNodes[j] as XmlElement);
+                }
+                else
+                    if (aNode.ChildNodes[i].Name == "parastyles")
+                    {
+                        FParaStyles.Clear();
+                        XmlElement vNode = aNode.ChildNodes[i] as XmlElement;
+                        for (int j = 0; j < vNode.ChildNodes.Count - 1; i++)
+                            FParaStyles[NewDefaultParaStyle()].ParseXml(vNode.ChildNodes[j] as XmlElement);
+                    }
+            }
+        }
+
+        public void InvalidateRect(RECT aRect)
         {
             if (FOnInvalidateRect != null)
-                FOnInvalidateRect(ARect);
+                FOnInvalidateRect(aRect);
         }
 
         public List<HCTextStyle> TextStyles
@@ -381,16 +455,10 @@ namespace HC.View
             get { return FUpdateInfo; }
         }
 
-        public bool ShowLineLastMark
+        public bool ShowParaLastMark
         {
-            get { return FShowLineLastMark; }
-            set { SetShowLineLastMark(value); }
-        }
-
-        public bool EnableUndo
-        {
-            get { return FEnableUndo; }
-            set { FEnableUndo = value; }
+            get { return FShowParaLastMark; }
+            set { SetShowParaLastMark(value); }
         }
 
         public InvalidateRectEventHandler OnInvalidateRect
@@ -403,6 +471,6 @@ namespace HC.View
     public class HCFloatStyle
     {
         public const int
-            Line = 1;
+            Line = 1;  // 直线
     }
 }

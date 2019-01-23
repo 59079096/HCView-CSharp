@@ -14,12 +14,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Xml;
 
 namespace HC.View
 {
-    class HCTextItem : HCCustomItem
+    public class HCTextItem : HCCustomItem
     {
-        private string FText;
+        private string FText, FHyperLink;
 
         public static Type HCDefaultTextItemClass = typeof(HCTextItem);
 
@@ -28,9 +29,19 @@ namespace HC.View
             return FText;
         }
 
-        protected override void SetText(string Value)
+        protected override void SetText(string value)
         {
-            FText = Value;
+            FText = value;
+        }
+
+        protected override string GetHyperLink()
+        {
+            return FHyperLink;
+        }
+
+        protected override void SetHyperLink(string value)
+        {
+            FHyperLink = value;
         }
 
         public override int GetLength()
@@ -38,8 +49,7 @@ namespace HC.View
             return FText.Length;
         }
 
-        public HCTextItem()
-            : base()
+        public HCTextItem() : base()
         {
 
         }
@@ -47,6 +57,7 @@ namespace HC.View
         public HCTextItem(string AText) : this()
         {
             FText = AText;
+            FHyperLink = "";
         }
 
         //public virtual HCTextItem CreateByText(string AText)
@@ -57,39 +68,39 @@ namespace HC.View
         //}
 
         /// <summaryy 可接受输入 </summary>
-        public virtual bool CanAccept(int AOffset)
+        public virtual bool CanAccept(int aOffset)
         {
             return true;
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            FText = (Source as HCTextItem).Text;
+            base.Assign(source);
+            FText = (source as HCTextItem).Text;
         }
 
-        public override HCCustomItem BreakByOffset(int AOffset)
+        public override HCCustomItem BreakByOffset(int aOffset)
         {
             HCCustomItem Result = null;
-            if ((AOffset >= Length) || (AOffset <= 0))
+            if ((aOffset >= Length) || (aOffset <= 0))
             {
 
             }
             else
             {
-                Result = base.BreakByOffset(AOffset);
-                Result.Text = this.GetTextPart(AOffset + 1, Length - AOffset);
-                FText = FText.Substring(0, AOffset);  // 当前Item减去光标后的字符串
+                Result = base.BreakByOffset(aOffset);
+                Result.Text = this.GetTextPart(aOffset + 1, Length - aOffset);
+                FText = FText.Substring(0, aOffset);  // 当前Item减去光标后的字符串
             }
 
             return Result;
         }
 
         // 保存和读取
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
-            string vS = GetTextPart(AStart + 1, AEnd - AStart);
+            base.SaveToStream(aStream, aStart, aEnd);
+            string vS = GetTextPart(aStart + 1, aEnd - aStart);
             
             byte[] vBuffer = System.Text.Encoding.Default.GetBytes(vS);
             uint vDSize = (uint)vBuffer.Length;
@@ -98,46 +109,65 @@ namespace HC.View
                 throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
 
             byte[] vBytes = System.BitConverter.GetBytes(vDSize);
-            AStream.Write(vBytes, 0, vBytes.Length);
+            aStream.Write(vBytes, 0, vBytes.Length);
            
             if (vDSize > 0)
-                AStream.Write(vBuffer, 0, vBuffer.Length);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             uint vDSize = 0;
 
-            if (AFileVersion < 11)
+            if (aFileVersion < 11)
             {
                 byte[] vBuffer = new byte[2];
-                AStream.Read(vBuffer, 0, 2);
+                aStream.Read(vBuffer, 0, 2);
                 vDSize = System.BitConverter.ToUInt32(vBuffer, 0);
             }
             else
             {
                 byte[] vBuffer = BitConverter.GetBytes(vDSize);
-                AStream.Read(vBuffer, 0, vBuffer.Length);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
                 vDSize = System.BitConverter.ToUInt32(vBuffer, 0);
             }
 
             if (vDSize > 0)
             {
                 byte[] vBuffer = new byte[vDSize];
-                AStream.Read(vBuffer, 0, vBuffer.Length);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
                 FText = System.Text.Encoding.Default.GetString(vBuffer);
             }
+        }
+
+        public override string ToHtml(string aPath)
+        {
+            return "<a class=\"fs" + StyleNo.ToString() + "\">" + Text + "</a>";
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["link"].Value = FHyperLink;
+            aNode.InnerText = Text;
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FHyperLink = aNode.Attributes["link"].Value;
+            FText = aNode.InnerText;
         }
 
         /// <summaryy 复制一部分文本 </summary>
         /// <param name="AStartOffs">复制的起始位置(大于0)</param>
         /// <param name="ALength">众起始位置起复制的长度</param>
         /// <returns>文本内容</returns>
-        public string GetTextPart(int AStartOffs, int ALength)
+        public string GetTextPart(int aStartOffs, int aLength)
         {
-            return FText.Substring(AStartOffs - 1, ALength);
+            return FText.Substring(aStartOffs - 1, aLength);
         }
     }
 }

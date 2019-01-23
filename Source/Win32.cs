@@ -10,12 +10,12 @@ namespace HC.Win32
 		public int Right;
 		public int Bottom;
 
-        public RECT(int ALeft, int ATop, int ARight, int ABottom)
+        public RECT(int aLeft, int aTop, int aRight, int aBottom)
         {
-            Left = ALeft;
-            Top = ATop;
-            Right = ARight;
-            Bottom = ABottom;
+            Left = aLeft;
+            Top = aTop;
+            Right = aRight;
+            Bottom = aBottom;
         }
 
         public POINT TopLeft()
@@ -23,9 +23,9 @@ namespace HC.Win32
             return new POINT(Left, Top);
         }
 
-        public void SetWidth(int Value)
+        public void SetWidth(int value)
         {
-            Right = Left + Value;
+            Right = Left + value;
         }
 
         public int Width
@@ -34,9 +34,9 @@ namespace HC.Win32
             set { SetWidth(value); }
         }
 
-        public void SetHeight(int Value)
+        public void SetHeight(int value)
         {
-            Bottom = Top + Value;
+            Bottom = Top + value;
         }
 
         public int Height
@@ -86,10 +86,10 @@ namespace HC.Win32
 		public int cx;
 		public int cy;
 
-        public SIZE(int X, int Y)
+        public SIZE(int x, int y)
         {
-            cx = X;
-            cy = Y;
+            cx = x;
+            cy = y;
         }
 	}
 	public struct FILETIME 

@@ -14,24 +14,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Collections;
 
 namespace HC.View
 {
-    public delegate HCUndoList GetUndoListEventHandler();
-    public delegate void UndoEventHandler(HCUndo Sender);
-
-    public class HCUndoMirror : HCObject
+    // THCUndo.Data部分，一般由Item自己使用 
+    public class HCMirrorUndoData : HCObject
     {
         private MemoryStream FStream;
-
-        public HCUndoMirror()
+        public HCMirrorUndoData()
         {
-
+            FStream = new MemoryStream();
         }
 
-        ~HCUndoMirror()
+        ~HCMirrorUndoData()
         {
-
+            if (FStream != null)
+            {
+                FStream.Close();
+                FStream.Dispose();
+            }
         }
 
         public MemoryStream Stream
@@ -41,14 +43,13 @@ namespace HC.View
         }
     }
 
-    public class HCUndoBaseData : HCObject  // 两个整形值基类
+    public class HCBaseKeysUndoData : HCObject  // 两个整形值基类
     {
         public int A, B;
     }
 
-    public class HCUndoCell : HCUndoBaseData  // 单元格内部HCData自己处理
+    public class HCCellUndoData : HCBaseKeysUndoData  // 单元格内部HCData自己处理
     {
-
         public int Row
         {
             get { return A; }
@@ -60,13 +61,11 @@ namespace HC.View
             get { return B; }
             set { B = value; }
         }
-
     }
 
-    public class HCUndoColSize : HCUndoBaseData  // 改变列宽
+    public class HCColSizeUndoData : HCBaseKeysUndoData  // 改变列宽
     {
         private int FCol;
-
         public int Col
         {
             get { return FCol; }
@@ -86,10 +85,31 @@ namespace HC.View
         }
     }
 
-    public class HCUndoSize : HCUndoBaseData  // Item尺寸改变(用于RectItem)
+    public class HCRowSizeUndoData : HCBaseKeysUndoData  // 改变行高
+    {
+        private int FRow;
+        public int Row
+        {
+            get { return FRow; }
+            set { FRow = value; }
+        }
+
+        public int OldHeight
+        {
+            get { return A; }
+            set { A = value; }
+        }
+
+        public int NewHeight
+        {
+            get { return B; }
+            set { B = value; }
+        }
+    }
+
+    public class HCSizeUndoData : HCBaseKeysUndoData  // Item尺寸改变(用于RectItem)
     {
         private int FNewWidth, FNewHeight;
-
         public int OldWidth
         {
             get { return A; }
@@ -117,20 +137,28 @@ namespace HC.View
 
     public enum UndoActionTag : byte
     {
-        uatDeleteText, uatInsertText, uatDeleteItem, uatInsertItem, uatItemProperty, uatItemSelf
+        /// <summary> 向前删除文本 </summary>
+        uatDeleteBackText,
+        /// <summary> 向后删除文本 </summary>
+        uatDeleteText,
+        /// <summary> 插入文本 </summary>
+        uatInsertText, 
+        uatDeleteItem, 
+        uatInsertItem, 
+        uatItemProperty, 
+        uatItemSelf,
+        uatItemMirror
     }
 
     public class HCCustomUndoAction : Object
     {
         private UndoActionTag FTag;
-
         private int FItemNo;  // 事件发生时的ItemNo
-
         private int FOffset;  // 事件发生时的Offset
-
         public HCCustomUndoAction()
         {
-
+            FItemNo = -1;
+            FOffset = -1;
         }
 
         public int ItemNo
@@ -171,10 +199,9 @@ namespace HC.View
     public class HCItemPropertyUndoAction : HCCustomUndoAction
     {
         private ItemProperty FItemProperty;
-
-        public HCItemPropertyUndoAction()
+        public HCItemPropertyUndoAction() : base()
         {
-
+            this.Tag = UndoActionTag.uatItemProperty;
         }
 
         public ItemProperty ItemProperty
@@ -184,13 +211,54 @@ namespace HC.View
         }
     }
 
+    public class HCItemStyleUndoAction : HCItemPropertyUndoAction
+    {
+        private int FOldStyleNo, FNewStyleNo;
+        public HCItemStyleUndoAction() : base()
+        {
+            ItemProperty = ItemProperty.uipStyleNo;
+        }
+
+        public int OldStyleNo
+        {
+            get { return FOldStyleNo; }
+            set { FOldStyleNo = value; }
+        }
+
+        public int NewStyleNo
+        {
+            get { return FNewStyleNo; }
+            set { FNewStyleNo = value; }
+        }
+    }
+
+    public class HCItemParaUndoAction : HCItemPropertyUndoAction
+    {
+        private int FOldParaNo, FNewParaNo;
+        public HCItemParaUndoAction() : base()
+        {
+            ItemProperty = ItemProperty.uipParaNo;
+        }
+
+        public int OldParaNo
+        {
+            get { return FOldParaNo; }
+            set { FOldParaNo = value; }
+        }
+
+        public int NewParaNo
+        {
+            get { return FNewParaNo; }
+            set { FNewParaNo = value; }
+        }
+    }
+
     public class HCItemParaFirstUndoAction : HCItemPropertyUndoAction
     {
         private bool FOldParaFirst, FNewParaFirst;
-
-        public HCItemParaFirstUndoAction()
+        public HCItemParaFirstUndoAction() : base()
         {
-
+            ItemProperty = ItemProperty.uipParaFirst;
         }
 
         public bool OldParaFirst
@@ -209,15 +277,15 @@ namespace HC.View
     public class HCItemUndoAction : HCCustomUndoAction
     {
         private MemoryStream FItemStream;
-
-        public HCItemUndoAction()
+        public HCItemUndoAction() : base()
         {
-
+            FItemStream = new MemoryStream();
         }
 
         ~HCItemUndoAction()
         {
-
+            FItemStream.Close();
+            FItemStream.Dispose();
         }
 
         public MemoryStream ItemStream
@@ -230,15 +298,16 @@ namespace HC.View
     public class HCItemSelfUndoAction : HCCustomUndoAction
     {
         private object FObject;
-
-        public HCItemSelfUndoAction()
+        public HCItemSelfUndoAction() : base()
         {
-
+            this.Tag = UndoActionTag.uatItemSelf;
+            FObject = null;
         }
 
         ~HCItemSelfUndoAction()
         {
-
+            //if (FObject != null)
+            //    FObject.Dispose();
         }
 
         public object Object
@@ -253,20 +322,21 @@ namespace HC.View
 
     }
 
+    //Undo部分
     public class HCCustomUndo
     {
         private HCUndoActions FActions;
-
-        private bool FIsUndo;
+        private bool FIsUndo;  // 撤销状态
 
         public HCCustomUndo()
         {
-
+            FIsUndo = true;
+            FActions = new HCUndoActions();
         }
 
         ~HCCustomUndo()
         {
-
+            FActions.Clear();
         }
 
         public HCUndoActions Actions
@@ -282,23 +352,23 @@ namespace HC.View
         }
     }
 
+    public delegate HCUndoList GetUndoListEventHandler();
+
     public class HCUndo : HCCustomUndo
     {
-        private int FSectionIndex;
+        private HCObject FData;  // 存放各类撤销对象
 
-        private HCObject FData;  // 存放差异数据
-
-        public HCUndo()
+        public HCUndo() : base()
         {
-
+            FData = null;
         }
 
-        public HCCustomUndoAction ActionAppend(UndoActionTag ATag, int AItemNo, int AOffset)
+        public HCCustomUndoAction ActionAppend(UndoActionTag aTag, int aItemNo, int aOffset)
         {
             HCCustomUndoAction Result = null;
-
-            switch (ATag)
+            switch (aTag)
             {
+                case UndoActionTag.uatDeleteBackText:
                 case UndoActionTag.uatDeleteText:
                 case UndoActionTag.uatInsertText:
                     Result = new HCTextUndoAction();
@@ -306,6 +376,7 @@ namespace HC.View
 
                 case UndoActionTag.uatDeleteItem:
                 case UndoActionTag.uatInsertItem:
+                case UndoActionTag.uatItemMirror:
                     Result = new HCItemUndoAction();
                     break;
 
@@ -322,19 +393,13 @@ namespace HC.View
                     break;
             }
 
-            Result.Tag = ATag;
-            Result.ItemNo = AItemNo;
-            Result.Offset = AOffset;
+            Result.Tag = aTag;
+            Result.ItemNo = aItemNo;
+            Result.Offset = aOffset;
 
             this.Actions.Add(Result);
 
             return Result;
-        }
-
-        public int SectionIndex
-        {
-            get { return FSectionIndex; }
-            set { FSectionIndex = value; }
         }
 
         public HCObject Data
@@ -344,15 +409,224 @@ namespace HC.View
         }
     }
 
+    public class HCDataUndo : HCUndo
+    {
+        private int FCaretDrawItemNo;
+
+        public HCDataUndo()
+            : base()
+        {
+
+        }
+
+        public int CaretDrawItemNo
+        {
+            get { return FCaretDrawItemNo; }
+            set { FCaretDrawItemNo = value; }
+        }
+    }
+
+    public class HCEditUndo : HCDataUndo
+    {
+        private int FHScrollPos, FVScrollPos;
+
+        public HCEditUndo() : base()
+        {
+            FHScrollPos = 0;
+            FVScrollPos = 0;
+        }
+
+        public int HScrollPos
+        {
+            get { return FHScrollPos; }
+            set { FHScrollPos = value; }
+        }
+
+        public int VScrollPos
+        {
+            get { return FVScrollPos; }
+            set { FVScrollPos = value; }
+        }
+    }
+
+    public class HCSectionUndo : HCEditUndo
+    {
+        private int FSectionIndex;
+
+        public HCSectionUndo() : base()
+        {
+            FSectionIndex = -1;
+        }
+
+        public int SectionIndex
+        {
+            get { return FSectionIndex; }
+            set { FSectionIndex = value; }
+        }
+    }
+
+    public class HCUndoGroupBegin : HCDataUndo
+    {
+        private int FItemNo, FOffset;
+        public int ItemNo
+        {
+            get { return FItemNo; }
+            set { FItemNo = value; }
+        }
+
+        public int Offset
+        {
+            get { return FOffset; }
+            set { FOffset = value; }
+        }
+    }
+
+    public class HCUndoEditGroupBegin : HCUndoGroupBegin
+    {
+        private int FHScrollPos, FVScrollPos;
+        public HCUndoEditGroupBegin() : base()
+        {
+            FHScrollPos = 0;
+            FVScrollPos = 0;
+        }
+
+        public int HScrollPos
+        {
+            get { return FHScrollPos; }
+            set { FHScrollPos = value; }
+        }
+
+        public int VScrollPos
+        {
+            get { return FVScrollPos; }
+            set { FVScrollPos = value; }
+        }
+    }
+
+    public class HCSectionUndoGroupBegin : HCUndoEditGroupBegin
+    {
+        private int FSectionIndex;
+        public HCSectionUndoGroupBegin() : base()
+        {
+            FSectionIndex = -1;
+        }
+
+        public int SectionIndex
+        {
+            get { return FSectionIndex; }
+            set { FSectionIndex = value; }
+        }
+    }
+
+    public class HCUndoGroupEnd : HCUndoGroupBegin {}
+
+    public class HCUndoEditGroupEnd : HCUndoGroupEnd
+    {
+        private int FHScrollPos, FVScrollPos;
+        public HCUndoEditGroupEnd() : base()
+        {
+            FHScrollPos = 0;
+            FVScrollPos = 0;
+        }
+        public int HScrollPos
+        {
+            get { return FHScrollPos; }
+            set { FHScrollPos = value; }
+        }
+        public int VScrollPos
+        {
+            get { return FVScrollPos; }
+            set { FVScrollPos = value; }
+        }
+    }
+
+    public class HCSectionUndoGroupEnd : HCUndoEditGroupEnd
+    {
+        private int FSectionIndex;
+        public HCSectionUndoGroupEnd() : base()
+        {
+            FSectionIndex = -1;
+        }
+        public int SectionIndex
+        {
+            get { return FSectionIndex; }
+            set { FSectionIndex = value; }
+        }
+    }
+
+    // UndoList部分
+
+    public delegate HCUndo UndoNewEventHandler();
+    public delegate void UndoEventHandler(HCUndo Sender);
+    public delegate HCUndoGroupBegin UndoGroupBeginEventHandler(int AItemNo, int AOffset);
+    public delegate HCUndoGroupEnd UndoGroupEndEventHandler(int AItemNo, int AOffset);
+
     public class HCUndoList : HCList<HCUndo>
     {
         private int FSeek;
-        private uint FMaxUndoCount;
-        private UndoEventHandler FOnUndo, FOnRedo, FOnNewUndo, FOnUndoDestroy;
+        private bool FEnable;  // 是否可以执行撤销恢复
+        private bool FGroupWorking;  // 组操作锁
+        private uint FMaxUndoCount;  // 撤销恢复链的最大长度
+        private Stack FEnableStateStack;
 
-        private  void DoNewUndo(HCUndo AUndo)
+        // 当前组撤销恢复时的组起始和组结束
+        private int FGroupBeginIndex, FGroupEndIndex;
+
+        private UndoNewEventHandler FOnUndoNew;
+        private UndoGroupBeginEventHandler FOnUndoGroupStart;
+        private UndoGroupEndEventHandler FOnUndoGroupEnd;
+        private UndoEventHandler FOnUndo, FOnRedo, FOnUndoDestroy;
+
+        private  void DoNewUndo(HCUndo aUndo)
         {
+            if (FSeek < this.Count - 1)
+            {
+                if (FSeek > 0)
+                {
+                    if (this[FSeek].IsUndo)
+                        FSeek++;
 
+                    this.RemoveRange(FSeek, this.Count - FSeek);
+                }
+                else
+                    this.Clear();
+            }
+
+            if (this.Count > FMaxUndoCount)  // 超出列表最大允许的数量
+            {
+                int vOver = 0, vIndex = -1;
+
+                if (this[0] is HCUndoGroupBegin)
+                {
+                    for (int i = 1; i <= this.Count - 1; i++)
+                    {
+                        if (this[i] is HCUndoGroupEnd)
+                        {
+                            if (vOver == 0)
+                            {
+                                vIndex = i;
+                                break;
+                            }
+                            else
+                                vOver--;
+                        }
+                        else
+                        {
+                            if (this[i] is HCUndoGroupBegin)
+                                vOver++;
+                        }
+                    }
+
+                    this.RemoveRange(0, vIndex + 1);
+                }
+                else
+                {
+                    this.RemoveAt(0);
+                }
+            }
+
+            this.Add(aUndo);
+            FSeek = this.Count - 1;
         }
 
         private ItemNotifyEventHandler FOnItemDelete;
@@ -363,11 +637,23 @@ namespace HC.View
                 FOnUndoDestroy(e.Item);
         }
 
+        private void _OnClear(object sender, EventArgs e)
+        {
+            FSeek = -1;
+            FGroupBeginIndex = -1;
+            FGroupEndIndex = -1;
+        }
+
         public HCUndoList()
         {
+            FEnableStateStack = new Stack();
             FSeek = -1;
             FMaxUndoCount = 99;
             this.OnDelete += new EventHandler<NListEventArgs<HCUndo>>(_OnDeleteItem);
+            this.OnClear += new EventHandler<EventArgs>(_OnClear);
+            FEnable = true;
+            FGroupBeginIndex = -1;
+            FGroupEndIndex = -1;
         }
 
         ~HCUndoList()
@@ -375,29 +661,188 @@ namespace HC.View
 
         }
 
-        public  void BeginUndoGroup(int AItemNo, int  AOffset)
+        public void UndoGroupBegin(int aItemNo, int aOffset)
         {
+            HCUndoGroupBegin vUndoGroupBegin = null;
+            if (FOnUndoGroupStart != null)
+                vUndoGroupBegin = FOnUndoGroupStart(aItemNo, aOffset);
+            else
+                vUndoGroupBegin = new HCUndoGroupBegin();
 
+            vUndoGroupBegin.ItemNo = aItemNo;
+            vUndoGroupBegin.Offset = aOffset;
+
+            DoNewUndo(vUndoGroupBegin);
         }
 
-        public  void EndUndoGroup(int AItemNo, int  AOffset)
+        public void UndoGroupEnd(int aItemNo, int aOffset)
         {
+            HCUndoGroupEnd vUndoGroupEnd = null;
+            if (FOnUndoGroupEnd != null)
+                vUndoGroupEnd = FOnUndoGroupEnd(aItemNo, aOffset);
+            else
+                vUndoGroupEnd = new HCUndoGroupEnd();
 
+            vUndoGroupEnd.ItemNo = aItemNo;
+            vUndoGroupEnd.Offset = aOffset;
+
+            DoNewUndo(vUndoGroupEnd);
         }
 
-        public  void NewUndo()
+        public HCUndo UndoNew()
         {
+            HCUndo Result = null;
+            if (FOnUndoNew != null)
+                Result = FOnUndoNew();
+            else
+                Result = new HCUndo();
 
+            DoNewUndo(Result);
+            return Result;
         }
 
-        public  void Undo()
+        private void DoSeekUndoEx(ref int ASeek)
         {
+            if (FOnUndo != null)
+                FOnUndo(this[ASeek]);
 
+            this[ASeek].IsUndo = false;
+            ASeek--;
         }
 
-        public  void Redo()
+        public void Undo()
         {
+            if (FSeek >= 0)
+            {
+                int vOver = 0, vBeginIndex = -1;
 
+                if (this[FSeek] is HCUndoGroupEnd)
+                {
+                    vOver = 0;
+                    vBeginIndex = 0;
+                    for (int i = FSeek - 1; i >= 0; i--)
+                    {
+                        if (this[i] is HCUndoGroupBegin)
+                        {
+                            if (vOver == 0)
+                            {
+                                vBeginIndex = i;
+                                break;
+                            }
+                            else
+                                vOver--;
+                        }
+                        else
+                        {
+                            if (this[i] is HCUndoGroupEnd)
+                                vOver++;
+                        }
+                    }
+
+                    FGroupBeginIndex = vBeginIndex;
+                    FGroupEndIndex = FSeek;
+                    try
+                    {
+                        FGroupWorking = true;
+                        while (FSeek >= vBeginIndex)
+                        {
+                            if (FSeek == vBeginIndex)
+                                FGroupWorking = false;
+
+                            DoSeekUndoEx(ref FSeek);
+                        }
+                    }
+                    finally
+                    {
+                        FGroupWorking = false;
+                        FGroupBeginIndex = -1;
+                        FGroupEndIndex = -1;
+                    }
+                }
+                else
+                    DoSeekUndoEx(ref FSeek);
+            }
+        }
+
+        private void DoSeekRedoEx(ref int ASeek)
+        {
+            ASeek++;
+            if (FOnRedo != null)
+                FOnRedo(this[ASeek]);
+
+            this[FSeek].IsUndo = true;
+        }
+
+        public void Redo()
+        {
+            if (FSeek < this.Count - 1)
+            {
+                int vOver = -1, vEndIndex = -1;
+                if (this[FSeek + 1] is HCUndoGroupBegin)
+                {
+                    vOver = 0;
+                    vEndIndex = this.Count - 1;
+
+                    // 找结束
+                    for (int i = FSeek + 2; i <= this.Count - 1; i++)
+                    {
+                        if (this[i] is HCUndoGroupEnd)
+                        {
+                            if (vOver == 0)
+                            {
+                                vEndIndex = i;
+                                break;
+                            }
+                            else
+                                vOver--;
+                        }
+                        else
+                        {
+                            if (this[i] is HCUndoGroupBegin)
+                                vOver++;
+                        }
+                    }
+
+                    FGroupBeginIndex = FSeek + 1;
+                    FGroupEndIndex = vEndIndex;
+                    try
+                    {
+                        FGroupWorking = true;
+                        while (FSeek < vEndIndex)
+                        {
+                            if (FSeek == vEndIndex - 1)
+                                FGroupWorking = false;
+
+                            DoSeekRedoEx(ref FSeek);
+                        }
+                    }
+                    finally
+                    {
+                        FGroupWorking = false;
+                        FGroupBeginIndex = -1;
+                        FGroupEndIndex = -1;
+                    }
+                }
+                else
+                    DoSeekRedoEx(ref FSeek);
+            }
+        }
+
+        public void SaveState()
+        {
+            FEnableStateStack.Push(FEnable);
+        }
+
+        public void RestoreState()
+        {
+            if (FEnableStateStack.Count > 0)
+                FEnable = (bool)(FEnableStateStack.Pop());
+        }
+
+        public bool Enable
+        {
+            get { return FEnable; }
+            set { FEnable = value; }
         }
 
         public uint MaxUndoCount
@@ -406,10 +851,42 @@ namespace HC.View
             set { FMaxUndoCount = value; }
         }
 
-        public UndoEventHandler OnNewUndo
+        public int Seek
         {
-            get { return FOnNewUndo; }
-            set { FOnNewUndo = value; }
+            get { return FSeek; }
+        }
+
+        public bool GroupWorking
+        {
+            get { return FGroupWorking; }
+        }
+
+        public int CurGroupBeginIndex
+        {
+            get { return FGroupBeginIndex; }
+        }
+
+        public int CurGroupEndIndex
+        {
+            get { return FGroupEndIndex; }
+        }
+
+        public UndoNewEventHandler OnUndoNew
+        {
+            get { return FOnUndoNew; }
+            set { FOnUndoNew = value; }
+        }
+
+        public UndoGroupBeginEventHandler OnUndoGroupStart
+        {
+            get { return FOnUndoGroupStart; }
+            set { FOnUndoGroupStart = value; }
+        }
+
+        public UndoGroupEndEventHandler OnUndoGroupEnd
+        {
+            get { return FOnUndoGroupEnd; }
+            set { FOnUndoGroupEnd = value; }
         }
 
         public UndoEventHandler OnUndoDestroy

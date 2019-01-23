@@ -16,6 +16,7 @@ using System.Text;
 using HC.Win32;
 using System.Windows.Forms;
 using System.IO;
+using System.Xml;
 
 namespace HC.View
 {
@@ -32,7 +33,7 @@ namespace HC.View
         private List<HCRadioButton> FItems;
         public static byte RadioButtonWidth = 16;
 
-        private int GetItemAt(int X, int  Y)
+        private int GetItemAt(int x, int  y)
         {
             int Result = -1;
             this.OwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(this.OwnerData.Style.DefCanvas);
@@ -42,7 +43,7 @@ namespace HC.View
             {
                 vSize = this.OwnerData.Style.DefCanvas.TextExtent(FItems[i].Text);
                 if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
-                    RadioButtonWidth + vSize.cx, vSize.cy), X, Y))
+                    RadioButtonWidth + vSize.cx, vSize.cy), x, y))
                 
                 {
                     Result = i;
@@ -53,10 +54,10 @@ namespace HC.View
             return Result;
         }
 
-        public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             Height = FMinHeight;
-            ARichData.Style.TextStyles[TextStyleNo].ApplyStyle(ARichData.Style.DefCanvas);
+            aRichData.Style.TextStyles[TextStyleNo].ApplyStyle(aRichData.Style.DefCanvas);
             int vLeft = FMargin;
             int vTop = FMargin;
             SIZE vSize = new SIZE();
@@ -64,9 +65,9 @@ namespace HC.View
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
                 if (FItems[i].Text != "")
-                    vSize = ARichData.Style.DefCanvas.TextExtent(FItems[i].Text);
+                    vSize = aRichData.Style.DefCanvas.TextExtent(FItems[i].Text);
                 else
-                    vSize = ARichData.Style.DefCanvas.TextExtent("I");
+                    vSize = aRichData.Style.DefCanvas.TextExtent("I");
                 
                 if (vLeft + vSize.cx + RadioButtonWidth > Width)
                 {
@@ -76,8 +77,8 @@ namespace HC.View
 
                 FItems[i].Position.X = vLeft;
                 FItems[i].Position.Y = vTop;
-                
-                vLeft = vLeft + RadioButtonWidth + vSize.cx;
+
+                vLeft = vLeft + RadioButtonWidth + vSize.cx + FMargin;
             }
             
             Height = vTop + vSize.cy + FMargin;
@@ -88,19 +89,19 @@ namespace HC.View
                 Height = FMinHeight;
         }
     
-        protected override void DoPaint(HCStyle AStyle, RECT ADrawRect, int ADataDrawTop, int ADataDrawBottom, 
-            int ADataScreenTop, int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
+            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop,
-                ADataScreenBottom, ACanvas, APaintInfo);
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop,
+                aDataScreenBottom, aCanvas, aPaintInfo);
             
             if (FMouseIn)
             {
-                ACanvas.Brush.Color = HC.clBtnFace;
-                ACanvas.FillRect(ADrawRect);
+                aCanvas.Brush.Color = HC.clBtnFace;
+                aCanvas.FillRect(aDrawRect);
             }
 
-            AStyle.TextStyles[TextStyleNo].ApplyStyle(ACanvas, APaintInfo.ScaleY / APaintInfo.Zoom);
+            aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
             
             POINT vPoint = new POINT();
             RECT vItemRect = new RECT();
@@ -108,14 +109,14 @@ namespace HC.View
             {
                 vPoint.X = FItems[i].Position.X;
                 vPoint.Y = FItems[i].Position.Y;
-                vPoint.Offset(ADrawRect.Left, ADrawRect.Top);
+                vPoint.Offset(aDrawRect.Left, aDrawRect.Top);
                 vItemRect = HC.Bounds(vPoint.X, vPoint.Y, RadioButtonWidth, RadioButtonWidth);
                 if (FItems[i].Checked)
-                    User.DrawFrameControl(ACanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONRADIO);
+                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONRADIO);
                 else
-                    User.DrawFrameControl(ACanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONRADIO);
+                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONRADIO);
                 
-                ACanvas.TextOut(vPoint.X + RadioButtonWidth, vPoint.Y, FItems[i].Text);
+                aCanvas.TextOut(vPoint.X + RadioButtonWidth, vPoint.Y, FItems[i].Text);
             }
         }
 
@@ -158,62 +159,57 @@ namespace HC.View
             FMouseIn = false;
         }
 
-        public override void GetCaretInfo(ref HCCaretInfo ACaretInfo)
+        public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
         {
             if (this.Active)
-                ACaretInfo.Visible = false;
+                aCaretInfo.Visible = false;
         }
 
-        public override int GetOffsetAt(int X)
+        public override int GetOffsetAt(int x)
         {
-            if (X <= FMargin)
+            if (x <= FMargin)
                 return HC.OffsetBefor;
             else
-                if (X >= Width - FMargin)
+                if (x >= Width - FMargin)
                     return HC.OffsetAfter;
                 else
                     return HC.OffsetInner;
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int  AEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
         {
-            base.SaveToStream(AStream, AStart, AEnd);
+            base.SaveToStream(aStream, aStart, aEnd);
             string vS = "";
-            for (int i = 0; i < FItems.Count; i++)
-                vS = vS + FItems[i].Text + "\r\n";
+            if (FItems.Count > 0)
+            {
+                vS = FItems[0].Text;
+                for (int i = 1; i < FItems.Count; i++)
+                    vS = vS + HC.sLineBreak + FItems[i].Text;
+            }
 
-            int vLen = System.Text.Encoding.Default.GetByteCount(vS);
-            if (vLen > ushort.MaxValue)
-                throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
-
-            ushort vSize = (ushort)vLen;
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Write(vBuffer, 0, vBuffer.Length);
-
-            if (vSize > 0)
-                vBuffer = System.Text.Encoding.Default.GetBytes(vS);
+            HC.HCSaveTextToStream(aStream, vS);
 
             for (int i = 0; i < FItems.Count; i++)
             {
-                vBuffer = BitConverter.GetBytes(FItems[i].Checked);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
+                byte[] vBuffer = BitConverter.GetBytes(FItems[i].Checked);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
             }
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             ushort vSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vSize);
-            AStream.Read(vBuffer, 0, vBuffer.Length);
-
+            aStream.Read(vBuffer, 0, vBuffer.Length);
+            vSize = BitConverter.ToUInt16(vBuffer, 0);
             if (vSize > 0)
             {
                 vBuffer = new byte[vSize];
-                AStream.Read(vBuffer, 0, vBuffer.Length);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
                 string vTexts = System.Text.Encoding.Default.GetString(vBuffer);
-                string[] vStrings = vTexts.Split(new string[] { "\r\n" }, StringSplitOptions.None);
+                string[] vStrings = vTexts.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
 
                 for (int i = 0; i < vStrings.Length; i++)
                     AddItem(vStrings[i]);
@@ -221,13 +217,61 @@ namespace HC.View
                 vBuffer = BitConverter.GetBytes(false);
                 for (int i = 0; i < FItems.Count; i++)
                 {
-                    AStream.Read(vBuffer, 0, vBuffer.Length);
+                    aStream.Read(vBuffer, 0, vBuffer.Length);
                     FItems[i].Checked = BitConverter.ToBoolean(vBuffer, 0);
                 }
             }
         }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FItems.Clear();
+            string vText = aNode.Attributes["item"].Value;
+            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+
+            for (int i = 0; i < vStrings.Length; i++)
+                AddItem(vStrings[i]);
+
+            vText = aNode.Attributes["check"].Value;
+            vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+
+            for (int i = 0; i < vStrings.Length; i++)
+            {
+                if (vStrings[i] == "1")
+                    FItems[i].Checked = true;
+                else
+                    FItems[i].Checked = false;
+            }
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            string vS = "";
+            if (FItems.Count > 0)
+            {
+                for (int i = 0; i < FItems.Count; i++)
+                    vS += FItems[i] + HC.sLineBreak;
+            }
+
+            aNode.Attributes["item"].Value = vS;
+
+            vS = "";
+            if (FItems.Count > 0)
+            {
+                for (int i = 0; i < FItems.Count; i++)
+                {
+                    if (FItems[i].Checked)
+                        vS += "1" + HC.sLineBreak;
+                    else
+                        vS += "0" + HC.sLineBreak;
+                }
+            }
+            aNode.Attributes["check"].Value = vS;
+        }
         
-        public HCRadioGroup(HCCustomData AOwnerData) : base(AOwnerData)
+        public HCRadioGroup(HCCustomData aOwnerData) : base(aOwnerData)
         {
             this.StyleNo = HCStyle.RadioGroup;
             Width = 100;
@@ -239,21 +283,21 @@ namespace HC.View
             //FItems
         }
 
-        public override void Assign(HCCustomItem Source)
+        public override void Assign(HCCustomItem source)
         {
-            base.Assign(Source);
-            HCRadioGroup vSource = Source as HCRadioGroup;
+            base.Assign(source);
+            HCRadioGroup vSource = source as HCRadioGroup;
 
             FItems.Clear();
             for (int i = 0; i < vSource.Items.Count; i++)
                 AddItem(vSource.Items[i].Text, vSource.Items[i].Checked);
         }
 
-        public void AddItem(string AText, bool AChecked = false)
+        public void AddItem(string aText, bool AChecked = false)
         {
             HCRadioButton vRadioButton = new HCRadioButton();
             vRadioButton.Checked = AChecked;
-            vRadioButton.Text = AText;
+            vRadioButton.Text = aText;
             FItems.Add(vRadioButton);
         }
     
