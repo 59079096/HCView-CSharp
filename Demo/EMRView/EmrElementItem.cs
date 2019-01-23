@@ -63,11 +63,17 @@ namespace EMRView
         {
             aPropertys.Clear();
 
-            string[] vStrings = aStrings.Split(new string[] { HC.View.HC.sLineBreak }, StringSplitOptions.None);
-            for (int i = 0; i < vStrings.Length; i++)
+            if (aStrings != "")
             {
-                string[] vKv = vStrings[i].Split(new string[] { "=" }, StringSplitOptions.None);
-                aPropertys.Add(vKv[0], vKv[1]);
+                string[] vStrings = aStrings.Split(new string[] { HC.View.HC.sLineBreak }, StringSplitOptions.None);
+                for (int i = 0; i < vStrings.Length; i++)
+                {
+                    if (vStrings[i] != "")
+                    {
+                        string[] vKv = vStrings[i].Split(new string[] { "=" }, StringSplitOptions.None);
+                        aPropertys.Add(vKv[0], vKv[1]);
+                    }
+                }
             }
         }
     }
@@ -92,7 +98,18 @@ namespace EMRView
     }
 
     /// <summary> 电子病历文本对象 </summary>
-    public class EmrTextItem : HCTextItem { }
+    public class EmrTextItem : HCTextItem 
+    {
+        public EmrTextItem() : base()
+        {
+
+        }
+
+        public EmrTextItem(string aText) : base(aText)
+        {
+
+        }
+    }
 
     /// <summary> 电子病历数据元对象 </summary>
     public sealed class DeItem : EmrTextItem  // 不可继承
@@ -238,9 +255,16 @@ namespace EMRView
             FMouseIn = false;
         }
 
+        public DeItem(string aText) : base(aText)
+        {
+            FPropertys = new Dictionary<string, string>();
+            FDeleteProtect = false;
+            FMouseIn = false;
+        }
+
         ~DeItem()
         {
-            
+
         }
 
         public override void MouseEnter()

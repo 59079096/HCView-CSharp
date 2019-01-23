@@ -14,7 +14,7 @@ namespace EMRView
         private bool FLoading;
         private bool FTrace;
 
-        private void DoSectionCreateItem(Object sender)
+        private void DoSectionCreateItem(object sender, EventArgs e)
         {
             if ((!FLoading) && FTrace)
                 (sender as DeItem).StyleEx = StyleExtra.cseAdd;
@@ -335,12 +335,17 @@ namespace EMRView
             base.WndProc(ref Message);
         }
 
-        public EmrView() : base()
+        protected override void Create()
         {
+            base.Create();
             FLoading = false;
             FTrace = false;
             HCTextItem.HCDefaultTextItemClass = typeof(DeItem);
             HCDomainItem.HCDefaultDomainItemClass = typeof(DeGroup);
+        }
+
+        public EmrView() : base()
+        {
             this.Width = 100;
             this.Height = 100;
             this.OnSectionCreateItem = DoSectionCreateItem;

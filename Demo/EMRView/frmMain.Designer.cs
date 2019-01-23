@@ -31,6 +31,8 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.模板制作ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.lvPatient = new System.Windows.Forms.ListView();
+            this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -38,6 +40,7 @@
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -61,6 +64,9 @@
             // lvPatient
             // 
             this.lvPatient.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader9,
+            this.columnHeader10,
+            this.columnHeader8,
             this.columnHeader1,
             this.columnHeader2,
             this.columnHeader3,
@@ -77,6 +83,16 @@
             this.lvPatient.TabIndex = 3;
             this.lvPatient.UseCompatibleStateImageBehavior = false;
             this.lvPatient.View = System.Windows.Forms.View.Details;
+            this.lvPatient.DoubleClick += new System.EventHandler(this.lvPatient_DoubleClick);
+            // 
+            // columnHeader9
+            // 
+            this.columnHeader9.Text = "PID";
+            // 
+            // columnHeader8
+            // 
+            this.columnHeader8.Text = "床号";
+            this.columnHeader8.Width = 40;
             // 
             // columnHeader1
             // 
@@ -111,6 +127,11 @@
             this.columnHeader7.Text = "入科时间";
             this.columnHeader7.Width = 120;
             // 
+            // columnHeader10
+            // 
+            this.columnHeader10.Text = "诊次";
+            this.columnHeader10.Width = 40;
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -121,7 +142,7 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Form1";
+            this.Text = "医生站";
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -142,6 +163,9 @@
         private System.Windows.Forms.ColumnHeader columnHeader5;
         private System.Windows.Forms.ColumnHeader columnHeader6;
         private System.Windows.Forms.ColumnHeader columnHeader7;
+        private System.Windows.Forms.ColumnHeader columnHeader8;
+        private System.Windows.Forms.ColumnHeader columnHeader9;
+        private System.Windows.Forms.ColumnHeader columnHeader10;
     }
 }
 

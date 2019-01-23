@@ -21,7 +21,7 @@ namespace EMRView
         }
 
         //
-        protected  string GetValue(string key)
+        protected string GetValue(string key)
         {
             return FPropertys[key];
         }

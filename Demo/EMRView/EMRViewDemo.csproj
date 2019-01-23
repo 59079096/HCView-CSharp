@@ -47,9 +47,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeGroup.cs" />
+    <Compile Include="emrDB.cs" />
     <Compile Include="EmrElementItem.cs" />
     <Compile Include="EmrView.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="frmPatientRecord.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmPatientRecord.Designer.cs">
+      <DependentUpon>frmPatientRecord.cs</DependentUpon>
     </Compile>
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>
@@ -57,19 +64,22 @@
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="frm_Template.cs">
+    <Compile Include="frmTemplate.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frm_Template.Designer.cs">
-      <DependentUpon>frm_Template.cs</DependentUpon>
+    <Compile Include="frmTemplate.Designer.cs">
+      <DependentUpon>frmTemplate.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="frm_Template.resx">
-      <DependentUpon>frm_Template.cs</DependentUpon>
+    <EmbeddedResource Include="frmPatientRecord.resx">
+      <DependentUpon>frmPatientRecord.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmTemplate.resx">
+      <DependentUpon>frmTemplate.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -79,6 +89,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -95,6 +106,24 @@
       <Project>{101C0F99-3772-4F26-8F49-D753AE54A251}</Project>
       <Name>HCView</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00003.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00004.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00018.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00023.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00128.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00129.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
