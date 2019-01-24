@@ -11,7 +11,7 @@ namespace EMRView
 {
     public partial class frmPatientRecord : Form
     {
-        private EmrView FEmrView;
+        private frmRecord frmRecord;
         private emrDB emrDB;
         private string FPID;
         private string FVID;
@@ -23,15 +23,6 @@ namespace EMRView
 
         private void frmPatientRecord_Load(object sender, EventArgs e)
         {
-            if (FEmrView == null)
-            {
-                FEmrView = new EmrView();
-                this.Controls.Add(FEmrView);
-                FEmrView.Parent = this.splitContainer1.Panel2;
-                FEmrView.Dock = DockStyle.Fill;
-                FEmrView.BringToFront();
-            }
-
             if (emrDB == null)
                 emrDB = new emrDB();
 
@@ -66,6 +57,19 @@ namespace EMRView
         private void 新建ToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void tvRecord_DoubleClick(object sender, EventArgs e)
+        {
+            if (frmRecord == null)
+            {
+                frmRecord = new frmRecord();
+                frmRecord.TopLevel = false;
+                frmRecord.Dock = DockStyle.Fill;
+                //this.splitContainer1.Panel2.Controls.Add(frmRecord);
+                frmRecord.Parent = this.splitContainer1.Panel2;
+                frmRecord.Show();
+            }
         }
     }
 }

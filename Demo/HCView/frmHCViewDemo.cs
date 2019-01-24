@@ -20,13 +20,79 @@ namespace HCViewDemo
             InitializeComponent();
         }
 
+        private void GetPagesAndActive()
+        {
+            tssPage.Text = "预览" + (FHCView.PagePreviewFirst + 1).ToString()
+                + "页 光标" + (FHCView.ActivePageIndex + 1).ToString()
+                + "页 共" + FHCView.PageCount.ToString() + "页";
+        }
+
+        private void CurTextStyleChange(int aNewStyleNo)
+        {
+            if (aNewStyleNo >= 0)
+            {
+                cbbFont.SelectedIndex = cbbFont.Items.IndexOf(FHCView.Style.TextStyles[aNewStyleNo].Family);
+                cbbFontSize.SelectedIndex = cbbFontSize.Items.IndexOf(HC.View.HC.GetFontSizeStr(FHCView.Style.TextStyles[aNewStyleNo].Size));
+                btnBold.Checked = FHCView.Style.TextStyles[aNewStyleNo].FontStyles.Contains((byte)HCFontStyle.tsBold);
+                btnItalic.Checked = FHCView.Style.TextStyles[aNewStyleNo].FontStyles.Contains((byte)HCFontStyle.tsItalic);
+                btnUnderLine.Checked = FHCView.Style.TextStyles[aNewStyleNo].FontStyles.Contains((byte)HCFontStyle.tsUnderline);
+                btnStrikeOut.Checked = FHCView.Style.TextStyles[aNewStyleNo].FontStyles.Contains((byte)HCFontStyle.tsStrikeOut);
+                btnSuperScript.Checked = FHCView.Style.TextStyles[aNewStyleNo].FontStyles.Contains((byte)HCFontStyle.tsSuperscript);
+                btnSubScript.Checked = FHCView.Style.TextStyles[aNewStyleNo].FontStyles.Contains((byte)HCFontStyle.tsSubscript);
+            }
+            else
+            {
+                btnBold.Checked = false;
+                btnItalic.Checked = false;
+                btnUnderLine.Checked = false;
+                btnStrikeOut.Checked = false;
+                btnSuperScript.Checked = false;
+                btnSubScript.Checked = false;
+            }
+        }
+
+        private void CurParaStyleChange(int aNewParaNo)
+        {
+            if (aNewParaNo >= 0)
+            {
+                ParaAlignHorz vAlignHorz = FHCView.Style.ParaStyles[aNewParaNo].AlignHorz;
+
+                btnAlignLeft.Checked = vAlignHorz == ParaAlignHorz.pahLeft;
+                btnAlignRight.Checked = vAlignHorz == ParaAlignHorz.pahRight;
+                btnAlignCenter.Checked = vAlignHorz == ParaAlignHorz.pahCenter;
+                btnAlignJustify.Checked = vAlignHorz == ParaAlignHorz.pahJustify;
+                btnAlignScatter.Checked = vAlignHorz == ParaAlignHorz.pahScatter;
+            }
+        }
+
+        private void DoCaretChange(object sender, EventArgs e)
+        {
+            GetPagesAndActive();
+
+            CurTextStyleChange(FHCView.Style.CurStyleNo);
+            CurParaStyleChange(FHCView.Style.CurParaNo);
+        }
+
+        private void DoVerScroll(object sender, EventArgs e)
+        {
+            GetPagesAndActive();
+        }
+
         private void frmHCViewDemo_Load(object sender, EventArgs e)
         {
+            System.Drawing.Text.InstalledFontCollection fonts = new System.Drawing.Text.InstalledFontCollection();
+            foreach (System.Drawing.FontFamily family in fonts.Families)
+            {
+                cbbFont.Items.Add(family.Name);
+            }
+            cbbFont.Text = "宋体";
+            cbbFontSize.Text = "五号";
+
             this.Text = "HCViewDemo " + Application.ProductVersion.ToString();
             FHCView = new HCView();
-            //FHCView.OnCaretChange := DoCaretChange;
-            //FHCView.OnVerScroll := DoVerScroll;
-            //FHCView.PopupMenu := pmRichEdit;
+            FHCView.OnCaretChange = DoCaretChange;
+            FHCView.OnVerScroll = DoVerScroll;
+            FHCView.ContextMenuStrip = pmRichEdit;
             this.Controls.Add(FHCView);
             FHCView.Dock = DockStyle.Fill;
             FHCView.BringToFront();
@@ -345,6 +411,252 @@ namespace HCViewDemo
         {
             FHCView.FileName = "";
             FHCView.Clear();
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            mniSave_Click(sender, e);
+        }
+
+        private void btnPrint_Click(object sender, EventArgs e)
+        {
+            直接打印ToolStripMenuItem_Click(sender, e);
+        }
+
+        private void btnSymmetryMargin_Click(object sender, EventArgs e)
+        {
+            FHCView.SymmetryMargin = !FHCView.SymmetryMargin;
+        }
+
+        private void btnBold_Click(object sender, EventArgs e)
+        {
+            switch ((sender as ToolStripButton).Tag.ToString())
+            {
+                case "0":
+                    FHCView.ApplyTextStyle(HCFontStyle.tsBold);
+                    break;
+
+                case "1":
+                    FHCView.ApplyTextStyle(HCFontStyle.tsItalic);
+                    break;
+
+                case "2":
+                    FHCView.ApplyTextStyle(HCFontStyle.tsUnderline);
+                    break;
+
+                case "3":
+                    FHCView.ApplyTextStyle(HCFontStyle.tsStrikeOut);
+                    break;
+
+                case "4":
+                    FHCView.ApplyTextStyle(HCFontStyle.tsSuperscript);
+                    break;
+
+                case "5":
+                    FHCView.ApplyTextStyle(HCFontStyle.tsSubscript);
+                    break;
+            }
+        }
+
+        private void btnAlignLeft_Click(object sender, EventArgs e)
+        {
+            switch ((sender as ToolStripButton).Tag.ToString())
+            {
+                case "0":
+                    FHCView.ApplyParaAlignHorz(ParaAlignHorz.pahLeft);
+                    break;
+
+                case "1":
+                    FHCView.ApplyParaAlignHorz(ParaAlignHorz.pahCenter);
+                    break;
+
+                case "2":
+                    FHCView.ApplyParaAlignHorz(ParaAlignHorz.pahRight);
+                    break;
+
+                case "3":
+                    FHCView.ApplyParaAlignHorz(ParaAlignHorz.pahJustify);  // 两端
+                    break;
+
+                case "4":
+                    FHCView.ApplyParaAlignHorz(ParaAlignHorz.pahScatter);  // 分散
+                    break;
+            }
+        }
+
+        private void mniLS100_Click(object sender, EventArgs e)
+        {
+            switch ((sender as ToolStripMenuItem).Tag.ToString())
+            {
+                case "0":
+                    FHCView.ApplyParaLineSpace(ParaLineSpaceMode.pls100);   // 单倍
+                    break;
+
+                case "1":
+                    FHCView.ApplyParaLineSpace(ParaLineSpaceMode.pls115);  // 1.15倍
+                    break;
+
+                case "2":
+                    FHCView.ApplyParaLineSpace(ParaLineSpaceMode.pls150);  // 1.5倍
+                break;
+
+                case "3":
+                    FHCView.ApplyParaLineSpace(ParaLineSpaceMode.pls200);  // 双倍
+                break;      
+            }
+        }
+
+        private void cbbFontSize_DropDownClosed(object sender, EventArgs e)
+        {
+            FHCView.ApplyTextFontSize(HC.View.HC.GetFontSize(cbbFontSize.Text));
+            if (!FHCView.Focused)
+                FHCView.Focus();
+        }
+
+        private void cbbFont_DropDownClosed(object sender, EventArgs e)
+        {
+            FHCView.ApplyTextFontName(cbbFont.Text);
+            if (!FHCView.Focused)
+                FHCView.Focus();
+        }
+
+        private void pmRichEdit_Opening(object sender, CancelEventArgs e)
+        {
+            HCCustomData vActiveData = FHCView.ActiveSection.ActiveData;
+            HCCustomItem vActiveItem = vActiveData.GetCurItem();
+
+            HCCustomData vTopData = null;
+            HCCustomItem vTopItem = vActiveItem;
+
+            while (vTopItem is HCCustomRectItem)
+            {
+                if ((vTopItem as HCCustomRectItem).GetActiveData() != null)
+                {
+                    if (vTopData != null)
+                    {
+                        vActiveData = vTopData;
+                        vActiveItem = vTopItem;
+                    }
+                }
+                else
+                    break;
+            }
+
+            if (vTopData == null)
+                vTopData = vActiveData;
+
+            mniTable.Enabled = vActiveItem.StyleNo == HCStyle.Table;
+            if (mniTable.Enabled)
+            {
+                HCTableItem vTableItem = vActiveItem as HCTableItem;
+                mniInsertRowTop.Enabled = vTableItem.GetEditCell() != null;
+                mniInsertRowBottom.Enabled = mniInsertRowTop.Enabled;
+                mniInsertColLeft.Enabled = mniInsertRowTop.Enabled;
+                mniInsertColRight.Enabled = mniInsertRowTop.Enabled;
+                mniSplitRow.Enabled = mniInsertRowTop.Enabled;
+                mniSplitCol.Enabled = mniInsertRowTop.Enabled;
+
+                mniDeleteCurRow.Enabled = vTableItem.CurRowCanDelete();
+                mniDeleteCurCol.Enabled = vTableItem.CurColCanDelete();
+                mniMerge.Enabled = vTableItem.SelectedCellCanMerge();
+
+                if (vTableItem.BorderVisible)
+                    mniDisBorder.Text = "隐藏边框";
+                else
+                    mniDisBorder.Text = "显示边框";                
+            }
+
+            mniCut.Enabled = (!FHCView.ActiveSection.ReadOnly && vTopData.SelectExists());
+            mniCopy.Enabled = mniCut.Enabled;
+
+            IDataObject vIData = Clipboard.GetDataObject();
+            mniPaste.Enabled = ( (!FHCView.ActiveSection.ReadOnly)
+                && (    (vIData.GetDataPresent(HC.View.HC.HC_EXT))
+                        || (vIData.GetDataPresent(DataFormats.Text))
+                        || (vIData.GetDataPresent(DataFormats.Bitmap))
+                    ));
+            mniControlItem.Visible = ((!FHCView.ActiveSection.ReadOnly)
+                                        && (!vTopData.SelectExists())
+                                        && (vTopItem is HCControlItem)
+                                        && vTopItem.Active
+                                      );
+            if (mniControlItem.Visible)
+                mniControlItem.Text = "属性(" + (vTopItem as HCControlItem).GetType().Name + ")";
+        }
+
+        private void mniCut_Click(object sender, EventArgs e)
+        {
+            FHCView.Cut();
+        }
+
+        private void mniCopy_Click(object sender, EventArgs e)
+        {
+            FHCView.Copy();
+        }
+
+        private void mniPaste_Click(object sender, EventArgs e)
+        {
+            FHCView.Paste();
+        }
+
+        private void mniInsertRowTop_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableInsertRowBefor(1);
+        }
+
+        private void mniInsertRowBottom_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableInsertRowAfter(1);
+        }
+
+        private void mniInsertColLeft_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableInsertColBefor(1);
+        }
+
+        private void mniInsertColRight_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableInsertColAfter(1);
+        }
+
+        private void mniMerge_Click(object sender, EventArgs e)
+        {
+            FHCView.MergeTableSelectCells();
+        }
+
+        private void mniSplitRow_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableSplitCurRow();
+        }
+
+        private void mniSplitCol_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableSplitCurCol();
+        }
+
+        private void mniDeleteCurRow_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableDeleteCurRow();
+        }
+
+        private void mniDeleteCurCol_Click(object sender, EventArgs e)
+        {
+            FHCView.ActiveTableDeleteCurCol();
+        }
+
+        private void mniDisBorder_Click(object sender, EventArgs e)
+        {
+            if (FHCView.ActiveSection.ActiveData.GetCurItem() is HCTableItem)
+            {
+                HCTableItem vTable = FHCView.ActiveSection.ActiveData.GetCurItem() as HCTableItem;
+                vTable.BorderVisible = !vTable.BorderVisible;
+                FHCView.UpdateView();
+            }
+        }
+
+        private void cbbZoom_DropDownClosed(object sender, EventArgs e)
+        {
+            FHCView.Zoom = float.Parse(cbbZoom.Text) / 100;
         }
     }
 }

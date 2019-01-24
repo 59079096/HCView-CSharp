@@ -64,6 +64,18 @@
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="frmRecord.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmRecord.Designer.cs">
+      <DependentUpon>frmRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmRecordPop.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmRecordPop.Designer.cs">
+      <DependentUpon>frmRecordPop.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmTemplate.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -77,6 +89,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="frmPatientRecord.resx">
       <DependentUpon>frmPatientRecord.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmRecord.resx">
+      <DependentUpon>frmRecord.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmTemplate.resx">
       <DependentUpon>frmTemplate.cs</DependentUpon>
@@ -124,6 +139,45 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\00129.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00196.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00057.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00058.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00113.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00114.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00115.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\00115U.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\段00120.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\段00121.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\段00122.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\段00123.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\段落分散对齐09246.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\行间距057341.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

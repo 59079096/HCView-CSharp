@@ -20,7 +20,8 @@ namespace HC.View
 {
     public class HCTextItem : HCCustomItem
     {
-        private string FText, FHyperLink;
+        private string FText = "";
+        private string FHyperLink = "";
 
         public static Type HCDefaultTextItemClass = typeof(HCTextItem);
 

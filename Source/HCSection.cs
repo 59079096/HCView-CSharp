@@ -1772,6 +1772,8 @@ namespace HC.View
                 FActiveData.ApplyParaAlignHorz(aAlign);
                 return true;
             };
+
+            ActiveDataChangeByAction(vEvent);
         }
 
         public void ApplyParaAlignVert(ParaAlignVert aAlign)
@@ -1781,6 +1783,8 @@ namespace HC.View
                 FActiveData.ApplyParaAlignVert(aAlign);
                 return true;
             };
+
+            ActiveDataChangeByAction(vEvent);
         }
 
         public void ApplyParaBackColor(Color aColor)
@@ -1790,6 +1794,8 @@ namespace HC.View
                 FActiveData.ApplyParaBackColor(aColor);
                 return true;
             };
+
+            ActiveDataChangeByAction(vEvent);
         }
 
         public void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode)
@@ -1799,6 +1805,8 @@ namespace HC.View
                 FActiveData.ApplyParaLineSpace(aSpaceMode);
                 return true;
             };
+
+            ActiveDataChangeByAction(vEvent);
         }
 
         /// <summary> 某页在整个节中的Top位置 </summary>

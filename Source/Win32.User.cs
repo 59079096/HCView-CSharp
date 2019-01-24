@@ -494,7 +494,7 @@ namespace HC.Win32
         public int cbSize;
         [MarshalAs(UnmanagedType.U4)]
         public int style;
-        public WNDPROC lpfnWndProc; // not WndProc
+        public IntPtr lpfnWndProc; // not WndProc
         public int cbClsExtra;
         public int cbWndExtra;
         public IntPtr hInstance;

@@ -119,7 +119,7 @@ namespace HC.View
         public void AssignEx(HCTextStyle aSource)
         {
             this.FSize = aSource.Size;
-            this.FFontStyles = aSource.FontStyles;
+            this.FFontStyles.Value = aSource.FontStyles.Value;
             this.FFamily = aSource.Family;
             this.FColor = aSource.Color;
             this.FBackColor = aSource.BackColor;

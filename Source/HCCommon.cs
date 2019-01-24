@@ -856,17 +856,17 @@ namespace HC.View
 
         public bool Contains(byte value)
         {
-            return ((FValue & (byte)value) == (byte)value);
+            return ((FValue & value) == value);
         }
 
         public void InClude(byte value)
         {
-            FValue = (byte)(FValue | (byte)value);
+            FValue = (byte)(FValue | value);
         }
 
         public void ExClude(byte value)
         {
-            FValue = (byte)(FValue & ~(byte)value);
+            FValue = (byte)(FValue & ~value);
         }
 
         public byte Value 

@@ -63,6 +63,9 @@ namespace HC.View
                     break;
 
                 case User.WM_MOUSEMOVE:
+                    if (hwnd != FPopupWindow)
+                        return 0;
+
                     WMMouseMove(wParam, lParam);
                     break;
 
@@ -80,15 +83,15 @@ namespace HC.View
 
         private void RegFormClass()
         {
-            IntPtr hInstance = (IntPtr)Kernel.GetModuleHandle(null);
-            WNDCLASSEX vWndCls = WNDCLASSEX.Build();
+            IntPtr hInstance = Marshal.GetHINSTANCE(this.GetType().Module); //(IntPtr)Kernel.GetModuleHandle(null);
+            WNDCLASSEX vWndCls;
             if (!User.GetClassInfoEx(hInstance, "HCPopupForm", out vWndCls))
             {
-                vWndCls.cbSize = 48;
+                vWndCls = WNDCLASSEX.Build();  //vWndCls.cbSize = 48;
                 vWndCls.lpszClassName = "HCPopupForm";
                 vWndCls.style = User.CS_VREDRAW | User.CS_HREDRAW | User.CS_DBLCLKS | User.CS_DROPSHADOW;
                 vWndCls.hInstance = hInstance;
-                vWndCls.lpfnWndProc = WndProc;
+                vWndCls.lpfnWndProc = Marshal.GetFunctionPointerForDelegate(WndProc);
                 vWndCls.cbClsExtra = 0;
                 vWndCls.cbWndExtra = 8;
                 vWndCls.hIcon = IntPtr.Zero;
@@ -108,7 +111,10 @@ namespace HC.View
         {
             if (User.IsWindow(FPopupWindow) == 0)
             {
-                IntPtr hInstance = (IntPtr)Kernel.GetModuleHandle(null);// Marshal.GetHINSTANCE(null);
+                WndProc -= WindowProcedure;
+                WndProc += WindowProcedure;
+                RegFormClass();
+                IntPtr hInstance = Marshal.GetHINSTANCE(this.GetType().Module);// (IntPtr)Kernel.GetModuleHandle(null);// Marshal.GetHINSTANCE(null);
 
                 FPopupWindow = (IntPtr)User.CreateWindowEx(User.WS_EX_TOPMOST | User.WS_EX_TOOLWINDOW,
                     "HCPopupForm",
@@ -124,6 +130,9 @@ namespace HC.View
             {
                 User.DestroyWindow(FPopupWindow);
                 FPopupWindow = IntPtr.Zero;
+
+                IntPtr hInstance = Marshal.GetHINSTANCE(this.GetType().Module);
+                User.UnregisterClass("HCPopupForm", hInstance);
             }
         }
 
@@ -276,8 +285,9 @@ namespace HC.View
             FWidth = 50;
             FHeight = 100;
 
-            WndProc += WindowProcedure;
-            RegFormClass();
+            //WndProc -= WindowProcedure;
+            //WndProc += WindowProcedure;
+            //RegFormClass();
         }
 
         ~HCPopupForm()
@@ -372,7 +382,7 @@ namespace HC.View
 
         public void Popup(int x, int y)
         {
-            CreateFormHandle();
+            CreateFormHandle();  // 创建下拉弹出窗体
             RECT vBound = new RECT();
             User.GetWindowRect(FPopupWindow, ref vBound);
 

@@ -13,7 +13,7 @@ namespace EMRView
 {
     public partial class frmTemplate : Form
     {
-        private EmrView FEmrView;
+        private frmRecord frmRecord;
         private emrDB emrDB;
         private string FOpenedTID;
 
@@ -43,15 +43,6 @@ namespace EMRView
 
         private void frm_Template_Load(object sender, EventArgs e)
         {
-            if (FEmrView == null)
-            {
-                FEmrView = new EmrView();
-                this.Controls.Add(FEmrView);
-                FEmrView.Parent = this.splitContainer1.Panel2;
-                FEmrView.Dock = DockStyle.Fill;
-                FEmrView.BringToFront();
-            }
-
             if (emrDB == null)
                 emrDB = new emrDB();
 
@@ -60,6 +51,16 @@ namespace EMRView
 
         private void tvTemplate_DoubleClick(object sender, EventArgs e)
         {
+            if (frmRecord == null)
+            {
+                frmRecord = new frmRecord();
+                frmRecord.TopLevel = false;
+                frmRecord.Dock = DockStyle.Fill;
+                //this.splitContainer1.Panel2.Controls.Add(frmRecord);
+                frmRecord.Parent = this.splitContainer1.Panel2;
+                frmRecord.Show();
+            }
+
             TreeNode vNode = tvTemplate.SelectedNode;
 
             if (vNode != null)
@@ -72,9 +73,9 @@ namespace EMRView
                     try
                     {
                         if (stream.Length > 0)
-                            FEmrView.LoadFromStream(stream);
+                            frmRecord.emrView.LoadFromStream(stream);
                         else
-                            FEmrView.Clear();
+                            frmRecord.emrView.Clear();
                     }
                     finally
                     {
@@ -83,65 +84,10 @@ namespace EMRView
                     }
                 }
                 else
-                    FEmrView.Clear();
+                    frmRecord.emrView.Clear();
             }
             else
                 FOpenedTID = "";
-        }
-
-        private void tsbNew_Click(object sender, EventArgs e)
-        {
-            FEmrView.FileName = "";
-            FEmrView.Clear();
-        }
-
-        private void tsbOpen_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog vOpenDlg = new OpenFileDialog();
-            try
-            {
-                vOpenDlg.Filter = "文件|*" + HC.View.HC.HC_EXT;
-                if (vOpenDlg.ShowDialog() == DialogResult.OK)
-                {
-                    if (vOpenDlg.FileName != "")
-                    {
-                        Application.DoEvents();
-                        FEmrView.LoadFromFile(vOpenDlg.FileName);
-                    }
-                }
-            }
-            finally
-            {
-                vOpenDlg.Dispose();
-                GC.Collect();
-            }
-        }
-
-        private void tsbUndo_Click(object sender, EventArgs e)
-        {
-            FEmrView.Undo();
-        }
-
-        private void tsbRedo_Click(object sender, EventArgs e)
-        {
-            FEmrView.Redo();
-        }
-
-        private void tsbSave_Click(object sender, EventArgs e)
-        {
-            HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-            MemoryStream stream = new MemoryStream();
-            try
-            {
-                FEmrView.SaveToStream(stream, false, vParts);
-                emrDB.SaveTemplateContent(FOpenedTID, stream);
-            }
-            finally
-            {
-                stream.Close();//关闭文件对象
-                stream.Dispose();
-            }
-            
         }
     }
 }

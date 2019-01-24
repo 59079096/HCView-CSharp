@@ -916,7 +916,6 @@ namespace HC.View
                 case User.WM_IME_COMPOSITION:
                     if ((Message.LParam.ToInt32() & Imm.GCS_RESULTSTR) != 0)
                     {
-                        
                         if (FhImc != IntPtr.Zero)
                         {
                             int vSize = Imm.ImmGetCompositionString(FhImc, Imm.GCS_RESULTSTR, null, 0);
@@ -929,6 +928,8 @@ namespace HC.View
                                 {
                                     if (DoProcessIMECandi(vS))
                                         InsertText(vS);
+
+                                    return;
                                 }
                             }
                             

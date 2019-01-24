@@ -48,9 +48,9 @@ namespace HC.View
             int vLen = vAction.Text.Length;
             string vText = Items[vAction.ItemNo].Text;
             if (aIsUndo)
-                vText = vText.Insert(vAction.Offset + 1, vAction.Text);
+                vText = vText.Insert(vAction.Offset - 1, vAction.Text);
             else
-                vText = vText.Remove(vAction.Offset + 1, vLen);
+                vText = vText.Remove(vAction.Offset - 1, vLen);
 
             aCaretOffset = vAction.Offset - 1;
             Items[vAction.ItemNo].Text = vText;

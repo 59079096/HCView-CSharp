@@ -320,7 +320,7 @@ namespace HC.View
             {
                 if (DrawItems.Count > vLastDrawItemNo)
                 {
-                    int vLastItemNo = -1;
+                    int vLastItemNo = -1, vFmtTopOffset = -1;;
                     for (int i = vLastDrawItemNo + 1; i < DrawItems.Count; i++)  // 从格式化变动段的下一段开始
                     {
                         // 处理格式化后面各DrawItem对应的ItemNo偏移
@@ -335,7 +335,7 @@ namespace HC.View
                         {
                             // 将原格式化因分页等原因引起的整体下移或增加的高度恢复回来
                             // 如果不考虑上面处理ItemNo的偏移，可将TTableCellData.ClearFormatExtraHeight方法写到基类，这里直接调用
-                            int vFmtTopOffset = -1;
+                            
                             if (DrawItems[i].LineFirst)
                                 vFmtTopOffset = DrawItems[i - 1].Rect.Bottom - DrawItems[i].Rect.Top;
 
