@@ -83,10 +83,11 @@ namespace HC.View
             // 1.8 增加了段垂直对齐样式的存储
             // 1.9 重构了颜色的存储方式以便于兼容其他语言生成的文件
             // 2.0 ImageItem存图像时增加图像数据大小的存储以兼容不同语言图像数据的存储方式
-            HC_FileVersion = "2.0";
+            // 2.1 GifImage保存读取改用兼容其他语言的方式
+            HC_FileVersion = "2.1";
 
         public const ushort
-            HC_FileVersionInt = 20;
+            HC_FileVersionInt = 21;
 
         public const byte
             HC_PROGRAMLANGUAGE = 2;  // 1字节表示使用的编程语言 1:delphi, 2:C#, 3:VC++, 4:HTML5

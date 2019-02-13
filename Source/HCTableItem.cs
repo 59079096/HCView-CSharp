@@ -2477,6 +2477,16 @@ namespace HC.View
             return FRows[aRow][aCol];
         }
 
+        protected int GetColWidth(int aIndex)
+        {
+            return FColWidths[aIndex];
+        }
+
+        protected void SetColWidth(int aIndex, int aWidth)
+        {
+            FColWidths[aIndex] = aWidth;
+        }
+
         protected bool InsertCol(int aCol, int aCount)
         {
             /* TODO : 根据各行当前列平均减少一定的宽度给要插入的列 }*/

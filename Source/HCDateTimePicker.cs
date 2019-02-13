@@ -45,6 +45,7 @@ namespace HC.View
 
         }
         #endregion
+
         private RECT GetAreaRect(DateTimeArea aArea)
         {
             RECT Result = new RECT(0, 0, 0, 0);

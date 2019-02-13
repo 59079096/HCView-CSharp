@@ -31,6 +31,12 @@ namespace HC.View
         pavTop, pavCenter, pavBottom
     }
 
+    /// <summary> 首行缩进方式 </summary>
+    public enum ParaFirstLineIndent : byte
+    {
+        pfiNone, pfiIndented, pfiHanging
+    }
+
     public enum ParaLineSpaceMode : byte
     {
         pls100, pls115, pls150, pls200, plsFix

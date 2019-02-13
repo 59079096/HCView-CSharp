@@ -840,9 +840,9 @@ namespace HC.View
         {
             //base.OnMouseWheel(e);
             if (FPageScrollModel == HCPageScrollModel.psmVertical)
-                FVScrollBar.Position -= e.Delta / 1;
+                FVScrollBar.Position -= e.Delta;
             else
-                FHScrollBar.Position -= e.Delta / 1;
+                FHScrollBar.Position -= e.Delta;
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -1256,7 +1256,10 @@ namespace HC.View
         public void FormatData()
         {
             for (int i = 0; i <= FSections.Count - 1; i++)
+            {
                 FSections[i].FormatData();
+                FSections[i].BuildSectionPages(0);
+            }
 
             FStyle.UpdateInfoRePaint();
             FStyle.UpdateInfoReCaret();
@@ -2232,6 +2235,8 @@ namespace HC.View
             }
         }
 
+        /// <summary> 导出为html格式 </summary>
+        /// <param name="aSeparateSrc">True：图片等保存到文件夹，False以base64方式存储到页面中</param>
         public void SaveToHtml(string aFileName, bool aSeparateSrc = false)
         {
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
@@ -2313,7 +2318,7 @@ namespace HC.View
         {
             int[] vPages = new int[AEndPageIndex - AStartPageIndex + 1];
             for (int i = AStartPageIndex; i <= AEndPageIndex; i++)
-                vPages[i] = i;
+                vPages[i - AStartPageIndex] = i;
     
             return Print(APrinter, ACopies, vPages);
         }

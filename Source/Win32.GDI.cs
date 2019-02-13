@@ -145,7 +145,7 @@ namespace HC.Win32
 		public SIZE szlMillimeters;
 	}
 
-	public struct TEXTMETRIC 
+	public struct TEXTMETRICW 
 	{
 		public int tmHeight;
 		public int tmAscent;
@@ -158,10 +158,10 @@ namespace HC.Win32
 		public int tmOverhang;
 		public int tmDigitizedAspectX;
 		public int tmDigitizedAspectY;
-		public byte tmFirstChar;
-		public byte tmLastChar;
-		public byte tmDefaultChar;
-		public byte tmBreakChar;
+		public Char tmFirstChar;
+        public Char tmLastChar;
+        public Char tmDefaultChar;
+        public Char tmBreakChar;
 		public byte tmItalic;
 		public byte tmUnderlined;
 		public byte tmStruckOut;
@@ -305,6 +305,24 @@ namespace HC.Win32
         public string lfFaceName;         
     }
 
+    public struct TT_HHEA
+    {
+        public uint Version;
+        public Int16 Ascender;
+        public Int16 Descender;
+        public Int16 LineGap;
+        public UInt16 advanceWidthMax;
+        public Int16 minLeftSideBearing;
+        public Int16 minRightSideBearing;
+        public Int16 xMaxExtent;
+        public Int16 caretSlopeRise;
+        public Int16 caretSlopeRun;
+        public Int16 caretOffset;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)] public Int16[] reserved;
+        public Int16 metricDataFormat;
+        public UInt16 numberOfHMetrics;
+    }
+
 	public struct NONCLIENTMETRICS 
 	{
 		public int cbSize;
@@ -333,7 +351,7 @@ namespace HC.Win32
 
 	public struct PANOSE 
 	{
-		public int ulculture;
+		//jtpublic int ulculture;
 		public byte bFamilyType;
 		public byte bSerifStyle;
 		public byte bWeight;
@@ -418,36 +436,36 @@ namespace HC.Win32
 		public double abcfC;
 	}
 
-	public struct OUTLINETEXTMETRIC 
+	public struct OUTLINETEXTMETRICW 
 	{
 		public int otmSize;
-		public TEXTMETRIC otmTextMetrics;
+		public TEXTMETRICW otmTextMetrics;
 		public byte otmFiller;
 		public PANOSE otmPanoseNumber;
-		public int otmfsSelection;
-		public int otmfsType;
+		public uint otmfsSelection;
+        public uint otmfsType;
 		public int otmsCharSlopeRise;
 		public int otmsCharSlopeRun;
 		public int otmItalicAngle;
-		public int otmEMSquare;
+        public uint otmEMSquare;
 		public int otmAscent;
 		public int otmDescent;
-		public int otmLineGap;
-		public int otmsCapEmHeight;
-		public int otmsXHeight;
+        public uint otmLineGap;
+        public uint otmsCapEmHeight;
+        public uint otmsXHeight;
 		public RECT otmrcFontBox;
 		public int otmMacAscent;
 		public int otmMacDescent;
-		public int otmMacLineGap;
-		public int otmusMinimumPPEM;
+        public uint otmMacLineGap;
+        public uint otmusMinimumPPEM;
 		public POINT otmptSubscriptSize;
 		public POINT otmptSubscriptOffset;
 		public POINT otmptSuperscriptSize;
 		public POINT otmptSuperscriptOffset;
-		public int otmsStrikeoutSize;
+        public uint otmsStrikeoutSize;
 		public int otmsStrikeoutPosition;
+        public int otmsUnderscoreSize;
 		public int otmsUnderscorePosition;
-		public int otmsUnderscoreSize;
 		public string otmpFamilyName;
 		public string otmpFaceName;
 		public string otmpStyleName;
@@ -571,8 +589,8 @@ namespace HC.Win32
 
 	public struct FONTSIGNATURE 
 	{
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst=4)] public int fsUsb;
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst=2)] public int fsCsb;
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst=4)] public uint[] fsUsb;
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst=2)] public uint[] fsCsb;
 	}
 
 	public struct CHARSETINFO 
@@ -808,7 +826,8 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int GetEnhMetaFileDescription(HANDLE hemf, int cchBuffer, string lpszDescription);
 		[DllImport("gdi32")] public static extern int GetEnhMetaFileHeader(HANDLE hemf, int cbBuffer, ref ENHMETAHEADER lpemh);
 		[DllImport("gdi32")] public static extern int GetEnhMetaFilePaletteEntries(HANDLE hemf, int cEntries, ref PALETTEENTRY lppe);
-		[DllImport("gdi32")] public static extern int GetFontData(HDC hdc, int dwTable, int dwOffset, IntPtr lpvBuffer, int cbData);
+		//jt[DllImport("gdi32")] public static extern int GetFontData(HDC hdc, int dwTable, int dwOffset, IntPtr lpvBuffer, int cbData);
+        [DllImport("gdi32")] public static extern int GetFontData(HDC hdc, int dwTable, int dwOffset, ref TT_HHEA lpvBuffer, int cbData);
 		[DllImport("gdi32")] public static extern int GetFontLanguageInfo(HDC hdc);
 		[DllImport("gdi32")] public static extern int GetGlyphOutline(HDC hdc, int uChar, int fuFormat, ref GLYPHMETRICS lpgm, int cbBuffer, IntPtr lpBuffer, ref MAT2 lpmat2);
 		[DllImport("gdi32")] public static extern int GetGraphicsMode(HDC hdc);
@@ -824,7 +843,7 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int GetNearestPaletteIndex(HANDLE hPalette, int crColor);
 		[DllImport("gdi32")] public static extern int GetObject(HANDLE hObject, int nCount, IntPtr lpObject);
 		[DllImport("gdi32")] public static extern int GetObjectType(HANDLE hgdiobj);
-		[DllImport("gdi32")] public static extern int GetOutlineTextMetrics(HDC hdc, int cbData, ref OUTLINETEXTMETRIC lpotm);
+		[DllImport("gdi32")] public static extern int GetOutlineTextMetrics(HDC hdc, int cbData, ref OUTLINETEXTMETRICW lpotm);
 		[DllImport("gdi32")] public static extern int GetPaletteEntries(HANDLE hPalette, int wStartIndex, int wNumEntries, ref PALETTEENTRY lpPaletteEntries);
 		[DllImport("gdi32")] public static extern int GetPath(HDC hdc, ref POINT lpPoint, Byte lpTypes, int nSize);
 		[DllImport("gdi32")] public static extern int GetPixel(HDC hdc, int x, int y);
@@ -855,7 +874,7 @@ namespace HC.Win32
         public static extern int GetTextExtentPoint32(HDC hdc, string lpsz, int cbString, ref SIZE lpSize);
 		
         [DllImport("gdi32")] public static extern int GetTextFace(HDC hdc, int nCount, string lpFacename);
-		[DllImport("gdi32")] public static extern int GetTextMetrics(HDC hdc, ref TEXTMETRIC lpMetrics);
+		[DllImport("gdi32")] public static extern int GetTextMetrics(HDC hdc, ref TEXTMETRICW lpMetrics);
 		[DllImport("gdi32")] public static extern int GetViewportExtEx(HDC hdc, ref SIZE lpSize);
 		[DllImport("gdi32")] public static extern int GetViewportOrgEx(HDC hdc, ref POINT lpPoint);
 		[DllImport("gdi32")] public static extern int GetWinMetaFileBits(HANDLE hemf, int cbBuffer, Byte lpbBuffer, int fnMapMode, HWND hdcRef);
@@ -1364,7 +1383,8 @@ namespace HC.Win32
 		public const int GCP_REORDER = 0x2;
 		public const int GCP_SYMSWAPOFF = 0x800000;
 		public const int GCP_USEKERNING = 0x8;
-		public const int GDI_ERROR = 0xFFFF;
+		//jtpublic const int GDI_ERROR = 0xFFFF;
+        public const uint GDI_ERROR = 0xFFFFFFFF;
 		public const int GETCOLORTABLE = 5;
 		public const int GETDEVICEUNITS = 42;
 		public const int GETEXTENDEDTEXTMETRICS = 256;

@@ -636,26 +636,34 @@ namespace HC.View
             Undo_GroupBegin(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             try
             {
-                // 插入头
-                vDomainItem = CreateDefaultDomainItem() as HCDomainItem;
-                if (aMouldDomain != null)
-                    vDomainItem.Assign(aMouldDomain);
-                vDomainItem.MarkType = MarkType.cmtBeg;
-                if (FActiveDomain.BeginNo >= 0)
-                    vDomainItem.Level = (byte)((Items[FActiveDomain.BeginNo] as HCDomainItem).Level + 1);
-                
-                Result = InsertItem(vDomainItem);
-                
-                if (Result)  // 插入尾
+                this.BeginBatchInsert();
+                try
                 {
+                    // 插入头
                     vDomainItem = CreateDefaultDomainItem() as HCDomainItem;
                     if (aMouldDomain != null)
                         vDomainItem.Assign(aMouldDomain);
-                    vDomainItem.MarkType = MarkType.cmtEnd;
+                    vDomainItem.MarkType = MarkType.cmtBeg;
                     if (FActiveDomain.BeginNo >= 0)
                         vDomainItem.Level = (byte)((Items[FActiveDomain.BeginNo] as HCDomainItem).Level + 1);
-                
+
                     Result = InsertItem(vDomainItem);
+
+                    if (Result)  // 插入尾
+                    {
+                        vDomainItem = CreateDefaultDomainItem() as HCDomainItem;
+                        if (aMouldDomain != null)
+                            vDomainItem.Assign(aMouldDomain);
+                        vDomainItem.MarkType = MarkType.cmtEnd;
+                        if (FActiveDomain.BeginNo >= 0)
+                            vDomainItem.Level = (byte)((Items[FActiveDomain.BeginNo] as HCDomainItem).Level + 1);
+
+                        Result = InsertItem(vDomainItem);
+                    }
+                }
+                finally
+                {
+                    this.EndBatchInsert();
                 }
             }
             finally
@@ -993,25 +1001,17 @@ namespace HC.View
                 vKeyword = aKeyword;
             
             int vItemNo = -1, vOffset = -1;
-            if (aForward)
+            if (this.SelectInfo.StartItemNo < 0)
+            {
+                vItemNo = 0;
+                vOffset = 0;
+            }
+            else
             {
                 vItemNo = this.SelectInfo.StartItemNo;
                 vOffset = this.SelectInfo.StartItemOffset;
             }
-            else  // 向后找
-            {
-                if (this.SelectInfo.EndItemNo < 0)
-                {
-                    vItemNo = this.SelectInfo.StartItemNo;
-                    vOffset = this.SelectInfo.StartItemOffset;
-                }
-                else  // 没有选中结束，从选中起始往后
-                {
-                    vItemNo = this.SelectInfo.EndItemNo;
-                    vOffset = this.SelectInfo.EndItemOffset;
-                }
-            }
-
+            
             Result = DoSearchByOffset(aKeyword, vKeyword, aForward, aMatchCase, vItemNo, vOffset);
             
             if (!Result)

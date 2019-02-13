@@ -55,6 +55,8 @@ namespace HC.View
         private Color FSelColor, FBackgroudColor;
         private List<HCTextStyle> FTextStyles;
         private List<HCParaStyle> FParaStyles;
+        private int FPixelsPerInchX, FPixelsPerInchY;  // 1英寸对应的像素数
+        private Single FFontSizeScale;  // 字体需要缩放的比例
         private Single FPixelsPerMMX, FPixelsPerMMY;  // 1毫米dpi数
         private UpdateInfo FUpdateInfo;
         private bool FShowParaLastMark;  // 是否显示换行符
@@ -98,8 +100,13 @@ namespace HC.View
         {
             FDefCanvas = CreateStyleCanvas();
 
+            FPixelsPerInchX = GDI.GetDeviceCaps(FDefCanvas.Handle, GDI.LOGPIXELSX);  // 每英寸水平逻辑像素数，1英寸dpi数
+            FPixelsPerInchY = GDI.GetDeviceCaps(FDefCanvas.Handle, GDI.LOGPIXELSY);  // 每英寸水平逻辑像素数，1英寸dpi数
+
             FPixelsPerMMX = GDI.GetDeviceCaps(FDefCanvas.Handle, GDI.LOGPIXELSX) / 25.4f;  // 1毫米对应像素 = 1英寸dpi数 / 1英寸对应毫米
             FPixelsPerMMY = GDI.GetDeviceCaps(FDefCanvas.Handle, GDI.LOGPIXELSY) / 25.4f;  // 1毫米对应像素 = 1英寸dpi数 / 1英寸对应毫米
+            
+            FFontSizeScale = 72.0f / FPixelsPerInchX;
 
             FBackgroudColor = Color.FromArgb(255, 255, 255);
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
@@ -440,6 +447,16 @@ namespace HC.View
             get { return FDefCanvas; }
         }
 
+        public int PixelsPerInchX
+        {
+            get { return FPixelsPerInchX; }
+        }
+
+        public int PixelsPerInchY
+        {
+            get { return FPixelsPerInchY; }
+        }
+
         public Single PixelsPerMMX
         {
             get { return FPixelsPerMMX; }
@@ -448,6 +465,11 @@ namespace HC.View
         public Single PixelsPerMMY
         {
             get { return FPixelsPerMMY; }
+        }
+
+        public Single FontSizeScale
+        {
+            get { return FFontSizeScale; }
         }
 
         public UpdateInfo UpdateInfo

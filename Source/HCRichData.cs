@@ -50,6 +50,9 @@ namespace HC.View
             FSelectSeekNo,
             FSelectSeekOffset;  // 选中操作时的游标
 
+        /// <summary> 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确 </summary>
+        private int FBatchInsertCount;
+    
         private bool FReadOnly, FSelecting, FDraging;
 
         private DataItemEventHandler FOnItemResized;
@@ -719,9 +722,9 @@ namespace HC.View
             get { return FMouseMoveDrawItemNo; }
         }
 
-        public HCRichData(HCStyle aStyle)
-            : base(aStyle)
+        public HCRichData(HCStyle aStyle) : base(aStyle)
         {
+            FBatchInsertCount = 0;
             FReadOnly = false;
             InitializeField();
             SetEmptyData();
@@ -1364,7 +1367,14 @@ namespace HC.View
                         else  // Item部分选中
                         {
                             if (vEndItem.StyleNo < HCStyle.Null)
+                            {
+                                if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
+                                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                                else
+                                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
                                 (vEndItem as HCCustomRectItem).DeleteSelected();
+                            }
                             else  // 同一个TextItem
                             {
                                 string vText = vEndItem.Text;
@@ -2234,7 +2244,7 @@ namespace HC.View
                     DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
             }
             else
-                if (FSelecting)
+                if (FSelecting)  // 划选
                 {
                     if ((Items[FMouseDownItemNo].StyleNo < HCStyle.Null)
                         && (FMouseDownItemOffset == HC.OffsetInner))
@@ -2242,9 +2252,9 @@ namespace HC.View
                         FMouseMoveItemNo = FMouseDownItemNo;
                         FMouseMoveItemOffset = FMouseDownItemOffset;
 
-                        if (vMouseMoveItemNo == FMouseDownItemNo)
+                        if (vMouseMoveItemNo == FMouseDownItemNo)  // 在按下的RectItem上移动
                             FMouseMoveRestrain = vRestrain;
-                        else
+                        else  // 都视为约束
                             FMouseMoveRestrain = true;
                     }
                     else
@@ -4326,6 +4336,21 @@ namespace HC.View
                 return;
         }
 
+        public bool BatchInsert()
+        {
+            return FBatchInsertCount > 0;
+        }
+
+        public void BeginBatchInsert()
+        {
+            FBatchInsertCount++;
+        }
+
+        public void EndBatchInsert()
+        {
+            FBatchInsertCount--;
+        }
+
         /// <summary> 初始化相关字段和变量 </summary>
         public override void InitializeField()
         {
@@ -4703,7 +4728,7 @@ namespace HC.View
             this.InitializeField();
 
             int vAddStartNo = 0;
-            if (Items[Items.Count - 1].CanConcatItems(aSrcData.Items[0]))
+            if ((this.Items.Count > 0) && (Items[Items.Count - 1].CanConcatItems(aSrcData.Items[0])))
             {
                 Items[Items.Count - 1].Text = Items[Items.Count - 1].Text + aSrcData.Items[0].Text;
                 vAddStartNo = 1;

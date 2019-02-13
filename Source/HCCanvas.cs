@@ -755,7 +755,7 @@ namespace HC.View
             }
         }
 
-        public void GetTextMetrics(ref TEXTMETRIC aTextMetric)
+        public void GetTextMetrics(ref TEXTMETRICW aTextMetric)
         {
             GDI.GetTextMetrics(FHandle, ref aTextMetric);
         }

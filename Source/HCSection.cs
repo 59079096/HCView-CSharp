@@ -1186,7 +1186,11 @@ namespace HC.View
             if (FActiveData != value)
             {
                 if (FActiveData != null)
+                {
+                    FActiveData.DisSelect();
                     FActiveData.DisActive();  // 旧的取消激活
+                }
+
                 FActiveData = value;
                 FStyle.UpdateInfoReScroll();
             }
@@ -1923,7 +1927,7 @@ namespace HC.View
                 RECT vDrawRect = FPageData.DrawItems[ADrawItemNo].Rect;
                 
                 //if vSuplus = 0 then  // 第一次计算分页
-                HC.InflateRect(ref vDrawRect, 0, -FPageData.GetLineSpace(ADrawItemNo) / 2);  // 减掉行间距，为了达到去年行间距能放下不换页的效果
+                HC.InflateRect(ref vDrawRect, 0, -FPageData.GetLineBlankSpace(ADrawItemNo) / 2);  // 减掉行间距，为了达到去年行间距能放下不换页的效果
         
                 vRectItem.CheckFormatPageBreak(  // 去除行间距后，判断表格跨页位置
                     FPages.Count - 1,
@@ -1944,7 +1948,7 @@ namespace HC.View
                 else  // vBreakSeat >= 0 从vBreakSeat位置跨页
                 if (vFmtOffset > 0)
                 {
-                    vFmtOffset = vFmtOffset + FPageData.GetLineSpace(ADrawItemNo) / 2;  // 整体向下移动增加上面减掉的行间距
+                    vFmtOffset = vFmtOffset + FPageData.GetLineBlankSpace(ADrawItemNo) / 2;  // 整体向下移动增加上面减掉的行间距
                     vSuplus = vSuplus + vFmtOffset + vFmtHeightInc;
                     HC.OffsetRect(ref FPageData.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
                     vPageDataFmtTop = vPageDataFmtBottom;

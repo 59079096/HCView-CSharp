@@ -21,7 +21,7 @@ using System.Xml;
 namespace HC.View
 {
     /// <summary> 垂直对齐方式：上、居中、下) </summary>
-    public enum AlignVert : byte
+    public enum HCAlignVert : byte
     {
         cavTop, cavCenter, cavBottom
     }
@@ -40,7 +40,7 @@ namespace HC.View
 
         private Color FBackgroundColor;
 
-        private AlignVert FAlignVert;
+        private HCAlignVert FAlignVert;
 
         private HCBorderSides FBorderSides;
 
@@ -76,7 +76,7 @@ namespace HC.View
         public HCTableCell(HCStyle AStyle) : this()
         {
             FCellData = new HCTableCellData(AStyle);
-            FAlignVert = View.AlignVert.cavTop;
+            FAlignVert = View.HCAlignVert.cavTop;
             FBorderSides = new HCBorderSides();
             FBorderSides.InClude((byte)BorderSide.cbsLeft);
             FBorderSides.InClude((byte)BorderSide.cbsTop);
@@ -170,7 +170,7 @@ namespace HC.View
             {
                 byte vByte = 0;
                 vByte = (byte)aStream.ReadByte();
-                FAlignVert = (View.AlignVert)vByte;  // 垂直对齐方式
+                FAlignVert = (View.HCAlignVert)vByte;  // 垂直对齐方式
 
                 HC.HCLoadColorFromStream(aStream, ref FBackgroundColor);  // 背景色
             }
@@ -212,7 +212,7 @@ namespace HC.View
             FHeight = int.Parse(aNode.Attributes["height"].Value);
             FRowSpan = int.Parse(aNode.Attributes["rowspan"].Value);
             FColSpan = int.Parse(aNode.Attributes["colspan"].Value);
-            FAlignVert = (AlignVert)(byte.Parse(aNode.Attributes["vert"].Value));
+            FAlignVert = (HCAlignVert)(byte.Parse(aNode.Attributes["vert"].Value));
             FBackgroundColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
             HC.SetBorderSideByPro(aNode.Attributes["border"].Value, FBorderSides);
 
@@ -232,10 +232,10 @@ namespace HC.View
                 FCellData.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
                 if (aCaretInfo.Visible)
                 {
-                    if (FAlignVert == AlignVert.cavBottom)
+                    if (FAlignVert == HCAlignVert.cavBottom)
                         aCaretInfo.Y = aCaretInfo.Y + FHeight - FCellData.Height;
                     else
-                    if (FAlignVert == AlignVert.cavCenter)
+                    if (FAlignVert == HCAlignVert.cavCenter)
                         aCaretInfo.Y = aCaretInfo.Y + (FHeight - FCellData.Height) / 2;
                 }
             }
@@ -260,15 +260,15 @@ namespace HC.View
                 int vTop = 0;
                 switch (FAlignVert)
                 {
-                    case View.AlignVert.cavTop: 
+                    case View.HCAlignVert.cavTop: 
                         vTop = aDataDrawTop;
                         break;
 
-                    case View.AlignVert.cavBottom: 
+                    case View.HCAlignVert.cavBottom: 
                         vTop = aDataDrawTop + FHeight - FCellData.Height;
                         break;
 
-                    case View.AlignVert.cavCenter: 
+                    case View.HCAlignVert.cavCenter: 
                         vTop = aDataDrawTop + (FHeight - FCellData.Height) / 2;
                         break;
                 }
@@ -323,7 +323,7 @@ namespace HC.View
             set { SetActive(value); }
         }
 
-        public AlignVert AlignVert
+        public HCAlignVert AlignVert
         {
             get { return FAlignVert; }
             set { FAlignVert = value; }

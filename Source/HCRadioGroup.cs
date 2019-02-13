@@ -199,6 +199,7 @@ namespace HC.View
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
+            FItems.Clear();
 
             ushort vSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vSize);
