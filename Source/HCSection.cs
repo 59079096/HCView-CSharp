@@ -2337,6 +2337,17 @@ namespace HC.View
             FPageData.ReFormat(0);
         }
 
+        /// <summary> 设置选中范围(如不需要更新界面可直接调用Data的SetSelectBound) </summary>
+        public void ActiveDataSetSelectBound(int aStartNo, int aStartOffset, int aEndNo, int aEndOffset)
+        {
+            FActiveData.SetSelectBound(aStartNo, aStartOffset, aEndNo, aEndOffset, false);
+            FStyle.UpdateInfoRePaint();
+            FStyle.UpdateInfoReCaret();
+            FStyle.UpdateInfoReScroll();
+
+            DoActiveDataCheckUpdateInfo();
+        }
+        
         public void Undo(HCUndo aUndo)
         {
             HCUndoList vUndoList = DoDataGetUndoList();

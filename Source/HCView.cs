@@ -34,7 +34,8 @@ namespace HC.View
         private IntPtr FDC = IntPtr.Zero;
         private IntPtr FMemDC = IntPtr.Zero;
         private IntPtr FhImc = IntPtr.Zero;
-        private int FActiveSectionIndex, FDisplayFirstSection, FDisplayLastSection, FUpdateCount;
+        private int FActiveSectionIndex, FDisplayFirstSection, FDisplayLastSection;
+        private uint FUpdateCount;
         private Single FZoom;
         private bool FAutoZoom;  // 自动缩放
         private bool FIsChanged;  // 是否发生了改变
@@ -1892,7 +1893,9 @@ namespace HC.View
         /// <summary> 结束批量重绘 </summary>
         public void EndUpdate()
         {
-            FUpdateCount--;
+            if (FUpdateCount > 0)
+                FUpdateCount--;
+
             DoMapChanged();
         }
 

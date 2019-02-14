@@ -688,7 +688,7 @@ namespace HC.View
         }
 
         /// <summary> 设置选中范围，仅供外部使用内部不使用 </summary>
-        public void SetSelectBound(int aStartNo, int  aStartOffset, int  aEndNo, int  aEndOffset)
+        public void SetSelectBound(int aStartNo, int aStartOffset, int aEndNo, int aEndOffset, bool aSilence = true)
         {
             int vStartNo = -1, vEndNo = -1, vStartOffset = -1, vEndOffset = -1;
             if (aEndNo < 0)
@@ -745,6 +745,9 @@ namespace HC.View
                 SelectInfo.EndItemNo = vEndNo;
                 SelectInfo.EndItemOffset = vEndOffset;
             }
+
+            if (!aSilence)
+                ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, true);
         }
 
         /// <summary> 光标选到指定Item的最后面 </summary>
