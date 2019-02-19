@@ -2238,14 +2238,14 @@ namespace HC.View
             aStream.Position = vEndPos;
         }
 
-        public void SaveToText(string aFileName, System.Text.Encoding aEncoding)
+        public void SaveToTextFile(string aFileName, System.Text.Encoding aEncoding)
         {
-            FPageData.SaveToText(aFileName, aEncoding);
+            FPageData.SaveToTextFile(aFileName, aEncoding);
         }
 
-        public void LoadFromText(string aFileName, Encoding aEncoding)
+        public void LoadFromTextFile(string aFileName, Encoding aEncoding)
         {
-            FPageData.LoadFromText(aFileName, aEncoding);
+            FPageData.LoadFromTextFile(aFileName, aEncoding);
             BuildSectionPages(0);
         }
 

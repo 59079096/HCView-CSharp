@@ -633,18 +633,8 @@ namespace HC.View
             return this.InsertItem(vPageBreak);
         }
 
-        //
         // 保存
-        public string GetTextStr()
-        {
-            string Result = "";
-            for (int i = 0; i <= Items.Count - 1; i++)
-                Result = Result + Items[i].Text;
-
-            return Result;
-        }
-
-        public void SaveToText(string aFileName, Encoding aEncoding)
+        public void SaveToTextFile(string aFileName, Encoding aEncoding)
         {
             FileStream vStream = new FileStream(aFileName, FileMode.Create, FileAccess.Write);
             try
@@ -659,7 +649,7 @@ namespace HC.View
 
         public void SaveToTextStream(Stream aStream, Encoding aEncoding)
         {
-            byte[] vBuffer = aEncoding.GetBytes(GetTextStr());
+            byte[] vBuffer = aEncoding.GetBytes(SaveToText());
             byte[] vPreamble = aEncoding.GetPreamble();
             if (vPreamble.Length > 0)
                 aStream.Write(vPreamble, 0, vPreamble.Length);
@@ -667,7 +657,7 @@ namespace HC.View
         }
 
         // 读取
-        public void LoadFromText(string aFileName, Encoding aEncoding)
+        public void LoadFromTextFile(string aFileName, Encoding aEncoding)
         {
             FileStream vStream = new FileStream(aFileName, FileMode.Open, FileAccess.Read);
             try

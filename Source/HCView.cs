@@ -2073,19 +2073,19 @@ namespace HC.View
         }
 
         /// <summary> 文档保存为PDF格式 </summary>
-        public void SaveToText(string aFileName, System.Text.Encoding aEncoding)
+        public void SaveToTextFile(string aFileName, System.Text.Encoding aEncoding)
         {
             for (int i = 0; i <= Sections.Count - 1; i++)
-                FSections[i].SaveToText(aFileName, aEncoding);
+                FSections[i].SaveToTextFile(aFileName, aEncoding);
         }
 
         // 读取文档
         /// <summary> 读取Txt文件 </summary>
-        public void LoadFromText(string aFileName, System.Text.Encoding aEncoding)
+        public void LoadFromTextFile(string aFileName, System.Text.Encoding aEncoding)
         {
             Clear();
             FStyle.Initialize();
-            ActiveSection.LoadFromText(aFileName, aEncoding);
+            ActiveSection.LoadFromTextFile(aFileName, aEncoding);
         }
 
         /// <summary> 文档保存到流 </summary>

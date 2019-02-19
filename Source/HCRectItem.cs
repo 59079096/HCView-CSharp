@@ -755,6 +755,14 @@ namespace HC.View
             return FTextStyleNo;
         }
 
+        public override void MarkStyleUsed(bool aMark)
+        {
+            if (aMark)
+                OwnerData.Style.TextStyles[FTextStyleNo].CheckSaveUsed = true;
+            else
+                FTextStyleNo = OwnerData.Style.TextStyles[FTextStyleNo].TempNo;
+        }
+
         public override bool SelectExists()
         {
             return this.Options.Contains(ItemOption.ioSelectComplate);

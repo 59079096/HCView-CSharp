@@ -450,9 +450,9 @@ namespace HC.View
         }
 
         /// <summary> 设置光标位置到指定的Item指定位置 </summary>
-        /// <param name="aItemNo">指定ItemNo</param>
-        /// <param name="aOffset">指定位置</param>
-        /// <param name="aNextWhenMid">如果此位置前后的DrawItem正好分行，True后一个DrawItem前面，False前一个后面</param>
+        /// <param name="AItemNo">指定ItemNo</param>
+        /// <param name="AOffset">指定位置</param>
+        /// <param name="ANextWhenMid">如果此位置前后的DrawItem正好分行，True：后一个DrawItem前面，False：前一个后面</param>
         protected void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
         {
             SelectInfo.StartItemNo = aItemNo;
@@ -4004,6 +4004,7 @@ namespace HC.View
                                     // 删除前面的RectItem
                                     UndoAction_DeleteItem(vCurItemNo, HC.OffsetAfter);
                                     Items.RemoveAt(vCurItemNo);
+                                    vDelCount = 1;
 
                                     if (vParaFirst)
                                     {
@@ -4013,7 +4014,6 @@ namespace HC.View
                                     }
                                     else  // 前面删除的RectItem不是段首
                                     {
-                                        vDelCount = 1;
                                         vCurItemNo = vCurItemNo - 1;  // 上一个
                                         vLen = Items[vCurItemNo].Length;  // 上一个最后面
 
