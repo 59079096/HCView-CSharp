@@ -211,15 +211,6 @@ namespace HC.View
             }
         }
 
-        private HCDomainInfo GetActiveDomain()
-        {
-            HCDomainInfo Result = null;
-            if (FActiveDomain.BeginNo >= 0)
-                Result = FActiveDomain;
-
-            return Result;
-        }
-
         protected override HCCustomItem CreateItemByStyle(int aStyleNo)
         {
             HCCustomItem Result = null;
@@ -1095,7 +1086,7 @@ namespace HC.View
 
         public HCDomainInfo ActiveDomain
         {
-            get { return GetActiveDomain(); }
+            get { return FActiveDomain; }
         }
 
         public StyleItemEventHandler OnCreateItemByStyle

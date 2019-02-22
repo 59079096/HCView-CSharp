@@ -70,8 +70,8 @@ namespace HC.View
             HCS_EXCEPTION_TIMERRESOURCEOUTOF = HC_EXCEPTION + "安装计时器的资源不足！",
 
             // 不能在行首的字符
-            DontLineFirstChar = @"`-=[]\;'',./~!@#$%^&*()_+{}|:""<>?·－＝【】＼；‘，。、～！＠＃￥％……＆×（）—＋｛｝｜：“《》？°",
-            DontLineLastChar = @"/\＼",
+            DontLineFirstChar = @"`-=[]\;,./~!@#$%^&*()_+{}|:""<>?·－＝【】＼；’，。、～！＠＃￥％……＆×（）——＋｛｝｜：”《》？°",
+            DontLineLastChar = @"/\＼“‘",
             sLineBreak = "\r\n",
             HC_EXT = ".hcf",
 
@@ -507,7 +507,10 @@ namespace HC.View
             {
                 case CharType.jctHZ:
                     {
-                        if ((aPrevType == CharType.jctZM) || (aPrevType == CharType.jctSZ) || (aPrevType == CharType.jctHZ))  // 当前位置是汉字，前一个是字母、数字、汉字
+                        if ((aPrevType == CharType.jctZM) 
+                            || (aPrevType == CharType.jctSZ) 
+                            || (aPrevType == CharType.jctHZ)
+                            || (aPrevType == CharType.jctFH))  // 当前位置是汉字，前一个是字母、数字、汉字
                         {
                             return BreakPosition.jbpPrev;
                         }
@@ -539,7 +542,7 @@ namespace HC.View
                                     }
                                     else
                                     {
-                                        string vChar = aText.Substring(aIndex - 1);
+                                        string vChar = aText.Substring(aIndex - 1 - 1, 1);
                                         if ((vChar != ".") && (vChar != ":") && (vChar != "-") && (vChar != "^") && (vChar != "*") && (vChar != "/"))
                                             return BreakPosition.jbpPrev;
                                     }
@@ -561,7 +564,7 @@ namespace HC.View
 
                             case CharType.jctSZ:
                                 {
-                                    string vChar = aText.Substring(aIndex - 1);
+                                    string vChar = aText.Substring(aIndex - 1, 1);
                                     if ((vChar != ".") && (vChar != ":") && (vChar != "-") && (vChar != "^") && (vChar != "*") && (vChar != "/"))
                                         return BreakPosition.jbpPrev;
                                 }
@@ -569,7 +572,7 @@ namespace HC.View
 
                             case CharType.jctZM:
                                 {
-                                    if (aText.Substring(aIndex - 1) != ":")
+                                    if (aText.Substring(aIndex - 1, 1) != ":")
                                         return BreakPosition.jbpPrev;
                                 }
                                 break;

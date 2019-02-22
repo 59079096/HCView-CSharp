@@ -1489,6 +1489,24 @@ namespace HC.View
             ActiveSection.ApplyParaLineSpace(ASpaceMode);
         }
 
+        /// <summary> 修改当前光标所在段左缩进 </summary>
+        public void ApplyParaLeftIndent(bool add = true)
+        {
+            ActiveSection.ApplyParaLeftIndent(add);
+        }
+
+        /// <summary> 修改当前光标所在段右缩进 </summary>
+        public void ApplyParaRightIndent(bool add = true)
+        {
+            ActiveSection.ApplyParaRightIndent(add);
+        }
+
+        /// <summary> 修改当前光标所在段首行缩进 </summary>
+        public void ApplyParaFirstIndent(bool add = true)
+        {
+            ActiveSection.ApplyParaFirstIndent(add);
+        }
+
         /// <summary> 修改当前选中文本的样式 </summary>
         public void ApplyTextStyle(HCFontStyle AFontStyle)
         {

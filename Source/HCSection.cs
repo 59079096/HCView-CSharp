@@ -1813,6 +1813,39 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
+        public void ApplyParaLeftIndent(bool add)
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.ApplyParaLeftIndent(add);
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
+        }
+
+        public void ApplyParaRightIndent(bool add)
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.ApplyParaRightIndent(add);
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
+        }
+
+        public void ApplyParaFirstIndent(bool add)
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.ApplyParaFirstIndent(add);
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
+        }
+
         /// <summary> 某页在整个节中的Top位置 </summary>
         /// <param name="aPageIndex"></param>
         /// <returns></returns>

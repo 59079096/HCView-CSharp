@@ -11,7 +11,6 @@ namespace EMRView
 {
     public partial class frmMain : Form
     {
-        private frmTemplate FfrmTemplate;
         private emrDB emrDB;
 
         public frmMain()
@@ -21,10 +20,8 @@ namespace EMRView
 
         private void 模板制作ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (FfrmTemplate == null)
-                FfrmTemplate = new frmTemplate();
-
-            FfrmTemplate.ShowDialog();
+            frmTemplate vfrmTemplate = new frmTemplate();
+            vfrmTemplate.ShowDialog();
         }
 
         private void frmMain_Load(object sender, EventArgs e)

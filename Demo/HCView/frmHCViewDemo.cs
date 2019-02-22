@@ -481,6 +481,14 @@ namespace HCViewDemo
                 case "4":
                     FHCView.ApplyParaAlignHorz(ParaAlignHorz.pahScatter);  // 分散
                     break;
+
+                case "5":
+                    FHCView.ApplyParaLeftIndent();
+                    break;
+
+                case "6":
+                    FHCView.ApplyParaLeftIndent(false);
+                    break;
             }
         }
 

@@ -45,8 +45,9 @@ namespace HC.View
     public class HCParaStyle : HCObject
     {
         private ParaLineSpaceMode FLineSpaceMode;
-        private int FFristIndent,// 首行缩进
-                    FLeftIndent;  // 左缩进
+        private int FFirstIndent,// 首行缩进
+                    FLeftIndent,  // 左缩进
+                    FRightIndent;  // 右缩进
 
         private Color FBackColor;
         private ParaAlignHorz FAlignHorz;
@@ -57,8 +58,9 @@ namespace HC.View
 
         public HCParaStyle()
         {
-            FFristIndent = 0;
+            FFirstIndent = 0;
             FLeftIndent = 0;
+            FRightIndent = 0;
             FLineSpaceMode = ParaLineSpaceMode.pls100;
             FBackColor = Color.Silver;
             FAlignHorz = ParaAlignHorz.pahJustify;
@@ -72,22 +74,24 @@ namespace HC.View
 
         public bool EqualsEx(HCParaStyle aSource)
         {
-            return (this.FLineSpaceMode == aSource.LineSpaceMode) 
-                && (this.FFristIndent == aSource.FristIndent)
-                && (this.LeftIndent == aSource.LeftIndent)
-                && (this.FBackColor == aSource.BackColor)
-                && (this.FAlignHorz == aSource.AlignHorz)
-                && (this.FAlignVert == aSource.AlignVert);
+            return (FLineSpaceMode == aSource.LineSpaceMode)
+                && (FFirstIndent == aSource.FirstIndent)
+                && (FLeftIndent == aSource.LeftIndent)
+                && (FRightIndent == aSource.RightIndent)
+                && (FBackColor == aSource.BackColor)
+                && (FAlignHorz == aSource.AlignHorz)
+                && (FAlignVert == aSource.AlignVert);
         }
 
         public void AssignEx(HCParaStyle aSource)
         {
-            this.FLineSpaceMode = aSource.LineSpaceMode;
-            this.FFristIndent = aSource.FristIndent;
-            this.FLeftIndent = aSource.LeftIndent;
-            this.FBackColor = aSource.BackColor;
-            this.FAlignHorz = aSource.AlignHorz;
-            this.FAlignVert = aSource.AlignVert;
+            FLineSpaceMode = aSource.LineSpaceMode;
+            FFirstIndent = aSource.FirstIndent;
+            FLeftIndent = aSource.LeftIndent;
+            FRightIndent = aSource.RightIndent;
+            FBackColor = aSource.BackColor;
+            FAlignHorz = aSource.AlignHorz;
+            FAlignVert = aSource.AlignVert;
         }
 
         public void SaveToStream(Stream aStream)
@@ -95,7 +99,7 @@ namespace HC.View
             byte vByte = (byte)FLineSpaceMode;
             aStream.WriteByte(vByte);
 
-            byte[] vBuffer = BitConverter.GetBytes(FFristIndent);
+            byte[] vBuffer = BitConverter.GetBytes(FFirstIndent);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FLeftIndent);
@@ -127,9 +131,9 @@ namespace HC.View
                 FLineSpaceMode = (ParaLineSpaceMode)vByte;
             }
 
-            vBuffer = BitConverter.GetBytes(FFristIndent);
+            vBuffer = BitConverter.GetBytes(FFirstIndent);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            FFristIndent = BitConverter.ToInt32(vBuffer, 0);
+            FFirstIndent = BitConverter.ToInt32(vBuffer, 0);
             //
             vBuffer = BitConverter.GetBytes(FLeftIndent);
             aStream.Read(vBuffer, 0, vBuffer.Length);
@@ -255,7 +259,7 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["fristindent"].Value = FFristIndent.ToString();
+            aNode.Attributes["firstindent"].Value = FFirstIndent.ToString();
             aNode.Attributes["leftindent"].Value = FLeftIndent.ToString();
             aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackColor);
             aNode.Attributes["spacemode"].Value = GetLineSpaceModeXML_();
@@ -265,7 +269,7 @@ namespace HC.View
 
         public void ParseXml(XmlElement aNode)
         {
-            FFristIndent = int.Parse(aNode.Attributes["fristindent"].Value);
+            FFirstIndent = int.Parse(aNode.Attributes["firstindent"].Value);
             FLeftIndent = int.Parse(aNode.Attributes["leftindent"].Value);
             FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
             //GetXMLLineSpaceMode_;
@@ -317,16 +321,22 @@ namespace HC.View
             set { FLineSpaceMode = value; }
         }
 
-        public int FristIndent 
+        public int FirstIndent 
         {
-            get { return FFristIndent; }
-            set { FFristIndent = value; }
+            get { return FFirstIndent; }
+            set { FFirstIndent = value; }
         }
 
         public int LeftIndent
         { 
             get { return FLeftIndent; }
             set { FLeftIndent = value; }
+        }
+
+        public int RightIndent
+        {
+            get { return FRightIndent; }
+            set { FRightIndent = value; }
         }
 
         public Color BackColor

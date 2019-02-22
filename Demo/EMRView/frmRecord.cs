@@ -344,6 +344,14 @@ namespace EMRView
                 case "4":
                     emrView.ApplyParaAlignHorz(ParaAlignHorz.pahScatter);  // 分散
                     break;
+
+                case "5":
+                    emrView.ApplyParaLeftIndent();
+                    break;
+
+                case "6":
+                    emrView.ApplyParaLeftIndent(false);
+                    break;
             }
         }
 

@@ -39,6 +39,7 @@ namespace HC.View
         private HCFontStyles FFontStyles;
         private Color FColor;  // 字体颜色
         private Color FBackColor;
+        private TEXTMETRICW FTextMetric;
 
         protected void SetFamily(string value)
         {
@@ -68,6 +69,7 @@ namespace HC.View
             FFontStyles = new HCFontStyles();
             FColor = Color.Black;
             FBackColor = Color.Transparent;
+            FTextMetric = new TEXTMETRICW();
         }
 
         ~HCTextStyle()
@@ -100,6 +102,8 @@ namespace HC.View
                     aCanvas.Font.Size = FSize;
 
                 aCanvas.Font.FontStyles = FFontStyles;
+
+                aCanvas.GetTextMetrics(ref FTextMetric);
             }
             finally
             {
@@ -311,6 +315,11 @@ namespace HC.View
                 if (vsStyles[i] == "sub")
                     FFontStyles.InClude((byte)HCFontStyle.tsSubscript);
             }
+        }
+
+        public TEXTMETRICW TextMetric
+        {
+            get { return FTextMetric; }
         }
 
         public string Family

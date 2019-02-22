@@ -69,10 +69,17 @@ namespace HC.View
             POINT vPos = new POINT();
 
             _FormatReadyParam(aStartItemNo, ref vPrioDrawItemNo, ref vPos);
+            HCParaStyle vParaStyle = Style.ParaStyles[Items[aStartItemNo].ParaNo];
 
             for (int i = aStartItemNo; i <= aLastItemNo; i++)
             {
-                _FormatItemToDrawItems(i, 1, FWidth, ref vPos, ref vPrioDrawItemNo);
+                if (Items[i].ParaFirst)
+                {
+                    vParaStyle = Style.ParaStyles[Items[i].ParaNo];
+                    vPos.X = vParaStyle.LeftIndent;
+                }
+
+                _FormatItemToDrawItems(i, 1, vParaStyle.LeftIndent, FWidth - vParaStyle.RightIndent, FWidth, ref vPos, ref vPrioDrawItemNo);
             }
         }
 
@@ -770,6 +777,7 @@ namespace HC.View
             else  // 文本
             {
                 int vStyleNo = aMatchStyle.GetMatchStyleNo(Style, vItem.StyleNo);
+                Style.CurStyleNo = vStyleNo;
                 if (vItem.IsSelectComplate)
                 {
                     UndoAction_ItemStyle(aItemNo, SelectInfo.EndItemOffset, vStyleNo);
