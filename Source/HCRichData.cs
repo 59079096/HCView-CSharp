@@ -76,10 +76,11 @@ namespace HC.View
                 if (Items[i].ParaFirst)
                 {
                     vParaStyle = Style.ParaStyles[Items[i].ParaNo];
-                    vPos.X = vParaStyle.LeftIndent;
+                    vPos.X = vParaStyle.LeftIndentPix;
                 }
 
-                _FormatItemToDrawItems(i, 1, vParaStyle.LeftIndent, FWidth - vParaStyle.RightIndent, FWidth, ref vPos, ref vPrioDrawItemNo);
+                _FormatItemToDrawItems(i, 1, vParaStyle.LeftIndentPix, 
+                    FWidth - vParaStyle.RightIndentPix, FWidth, ref vPos, ref vPrioDrawItemNo);
             }
         }
 
@@ -2583,12 +2584,18 @@ namespace HC.View
                         (vCurItem as HCCustomRectItem).KeyDown(e);
                         _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
                     }
-
-                    return;
                 }
             }
-
-            this.InsertItem(vTabItem);
+            else  // TextItem
+            {
+                if ((SelectInfo.StartItemOffset == 0) && Items[SelectInfo.StartItemNo].ParaFirst)  // 段首
+                {
+                    HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
+                    ApplyParaFirstIndent(vParaStyle.FirstIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                }
+                else
+                    this.InsertItem(vTabItem);
+            }
         }
 
         private void SelectPrio(ref int AItemNo, ref int AOffset)
@@ -3920,6 +3927,12 @@ namespace HC.View
                 if ((vCurItem.Text == "") && (Style.ParaStyles[vCurItem.ParaNo].AlignHorz != ParaAlignHorz.pahJustify))
                     ApplyParaAlignHorz(ParaAlignHorz.pahJustify);  // 居中等对齐的空Item，删除时切换到分散对齐
                 else
+                if (vCurItem.ParaFirst && (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0))  // 在段最前面删除
+                {
+                    HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
+                    ApplyParaFirstIndent(vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                }
+                else
                     if (SelectInfo.StartItemNo != 0)
                     {
                         vCurItemNo = SelectInfo.StartItemNo;
@@ -4999,6 +5012,23 @@ namespace HC.View
                     ReSetSelectAndCaret(0, 0);
                 else
                     ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);  // 防止清空后格式化完成后没有选中起始访问出错
+            }
+        }
+
+        /// <summary> 重新格式化当前段(用于修改了段缩进等) </summary>
+        public void ReFormatActiveParagraph()
+        {
+            if (SelectInfo.StartItemNo >= 0)
+            {
+                int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
+                GetParaItemRang(SelectInfo.StartItemNo, ref vFormatFirstItemNo, ref vFormatLastItemNo);
+                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+
+                Style.UpdateInfoRePaint();
+                Style.UpdateInfoReCaret();
+
+                ReSetSelectAndCaret(SelectInfo.StartItemNo);
             }
         }
 

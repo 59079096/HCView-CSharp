@@ -173,7 +173,7 @@ namespace HC.View
                 ushort vLineGap = SwapBytes((ushort)vHorizontalHeader.LineGap);
                 int vLineSpacing = vAscent + vDescent + vLineGap;
 
-                Single vSizeScale = aTextStyle.Size / FStyle.FontSizeScale;
+                Single vSizeScale = aTextStyle.Size / HCUnitConversion.FontSizeScale;
                 vSizeScale = vSizeScale / vOutlineTextmetric.otmEMSquare;
                 vAscent = (ushort)Math.Ceiling(vAscent * vSizeScale);
                 vDescent = (ushort)Math.Ceiling(vDescent * vSizeScale);
@@ -530,7 +530,7 @@ namespace HC.View
             viBreakOffset,  // 第几个字符放不下
             vFirstCharWidth;  // 第一个字符的宽度
 
-            vLineFirst = (aPos.X == aFmtLeft);
+            vLineFirst = (aPos.X == aFmtLeft) || vParaFirst;
             viBreakOffset = 0;  // 换行位置，第几个字符放不下
             vFirstCharWidth = vCharWidths[aCharOffset - 1] - aBasePos;  // 第一个字符的宽度
 
@@ -985,7 +985,7 @@ namespace HC.View
             {
                 vParaFirst = true;
                 vLineFirst = true;
-                aPos.X = aPos.X + vParaStyle.FirstIndent;
+                aPos.X = aPos.X + vParaStyle.FirstIndentPix;
             }
             else  // 非段第1个
             {
@@ -1003,36 +1003,6 @@ namespace HC.View
             {
                 vItemHeight = _CalculateLineHeight(FStyle.DefCanvas, FStyle.TextStyles[vItem.StyleNo], 
                     FStyle.ParaStyles[vItem.ParaNo].LineSpaceMode);
-
-                //FStyle.TextStyles[vItem.StyleNo].ApplyStyle(FStyle.DefCanvas);
-                //vItemHeight = HCStyle.GetFontHeight(FStyle.DefCanvas);  // + vParaStyle.LineSpace;  // 行高
-
-                //TEXTMETRIC vTextMetric = new TEXTMETRIC();
-                //FStyle.DefCanvas.GetTextMetrics(ref vTextMetric);
-                
-
-                //switch (FStyle.ParaStyles[vItem.ParaNo].LineSpaceMode)
-                //{
-                //    case ParaLineSpaceMode.pls100: 
-                //        vItemHeight = vItemHeight + vTextMetric.tmExternalLeading; // Round(vTextMetric.tmHeight * 0.2);
-                //        break;
-
-                //    case ParaLineSpaceMode.pls115: 
-                //        vItemHeight = vItemHeight + vTextMetric.tmExternalLeading + (int)Math.Round((vTextMetric.tmHeight + vTextMetric.tmExternalLeading) * 0.15);
-                //        break;
-
-                //    case ParaLineSpaceMode.pls150: 
-                //        vItemHeight = vItemHeight + vTextMetric.tmExternalLeading + (int)Math.Round((vTextMetric.tmHeight + vTextMetric.tmExternalLeading) * 0.5);
-                //        break;
-
-                //    case ParaLineSpaceMode.pls200: 
-                //        vItemHeight = vItemHeight + vTextMetric.tmExternalLeading + vTextMetric.tmHeight + vTextMetric.tmExternalLeading;
-                //        break;
-
-                //    case ParaLineSpaceMode.plsFix: 
-                //        vItemHeight = vItemHeight + HC.LineSpaceMin;
-                //        break;
-                //}
 
                 vRemainderWidth = aFmtRight - aPos.X;
                 string vText = vItem.Text;
@@ -2410,24 +2380,24 @@ namespace HC.View
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaLeftIndent(bool add)
+        public virtual void ApplyParaLeftIndent(int indent)
         {
             ParaLeftIndentMatch vMatchStyle = new ParaLeftIndentMatch();
-            vMatchStyle.Append = add;
+            vMatchStyle.Indent = indent;
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaRightIndent(bool add)
+        public virtual void ApplyParaRightIndent(int indent)
         {
             ParaRightIndentMatch vMatchStyle = new ParaRightIndentMatch();
-            vMatchStyle.Append = add;
+            vMatchStyle.Indent = indent;
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaFirstIndent(bool add)
+        public virtual void ApplyParaFirstIndent(int indent)
         {
             ParaFirstIndentMatch vMatchStyle = new ParaFirstIndentMatch();
-            vMatchStyle.Append = add;
+            vMatchStyle.Indent = indent;
             ApplySelectParaStyle(vMatchStyle);
         }
 

@@ -19,18 +19,9 @@ namespace HC.View
 {
     public delegate void OnTextStyle(int aCurStyleNo, HCTextStyle aWillStyle);
 
-    public class HCCustomStyleMathc
+    public abstract class HCStyleMatch : Object  // 文本样式匹配类
     {
-        private bool FAppend;  // True添加对应样式
-        public bool Append
-        {
-            get { return FAppend; }
-            set { FAppend = value; }
-        }
-    }
-
-    public abstract class HCStyleMatch : HCCustomStyleMathc  // 文本样式匹配类
-    {
+        private bool FAppend = false;
         private OnTextStyle FOnTextStyle;
 
         protected abstract bool DoMatchCur(HCTextStyle aTextStyle);
@@ -54,6 +45,12 @@ namespace HC.View
         public virtual bool StyleHasMatch(HCStyle aStyle, int aCurStyleNo)
         {
             return false;
+        }
+
+        public bool Append
+        {
+            get { return FAppend; }
+            set { FAppend = value; }
         }
 
         public OnTextStyle OnTextStyle
@@ -184,7 +181,7 @@ namespace HC.View
         }
     }
 
-    public abstract class HCParaMatch : HCCustomStyleMathc  // 段样式匹配类
+    public abstract class HCParaMatch : Object  // 段样式匹配类
     {
         protected abstract bool DoMatchCurPara(HCParaStyle aParaStyle);
         protected abstract void DoMatchNewPara(HCParaStyle aParaStyle);
@@ -289,49 +286,64 @@ namespace HC.View
 
     public class ParaFirstIndentMatch : HCParaMatch  // 段首行缩进匹配类
     {
+        private int FIndent;
+
         protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
         {
-            return false;
+            return aParaStyle.FirstIndent == FIndent;
         }
 
         protected override void DoMatchNewPara(HCParaStyle aParaStyle)
         {
-            if (Append)
-                aParaStyle.FirstIndent += 28;
-            else
-                aParaStyle.FirstIndent -= 28;
+            aParaStyle.FirstIndent = FIndent;
+        }
+
+        public int Indent
+        {
+            get { return FIndent; }
+            set { FIndent = value; }
         }
     }
 
     public class ParaLeftIndentMatch : HCParaMatch  // 段左缩进匹配类
     {
+        private int FIndent;
+
         protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
         {
-            return false;
+            return aParaStyle.LeftIndent == FIndent;
         }
 
         protected override void DoMatchNewPara(HCParaStyle aParaStyle)
         {
-            if (Append)
-                aParaStyle.LeftIndent += 28;
-            else
-                aParaStyle.LeftIndent -= 28;
+            aParaStyle.LeftIndent = FIndent;
+        }
+
+        public int Indent
+        {
+            get { return FIndent; }
+            set { FIndent = value; }
         }
     }
 
     public class ParaRightIndentMatch : HCParaMatch  // 段右缩进匹配类
     {
+        private int FIndent;
+
         protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
         {
-            return false;
+            return aParaStyle.RightIndent == FIndent;
         }
 
         protected override void DoMatchNewPara(HCParaStyle aParaStyle)
         {
-            if (Append)
-                aParaStyle.RightIndent += 28;
-            else
-                aParaStyle.RightIndent -= 28;
+            aParaStyle.RightIndent = FIndent;
+        }
+
+        public int Indent
+        {
+            get { return FIndent; }
+            set { FIndent = value; }
         }
     }
 }

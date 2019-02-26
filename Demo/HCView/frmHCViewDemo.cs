@@ -73,6 +73,19 @@ namespace HCViewDemo
             CurParaStyleChange(FHCView.Style.CurParaNo);
         }
 
+        private void DoZoomChanged(object sender, EventArgs e)
+        {
+            string vZoom = Math.Round(FHCView.Zoom * 100).ToString();
+            int vIndex = cbbZoom.Items.IndexOf(vZoom);
+            if (vIndex < 0)
+            {
+                cbbZoom.Items[cbbZoom.Items.Count - 1] = vZoom;
+                vIndex = cbbZoom.Items.Count - 1;
+            }
+
+            cbbZoom.SelectedIndex = vIndex;
+        }
+
         private void DoVerScroll(object sender, EventArgs e)
         {
             GetPagesAndActive();
@@ -87,10 +100,12 @@ namespace HCViewDemo
             }
             cbbFont.Text = "宋体";
             cbbFontSize.Text = "五号";
+            cbbZoom.SelectedIndex = 3;
 
             this.Text = "HCViewDemo " + Application.ProductVersion.ToString();
             FHCView = new HCView();
             FHCView.OnCaretChange = DoCaretChange;
+            FHCView.OnZoomChanged = DoZoomChanged;
             FHCView.OnVerScroll = DoVerScroll;
             FHCView.ContextMenuStrip = pmRichEdit;
             this.Controls.Add(FHCView);
@@ -664,7 +679,11 @@ namespace HCViewDemo
 
         private void cbbZoom_DropDownClosed(object sender, EventArgs e)
         {
-            FHCView.Zoom = float.Parse(cbbZoom.Text) / 100;
+            Single vOut = 0;
+            if (float.TryParse(cbbZoom.Text, out vOut))
+                FHCView.Zoom = vOut / 100;
+            else
+                FHCView.Zoom = 1.0f;
         }
     }
 }

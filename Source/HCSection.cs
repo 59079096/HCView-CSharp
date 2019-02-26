@@ -1078,42 +1078,6 @@ namespace HC.View
             return FPageSize.PageMarginBottomPix;
         }
 
-        protected void SetPageWidthPix(int value)
-        {
-            if (FPageSize.PageWidthPix != value)
-                FPageSize.PageWidthPix = value;
-        }
-
-        protected void SetPageHeightPix(int value)
-        {
-            if (FPageSize.PageHeightPix != value)
-                FPageSize.PageHeightPix = value;
-        }
-
-        protected void SetPageMarginTopPix(int value)
-        {
-            if (FPageSize.PageMarginTopPix != value)
-                FPageSize.PageMarginTopPix = value;
-        }
-
-        protected void SetPageMarginLeftPix(int value)
-        {
-            if (FPageSize.PageMarginLeftPix != value)
-                FPageSize.PageMarginLeftPix = value;
-        }
-
-        protected void SetPageMarginRightPix(int value)
-        {
-            if (FPageSize.PageMarginRightPix != value)
-                FPageSize.PageMarginRightPix = value;
-        }
-
-        protected void SetPageMarginBottomPix(int value)
-        {
-            if (FPageSize.PageMarginBottomPix != value)
-                FPageSize.PageMarginBottomPix = value;
-        }
-
         protected void SetHeaderOffset(int value)
         {
             if (FHeaderOffset != value)
@@ -1299,7 +1263,7 @@ namespace HC.View
             FHeaderOffset = 20;
             FDisplayFirstPageIndex = -1;
             FDisplayLastPageIndex = -1;
-            FPageSize = new HCPageSize(aStyle.PixelsPerMMX, aStyle.PixelsPerMMY);
+            FPageSize = new HCPageSize();
             FPageOrientation = PageOrientation.cpoPortrait;
             int vWidth = GetContentWidth();
             FPageData = new HCPageData(aStyle);
@@ -1813,33 +1777,33 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
-        public void ApplyParaLeftIndent(bool add)
+        public void ApplyParaLeftIndent(int indent)
         {
             HCFunction vEvent = delegate()
             {
-                FActiveData.ApplyParaLeftIndent(add);
+                FActiveData.ApplyParaLeftIndent(indent);
                 return true;
             };
 
             ActiveDataChangeByAction(vEvent);
         }
 
-        public void ApplyParaRightIndent(bool add)
+        public void ApplyParaRightIndent(int indent)
         {
             HCFunction vEvent = delegate()
             {
-                FActiveData.ApplyParaRightIndent(add);
+                FActiveData.ApplyParaRightIndent(indent);
                 return true;
             };
 
             ActiveDataChangeByAction(vEvent);
         }
 
-        public void ApplyParaFirstIndent(bool add)
+        public void ApplyParaFirstIndent(int indent)
         {
             HCFunction vEvent = delegate()
             {
-                FActiveData.ApplyParaFirstIndent(add);
+                FActiveData.ApplyParaFirstIndent(indent);
                 return true;
             };
 
@@ -2155,6 +2119,17 @@ namespace HC.View
             };
 
             return ActiveDataChangeByAction(vEvent);
+        }
+
+        public void ReFormatActiveParagraph()
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.ReFormatActiveParagraph();
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
         }
 
         public void ReFormatActiveItem()
@@ -2475,37 +2450,31 @@ namespace HC.View
         public int PageWidthPix
         {
             get { return GetPageWidthPix(); }
-            set { SetPageWidthPix(value); }
         }
 
         public int PageHeightPix
         {
             get { return GetPageHeightPix(); }
-            set { SetPageHeightPix(value); }
         }
 
         public int PageMarginTopPix
         {
             get { return GetPageMarginTopPix(); }
-            set { SetPageMarginTopPix(value); }
         }
 
         public int PageMarginLeftPix
         {
             get { return GetPageMarginLeftPix(); }
-            set { SetPageMarginLeftPix(value); }
         }
 
         public int PageMarginRightPix
         {
             get { return GetPageMarginRightPix(); }
-            set { SetPageMarginRightPix(value); }
         }
 
         public int PageMarginBottomPix
         {
             get { return GetPageMarginBottomPix(); }
-            set { SetPageMarginBottomPix(value); }
         }
 
         public int HeaderOffset

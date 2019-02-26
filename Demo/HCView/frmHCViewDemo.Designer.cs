@@ -76,13 +76,41 @@
             this.形状ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.直线ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.btnOpen = new System.Windows.Forms.ToolStripButton();
+            this.btnNew = new System.Windows.Forms.ToolStripButton();
+            this.btnSave = new System.Windows.Forms.ToolStripButton();
+            this.btnPrint = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnUndo = new System.Windows.Forms.ToolStripButton();
+            this.btnRedo = new System.Windows.Forms.ToolStripButton();
             this.cbbZoom = new System.Windows.Forms.ToolStripComboBox();
+            this.btnSymmetryMargin = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.cbbFont = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.cbbFontSize = new System.Windows.Forms.ToolStripComboBox();
+            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
+            this.toolStripSplitButton1 = new System.Windows.Forms.ToolStripSplitButton();
+            this.btnBold = new System.Windows.Forms.ToolStripButton();
+            this.btnItalic = new System.Windows.Forms.ToolStripButton();
+            this.btnUnderLine = new System.Windows.Forms.ToolStripButton();
+            this.btnStrikeOut = new System.Windows.Forms.ToolStripButton();
+            this.btnSuperScript = new System.Windows.Forms.ToolStripButton();
+            this.btnSubScript = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnRightIndent = new System.Windows.Forms.ToolStripButton();
+            this.btnLeftIndent = new System.Windows.Forms.ToolStripButton();
+            this.btnAlignLeft = new System.Windows.Forms.ToolStripButton();
+            this.btnAlignCenter = new System.Windows.Forms.ToolStripButton();
+            this.btnAlignRight = new System.Windows.Forms.ToolStripButton();
+            this.btnAlignJustify = new System.Windows.Forms.ToolStripButton();
+            this.btnAlignScatter = new System.Windows.Forms.ToolStripButton();
+            this.btnLineSpace = new System.Windows.Forms.ToolStripSplitButton();
+            this.mniLS100 = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniLS115 = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniLS150 = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniLS200 = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniLSFix = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.tssPage = new System.Windows.Forms.ToolStripStatusLabel();
             this.pmRichEdit = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -109,34 +137,6 @@
             this.mniTableProperty = new System.Windows.Forms.ToolStripMenuItem();
             this.mniPara = new System.Windows.Forms.ToolStripMenuItem();
             this.mniControlItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.btnOpen = new System.Windows.Forms.ToolStripButton();
-            this.btnNew = new System.Windows.Forms.ToolStripButton();
-            this.btnSave = new System.Windows.Forms.ToolStripButton();
-            this.btnPrint = new System.Windows.Forms.ToolStripButton();
-            this.btnUndo = new System.Windows.Forms.ToolStripButton();
-            this.btnRedo = new System.Windows.Forms.ToolStripButton();
-            this.btnSymmetryMargin = new System.Windows.Forms.ToolStripButton();
-            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
-            this.toolStripSplitButton1 = new System.Windows.Forms.ToolStripSplitButton();
-            this.btnBold = new System.Windows.Forms.ToolStripButton();
-            this.btnItalic = new System.Windows.Forms.ToolStripButton();
-            this.btnUnderLine = new System.Windows.Forms.ToolStripButton();
-            this.btnStrikeOut = new System.Windows.Forms.ToolStripButton();
-            this.btnSuperScript = new System.Windows.Forms.ToolStripButton();
-            this.btnSubScript = new System.Windows.Forms.ToolStripButton();
-            this.btnRightIndent = new System.Windows.Forms.ToolStripButton();
-            this.btnLeftIndent = new System.Windows.Forms.ToolStripButton();
-            this.btnAlignLeft = new System.Windows.Forms.ToolStripButton();
-            this.btnAlignCenter = new System.Windows.Forms.ToolStripButton();
-            this.btnAlignRight = new System.Windows.Forms.ToolStripButton();
-            this.btnAlignJustify = new System.Windows.Forms.ToolStripButton();
-            this.btnAlignScatter = new System.Windows.Forms.ToolStripButton();
-            this.btnLineSpace = new System.Windows.Forms.ToolStripSplitButton();
-            this.mniLS100 = new System.Windows.Forms.ToolStripMenuItem();
-            this.mniLS115 = new System.Windows.Forms.ToolStripMenuItem();
-            this.mniLS150 = new System.Windows.Forms.ToolStripMenuItem();
-            this.mniLS200 = new System.Windows.Forms.ToolStripMenuItem();
-            this.mniLSFix = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -540,13 +540,74 @@
             this.toolStrip1.TabIndex = 3;
             this.toolStrip1.Text = "toolStrip1";
             // 
+            // btnOpen
+            // 
+            this.btnOpen.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnOpen.Image = global::HCViewDemo.Properties.Resources._00023;
+            this.btnOpen.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnOpen.Name = "btnOpen";
+            this.btnOpen.Size = new System.Drawing.Size(23, 22);
+            this.btnOpen.Text = "打开";
+            this.btnOpen.Click += new System.EventHandler(this.toolStripButton1_Click);
+            // 
+            // btnNew
+            // 
+            this.btnNew.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnNew.Image = global::HCViewDemo.Properties.Resources._00018;
+            this.btnNew.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnNew.Name = "btnNew";
+            this.btnNew.Size = new System.Drawing.Size(23, 22);
+            this.btnNew.Text = "新建";
+            this.btnNew.Click += new System.EventHandler(this.toolStripButton2_Click);
+            // 
+            // btnSave
+            // 
+            this.btnSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnSave.Image = global::HCViewDemo.Properties.Resources._00003;
+            this.btnSave.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(23, 22);
+            this.btnSave.Text = "保存";
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
+            // 
+            // btnPrint
+            // 
+            this.btnPrint.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnPrint.Image = global::HCViewDemo.Properties.Resources._00004;
+            this.btnPrint.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnPrint.Name = "btnPrint";
+            this.btnPrint.Size = new System.Drawing.Size(23, 22);
+            this.btnPrint.Text = "打印";
+            this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
+            // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
             // 
+            // btnUndo
+            // 
+            this.btnUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnUndo.Image = global::HCViewDemo.Properties.Resources._00128;
+            this.btnUndo.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnUndo.Name = "btnUndo";
+            this.btnUndo.Size = new System.Drawing.Size(23, 22);
+            this.btnUndo.Text = "撤销";
+            this.btnUndo.Click += new System.EventHandler(this.toolStripButton5_Click);
+            // 
+            // btnRedo
+            // 
+            this.btnRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnRedo.Image = global::HCViewDemo.Properties.Resources._00129;
+            this.btnRedo.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnRedo.Name = "btnRedo";
+            this.btnRedo.Size = new System.Drawing.Size(23, 22);
+            this.btnRedo.Text = "恢复";
+            this.btnRedo.Click += new System.EventHandler(this.toolStripButton6_Click);
+            // 
             // cbbZoom
             // 
+            this.cbbZoom.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbbZoom.Items.AddRange(new object[] {
             "25",
             "50",
@@ -555,11 +616,21 @@
             "150",
             "200",
             "300",
-            "500"});
+            "500",
+            "自定义"});
             this.cbbZoom.Name = "cbbZoom";
             this.cbbZoom.Size = new System.Drawing.Size(75, 25);
-            this.cbbZoom.Text = "100";
             this.cbbZoom.DropDownClosed += new System.EventHandler(this.cbbZoom_DropDownClosed);
+            // 
+            // btnSymmetryMargin
+            // 
+            this.btnSymmetryMargin.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnSymmetryMargin.Image = global::HCViewDemo.Properties.Resources._00196;
+            this.btnSymmetryMargin.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSymmetryMargin.Name = "btnSymmetryMargin";
+            this.btnSymmetryMargin.Size = new System.Drawing.Size(23, 22);
+            this.btnSymmetryMargin.Text = "对称页边距";
+            this.btnSymmetryMargin.Click += new System.EventHandler(this.btnSymmetryMargin_Click);
             // 
             // toolStripSeparator3
             // 
@@ -623,10 +694,226 @@
             this.cbbFontSize.Size = new System.Drawing.Size(75, 25);
             this.cbbFontSize.DropDownClosed += new System.EventHandler(this.cbbFontSize_DropDownClosed);
             // 
+            // toolStripDropDownButton1
+            // 
+            this.toolStripDropDownButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
+            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
+            this.toolStripDropDownButton1.Size = new System.Drawing.Size(29, 22);
+            this.toolStripDropDownButton1.Text = "toolStripDropDownButton1";
+            // 
+            // toolStripSplitButton1
+            // 
+            this.toolStripSplitButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripSplitButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripSplitButton1.Image")));
+            this.toolStripSplitButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripSplitButton1.Name = "toolStripSplitButton1";
+            this.toolStripSplitButton1.Size = new System.Drawing.Size(32, 22);
+            this.toolStripSplitButton1.Text = "toolStripSplitButton1";
+            // 
+            // btnBold
+            // 
+            this.btnBold.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnBold.Image = global::HCViewDemo.Properties.Resources._00113;
+            this.btnBold.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnBold.Name = "btnBold";
+            this.btnBold.Size = new System.Drawing.Size(23, 22);
+            this.btnBold.Tag = "0";
+            this.btnBold.Text = "加粗";
+            this.btnBold.Click += new System.EventHandler(this.btnBold_Click);
+            // 
+            // btnItalic
+            // 
+            this.btnItalic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnItalic.Image = global::HCViewDemo.Properties.Resources._00114;
+            this.btnItalic.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnItalic.Name = "btnItalic";
+            this.btnItalic.Size = new System.Drawing.Size(23, 22);
+            this.btnItalic.Tag = "1";
+            this.btnItalic.Text = "倾斜";
+            this.btnItalic.Click += new System.EventHandler(this.btnBold_Click);
+            // 
+            // btnUnderLine
+            // 
+            this.btnUnderLine.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnUnderLine.Image = global::HCViewDemo.Properties.Resources._00115;
+            this.btnUnderLine.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnUnderLine.Name = "btnUnderLine";
+            this.btnUnderLine.Size = new System.Drawing.Size(23, 22);
+            this.btnUnderLine.Tag = "2";
+            this.btnUnderLine.Text = "下划线";
+            this.btnUnderLine.Click += new System.EventHandler(this.btnBold_Click);
+            // 
+            // btnStrikeOut
+            // 
+            this.btnStrikeOut.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnStrikeOut.Image = global::HCViewDemo.Properties.Resources._00115U;
+            this.btnStrikeOut.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnStrikeOut.Name = "btnStrikeOut";
+            this.btnStrikeOut.Size = new System.Drawing.Size(23, 22);
+            this.btnStrikeOut.Tag = "3";
+            this.btnStrikeOut.Text = "中划线";
+            this.btnStrikeOut.Click += new System.EventHandler(this.btnBold_Click);
+            // 
+            // btnSuperScript
+            // 
+            this.btnSuperScript.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnSuperScript.Image = global::HCViewDemo.Properties.Resources._00057;
+            this.btnSuperScript.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSuperScript.Name = "btnSuperScript";
+            this.btnSuperScript.Size = new System.Drawing.Size(23, 22);
+            this.btnSuperScript.Tag = "4";
+            this.btnSuperScript.Text = "上标";
+            this.btnSuperScript.Click += new System.EventHandler(this.btnBold_Click);
+            // 
+            // btnSubScript
+            // 
+            this.btnSubScript.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnSubScript.Image = global::HCViewDemo.Properties.Resources._00058;
+            this.btnSubScript.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSubScript.Name = "btnSubScript";
+            this.btnSubScript.Size = new System.Drawing.Size(23, 22);
+            this.btnSubScript.Tag = "5";
+            this.btnSubScript.Text = "下标";
+            this.btnSubScript.Click += new System.EventHandler(this.btnBold_Click);
+            // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
             this.toolStripSeparator4.Size = new System.Drawing.Size(6, 25);
+            // 
+            // btnRightIndent
+            // 
+            this.btnRightIndent.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnRightIndent.Image = global::HCViewDemo.Properties.Resources._00015;
+            this.btnRightIndent.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnRightIndent.Name = "btnRightIndent";
+            this.btnRightIndent.Size = new System.Drawing.Size(23, 22);
+            this.btnRightIndent.Tag = "5";
+            this.btnRightIndent.Text = "增加左缩进";
+            this.btnRightIndent.Click += new System.EventHandler(this.btnAlignLeft_Click);
+            // 
+            // btnLeftIndent
+            // 
+            this.btnLeftIndent.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnLeftIndent.Image = global::HCViewDemo.Properties.Resources._00014;
+            this.btnLeftIndent.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnLeftIndent.Name = "btnLeftIndent";
+            this.btnLeftIndent.Size = new System.Drawing.Size(23, 22);
+            this.btnLeftIndent.Tag = "6";
+            this.btnLeftIndent.Text = "减少左缩进";
+            this.btnLeftIndent.Click += new System.EventHandler(this.btnAlignLeft_Click);
+            // 
+            // btnAlignLeft
+            // 
+            this.btnAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnAlignLeft.Image = global::HCViewDemo.Properties.Resources.段00120;
+            this.btnAlignLeft.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnAlignLeft.Name = "btnAlignLeft";
+            this.btnAlignLeft.Size = new System.Drawing.Size(23, 22);
+            this.btnAlignLeft.Tag = "0";
+            this.btnAlignLeft.Text = "左对齐";
+            this.btnAlignLeft.Click += new System.EventHandler(this.btnAlignLeft_Click);
+            // 
+            // btnAlignCenter
+            // 
+            this.btnAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnAlignCenter.Image = global::HCViewDemo.Properties.Resources.段00122;
+            this.btnAlignCenter.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnAlignCenter.Name = "btnAlignCenter";
+            this.btnAlignCenter.Size = new System.Drawing.Size(23, 22);
+            this.btnAlignCenter.Tag = "1";
+            this.btnAlignCenter.Text = "居中对齐";
+            this.btnAlignCenter.Click += new System.EventHandler(this.btnAlignLeft_Click);
+            // 
+            // btnAlignRight
+            // 
+            this.btnAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnAlignRight.Image = global::HCViewDemo.Properties.Resources.段00121;
+            this.btnAlignRight.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnAlignRight.Name = "btnAlignRight";
+            this.btnAlignRight.Size = new System.Drawing.Size(23, 22);
+            this.btnAlignRight.Tag = "2";
+            this.btnAlignRight.Text = "右对齐";
+            this.btnAlignRight.Click += new System.EventHandler(this.btnAlignLeft_Click);
+            // 
+            // btnAlignJustify
+            // 
+            this.btnAlignJustify.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnAlignJustify.Image = global::HCViewDemo.Properties.Resources.段00123;
+            this.btnAlignJustify.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnAlignJustify.Name = "btnAlignJustify";
+            this.btnAlignJustify.Size = new System.Drawing.Size(23, 22);
+            this.btnAlignJustify.Tag = "3";
+            this.btnAlignJustify.Text = "分散对齐";
+            this.btnAlignJustify.Click += new System.EventHandler(this.btnAlignLeft_Click);
+            // 
+            // btnAlignScatter
+            // 
+            this.btnAlignScatter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnAlignScatter.Image = global::HCViewDemo.Properties.Resources.段落分散对齐09246;
+            this.btnAlignScatter.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnAlignScatter.Name = "btnAlignScatter";
+            this.btnAlignScatter.Size = new System.Drawing.Size(23, 22);
+            this.btnAlignScatter.Tag = "4";
+            this.btnAlignScatter.Text = "两端对齐";
+            this.btnAlignScatter.Click += new System.EventHandler(this.btnAlignLeft_Click);
+            // 
+            // btnLineSpace
+            // 
+            this.btnLineSpace.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnLineSpace.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mniLS100,
+            this.mniLS115,
+            this.mniLS150,
+            this.mniLS200,
+            this.mniLSFix});
+            this.btnLineSpace.Image = global::HCViewDemo.Properties.Resources.行间距057341;
+            this.btnLineSpace.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnLineSpace.Name = "btnLineSpace";
+            this.btnLineSpace.Size = new System.Drawing.Size(32, 22);
+            this.btnLineSpace.Text = "行距";
+            // 
+            // mniLS100
+            // 
+            this.mniLS100.Name = "mniLS100";
+            this.mniLS100.Size = new System.Drawing.Size(112, 22);
+            this.mniLS100.Tag = "0";
+            this.mniLS100.Text = "单倍";
+            this.mniLS100.Click += new System.EventHandler(this.mniLS100_Click);
+            // 
+            // mniLS115
+            // 
+            this.mniLS115.Name = "mniLS115";
+            this.mniLS115.Size = new System.Drawing.Size(112, 22);
+            this.mniLS115.Tag = "1";
+            this.mniLS115.Text = "1.15倍";
+            this.mniLS115.Click += new System.EventHandler(this.mniLS100_Click);
+            // 
+            // mniLS150
+            // 
+            this.mniLS150.Name = "mniLS150";
+            this.mniLS150.Size = new System.Drawing.Size(112, 22);
+            this.mniLS150.Tag = "2";
+            this.mniLS150.Text = "1.5倍";
+            this.mniLS150.Click += new System.EventHandler(this.mniLS100_Click);
+            // 
+            // mniLS200
+            // 
+            this.mniLS200.Name = "mniLS200";
+            this.mniLS200.Size = new System.Drawing.Size(112, 22);
+            this.mniLS200.Tag = "3";
+            this.mniLS200.Text = "两倍";
+            this.mniLS200.Click += new System.EventHandler(this.mniLS100_Click);
+            // 
+            // mniLSFix
+            // 
+            this.mniLSFix.Name = "mniLSFix";
+            this.mniLSFix.Size = new System.Drawing.Size(112, 22);
+            this.mniLSFix.Tag = "4";
+            this.mniLSFix.Text = "固定值";
+            this.mniLSFix.Click += new System.EventHandler(this.mniLS100_Click);
             // 
             // statusStrip1
             // 
@@ -823,292 +1110,6 @@
             this.mniControlItem.Name = "mniControlItem";
             this.mniControlItem.Size = new System.Drawing.Size(145, 22);
             this.mniControlItem.Text = "属性";
-            // 
-            // btnOpen
-            // 
-            this.btnOpen.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnOpen.Image = global::HCViewDemo.Properties.Resources._00023;
-            this.btnOpen.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnOpen.Name = "btnOpen";
-            this.btnOpen.Size = new System.Drawing.Size(23, 22);
-            this.btnOpen.Text = "打开";
-            this.btnOpen.Click += new System.EventHandler(this.toolStripButton1_Click);
-            // 
-            // btnNew
-            // 
-            this.btnNew.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnNew.Image = global::HCViewDemo.Properties.Resources._00018;
-            this.btnNew.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnNew.Name = "btnNew";
-            this.btnNew.Size = new System.Drawing.Size(23, 22);
-            this.btnNew.Text = "新建";
-            this.btnNew.Click += new System.EventHandler(this.toolStripButton2_Click);
-            // 
-            // btnSave
-            // 
-            this.btnSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnSave.Image = global::HCViewDemo.Properties.Resources._00003;
-            this.btnSave.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(23, 22);
-            this.btnSave.Text = "保存";
-            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
-            // 
-            // btnPrint
-            // 
-            this.btnPrint.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnPrint.Image = global::HCViewDemo.Properties.Resources._00004;
-            this.btnPrint.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnPrint.Name = "btnPrint";
-            this.btnPrint.Size = new System.Drawing.Size(23, 22);
-            this.btnPrint.Text = "打印";
-            this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
-            // 
-            // btnUndo
-            // 
-            this.btnUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnUndo.Image = global::HCViewDemo.Properties.Resources._00128;
-            this.btnUndo.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnUndo.Name = "btnUndo";
-            this.btnUndo.Size = new System.Drawing.Size(23, 22);
-            this.btnUndo.Text = "撤销";
-            this.btnUndo.Click += new System.EventHandler(this.toolStripButton5_Click);
-            // 
-            // btnRedo
-            // 
-            this.btnRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnRedo.Image = global::HCViewDemo.Properties.Resources._00129;
-            this.btnRedo.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnRedo.Name = "btnRedo";
-            this.btnRedo.Size = new System.Drawing.Size(23, 22);
-            this.btnRedo.Text = "恢复";
-            this.btnRedo.Click += new System.EventHandler(this.toolStripButton6_Click);
-            // 
-            // btnSymmetryMargin
-            // 
-            this.btnSymmetryMargin.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnSymmetryMargin.Image = global::HCViewDemo.Properties.Resources._00196;
-            this.btnSymmetryMargin.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnSymmetryMargin.Name = "btnSymmetryMargin";
-            this.btnSymmetryMargin.Size = new System.Drawing.Size(23, 22);
-            this.btnSymmetryMargin.Text = "对称页边距";
-            this.btnSymmetryMargin.Click += new System.EventHandler(this.btnSymmetryMargin_Click);
-            // 
-            // toolStripDropDownButton1
-            // 
-            this.toolStripDropDownButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
-            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
-            this.toolStripDropDownButton1.Size = new System.Drawing.Size(29, 22);
-            this.toolStripDropDownButton1.Text = "toolStripDropDownButton1";
-            // 
-            // toolStripSplitButton1
-            // 
-            this.toolStripSplitButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripSplitButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripSplitButton1.Image")));
-            this.toolStripSplitButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripSplitButton1.Name = "toolStripSplitButton1";
-            this.toolStripSplitButton1.Size = new System.Drawing.Size(32, 22);
-            this.toolStripSplitButton1.Text = "toolStripSplitButton1";
-            // 
-            // btnBold
-            // 
-            this.btnBold.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnBold.Image = global::HCViewDemo.Properties.Resources._00113;
-            this.btnBold.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnBold.Name = "btnBold";
-            this.btnBold.Size = new System.Drawing.Size(23, 22);
-            this.btnBold.Tag = "0";
-            this.btnBold.Text = "加粗";
-            this.btnBold.Click += new System.EventHandler(this.btnBold_Click);
-            // 
-            // btnItalic
-            // 
-            this.btnItalic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnItalic.Image = global::HCViewDemo.Properties.Resources._00114;
-            this.btnItalic.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnItalic.Name = "btnItalic";
-            this.btnItalic.Size = new System.Drawing.Size(23, 22);
-            this.btnItalic.Tag = "1";
-            this.btnItalic.Text = "倾斜";
-            this.btnItalic.Click += new System.EventHandler(this.btnBold_Click);
-            // 
-            // btnUnderLine
-            // 
-            this.btnUnderLine.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnUnderLine.Image = global::HCViewDemo.Properties.Resources._00115;
-            this.btnUnderLine.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnUnderLine.Name = "btnUnderLine";
-            this.btnUnderLine.Size = new System.Drawing.Size(23, 22);
-            this.btnUnderLine.Tag = "2";
-            this.btnUnderLine.Text = "下划线";
-            this.btnUnderLine.Click += new System.EventHandler(this.btnBold_Click);
-            // 
-            // btnStrikeOut
-            // 
-            this.btnStrikeOut.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnStrikeOut.Image = global::HCViewDemo.Properties.Resources._00115U;
-            this.btnStrikeOut.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnStrikeOut.Name = "btnStrikeOut";
-            this.btnStrikeOut.Size = new System.Drawing.Size(23, 22);
-            this.btnStrikeOut.Tag = "3";
-            this.btnStrikeOut.Text = "中划线";
-            this.btnStrikeOut.Click += new System.EventHandler(this.btnBold_Click);
-            // 
-            // btnSuperScript
-            // 
-            this.btnSuperScript.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnSuperScript.Image = global::HCViewDemo.Properties.Resources._00057;
-            this.btnSuperScript.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnSuperScript.Name = "btnSuperScript";
-            this.btnSuperScript.Size = new System.Drawing.Size(23, 22);
-            this.btnSuperScript.Tag = "4";
-            this.btnSuperScript.Text = "上标";
-            this.btnSuperScript.Click += new System.EventHandler(this.btnBold_Click);
-            // 
-            // btnSubScript
-            // 
-            this.btnSubScript.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnSubScript.Image = global::HCViewDemo.Properties.Resources._00058;
-            this.btnSubScript.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnSubScript.Name = "btnSubScript";
-            this.btnSubScript.Size = new System.Drawing.Size(23, 22);
-            this.btnSubScript.Tag = "5";
-            this.btnSubScript.Text = "下标";
-            this.btnSubScript.Click += new System.EventHandler(this.btnBold_Click);
-            // 
-            // btnRightIndent
-            // 
-            this.btnRightIndent.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnRightIndent.Image = global::HCViewDemo.Properties.Resources._00015;
-            this.btnRightIndent.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnRightIndent.Name = "btnRightIndent";
-            this.btnRightIndent.Size = new System.Drawing.Size(23, 22);
-            this.btnRightIndent.Tag = "5";
-            this.btnRightIndent.Text = "增加左缩进";
-            this.btnRightIndent.Click += new System.EventHandler(this.btnAlignLeft_Click);
-            // 
-            // btnLeftIndent
-            // 
-            this.btnLeftIndent.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnLeftIndent.Image = global::HCViewDemo.Properties.Resources._00014;
-            this.btnLeftIndent.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnLeftIndent.Name = "btnLeftIndent";
-            this.btnLeftIndent.Size = new System.Drawing.Size(23, 22);
-            this.btnLeftIndent.Tag = "6";
-            this.btnLeftIndent.Text = "减少左缩进";
-            this.btnLeftIndent.Click += new System.EventHandler(this.btnAlignLeft_Click);
-            // 
-            // btnAlignLeft
-            // 
-            this.btnAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnAlignLeft.Image = global::HCViewDemo.Properties.Resources.段00120;
-            this.btnAlignLeft.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnAlignLeft.Name = "btnAlignLeft";
-            this.btnAlignLeft.Size = new System.Drawing.Size(23, 22);
-            this.btnAlignLeft.Tag = "0";
-            this.btnAlignLeft.Text = "左对齐";
-            this.btnAlignLeft.Click += new System.EventHandler(this.btnAlignLeft_Click);
-            // 
-            // btnAlignCenter
-            // 
-            this.btnAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnAlignCenter.Image = global::HCViewDemo.Properties.Resources.段00122;
-            this.btnAlignCenter.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnAlignCenter.Name = "btnAlignCenter";
-            this.btnAlignCenter.Size = new System.Drawing.Size(23, 22);
-            this.btnAlignCenter.Tag = "1";
-            this.btnAlignCenter.Text = "居中对齐";
-            this.btnAlignCenter.Click += new System.EventHandler(this.btnAlignLeft_Click);
-            // 
-            // btnAlignRight
-            // 
-            this.btnAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnAlignRight.Image = global::HCViewDemo.Properties.Resources.段00121;
-            this.btnAlignRight.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnAlignRight.Name = "btnAlignRight";
-            this.btnAlignRight.Size = new System.Drawing.Size(23, 22);
-            this.btnAlignRight.Tag = "2";
-            this.btnAlignRight.Text = "右对齐";
-            this.btnAlignRight.Click += new System.EventHandler(this.btnAlignLeft_Click);
-            // 
-            // btnAlignJustify
-            // 
-            this.btnAlignJustify.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnAlignJustify.Image = global::HCViewDemo.Properties.Resources.段00123;
-            this.btnAlignJustify.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnAlignJustify.Name = "btnAlignJustify";
-            this.btnAlignJustify.Size = new System.Drawing.Size(23, 22);
-            this.btnAlignJustify.Tag = "3";
-            this.btnAlignJustify.Text = "分散对齐";
-            this.btnAlignJustify.Click += new System.EventHandler(this.btnAlignLeft_Click);
-            // 
-            // btnAlignScatter
-            // 
-            this.btnAlignScatter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnAlignScatter.Image = global::HCViewDemo.Properties.Resources.段落分散对齐09246;
-            this.btnAlignScatter.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnAlignScatter.Name = "btnAlignScatter";
-            this.btnAlignScatter.Size = new System.Drawing.Size(23, 22);
-            this.btnAlignScatter.Tag = "4";
-            this.btnAlignScatter.Text = "两端对齐";
-            this.btnAlignScatter.Click += new System.EventHandler(this.btnAlignLeft_Click);
-            // 
-            // btnLineSpace
-            // 
-            this.btnLineSpace.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnLineSpace.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mniLS100,
-            this.mniLS115,
-            this.mniLS150,
-            this.mniLS200,
-            this.mniLSFix});
-            this.btnLineSpace.Image = global::HCViewDemo.Properties.Resources.行间距057341;
-            this.btnLineSpace.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnLineSpace.Name = "btnLineSpace";
-            this.btnLineSpace.Size = new System.Drawing.Size(32, 22);
-            this.btnLineSpace.Text = "行距";
-            // 
-            // mniLS100
-            // 
-            this.mniLS100.Name = "mniLS100";
-            this.mniLS100.Size = new System.Drawing.Size(112, 22);
-            this.mniLS100.Tag = "0";
-            this.mniLS100.Text = "单倍";
-            this.mniLS100.Click += new System.EventHandler(this.mniLS100_Click);
-            // 
-            // mniLS115
-            // 
-            this.mniLS115.Name = "mniLS115";
-            this.mniLS115.Size = new System.Drawing.Size(112, 22);
-            this.mniLS115.Tag = "1";
-            this.mniLS115.Text = "1.15倍";
-            this.mniLS115.Click += new System.EventHandler(this.mniLS100_Click);
-            // 
-            // mniLS150
-            // 
-            this.mniLS150.Name = "mniLS150";
-            this.mniLS150.Size = new System.Drawing.Size(112, 22);
-            this.mniLS150.Tag = "2";
-            this.mniLS150.Text = "1.5倍";
-            this.mniLS150.Click += new System.EventHandler(this.mniLS100_Click);
-            // 
-            // mniLS200
-            // 
-            this.mniLS200.Name = "mniLS200";
-            this.mniLS200.Size = new System.Drawing.Size(112, 22);
-            this.mniLS200.Tag = "3";
-            this.mniLS200.Text = "两倍";
-            this.mniLS200.Click += new System.EventHandler(this.mniLS100_Click);
-            // 
-            // mniLSFix
-            // 
-            this.mniLSFix.Name = "mniLSFix";
-            this.mniLSFix.Size = new System.Drawing.Size(112, 22);
-            this.mniLSFix.Tag = "4";
-            this.mniLSFix.Text = "固定值";
-            this.mniLSFix.Click += new System.EventHandler(this.mniLS100_Click);
             // 
             // frmHCViewDemo
             // 

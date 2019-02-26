@@ -54,7 +54,7 @@ namespace HC.View
           FOnSectionPaintWholePageBefor, FOnSectionPaintWholePageAfter;
         private PaintEventHandler FOnUpdateViewBefor, FOnUpdateViewAfter;
 
-        private EventHandler FOnChange, FOnChangedSwitch;
+        private EventHandler FOnChange, FOnChangedSwitch, FOnZoomChanged;
 
         private void SetPrintBySectionInfo(PageSettings PageSettings, int ASectionIndex)
         {
@@ -255,12 +255,22 @@ namespace HC.View
 
         private void SetZoom(Single Value)
         {
-            if (FZoom != Value)
+            Single vValue = Value;
+            if (vValue < 0.25)
+                vValue = 0.25f;
+            else
+            if (vValue > 5)
+                vValue = 5f;
+
+            if (FZoom != vValue)
             {
                 this.Focus();
-                FZoom = Value;
+                FZoom = vValue;
                 FStyle.UpdateInfoRePaint();
                 FStyle.UpdateInfoReCaret(false);
+                if (FOnZoomChanged != null)
+                    FOnZoomChanged(this, null);
+
                 DoMapChanged();
             }
         }
@@ -840,10 +850,20 @@ namespace HC.View
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             //base.OnMouseWheel(e);
-            if (FPageScrollModel == HCPageScrollModel.psmVertical)
-                FVScrollBar.Position -= e.Delta;
+            if ((Control.ModifierKeys & Keys.Control) == Keys.Control)  // 按下ctrl
+            {
+                if (e.Delta > 0)  // 向上
+                    Zoom = Zoom + 0.1f;
+                else
+                    Zoom = Zoom - 0.1f;
+            }
             else
-                FHScrollBar.Position -= e.Delta;
+            {
+                if (FPageScrollModel == HCPageScrollModel.psmVertical)
+                    FVScrollBar.Position -= e.Delta;
+                else
+                    FHScrollBar.Position -= e.Delta;
+            }
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -1072,6 +1092,7 @@ namespace HC.View
 
         public HCView()
         {
+            HCUnitConversion.Initialization();
             Create();  // 便于子类在构造函数前执行
             FHCExtFormat = DataFormats.GetFormat(HC.HC_EXT);
             SetStyle(ControlStyles.Selectable, true);
@@ -1492,19 +1513,28 @@ namespace HC.View
         /// <summary> 修改当前光标所在段左缩进 </summary>
         public void ApplyParaLeftIndent(bool add = true)
         {
-            ActiveSection.ApplyParaLeftIndent(add);
+            if (add)
+                ActiveSection.ApplyParaLeftIndent(FStyle.ParaStyles[FStyle.CurParaNo].LeftIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+            else
+                ActiveSection.ApplyParaLeftIndent(FStyle.ParaStyles[FStyle.CurParaNo].LeftIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+        }
+
+        /// <summary> 修改当前光标所在段左缩进 </summary>
+        public void ApplyParaLeftIndent(int aIndent)
+        {
+            ActiveSection.ApplyParaLeftIndent(aIndent);
         }
 
         /// <summary> 修改当前光标所在段右缩进 </summary>
-        public void ApplyParaRightIndent(bool add = true)
+        public void ApplyParaRightIndent(int aIndent)
         {
-            ActiveSection.ApplyParaRightIndent(add);
+            ActiveSection.ApplyParaRightIndent(aIndent);
         }
 
         /// <summary> 修改当前光标所在段首行缩进 </summary>
-        public void ApplyParaFirstIndent(bool add = true)
+        public void ApplyParaFirstIndent(int aIndent)
         {
-            ActiveSection.ApplyParaFirstIndent(add);
+            ActiveSection.ApplyParaFirstIndent(aIndent);
         }
 
         /// <summary> 修改当前选中文本的样式 </summary>
@@ -3030,6 +3060,13 @@ namespace HC.View
         {
             get { return FOnChangedSwitch; }
             set { FOnChangedSwitch = value; }
+        }
+
+        /// <summary> 文档Zoom缩放变化后触发 </summary>
+        public EventHandler OnZoomChanged
+        {
+            get { return FOnZoomChanged; }
+            set { FOnZoomChanged = value; }
         }
 
         /// <summary> 窗口重绘开始时触发 </summary>

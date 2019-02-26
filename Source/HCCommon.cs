@@ -84,13 +84,15 @@ namespace HC.View
             // 1.9 重构了颜色的存储方式以便于兼容其他语言生成的文件
             // 2.0 ImageItem存图像时增加图像数据大小的存储以兼容不同语言图像数据的存储方式
             // 2.1 GifImage保存读取改用兼容其他语言的方式
-            HC_FileVersion = "2.1";
+            // 2.2 增加段缩进的存储
+            HC_FileVersion = "2.2";
 
         public const ushort
-            HC_FileVersionInt = 21;
+            HC_FileVersionInt = 22;
 
         public const byte
-            HC_PROGRAMLANGUAGE = 2;  // 1字节表示使用的编程语言 1:delphi, 2:C#, 3:VC++, 4:HTML5
+            HC_PROGRAMLANGUAGE = 2,  // 1字节表示使用的编程语言 1:delphi, 2:C#, 3:VC++, 4:HTML5
+            TabCharWidth = 28;  // 默认Tab宽度(五号) 14 * 2个
 
         public static bool IsKeyPressWant(KeyPressEventArgs aKey)
         {

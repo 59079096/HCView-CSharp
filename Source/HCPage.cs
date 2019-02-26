@@ -20,7 +20,6 @@ namespace HC.View
 {
     public class HCPageSize : HCObject
     {
-        private Single FPixelsPerMMX, FPixelsPerMMY;  // 1毫米像素数
         private PaperKind FPaperKind;  // 纸张大小如A4、B5等
         private Single FPaperWidth, FPaperHeight;  // 纸张宽、高（单位mm）
         private int FPageWidthPix, FPageHeightPix;  // 页面大小
@@ -50,43 +49,41 @@ namespace HC.View
         protected void SetPaperWidth(Single value)
         {
             FPaperWidth = value;
-            FPageWidthPix = (int)Math.Round(FPaperWidth * FPixelsPerMMX);
+            FPageWidthPix = HCUnitConversion.MillimeterToPixX(FPaperWidth);
         }
 
         protected void SetPaperHeight(Single value)
         {
             FPaperHeight = value;
-            FPageHeightPix = (int)Math.Round(FPaperHeight * FPixelsPerMMY);
+            FPageHeightPix = HCUnitConversion.MillimeterToPixY(FPaperHeight);
         }
 
         protected void SetPaperMarginTop(Single value)
         {
             FPaperMarginTop = value;
-            FPageMarginTopPix = (int)Math.Round(FPaperMarginTop * FPixelsPerMMY);
+            FPageMarginTopPix = HCUnitConversion.MillimeterToPixY(FPaperMarginTop);
         }
 
         protected void SetPaperMarginLeft(Single value)
         {
             FPaperMarginLeft = value;
-            FPageMarginLeftPix = (int)Math.Round(FPaperMarginLeft * FPixelsPerMMX);
+            FPageMarginLeftPix = HCUnitConversion.MillimeterToPixX(FPaperMarginLeft);
         }
 
         protected void SetPaperMarginRight(Single value)
         {
             FPaperMarginRight = value;
-            FPageMarginRightPix = (int)Math.Round(FPaperMarginRight * FPixelsPerMMX);
+            FPageMarginRightPix = HCUnitConversion.MillimeterToPixX(FPaperMarginRight);
         }
 
         protected void SetPaperMarginBottom(Single value)
         {
             FPaperMarginBottom = value;
-            FPageMarginBottomPix = (int)Math.Round(FPaperMarginBottom * FPixelsPerMMY);
+            FPageMarginBottomPix = HCUnitConversion.MillimeterToPixY(FPaperMarginBottom); ;
         }
 
-        public HCPageSize(Single aPixelsPerMMX, Single aPixelsPerMMY)  // 屏幕1英寸dpi数
+        public HCPageSize()
         {  
-            FPixelsPerMMX = aPixelsPerMMX;
-            FPixelsPerMMY = aPixelsPerMMY;
             PaperMarginLeft = 25;
             PaperMarginTop = 25;
             PaperMarginRight = 20;
@@ -214,37 +211,31 @@ namespace HC.View
         public int PageWidthPix  // 页宽(含页左右边距)
         {
             get { return FPageWidthPix; }
-            set { FPageWidthPix = value; }
         }
 
         public int PageHeightPix  // 页高(含页眉、页脚)
         {
             get { return FPageHeightPix; }
-            set { FPageHeightPix = value; }
         }
 
         public int PageMarginTopPix 
         {
             get { return FPageMarginTopPix; }
-            set { FPageMarginTopPix = value; }
         }
 
         public int PageMarginLeftPix  
         {
             get { return FPageMarginLeftPix; }
-            set { FPageMarginLeftPix = value; }
         }
 
         public int PageMarginRightPix 
         {
             get { return FPageMarginRightPix; }
-            set { FPageMarginRightPix = value; }
         }
 
         public int PageMarginBottomPix 
         {
             get { return FPageMarginBottomPix; }
-            set { FPageMarginBottomPix = value; }
         }
     }
 

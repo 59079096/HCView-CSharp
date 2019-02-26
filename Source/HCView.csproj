@@ -71,6 +71,7 @@
     <Compile Include="HCRadioGroup.cs" />
     <Compile Include="HCRectItem.cs" />
     <Compile Include="HCRichData.cs" />
+    <Compile Include="HCUnitConversion.cs" />
     <Compile Include="HCViewData.cs" />
     <Compile Include="HCRichScrollBar.cs">
       <SubType>UserControl</SubType>

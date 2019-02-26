@@ -45,6 +45,10 @@ namespace HC.View
     public class HCParaStyle : HCObject
     {
         private ParaLineSpaceMode FLineSpaceMode;
+        private int FFirstIndentPix,// 首行缩进
+                    FLeftIndentPix,  // 左缩进
+                    FRightIndentPix;  // 右缩进
+
         private int FFirstIndent,// 首行缩进
                     FLeftIndent,  // 左缩进
                     FRightIndent;  // 右缩进
@@ -58,9 +62,9 @@ namespace HC.View
 
         public HCParaStyle()
         {
-            FFirstIndent = 0;
-            FLeftIndent = 0;
-            FRightIndent = 0;
+            FirstIndent = 0;
+            LeftIndent = 0;
+            RightIndent = 0;
             FLineSpaceMode = ParaLineSpaceMode.pls100;
             FBackColor = Color.Silver;
             FAlignHorz = ParaAlignHorz.pahJustify;
@@ -86,9 +90,9 @@ namespace HC.View
         public void AssignEx(HCParaStyle aSource)
         {
             FLineSpaceMode = aSource.LineSpaceMode;
-            FFirstIndent = aSource.FirstIndent;
-            FLeftIndent = aSource.LeftIndent;
-            FRightIndent = aSource.RightIndent;
+            FirstIndent = aSource.FirstIndent;
+            LeftIndent = aSource.LeftIndent;
+            RightIndent = aSource.RightIndent;
             FBackColor = aSource.BackColor;
             FAlignHorz = aSource.AlignHorz;
             FAlignVert = aSource.AlignVert;
@@ -103,6 +107,9 @@ namespace HC.View
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FLeftIndent);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            vBuffer = BitConverter.GetBytes(FRightIndent);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             HC.HCSaveColorToStream(aStream, FBackColor);  // save BackColor
@@ -131,13 +138,34 @@ namespace HC.View
                 FLineSpaceMode = (ParaLineSpaceMode)vByte;
             }
 
-            vBuffer = BitConverter.GetBytes(FFirstIndent);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FFirstIndent = BitConverter.ToInt32(vBuffer, 0);
-            //
-            vBuffer = BitConverter.GetBytes(FLeftIndent);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FLeftIndent = BitConverter.ToInt32(vBuffer, 0);
+            if (aFileVersion < 22)
+            {
+                vBuffer = BitConverter.GetBytes(FFirstIndentPix);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FFirstIndentPix = BitConverter.ToInt32(vBuffer, 0);
+                //
+                vBuffer = BitConverter.GetBytes(FLeftIndentPix);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FLeftIndentPix = BitConverter.ToInt32(vBuffer, 0);
+            }
+            else
+            {
+                vBuffer = BitConverter.GetBytes(FFirstIndent);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FFirstIndent = BitConverter.ToInt32(vBuffer, 0);
+                FFirstIndentPix = HCUnitConversion.MillimeterToPixX(FFirstIndent);
+                //
+                vBuffer = BitConverter.GetBytes(FLeftIndent);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FLeftIndent = BitConverter.ToInt32(vBuffer, 0);
+                FLeftIndentPix = HCUnitConversion.MillimeterToPixX(FLeftIndent);
+                //
+                vBuffer = BitConverter.GetBytes(FRightIndent);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FRightIndent = BitConverter.ToInt32(vBuffer, 0);
+                FRightIndentPix = HCUnitConversion.MillimeterToPixX(FRightIndent);
+            }
+
             //
             HC.HCLoadColorFromStream(aStream, ref FBackColor);
             //
@@ -257,10 +285,38 @@ namespace HC.View
             }
         }
 
+        protected void SetFirstIndent(int value)
+        {
+            if (FFirstIndent != value)
+            {
+                FFirstIndent = value;
+                FFirstIndentPix = HCUnitConversion.MillimeterToPixX(FFirstIndent);
+            }
+        }
+
+        protected void SetLeftIndent(int value)
+        {
+            if (FLeftIndent != value)
+            {
+                FLeftIndent = value;
+                FLeftIndentPix = HCUnitConversion.MillimeterToPixX(FLeftIndent);
+            }
+        }
+
+        protected void SetRightIndent(int value)
+        {
+            if (FRightIndent != value)
+            {
+                FRightIndent = value;
+                FRightIndentPix = HCUnitConversion.MillimeterToPixX(FRightIndent);
+            }
+        }
+
         public void ToXml(XmlElement aNode)
         {
             aNode.Attributes["firstindent"].Value = FFirstIndent.ToString();
             aNode.Attributes["leftindent"].Value = FLeftIndent.ToString();
+            aNode.Attributes["rightindent"].Value = FRightIndent.ToString();
             aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackColor);
             aNode.Attributes["spacemode"].Value = GetLineSpaceModeXML_();
             aNode.Attributes["horz"].Value = GetHorzXML_();
@@ -269,8 +325,9 @@ namespace HC.View
 
         public void ParseXml(XmlElement aNode)
         {
-            FFirstIndent = int.Parse(aNode.Attributes["firstindent"].Value);
-            FLeftIndent = int.Parse(aNode.Attributes["leftindent"].Value);
+            FirstIndent = int.Parse(aNode.Attributes["firstindent"].Value);
+            LeftIndent = int.Parse(aNode.Attributes["leftindent"].Value);
+            RightIndent = int.Parse(aNode.Attributes["rightindent"].Value);
             FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
             //GetXMLLineSpaceMode_;
             if (aNode.Attributes["spacemode"].Value == "100")
@@ -324,19 +381,34 @@ namespace HC.View
         public int FirstIndent 
         {
             get { return FFirstIndent; }
-            set { FFirstIndent = value; }
+            set { SetFirstIndent(value); }
         }
 
         public int LeftIndent
         { 
             get { return FLeftIndent; }
-            set { FLeftIndent = value; }
+            set { SetLeftIndent(value); }
         }
 
         public int RightIndent
         {
             get { return FRightIndent; }
-            set { FRightIndent = value; }
+            set { SetRightIndent(value); }
+        }
+
+        public int FirstIndentPix
+        {
+            get { return FFirstIndentPix; }
+        }
+
+        public int LeftIndentPix
+        {
+            get { return FLeftIndentPix; }
+        }
+
+        public int RightIndentPix
+        {
+            get { return FRightIndentPix; }
         }
 
         public Color BackColor

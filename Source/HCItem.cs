@@ -105,7 +105,11 @@ namespace HC.View
             GDI.SetViewportExtEx(aCanvas.Handle, FWindowWidth, FWindowHeight, ref size);
             try
             {
-                aCanvas.DrawLines(aPoints);
+                aCanvas.MoveTo(GetScaleX(aPoints[0].X), GetScaleY(aPoints[0].Y));
+                for (int i = 1; i < aPoints.Length; i++)
+                {
+                    aCanvas.LineTo(GetScaleX(aPoints[i].X), GetScaleY(aPoints[i].Y));
+                }
             }
             finally
             {

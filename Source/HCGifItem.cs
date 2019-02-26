@@ -80,7 +80,8 @@ namespace HC.View
             //if (FAnimate)
             //    UpdateImage();  // 获得当前gif动画下一步要渲染的帧
 
-            aCanvas.Draw(aDrawRect.Left, aDrawRect.Top, FGifImage);
+            //aCanvas.Draw(aDrawRect.Left, aDrawRect.Top, FGifImage);
+            aCanvas.StretchDraw(aDrawRect, FGifImage);
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
