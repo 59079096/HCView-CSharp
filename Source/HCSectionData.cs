@@ -633,58 +633,6 @@ namespace HC.View
             return this.InsertItem(vPageBreak);
         }
 
-        // 保存
-        public void SaveToTextFile(string aFileName, Encoding aEncoding)
-        {
-            FileStream vStream = new FileStream(aFileName, FileMode.Create, FileAccess.Write);
-            try
-            {
-                SaveToTextStream(vStream, aEncoding);
-            }
-            finally
-            {
-                vStream.Dispose();
-            }
-        }
-
-        public void SaveToTextStream(Stream aStream, Encoding aEncoding)
-        {
-            byte[] vBuffer = aEncoding.GetBytes(SaveToText());
-            byte[] vPreamble = aEncoding.GetPreamble();
-            if (vPreamble.Length > 0)
-                aStream.Write(vPreamble, 0, vPreamble.Length);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-        }
-
-        // 读取
-        public void LoadFromTextFile(string aFileName, Encoding aEncoding)
-        {
-            FileStream vStream = new FileStream(aFileName, FileMode.Open, FileAccess.Read);
-            try
-            {
-                string vFileFormat = Path.GetExtension(aFileName);
-                vFileFormat = vFileFormat.ToLower();
-                if (vFileFormat == ".txt")
-                    LoadFromTextStream(vStream, aEncoding);
-            }
-            finally
-            {
-                vStream.Dispose();
-            }
-        }
-
-        public void LoadFromTextStream(Stream aStream, Encoding aEncoding)
-        {
-            Clear();
-            long vSize = aStream.Length - aStream.Position;
-            byte[] vBuffer = new byte[vSize];
-            aStream.Read(vBuffer, 0, (int)vSize);
-            string vS = aEncoding.GetString(vBuffer);
-            if (vS != "")
-                InsertText(vS);
-        }
-
-        //
         public bool ShowLineActiveMark
         {
             get { return FShowLineActiveMark; }

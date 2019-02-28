@@ -2246,15 +2246,9 @@ namespace HC.View
             aStream.Position = vEndPos;
         }
 
-        public void SaveToTextFile(string aFileName, System.Text.Encoding aEncoding)
+        public string SaveToText()
         {
-            FPageData.SaveToTextFile(aFileName, aEncoding);
-        }
-
-        public void LoadFromTextFile(string aFileName, Encoding aEncoding)
-        {
-            FPageData.LoadFromTextFile(aFileName, aEncoding);
-            BuildSectionPages(0);
+            return FPageData.SaveToText();
         }
 
         public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)

@@ -2120,20 +2120,58 @@ namespace HC.View
 
         }
 
-        /// <summary> 文档保存为PDF格式 </summary>
-        public void SaveToTextFile(string aFileName, System.Text.Encoding aEncoding)
+        /// <summary> 以字符串形式获取文档各节正文内容 </summary>
+        public string SaveToText()
         {
+            string vResult = "";
             for (int i = 0; i <= Sections.Count - 1; i++)
-                FSections[i].SaveToTextFile(aFileName, aEncoding);
+                vResult = vResult + HC.sLineBreak + FSections[i].SaveToText();
+
+            return vResult;
         }
 
-        // 读取文档
-        /// <summary> 读取Txt文件 </summary>
+        /// <summary> 文档各节正文字符串保存为文本格式文件 </summary>
+        public void SaveToTextFile(string aFileName, System.Text.Encoding aEncoding)
+        {
+            using (FileStream vStream = new FileStream(aFileName, FileMode.Create))
+            {
+                SaveToTextStream(vStream, aEncoding);
+            }
+        }
+
+        /// <summary> 读取文本文件内容到第一节正文 </summary>
         public void LoadFromTextFile(string aFileName, System.Text.Encoding aEncoding)
+        {
+            using (FileStream vStream = new FileStream(aFileName, FileMode.Open))
+            {
+                vStream.Position = 0;
+                LoadFromTextStream(vStream, aEncoding);
+            }
+        }
+
+        /// <summary> 文档各节正文字符串保存为文本格式流 </summary>
+        public void SaveToTextStream(Stream aStream, System.Text.Encoding aEncoding)
+        {
+            string vText = SaveToText();
+            byte[] vBuffer = aEncoding.GetBytes(vText);
+            byte[] vPreamble = aEncoding.GetPreamble();
+            if (vPreamble.Length > 0)
+                aStream.Write(vPreamble, 0, vPreamble.Length);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+        }
+
+        /// <summary> 读取文本文件流 </summary>
+        public void LoadFromTextStream(Stream aStream, System.Text.Encoding aEncoding)
         {
             Clear();
             FStyle.Initialize();
-            ActiveSection.LoadFromTextFile(aFileName, aEncoding);
+
+            long vSize = aStream.Length - aStream.Position;
+            byte[] vBuffer = new byte[vSize];
+            aStream.Read(vBuffer, 0, (int)vSize);
+            string vS = aEncoding.GetString(vBuffer);
+            if (vS != "")
+                ActiveSection.InsertText(vS);
         }
 
         /// <summary> 文档保存到流 </summary>
