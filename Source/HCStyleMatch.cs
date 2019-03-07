@@ -286,7 +286,7 @@ namespace HC.View
 
     public class ParaFirstIndentMatch : HCParaMatch  // 段首行缩进匹配类
     {
-        private int FIndent;
+        private Single FIndent;
 
         protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
         {
@@ -298,7 +298,7 @@ namespace HC.View
             aParaStyle.FirstIndent = FIndent;
         }
 
-        public int Indent
+        public Single Indent
         {
             get { return FIndent; }
             set { FIndent = value; }
@@ -307,7 +307,7 @@ namespace HC.View
 
     public class ParaLeftIndentMatch : HCParaMatch  // 段左缩进匹配类
     {
-        private int FIndent;
+        private Single FIndent;
 
         protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
         {
@@ -319,7 +319,7 @@ namespace HC.View
             aParaStyle.LeftIndent = FIndent;
         }
 
-        public int Indent
+        public Single Indent
         {
             get { return FIndent; }
             set { FIndent = value; }
@@ -328,7 +328,7 @@ namespace HC.View
 
     public class ParaRightIndentMatch : HCParaMatch  // 段右缩进匹配类
     {
-        private int FIndent;
+        private Single FIndent;
 
         protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
         {
@@ -340,7 +340,7 @@ namespace HC.View
             aParaStyle.RightIndent = FIndent;
         }
 
-        public int Indent
+        public Single Indent
         {
             get { return FIndent; }
             set { FIndent = value; }

@@ -456,24 +456,6 @@ namespace HC.View
             return Result;
         }
 
-        public override HCCustomItem CreateDefaultDomainItem()
-        {
-            HCCustomItem Result = base.CreateDefaultDomainItem();
-            if (OnCreateItem != null)
-                OnCreateItem(Result, null);
-
-            return Result;
-        }
-
-        public override HCCustomItem CreateDefaultTextItem()
-        {
-            HCCustomItem Result = base.CreateDefaultTextItem();
-            if (OnCreateItem != null)
-                OnCreateItem(Result, null);
-
-            return Result;
-        }
-
         public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom, 
             int aDataScreenTop, int aDataScreenBottom, int aVOffset, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {

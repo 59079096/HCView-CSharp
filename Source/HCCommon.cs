@@ -47,6 +47,7 @@ namespace HC.View
         public static Color AnnotateBKColor = Color.FromArgb(0xFF, 0xD5, 0xD5);
         public static Color AnnotateBKActiveColor = Color.FromArgb(0xA8, 0xA8, 0xFF);
         public static Color HyperTextColor = Color.FromArgb(0x05, 0x63, 0xC1);
+        public static Color HCTransparentColor = Color.Transparent;  // 透明色
         //public static char[] HCBoolText = { '0', '1' };
 
         public const uint HC_TEXTMAXSIZE = 4294967295;
@@ -270,7 +271,7 @@ namespace HC.View
             if (aFontSize == 5)
                 Result = "八号";
             else
-                Result = string.Format("#.#", aFontSize);
+                Result = string.Format("{0:0.#}", aFontSize);
 
             return Result;
         }
@@ -390,6 +391,7 @@ namespace HC.View
 
         public static void HCLoadColorFromStream(System.IO.Stream aStream, ref Color color)
         {
+            // to do:不透明时要将argb转换为rgb
             byte A = (byte)aStream.ReadByte();
             byte R = (byte)aStream.ReadByte();
             byte G = (byte)aStream.ReadByte();
@@ -400,12 +402,23 @@ namespace HC.View
         public static Color GetXmlRGBColor(string aColorStr)
         {
             string[] vsRGB = aColorStr.Split(new string[] { "," }, StringSplitOptions.None);
-            return Color.FromArgb(byte.Parse(vsRGB[0]), byte.Parse(vsRGB[1]), byte.Parse(vsRGB[2]));
+            if (vsRGB.Length > 3)
+            {
+                if (vsRGB[0] == "0")
+                    return HCTransparentColor;
+                else
+                    return Color.FromArgb(byte.Parse(vsRGB[1]), byte.Parse(vsRGB[2]), byte.Parse(vsRGB[3]));
+            }
+            else
+                return Color.FromArgb(byte.Parse(vsRGB[0]), byte.Parse(vsRGB[1]), byte.Parse(vsRGB[2]));
         }
 
         public static string GetColorXmlRGB(Color aColor)
         {
-            return aColor.R.ToString() + "," + aColor.G.ToString() + "," + aColor.B.ToString();
+            if (aColor == HCTransparentColor)
+                return "0,255,255,255";
+            else
+                return string.Format("255,{0},{1},{2}", aColor.R, aColor.G, aColor.B);
         }
 
         public static void SetBorderSideByPro(string aValue, HCBorderSides aBorderSides)

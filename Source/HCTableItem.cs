@@ -639,7 +639,12 @@ namespace HC.View
                             if ((this.IsSelectComplate || vCellData.CellSelectedAll) && (!aPaintInfo.Print))
                                 aCanvas.Brush.Color = OwnerData.Style.SelColor;
                             else
-                                aCanvas.Brush.Color = FRows[vDestRow][vDestCol].BackgroundColor;
+                            {
+                                if (FRows[vDestRow][vDestCol].BackgroundColor != HC.HCTransparentColor)
+                                    aCanvas.Brush.Color = FRows[vDestRow][vDestCol].BackgroundColor;
+                                else
+                                    aCanvas.Brush.Style = HCBrushStyle.bsClear;
+                            }
                             
                             aCanvas.FillRect(new RECT(vCellDrawLeft - FBorderWidth + 1, vCellScreenTop,  // + FRows[vR].Height,
                                 vCellDrawLeft + FRows[vR][vC].Width + FBorderWidth, vCellScreenBottom));

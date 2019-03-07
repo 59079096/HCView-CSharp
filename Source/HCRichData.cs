@@ -448,6 +448,9 @@ namespace HC.View
                 Result.StyleNo = aStyleNo;
             }
 
+            if (FOnCreateItem != null)
+                FOnCreateItem(Result, null);
+
             return Result;
         }
 

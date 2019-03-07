@@ -93,9 +93,10 @@ namespace HC.View
             FHeaderOffset;  // 页眉顶部偏移
 
         EventHandler
-            FOnDataChanged,  // 页眉、页脚、页面某一个修改时触发
+            FOnDataChange,  // 页眉、页脚、页面某一个修改时触发
             FOnCheckUpdateInfo,  // 当前Data需要UpdateInfo更新时触发
-            FOnReadOnlySwitch;  // 页眉、页脚、页面只读状态发生变化时触发
+            FOnReadOnlySwitch,  // 页眉、页脚、页面只读状态发生变化时触发
+            FOnChangeTopLevelData;  // 切换页眉、页脚、正文、表格单元格时触发
 
         GetScreenCoordEventHandler FOnGetScreenCoord;
 
@@ -110,7 +111,7 @@ namespace HC.View
 
         SectionDataItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
         SectionDataItemMouseEventHandler FOnItemMouseUp;
-        DataItemEventHandler FOnItemResized;
+        DataItemEventHandler FOnItemResize;
         EventHandler FOnCreateItem;
         StyleItemEventHandler FOnCreateItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
@@ -221,8 +222,8 @@ namespace HC.View
 
         protected void DoDataChanged(object sender)
         {
-            if (FOnDataChanged != null)
-                FOnDataChanged(sender, null);
+            if (FOnDataChange != null)
+                FOnDataChange(sender, null);
         }
 
         /// <summary> 缩放Item约束不要超过整页宽、高 </summary>
@@ -242,8 +243,9 @@ namespace HC.View
                         vHeight = GetContentHeight();// - FStyle.ParaStyles[vResizeItem.ParaNo].LineSpace;
 
             vResizeItem.RestrainSize(vWidth, vHeight);
-            if (FOnItemResized != null)
-                FOnItemResized(aData, aItemNo);
+
+            if (FOnItemResize != null)
+                FOnItemResize(aData, aItemNo);
         }
 
         private HCCustomItem DoDataCreateStyleItem(HCCustomData aData, int aStyleNo)
@@ -778,6 +780,7 @@ namespace HC.View
         public virtual void MouseDown(MouseEventArgs e)
         {
             bool vChangeActiveData = false;
+            HCRichData vOldTopData = FActiveData.GetTopLevelData();
             int vPageIndex = GetPageIndexByFilm(e.Y);  // 鼠标点击处所在的页(和光标所在页可能并不是同一页，如表格跨页时，空单元格第二页点击时，光标回前一页)
             if (FActivePageIndex != vPageIndex)
                 FActivePageIndex = vPageIndex;
@@ -818,6 +821,12 @@ namespace HC.View
             {
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
                 FActiveData.MouseDown(vMouseArgs);
+            }
+
+            if (vOldTopData != FActiveData.GetTopLevelData())
+            {
+                if (FOnChangeTopLevelData != null)
+                    FOnChangeTopLevelData(this, null);
             }
         }
 
@@ -1777,7 +1786,7 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
-        public void ApplyParaLeftIndent(int indent)
+        public void ApplyParaLeftIndent(Single indent)
         {
             HCFunction vEvent = delegate()
             {
@@ -1788,7 +1797,7 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
-        public void ApplyParaRightIndent(int indent)
+        public void ApplyParaRightIndent(Single indent)
         {
             HCFunction vEvent = delegate()
             {
@@ -1799,7 +1808,7 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
-        public void ApplyParaFirstIndent(int indent)
+        public void ApplyParaFirstIndent(Single indent)
         {
             HCFunction vEvent = delegate()
             {
@@ -2553,10 +2562,16 @@ namespace HC.View
             set { SetReadOnly(value); }
         }
 
-        public EventHandler OnDataChanged
+        public EventHandler OnDataChange
         {
-            get { return FOnDataChanged; }
-            set { FOnDataChanged = value; }
+            get { return FOnDataChange; }
+            set { FOnDataChange = value; }
+        }
+
+        public EventHandler OnChangeTopLevelData
+        {
+            get { return FOnChangeTopLevelData; }
+            set { FOnChangeTopLevelData = value; }
         }
 
         public EventHandler OnReadOnlySwitch
@@ -2589,10 +2604,10 @@ namespace HC.View
             set { FOnRemoveItem = value; }
         }
 
-        public DataItemEventHandler OnItemResized
+        public DataItemEventHandler OnItemResize
         {
-            get { return FOnItemResized; }
-            set { FOnItemResized = value; }
+            get { return FOnItemResize; }
+            set { FOnItemResize = value; }
         }
 
         public SectionDataItemMouseEventHandler OnItemMouseUp
@@ -2763,14 +2778,14 @@ namespace HC.View
 
             aNode.Attributes["pagesize"].Value =  // 纸张大小
                 ((int)PageSize.PaperKind).ToString()
-                + "," + string.Format("#.#", PageSize.PaperWidth)
-                + "," + string.Format("#.#", PageSize.PaperHeight) ;
+                + "," + string.Format("{0:0.#}", PageSize.PaperWidth)
+                + "," + string.Format("{0:0.#}", PageSize.PaperHeight);
 
             aNode.Attributes["margin"].Value =  // 边距
-                string.Format("#.#", PageSize.PaperMarginLeft) + ","
-                + string.Format("#.#", PageSize.PaperMarginTop) + ","
-                + string.Format("#.#", PageSize.PaperMarginRight) + ","
-                + string.Format("#.#", PageSize.PaperMarginBottom);
+                string.Format("{0:0.#}", PageSize.PaperMarginLeft) + ","
+                + string.Format("{0:0.#}", PageSize.PaperMarginTop) + ","
+                + string.Format("{0:0.#}", PageSize.PaperMarginRight) + ","
+                + string.Format("{0:0.#}", PageSize.PaperMarginBottom);
 
             // 存页眉
             XmlElement vNode = aNode.OwnerDocument.CreateElement("header");

@@ -34,7 +34,7 @@ namespace HC.View
         private IntPtr FDC = IntPtr.Zero;
         private IntPtr FMemDC = IntPtr.Zero;
         private IntPtr FhImc = IntPtr.Zero;
-        private int FActiveSectionIndex, FDisplayFirstSection, FDisplayLastSection;
+        private int FActiveSectionIndex, FDisplayFirstSection, FDisplayLastSection, FViewWidth, FViewHeight;
         private uint FUpdateCount;
         private Single FZoom;
         private bool FAutoZoom;  // 自动缩放
@@ -44,7 +44,7 @@ namespace HC.View
         private HCPageScrollModel FPageScrollModel;  // 页面滚动显示模式：纵向、横向
         private HCCaret FCaret;
         private DataFormats.Format FHCExtFormat;
-        private EventHandler FOnCaretChange, FOnVerScroll, FOnSectionCreateItem, FOnSectionReadOnlySwitch;
+        private EventHandler FOnCaretChange, FOnVerScroll, FOnHorScroll, FOnSectionCreateItem, FOnSectionReadOnlySwitch;
         private StyleItemEventHandler FOnSectionCreateStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
         private SectionDataItemNotifyEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
@@ -52,9 +52,9 @@ namespace HC.View
 
         private SectionPagePaintEventHandler FOnSectionPaintHeader, FOnSectionPaintFooter, FOnSectionPaintPage,
           FOnSectionPaintWholePageBefor, FOnSectionPaintWholePageAfter;
-        private PaintEventHandler FOnUpdateViewBefor, FOnUpdateViewAfter;
+        private PaintEventHandler FOnPaintViewBefor, FOnPaintViewAfter;
 
-        private EventHandler FOnChange, FOnChangedSwitch, FOnZoomChanged;
+        private EventHandler FOnChange, FOnChangedSwitch, FOnZoomChanged, FOnViewResize;
 
         private void SetPrintBySectionInfo(PageSettings PageSettings, int ASectionIndex)
         {
@@ -73,20 +73,20 @@ namespace HC.View
                 PageSettings.Landscape = true;
         }
 
-        private int GetDisplayWidth()
+        private void GetViewWidth()
         {
             if (FVScrollBar.Visible)
-                return Width - FVScrollBar.Width;
+                FViewWidth = Width - FVScrollBar.Width;
             else
-                return Width;
+                FViewWidth = Width;
         }
 
-        private int GetDisplayHeight()
+        private void GetViewHeight()
         {
             if (FHScrollBar.Visible)
-                return Height - FHScrollBar.Height;
+                FViewHeight = Height - FHScrollBar.Height;
             else
-                return Height;
+                FViewHeight = Height;
         }
         
         private bool GetSymmetryMargin()
@@ -102,16 +102,26 @@ namespace HC.View
                 FStyle.UpdateInfoRePaint();
                 FStyle.UpdateInfoReCaret(false);
                 DoMapChanged();
+                DoViewResize();
             }
         }
 
-        private void DoVScrollChange(object Sender, ScrollCode ScrollCode, int ScrollPos)
+        private void DoVerScroll(object Sender, ScrollCode ScrollCode, int ScrollPos)
         {
             FStyle.UpdateInfoRePaint();
             FStyle.UpdateInfoReCaret(false);
             CheckUpdateInfo();
             if (FOnVerScroll != null)
                 FOnVerScroll(this, null);
+        }
+
+        private void DoHorScroll(object Sender, ScrollCode ScrollCode, int ScrollPos)
+        {
+            FStyle.UpdateInfoRePaint();
+            FStyle.UpdateInfoReCaret(false);
+            CheckUpdateInfo();
+            if (FOnHorScroll != null)
+                FOnHorScroll(this, null);
         }
 
         private HCCustomItem DoSectionCreateStyleItem(HCCustomData AData, int AStyleNo)
@@ -134,7 +144,8 @@ namespace HC.View
         {
             HCSection Result = new HCSection(FStyle);
             // 创建节后马上赋值事件（保证后续插入表格等需要这些事件的操作可获取到事件）
-            Result.OnDataChanged = DoSectionDataChanged;
+            Result.OnDataChange = DoSectionDataChange;
+            Result.OnChangeTopLevelData = DoSectionChangeTopLevelData;
             Result.OnCheckUpdateInfo = DoSectionDataCheckUpdateInfo;
             Result.OnCreateItem = DoSectionCreateItem;
             Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
@@ -142,6 +153,7 @@ namespace HC.View
             Result.OnInsertItem = DoSectionInsertItem;
             Result.OnRemoveItem = DoSectionRemoveItem;
             Result.OnItemMouseUp = DoSectionItemMouseUp;
+            Result.OnItemResize = DoSectionItemResize;
             Result.OnReadOnlySwitch = DoSectionReadOnlySwitch;
             Result.OnGetScreenCoord = DoSectionGetScreenCoord;
             Result.OnDrawItemPaintAfter = DoSectionDrawItemPaintAfter;
@@ -160,9 +172,9 @@ namespace HC.View
             return Result;
         }
 
-        private RECT GetDisplayRect()
+        private RECT GetViewRect()
         {
-            return HC.Bounds(0, 0, GetDisplayWidth(), GetDisplayHeight());
+            return HC.Bounds(0, 0, FViewWidth, FViewHeight);
         }
 
         private void ReBuildCaret()
@@ -193,16 +205,15 @@ namespace HC.View
             FCaret.Y = ZoomIn(GetSectionTopFilm(FActiveSectionIndex) + vCaretInfo.Y) - FVScrollBar.Position;
             FCaret.Height = ZoomIn(vCaretInfo.Height);
             
-            int vDisplayHeight = GetDisplayHeight();
             if (!FStyle.UpdateInfo.ReScroll)
             {
-                if ((FCaret.X < 0) || (FCaret.X > GetDisplayWidth()))
+                if ((FCaret.X < 0) || (FCaret.X > FViewWidth))
                 {
                     FCaret.Hide();
                     return;
                 }
 
-                if ((FCaret.Y + FCaret.Height < 0) || (FCaret.Y > vDisplayHeight))
+                if ((FCaret.Y + FCaret.Height < 0) || (FCaret.Y > FViewHeight))
                 {
                     FCaret.Hide();
                     return;
@@ -210,24 +221,24 @@ namespace HC.View
             }
             else  // 非滚动条(方向键、点击等)引起的光标位置变化
             {
-                if (FCaret.Height < vDisplayHeight)
+                if (FCaret.Height < FViewHeight)
                 {
                     if (FCaret.Y < 0)
                         FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - HC.PagePadding;
                     else
-                    if (FCaret.Y + FCaret.Height + HC.PagePadding > vDisplayHeight)
-                        FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + HC.PagePadding - vDisplayHeight;
+                        if (FCaret.Y + FCaret.Height + HC.PagePadding > FViewHeight)
+                            FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + HC.PagePadding - FViewHeight;
                     
                     if (FCaret.X < 0)
                         FHScrollBar.Position = FHScrollBar.Position + FCaret.X - HC.PagePadding;
                     else
-                    if (FCaret.X + HC.PagePadding > GetDisplayWidth())
-                        FHScrollBar.Position = FHScrollBar.Position + FCaret.X + HC.PagePadding - GetDisplayWidth();
+                        if (FCaret.X + HC.PagePadding > FViewWidth)
+                            FHScrollBar.Position = FHScrollBar.Position + FCaret.X + HC.PagePadding - FViewWidth;
                 }
             }
 
-            if (FCaret.Y + FCaret.Height > vDisplayHeight)
-                FCaret.Height = vDisplayHeight - FCaret.Y;
+            if (FCaret.Y + FCaret.Height > FViewHeight)
+                FCaret.Height = FViewHeight - FCaret.Y;
             
             FCaret.Show();
             DoCaretChange();
@@ -272,6 +283,7 @@ namespace HC.View
                     FOnZoomChanged(this, null);
 
                 DoMapChanged();
+                DoViewResize();
             }
         }
 
@@ -439,9 +451,14 @@ namespace HC.View
                  FOnCaretChange(this, null);
         }
 
-        private void DoSectionDataChanged(Object Sender, EventArgs e)
+        private void DoSectionDataChange(Object Sender, EventArgs e)
         {
             DoChange();
+        }
+
+        private void DoSectionChangeTopLevelData(Object Sender, EventArgs e)
+        {
+            DoViewResize();
         }
 
         // 仅重绘和重建光标，不触发Change事件
@@ -460,9 +477,10 @@ namespace HC.View
             if (vFileExt != HC.HC_EXT)
                 throw new Exception("加载失败，不是" + HC.HC_EXT + "文件！");
 
-            DoLoadBefor(aStream, vFileVersion);  // 触发加载前事件
+            DoLoadStreamBefor(aStream, vFileVersion);  // 触发加载前事件
             aStyle.LoadFromStream(aStream, vFileVersion);  // 加载样式表
             aLoadSectionProc(vFileVersion);  // 加载节数量、节数据
+            DoLoadStreamAfter(aStream, vFileVersion);
             DoMapChanged();
         }
 
@@ -547,6 +565,12 @@ namespace HC.View
             ActiveSection.Redo(sender);
         }
 
+        private void DoViewResize()
+        {
+            if (FOnViewResize != null)
+                FOnViewResize(this, null);
+        }
+
         /// <summary> 文档"背板"变动(数据无变化，如对称边距，缩放视图) </summary>
         private void DoMapChanged()
         {
@@ -591,6 +615,11 @@ namespace HC.View
             int aItemNo, MouseEventArgs e)
         {
             // 转到超链接
+        }
+
+        private void DoSectionItemResize(HCCustomData aData, int aItemNo)
+        {
+            DoViewResize();
         }
 
         private void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
@@ -738,19 +767,19 @@ namespace HC.View
         protected virtual void DoPasteDataBefor(Stream AStream, ushort AVersion) { }
 
         /// <summary> 保存文档前触发事件，便于订制特征数据 </summary>
-        protected virtual void DoSaveBefor(Stream AStream) { }
+        protected virtual void DoSaveStreamBefor(Stream AStream) { }
 
         /// <summary> 保存文档后触发事件，便于订制特征数据 </summary>
-        protected virtual void DoSaveAfter(Stream AStream)
+        protected virtual void DoSaveStreamAfter(Stream AStream)
         {
             //SetIsChanged(false);
         }
 
         /// <summary> 读取文档前触发事件，便于确认订制特征数据 </summary>
-        protected virtual void DoLoadBefor(Stream aStream, ushort aFileVersion) { }
+        protected virtual void DoLoadStreamBefor(Stream aStream, ushort aFileVersion) { }
 
         /// <summary> 读取文档后触发事件，便于确认订制特征数据 </summary>
-        protected virtual void DoLoadAfter(Stream aStream, ushort aFileVersion) { }
+        protected virtual void DoLoadStreamAfter(Stream aStream, ushort aFileVersion) { }
 
         //
         protected override void OnMouseDown(MouseEventArgs e)
@@ -1125,11 +1154,11 @@ namespace HC.View
             // 垂直滚动条，范围在Resize中设置
             FVScrollBar = new HCRichScrollBar();
             FVScrollBar.Orientation = Orientation.oriVertical;
-            FVScrollBar.OnScroll = DoVScrollChange;
+            FVScrollBar.OnScroll = DoVerScroll;
             // 水平滚动条，范围在Resize中设置
             FHScrollBar = new HCScrollBar();
             FHScrollBar.Orientation = Orientation.oriHorizontal;
-            FHScrollBar.OnScroll = DoVScrollChange;
+            FHScrollBar.OnScroll = DoHorScroll;
 
             this.Controls.Add(FHScrollBar);
             this.Controls.Add(FVScrollBar);
@@ -1169,15 +1198,15 @@ namespace HC.View
         {
  	        base.OnResize(e);
 
-            int vDisplayWidth = GetDisplayWidth();
-            int vDisplayHeight = GetDisplayHeight();
+            GetViewWidth();
+            GetViewHeight();
 
             if (FAutoZoom)
             {
                 if (FAnnotate.Count > 0)
-                    FZoom = (vDisplayWidth - HC.PagePadding * 2) / (ActiveSection.PageWidthPix + HC.AnnotationWidth);
+                    FZoom = (FViewWidth - HC.PagePadding * 2) / (ActiveSection.PageWidthPix + HC.AnnotationWidth);
                 else
-                    FZoom = (vDisplayWidth - HC.PagePadding * 2) / ActiveSection.PageWidthPix;
+                    FZoom = (FViewWidth - HC.PagePadding * 2) / ActiveSection.PageWidthPix;
             }
 
             CalcScrollRang();
@@ -1187,6 +1216,7 @@ namespace HC.View
                 FStyle.UpdateInfoReCaret(false);
 
             CheckUpdateInfo();
+            DoViewResize();
         }
 
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
@@ -1205,7 +1235,7 @@ namespace HC.View
         protected override void OnPaint(PaintEventArgs e)
         {
             //base.OnPaint(e);
-            GDI.BitBlt(FDC, 0, 0, GetDisplayWidth(), GetDisplayHeight(), FMemDC, 0, 0, GDI.SRCCOPY);
+            GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FMemDC, 0, 0, GDI.SRCCOPY);
  	        
             using (SolidBrush vBrush = new SolidBrush(this.BackColor))
             {
@@ -1217,6 +1247,7 @@ namespace HC.View
         public void ResetActiveSectionMargin()
         {
             ActiveSection.ResetMargin();
+            DoViewResize();
         }
 
         /// <summary> 全部清空(清除各节页眉、页脚、页面的Item及DrawItem) </summary>
@@ -1520,19 +1551,19 @@ namespace HC.View
         }
 
         /// <summary> 修改当前光标所在段左缩进 </summary>
-        public void ApplyParaLeftIndent(int aIndent)
+        public void ApplyParaLeftIndent(Single aIndent)
         {
             ActiveSection.ApplyParaLeftIndent(aIndent);
         }
 
         /// <summary> 修改当前光标所在段右缩进 </summary>
-        public void ApplyParaRightIndent(int aIndent)
+        public void ApplyParaRightIndent(Single aIndent)
         {
             ActiveSection.ApplyParaRightIndent(aIndent);
         }
 
         /// <summary> 修改当前光标所在段首行缩进 </summary>
-        public void ApplyParaFirstIndent(int aIndent)
+        public void ApplyParaFirstIndent(Single aIndent)
         {
             ActiveSection.ApplyParaFirstIndent(aIndent);
         }
@@ -1763,7 +1794,7 @@ namespace HC.View
         /// <summary> 重绘客户区域 </summary>
         public void UpdateView()
         {
-            UpdateView(new RECT(0, 0, GetDisplayWidth(), GetDisplayHeight()));
+            UpdateView(GetViewRect());
         }
 
 #region
@@ -1808,7 +1839,7 @@ namespace HC.View
                 }
                 if (FDisplayFirstSection >= 0)
                 {
-                    int vY = FVScrollBar.Position + GetDisplayHeight();
+                    int vY = FVScrollBar.Position + FViewHeight;
                     for (int i = FDisplayFirstSection; i <= Sections.Count - 1; i++)
                     {
                         for (int j = vFirstPage; j <= Sections[i].PageCount - 1; j++)
@@ -1854,13 +1885,10 @@ namespace HC.View
         {
             if ((FUpdateCount == 0) && IsHandleCreated)
             {
-                int vDisplayWidth = GetDisplayWidth();
-                int vDisplayHeight = GetDisplayHeight();
-
                 if (FMemDC != IntPtr.Zero)
                     GDI.DeleteDC(FMemDC);
                 FMemDC = (IntPtr)GDI.CreateCompatibleDC(FDC);
-                IntPtr vBitmap = (IntPtr)GDI.CreateCompatibleBitmap(FDC, vDisplayWidth, vDisplayHeight);
+                IntPtr vBitmap = (IntPtr)GDI.CreateCompatibleBitmap(FDC, FViewWidth, FViewHeight);
                 GDI.SelectObject(FMemDC, vBitmap);
                 try
                 {
@@ -1871,7 +1899,7 @@ namespace HC.View
 
                         // 控件背景
                         vDataBmpCanvas.Brush.Color = this.BackColor;// $00E7BE9F;
-                        vDataBmpCanvas.FillRect(new RECT(0, 0, vDisplayWidth, vDisplayHeight));
+                        vDataBmpCanvas.FillRect(new RECT(0, 0, FViewWidth, FViewHeight));
                         // 因基于此计算当前页面数据起始结束，所以不能用ARect代替
                         CalcDisplaySectionAndPage();  // 计算当前范围内可显示的起始节、页和结束节、页
 
@@ -1881,14 +1909,14 @@ namespace HC.View
                             vPaintInfo.ScaleX = FZoom;
                             vPaintInfo.ScaleY = FZoom;
                             vPaintInfo.Zoom = FZoom;
-                            vPaintInfo.WindowWidth = vDisplayWidth;
-                            vPaintInfo.WindowHeight = vDisplayHeight;
+                            vPaintInfo.WindowWidth = FViewWidth;
+                            vPaintInfo.WindowHeight = FViewHeight;
 
                             ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vDataBmpCanvas);
                             try
                             {
-                                if (FOnUpdateViewBefor != null)
-                                    FOnUpdateViewBefor(vDataBmpCanvas);
+                                if (FOnPaintViewBefor != null)
+                                    FOnPaintViewBefor(vDataBmpCanvas);
 
                                 if (FAnnotate.DrawCount > 0)
                                     FAnnotate.ClearDrawAnnotate();
@@ -1906,8 +1934,8 @@ namespace HC.View
                                 for (int i = 0; i <= vPaintInfo.TopItems.Count - 1; i++)  // 绘制顶层Ite
                                     vPaintInfo.TopItems[i].PaintTop(vDataBmpCanvas);
 
-                                if (FOnUpdateViewAfter != null)
-                                    FOnUpdateViewAfter(vDataBmpCanvas);
+                                if (FOnPaintViewAfter != null)
+                                    FOnPaintViewAfter(vDataBmpCanvas);
                             }
                             finally
                             {
@@ -2004,9 +2032,9 @@ namespace HC.View
         {
             int Result = 0;
             if (FAnnotate.Count > 0)
-                Result = Math.Max((GetDisplayWidth() - ZoomIn(FSections[ASectionIndex].PageWidthPix + HC.AnnotationWidth)) / 2, ZoomIn(HC.PagePadding));
+                Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PageWidthPix + HC.AnnotationWidth)) / 2, ZoomIn(HC.PagePadding));
             else
-                Result = Math.Max((GetDisplayWidth() - ZoomIn(FSections[ASectionIndex].PageWidthPix)) / 2, ZoomIn(HC.PagePadding));
+                Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PageWidthPix)) / 2, ZoomIn(HC.PagePadding));
     
             Result = ZoomOut(Result);
 
@@ -2130,6 +2158,16 @@ namespace HC.View
             return vResult;
         }
 
+        /// <summary> 读文本到第一节正文 </summary>
+        public void LoadFromText(string aText)
+        {
+            Clear();
+            FStyle.Initialize();
+
+            if (aText != "")
+                ActiveSection.InsertText(aText);
+        }
+
         /// <summary> 文档各节正文字符串保存为文本格式文件 </summary>
         public void SaveToTextFile(string aFileName, System.Text.Encoding aEncoding)
         {
@@ -2163,15 +2201,11 @@ namespace HC.View
         /// <summary> 读取文本文件流 </summary>
         public void LoadFromTextStream(Stream aStream, System.Text.Encoding aEncoding)
         {
-            Clear();
-            FStyle.Initialize();
-
             long vSize = aStream.Length - aStream.Position;
             byte[] vBuffer = new byte[vSize];
             aStream.Read(vBuffer, 0, (int)vSize);
             string vS = aEncoding.GetString(vBuffer);
-            if (vS != "")
-                ActiveSection.InsertText(vS);
+            LoadFromText(vS);
         }
 
         /// <summary> 文档保存到流 </summary>
@@ -2181,7 +2215,7 @@ namespace HC.View
 
             if (!aQuick)
             {
-                DoSaveBefor(aStream);
+                DoSaveStreamBefor(aStream);
                 _DeleteUnUsedStyle(aAreas);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
             }
             FStyle.SaveToStream(aStream);
@@ -2193,7 +2227,7 @@ namespace HC.View
                 FSections[i].SaveToStream(aStream, aAreas);
             
             if (!aQuick)
-                DoSaveAfter(aStream);
+                DoSaveStreamAfter(aStream);
         }
 
         /// <summary> 读取文件流 </summary>
@@ -2226,6 +2260,7 @@ namespace HC.View
                     };
 
                     DoLoadFromStream(aStream, FStyle, vEvent);
+                    DoViewResize();
                 }
                 finally
                 {
@@ -2311,6 +2346,7 @@ namespace HC.View
                         }
 
                         DoMapChanged();
+                        DoViewResize();
                     }
                 }
                 finally
@@ -2840,14 +2876,14 @@ namespace HC.View
                 if (vStartDrawRect.Top < 0)
                     this.FVScrollBar.Position = this.FVScrollBar.Position + vStartDrawRect.Top;
                 else
-                if (vStartDrawRect.Bottom > GetDisplayHeight())
-                    this.FVScrollBar.Position = this.FVScrollBar.Position + vStartDrawRect.Bottom - GetDisplayHeight();
+                if (vStartDrawRect.Bottom > FViewHeight)
+                    this.FVScrollBar.Position = this.FVScrollBar.Position + vStartDrawRect.Bottom - FViewHeight;
                 
                 if (vStartDrawRect.Left < 0)
                     this.FHScrollBar.Position = this.FHScrollBar.Position + vStartDrawRect.Left;
                 else
-                if (vStartDrawRect.Right > GetDisplayWidth())
-                    this.FHScrollBar.Position = this.FHScrollBar.Position + vStartDrawRect.Right - GetDisplayWidth();
+                if (vStartDrawRect.Right > FViewWidth)
+                    this.FHScrollBar.Position = this.FHScrollBar.Position + vStartDrawRect.Right - FViewWidth;
             }
 
             return Result;
@@ -2960,6 +2996,16 @@ namespace HC.View
         {
             get { return FIsChanged; }
             set { SetIsChanged(value); }
+        }
+
+        public int ViewWidth
+        {
+            get { return FViewWidth; }
+        }
+
+        public int ViewHeight
+        {
+            get { return FViewHeight; }
         }
 
         /// <summary> 节有新的Item创建时触发 </summary>
@@ -3086,6 +3132,13 @@ namespace HC.View
             set { FOnVerScroll = value; }
         }
 
+        /// <summary> 水平滚动条滚动时触发 </summary>
+        public EventHandler OnHorScroll
+        {
+            get { return FOnHorScroll; }
+            set { FOnHorScroll = value; }
+        }
+
         /// <summary> 文档内容变化时触发 </summary>
         public EventHandler OnChange
         {
@@ -3108,17 +3161,17 @@ namespace HC.View
         }
 
         /// <summary> 窗口重绘开始时触发 </summary>
-        public PaintEventHandler OnUpdateViewBefor
+        public PaintEventHandler OnPaintViewBefor
         {
-            get { return FOnUpdateViewBefor; }
-            set { FOnUpdateViewBefor = value; }
+            get { return FOnPaintViewBefor; }
+            set { FOnPaintViewBefor = value; }
         }
 
         /// <summary> 窗口重绘结束后触发 </summary>
-        public PaintEventHandler OnUpdateViewAfter
+        public PaintEventHandler OnPaintViewAfter
         {
-            get { return FOnUpdateViewAfter; }
-            set { FOnUpdateViewAfter = value; }
+            get { return FOnPaintViewAfter; }
+            set { FOnPaintViewAfter = value; }
         }
 
         public StyleItemEventHandler OnSectionCreateStyleItem
@@ -3131,6 +3184,12 @@ namespace HC.View
         {
             get { return FOnSectionCanEdit; }
             set { FOnSectionCanEdit = value; }
+        }
+
+        public EventHandler OnViewResize
+        {
+            get { return FOnViewResize; }
+            set { FOnViewResize = value; }
         }
     }
 

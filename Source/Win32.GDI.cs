@@ -842,7 +842,9 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int GetNearestColor(HDC hdc, int crColor);
 		[DllImport("gdi32")] public static extern int GetNearestPaletteIndex(HANDLE hPalette, int crColor);
 		[DllImport("gdi32")] public static extern int GetObject(HANDLE hObject, int nCount, IntPtr lpObject);
+        [DllImport("gdi32")] public static extern int GetObject(HANDLE hObject, int nCount, ref LOGFONT logfont);
 		[DllImport("gdi32")] public static extern int GetObjectType(HANDLE hgdiobj);
+        [DllImport("gdi32")] public static extern int GetOutlineTextMetrics(HDC hdc, int cbData, IntPtr lpotm);
 		[DllImport("gdi32")] public static extern int GetOutlineTextMetrics(HDC hdc, int cbData, ref OUTLINETEXTMETRICW lpotm);
 		[DllImport("gdi32")] public static extern int GetPaletteEntries(HANDLE hPalette, int wStartIndex, int wNumEntries, ref PALETTEENTRY lpPaletteEntries);
 		[DllImport("gdi32")] public static extern int GetPath(HDC hdc, ref POINT lpPoint, Byte lpTypes, int nSize);

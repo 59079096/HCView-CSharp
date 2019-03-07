@@ -49,9 +49,9 @@ namespace HC.View
                     FLeftIndentPix,  // 左缩进
                     FRightIndentPix;  // 右缩进
 
-        private int FFirstIndent,// 首行缩进
-                    FLeftIndent,  // 左缩进
-                    FRightIndent;  // 右缩进
+        private Single FFirstIndent,// 首行缩进
+                       FLeftIndent,  // 左缩进
+                       FRightIndent;  // 右缩进
 
         private Color FBackColor;
         private ParaAlignHorz FAlignHorz;
@@ -152,17 +152,17 @@ namespace HC.View
             {
                 vBuffer = BitConverter.GetBytes(FFirstIndent);
                 aStream.Read(vBuffer, 0, vBuffer.Length);
-                FFirstIndent = BitConverter.ToInt32(vBuffer, 0);
+                FFirstIndent = BitConverter.ToSingle(vBuffer, 0);
                 FFirstIndentPix = HCUnitConversion.MillimeterToPixX(FFirstIndent);
                 //
                 vBuffer = BitConverter.GetBytes(FLeftIndent);
                 aStream.Read(vBuffer, 0, vBuffer.Length);
-                FLeftIndent = BitConverter.ToInt32(vBuffer, 0);
+                FLeftIndent = BitConverter.ToSingle(vBuffer, 0);
                 FLeftIndentPix = HCUnitConversion.MillimeterToPixX(FLeftIndent);
                 //
                 vBuffer = BitConverter.GetBytes(FRightIndent);
                 aStream.Read(vBuffer, 0, vBuffer.Length);
-                FRightIndent = BitConverter.ToInt32(vBuffer, 0);
+                FRightIndent = BitConverter.ToSingle(vBuffer, 0);
                 FRightIndentPix = HCUnitConversion.MillimeterToPixX(FRightIndent);
             }
 
@@ -285,7 +285,7 @@ namespace HC.View
             }
         }
 
-        protected void SetFirstIndent(int value)
+        protected void SetFirstIndent(Single value)
         {
             if (FFirstIndent != value)
             {
@@ -294,7 +294,7 @@ namespace HC.View
             }
         }
 
-        protected void SetLeftIndent(int value)
+        protected void SetLeftIndent(Single value)
         {
             if (FLeftIndent != value)
             {
@@ -303,7 +303,7 @@ namespace HC.View
             }
         }
 
-        protected void SetRightIndent(int value)
+        protected void SetRightIndent(Single value)
         {
             if (FRightIndent != value)
             {
@@ -378,19 +378,19 @@ namespace HC.View
             set { FLineSpaceMode = value; }
         }
 
-        public int FirstIndent 
+        public Single FirstIndent 
         {
             get { return FFirstIndent; }
             set { SetFirstIndent(value); }
         }
 
-        public int LeftIndent
+        public Single LeftIndent
         { 
             get { return FLeftIndent; }
             set { SetLeftIndent(value); }
         }
 
-        public int RightIndent
+        public Single RightIndent
         {
             get { return FRightIndent; }
             set { SetRightIndent(value); }

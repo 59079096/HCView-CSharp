@@ -68,7 +68,7 @@ namespace HC.View
             FFamily = DefaultFontFamily;
             FFontStyles = new HCFontStyles();
             FColor = Color.Black;
-            FBackColor = Color.Transparent;
+            FBackColor = HC.HCTransparentColor;
             FTextMetric = new TEXTMETRICW();
         }
 
@@ -89,7 +89,10 @@ namespace HC.View
 
         public void ApplyStyle(HCCanvas aCanvas, Single aScale = 1)
         {
-            aCanvas.Brush.Color = FBackColor;
+            if (FBackColor == HC.HCTransparentColor)
+                aCanvas.Brush.Style = HCBrushStyle.bsClear;
+            else
+                aCanvas.Brush.Color = FBackColor;
 
             aCanvas.Font.BeginUpdate();
             try
@@ -280,7 +283,7 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["size"].Value = string.Format("#.#", FSize);
+            aNode.Attributes["size"].Value = string.Format("{0:0.#}", FSize);
             aNode.Attributes["color"].Value = HC.GetColorXmlRGB(FColor);
             aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackColor);
             aNode.Attributes["style"].Value = GetFontStyleXML();

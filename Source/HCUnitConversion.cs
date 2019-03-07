@@ -38,9 +38,9 @@ namespace HC.View
         }
 
         /// <summary> 水平像素转为毫米 </summary>
-        public static int PixXToMillimeter(int value)
+        public static Single PixXToMillimeter(int value)
         {
-            return (int)Math.Round(value / PixelsPerMMX);
+            return value / PixelsPerMMX;
         }
 
         /// <summary> 毫米转为水平像素 </summary>
@@ -50,9 +50,9 @@ namespace HC.View
         }
 
         /// <summary> 垂直像素转为毫米 </summary>
-        public static int PixYToMillimeter(int value)
+        public static Single PixYToMillimeter(int value)
         {
-            return (int)Math.Round(value / PixelsPerMMY);
+            return value / PixelsPerMMY;
         }
 
         /// <summary> 毫米转为垂直像素 </summary>

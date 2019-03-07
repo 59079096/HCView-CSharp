@@ -60,6 +60,7 @@ namespace HC.View
         private int FHtmlFileTempName;
 
         private InvalidateRectEventHandler FOnInvalidateRect;
+        private EventHandler FOnCurParaNoChange;
 
         protected void SetShowParaLastMark(bool value)
         {
@@ -67,6 +68,16 @@ namespace HC.View
             {
                 FShowParaLastMark = value;
                 UpdateInfoRePaint();
+            }
+        }
+
+        protected void SetCurParaNo(int value)
+        {
+            if (FCurParaNo != value)
+            {
+                FCurParaNo = value;
+                if (FOnCurParaNoChange != null)
+                    FOnCurParaNoChange(this, null);
             }
         }
 
@@ -421,7 +432,7 @@ namespace HC.View
         public int CurParaNo
         {
             get { return FCurParaNo; }
-            set { FCurParaNo = value; }
+            set { SetCurParaNo(value); }
         }
 
         public int CurStyleNo
@@ -450,6 +461,12 @@ namespace HC.View
         {
             get { return FOnInvalidateRect; }
             set { FOnInvalidateRect = value; }
+        }
+
+        public EventHandler OnCurParaNoChange
+        {
+            get { return FOnCurParaNoChange; }
+            set { FOnCurParaNoChange = value; }
         }
     }
 

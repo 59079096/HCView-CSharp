@@ -31,7 +31,7 @@ namespace HC.View
 
         private void ApplySupSubStyle(HCTextStyle aTextStyle, HCCanvas aCanvas, Single aScale = 1)
         {
-            if (aTextStyle.BackColor == Color.Transparent)
+            if (aTextStyle.BackColor == HC.HCTransparentColor)
                 aCanvas.Brush.Style = HCBrushStyle.bsClear;
             else
                 aCanvas.Brush.Color = aTextStyle.BackColor;

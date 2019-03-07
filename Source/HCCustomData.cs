@@ -171,13 +171,13 @@ namespace HC.View
                 ushort vAscent = SwapBytes((ushort)vHorizontalHeader.Ascender);
                 ushort vDescent = (ushort)-SwapBytes((ushort)vHorizontalHeader.Descender);
                 ushort vLineGap = SwapBytes((ushort)vHorizontalHeader.LineGap);
-                int vLineSpacing = vAscent + vDescent + vLineGap;
+                //int vLineSpacing = vAscent + vDescent + vLineGap;
 
                 Single vSizeScale = aTextStyle.Size / HCUnitConversion.FontSizeScale;
                 vSizeScale = vSizeScale / vOutlineTextmetric.otmEMSquare;
                 vAscent = (ushort)Math.Ceiling(vAscent * vSizeScale);
                 vDescent = (ushort)Math.Ceiling(vDescent * vSizeScale);
-                vLineSpacing = (int)Math.Ceiling(vLineSpacing * vSizeScale);
+                //vLineSpacing = (int)Math.Ceiling(vLineSpacing * vSizeScale);
 
                 Win32.FONTSIGNATURE vFontSignature = new FONTSIGNATURE();
                 if ((GDI.GetTextCharsetInfo(vDC, ref vFontSignature, 0) != GDI.DEFAULT_CHARSET)
@@ -187,12 +187,12 @@ namespace HC.View
                     {
                         vAscent = (ushort)vOutlineTextmetric.otmAscent;
                         vDescent = (ushort)-vOutlineTextmetric.otmDescent;
-                        vLineSpacing = (int)(vAscent + vDescent + vOutlineTextmetric.otmLineGap);
+                        int vLineSpacing = (int)(vAscent + vDescent + vOutlineTextmetric.otmLineGap);
                     }
                     else
                     {
                         //vUnderlinePosition := Ceil(vAscent * 1.15 + vDescent * 0.85);
-                        vLineSpacing = (int)Math.Ceiling(1.3 * (vAscent + vDescent));
+                        int vLineSpacing = (int)Math.Ceiling(1.3 * (vAscent + vDescent));
                         int vDelta = vLineSpacing - (vAscent + vDescent);
                         int vLeading = vDelta / 2;
                         int vOtherLeading = vDelta - vLeading;
@@ -2380,21 +2380,21 @@ namespace HC.View
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaLeftIndent(int indent)
+        public virtual void ApplyParaLeftIndent(Single indent)
         {
             ParaLeftIndentMatch vMatchStyle = new ParaLeftIndentMatch();
             vMatchStyle.Indent = indent;
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaRightIndent(int indent)
+        public virtual void ApplyParaRightIndent(Single indent)
         {
             ParaRightIndentMatch vMatchStyle = new ParaRightIndentMatch();
             vMatchStyle.Indent = indent;
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaFirstIndent(int indent)
+        public virtual void ApplyParaFirstIndent(Single indent)
         {
             ParaFirstIndentMatch vMatchStyle = new ParaFirstIndentMatch();
             vMatchStyle.Indent = indent;
@@ -2676,7 +2676,7 @@ namespace HC.View
                             vTextDrawTop = vTextDrawTop + vTextHeight / 2;
 
                         // 文字背景
-                        if (FStyle.TextStyles[vPrioStyleNo].BackColor.A != 0)
+                        if (FStyle.TextStyles[vPrioStyleNo].BackColor != HC.HCTransparentColor)
                         {
                             aCanvas.Brush.Color = FStyle.TextStyles[vPrioStyleNo].BackColor;
                             aCanvas.FillRect(new RECT(vClearRect.Left, vClearRect.Top, vClearRect.Left + vDrawItem.Width(), vClearRect.Bottom));

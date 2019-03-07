@@ -371,7 +371,6 @@ namespace HC.View
         private EventHandler FOnChanged;
         private HCFontStyles FFontStyles;
         private LOGFONT FLogFont;
-        private int FPixelsPerInch;
         private int FUpdateCount = 0;
 
         private void ReleaseDC()
@@ -385,9 +384,16 @@ namespace HC.View
 
         private void ReCreateHandle()
         {
+            //GDI.GetObject(Handle, System.Runtime.InteropServices.Marshal.SizeOf(FLogFont), ref FLogFont);
+
             ReleaseDC();
 
-            FLogFont.lfHeight = -(int)Math.Round(FSize * FPixelsPerInch / 72);  // -Kernel.MulDiv(FSize, FPixelsPerInch, 72);
+            //if (FLogFont.lfHeight < 0)
+            //    FLogFont.lfHeight = -(int)Math.Round(FSize * HCUnitConversion.PixelsPerInchY / 72);
+            //else
+            //    FLogFont.lfHeight = -(int)Math.Round(FSize * HCUnitConversion.PixelsPerInchY / 72);
+
+            FLogFont.lfHeight = -(int)Math.Round(FSize * HCUnitConversion.PixelsPerInchY / 72);  // -Kernel.MulDiv(FSize, FPixelsPerInch, 72);
             FLogFont.lfWidth = 0;
             FLogFont.lfEscapement = 0;
             FLogFont.lfOrientation = 0;
@@ -462,7 +468,6 @@ namespace HC.View
         public HCFont()
         {
             FFontStyles = new HCFontStyles();
-            FPixelsPerInch = HCCanvas.ScreenLogPixels;
             FLogFont = new LOGFONT();
             ReCreateHandle();
         }
@@ -529,7 +534,6 @@ namespace HC.View
         private HCFont FFont;
         private IntPtr FHandle = IntPtr.Zero;
         private int FTextFlags = 0;  // User.DT_LEFT | User.DT_SINGLELINE | User.DT_VCENTER;
-        public static int ScreenLogPixels;
 
         private void ReleaseHCDC()
         {
@@ -656,16 +660,6 @@ namespace HC.View
 
         public HCCanvas()
         {
-            IntPtr vDC = User.GetDC(IntPtr.Zero);
-            try
-            {
-                ScreenLogPixels = GDI.GetDeviceCaps(vDC, GDI.LOGPIXELSY);
-            }
-            finally
-            {
-                User.ReleaseDC(IntPtr.Zero, vDC);
-            }
-
             FPen = new HCPen();
             FPen.OnChanged = DoPenChanged;
 
