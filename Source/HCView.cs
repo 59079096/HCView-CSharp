@@ -22,6 +22,11 @@ using System.Text;
 
 namespace HC.View
 {
+    public delegate void LoadSectionProcHandler(ushort AFileVersion);
+
+    public delegate void PaintEventHandler(HCCanvas aCanvas);
+
+    // HCView必需是第一个类
     public class HCView : UserControl
     {
         private string FFileName;
@@ -34,24 +39,27 @@ namespace HC.View
         private IntPtr FDC = IntPtr.Zero;
         private IntPtr FMemDC = IntPtr.Zero;
         private IntPtr FhImc = IntPtr.Zero;
-        private int FActiveSectionIndex, FDisplayFirstSection, FDisplayLastSection, FViewWidth, FViewHeight;
+        private int FActiveSectionIndex, FViewWidth, FViewHeight, FDisplayFirstSection, FDisplayLastSection;
         private uint FUpdateCount;
+        private byte FPagePadding;
         private Single FZoom;
         private bool FAutoZoom;  // 自动缩放
         private bool FIsChanged;  // 是否发生了改变
-        private HCAnnotate FAnnotate;  // 批注管理
+
+        private HCAnnotatePre FAnnotatePre;  // 批注管理
+
         private HCViewModel FViewModel;  // 界面显示模式：页面、Web
-        private HCPageScrollModel FPageScrollModel;  // 页面滚动显示模式：纵向、横向
         private HCCaret FCaret;
         private DataFormats.Format FHCExtFormat;
-        private EventHandler FOnCaretChange, FOnVerScroll, FOnHorScroll, FOnSectionCreateItem, FOnSectionReadOnlySwitch;
+        private EventHandler FOnCaretChange, FOnVerScroll, FOnHorScroll, FOnSectionCreateItem, FOnSectionReadOnlySwitch,
+            FOnSectionCurParaNoChange, FOnSectionActivePageChange;
         private StyleItemEventHandler FOnSectionCreateStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
         private SectionDataItemNotifyEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
         private SectionDrawItemPaintEventHandler FOnSectionDrawItemPaintAfter, FOnSectionDrawItemPaintBefor;
 
-        private SectionPagePaintEventHandler FOnSectionPaintHeader, FOnSectionPaintFooter, FOnSectionPaintPage,
-          FOnSectionPaintWholePageBefor, FOnSectionPaintWholePageAfter;
+        private SectionPaintEventHandler FOnSectionPaintHeader, FOnSectionPaintFooter, FOnSectionPaintPage,
+          FOnSectionPaintPaperBefor, FOnSectionPaintPaperAfter;
         private PaintEventHandler FOnPaintViewBefor, FOnPaintViewAfter;
 
         private EventHandler FOnChange, FOnChangedSwitch, FOnZoomChanged, FOnViewResize;
@@ -62,15 +70,19 @@ namespace HC.View
 
             if (PageSettings.PaperSize.Kind == PaperKind.Custom)  // 自定义纸张
             {
-                PageSettings.PaperSize.Height = (int)Math.Round(FSections[ASectionIndex].PaperHeight * 10); //纸长你可用变量获得纸张的长、宽。
-                PageSettings.PaperSize.Width = (int)Math.Round(FSections[ASectionIndex].PaperWidth * 10);   //纸宽
-                //vPDMode^.dmFields := vPDMode^.dmFields or DM_PAPERSIZE or DM_PAPERLENGTH or DM_PAPERWIDTH;
+                if (FSections[ASectionIndex].PageOrientation == PageOrientation.cpoPortrait)
+                {
+                    PageSettings.Landscape = false;
+                    PageSettings.PaperSize.Height = (int)Math.Round(FSections[ASectionIndex].PaperHeight * 10); //纸长
+                    PageSettings.PaperSize.Width = (int)Math.Round(FSections[ASectionIndex].PaperWidth * 10);   //纸宽
+                }
+                else
+                {
+                    PageSettings.Landscape = true;
+                    PageSettings.PaperSize.Height = (int)Math.Round(FSections[ASectionIndex].PaperWidth * 10); //纸长
+                    PageSettings.PaperSize.Width = (int)Math.Round(FSections[ASectionIndex].PaperHeight * 10);   //纸宽
+                }
             }
-
-            if (FSections[ASectionIndex].PageOrientation == PageOrientation.cpoPortrait)
-                PageSettings.Landscape = false;
-            else
-                PageSettings.Landscape = true;
         }
 
         private void GetViewWidth()
@@ -124,331 +136,10 @@ namespace HC.View
                 FOnHorScroll(this, null);
         }
 
-        private HCCustomItem DoSectionCreateStyleItem(HCCustomData AData, int AStyleNo)
-        {
-            if (FOnSectionCreateStyleItem != null)
-                return FOnSectionCreateStyleItem(AData, AStyleNo);
-            else
-                return null;
-        }
-
-        private bool DoSectionCanEdit(object sender)
-        {
-            if (FOnSectionCanEdit != null)
-                return FOnSectionCanEdit(sender);
-            else
-                return true;
-        }
-        
-        private HCSection NewDefaultSection()
-        {
-            HCSection Result = new HCSection(FStyle);
-            // 创建节后马上赋值事件（保证后续插入表格等需要这些事件的操作可获取到事件）
-            Result.OnDataChange = DoSectionDataChange;
-            Result.OnChangeTopLevelData = DoSectionChangeTopLevelData;
-            Result.OnCheckUpdateInfo = DoSectionDataCheckUpdateInfo;
-            Result.OnCreateItem = DoSectionCreateItem;
-            Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
-            Result.OnCanEdit = DoSectionCanEdit;
-            Result.OnInsertItem = DoSectionInsertItem;
-            Result.OnRemoveItem = DoSectionRemoveItem;
-            Result.OnItemMouseUp = DoSectionItemMouseUp;
-            Result.OnItemResize = DoSectionItemResize;
-            Result.OnReadOnlySwitch = DoSectionReadOnlySwitch;
-            Result.OnGetScreenCoord = DoSectionGetScreenCoord;
-            Result.OnDrawItemPaintAfter = DoSectionDrawItemPaintAfter;
-            Result.OnDrawItemPaintBefor = DoSectionDrawItemPaintBefor;
-            Result.OnDrawItemPaintContent = DoSectionDrawItemPaintContent;
-            Result.OnPaintHeader = DoSectionPaintHeader;
-            Result.OnPaintFooter = DoSectionPaintFooter;
-            Result.OnPaintPage = DoSectionPaintPage;
-            Result.OnPaintWholePageBefor = DoSectionPaintWholePageBefor;
-            Result.OnPaintWholePageAfter = DoSectionPaintWholePageAfter;
-            Result.OnInsertAnnotate = DoSectionInsertAnnotate;
-            Result.OnRemoveAnnotate = DoSectionRemoveAnnotate;
-            Result.OnDrawItemAnnotate = DoSectionDrawItemAnnotate;
-            Result.OnGetUndoList = DoSectionGetUndoList;
-
-            return Result;
-        }
-
-        private RECT GetViewRect()
-        {
-            return HC.Bounds(0, 0, FViewWidth, FViewHeight);
-        }
-
-        private void ReBuildCaret()
-        {
-            if (FCaret == null)
-                return;
-
-            if ((!this.Focused) || ((!Style.UpdateInfo.Draging) && ActiveSection.SelectExists()))
-            {
-                FCaret.Hide();
-                return;
-            }
-
-            // 初始化光标信息，为处理表格内往外迭代，只能放在这里
-            HCCaretInfo vCaretInfo = new HCCaretInfo();
-            vCaretInfo.X = 0;
-            vCaretInfo.Y = 0;
-            vCaretInfo.Height = 0;
-            vCaretInfo.Visible = true;
-            
-            ActiveSection.GetPageCaretInfo(ref vCaretInfo);
-            if (!vCaretInfo.Visible)
-            {
-                FCaret.Hide();
-                return;
-            }
-            FCaret.X = ZoomIn(GetSectionDrawLeft(FActiveSectionIndex) + vCaretInfo.X) - FHScrollBar.Position;
-            FCaret.Y = ZoomIn(GetSectionTopFilm(FActiveSectionIndex) + vCaretInfo.Y) - FVScrollBar.Position;
-            FCaret.Height = ZoomIn(vCaretInfo.Height);
-            
-            if (!FStyle.UpdateInfo.ReScroll)
-            {
-                if ((FCaret.X < 0) || (FCaret.X > FViewWidth))
-                {
-                    FCaret.Hide();
-                    return;
-                }
-
-                if ((FCaret.Y + FCaret.Height < 0) || (FCaret.Y > FViewHeight))
-                {
-                    FCaret.Hide();
-                    return;
-                }
-            }
-            else  // 非滚动条(方向键、点击等)引起的光标位置变化
-            {
-                if (FCaret.Height < FViewHeight)
-                {
-                    if (FCaret.Y < 0)
-                        FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - HC.PagePadding;
-                    else
-                        if (FCaret.Y + FCaret.Height + HC.PagePadding > FViewHeight)
-                            FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + HC.PagePadding - FViewHeight;
-                    
-                    if (FCaret.X < 0)
-                        FHScrollBar.Position = FHScrollBar.Position + FCaret.X - HC.PagePadding;
-                    else
-                        if (FCaret.X + HC.PagePadding > FViewWidth)
-                            FHScrollBar.Position = FHScrollBar.Position + FCaret.X + HC.PagePadding - FViewWidth;
-                }
-            }
-
-            if (FCaret.Y + FCaret.Height > FViewHeight)
-                FCaret.Height = FViewHeight - FCaret.Y;
-            
-            FCaret.Show();
-            DoCaretChange();
-        }
-        
-        private void GetSectionByCrood(int X, int Y, ref int ASectionIndex)
-        {
-            ASectionIndex = -1;
-            int vY = 0;
-            for (int i = 0; i <= FSections.Count - 1; i++)
-            {
-                vY = vY + FSections[i].GetFilmHeight();
-                if (vY > Y)
-                {
-                    ASectionIndex = i;
-                    break;
-                }
-            }
-            if ((ASectionIndex < 0) && (vY + HC.PagePadding >= Y))
-                ASectionIndex = FSections.Count - 1;
-
-            if (ASectionIndex < 0)
-                throw new Exception("没有获取到正确的节序号！");
-        }
-
-        private void SetZoom(Single Value)
-        {
-            Single vValue = Value;
-            if (vValue < 0.25)
-                vValue = 0.25f;
-            else
-            if (vValue > 5)
-                vValue = 5f;
-
-            if (FZoom != vValue)
-            {
-                this.Focus();
-                FZoom = vValue;
-                FStyle.UpdateInfoRePaint();
-                FStyle.UpdateInfoReCaret(false);
-                if (FOnZoomChanged != null)
-                    FOnZoomChanged(this, null);
-
-                DoMapChanged();
-                DoViewResize();
-            }
-        }
-
-        /// <summary> 删除不使用的文本样式 </summary>
-        private void _DeleteUnUsedStyle(HashSet<SectionArea> AParts)  //  = (saHeader, saPage, saFooter)
-        {
-            for (int i = 0; i <= FStyle.TextStyles.Count - 1; i++)
-            {
-                FStyle.TextStyles[i].CheckSaveUsed = false;
-                FStyle.TextStyles[i].TempNo = HCStyle.Null;
-            }
-            for (int i = 0; i <= FStyle.ParaStyles.Count - 1; i++)
-            {
-                FStyle.ParaStyles[i].CheckSaveUsed = false;
-                FStyle.ParaStyles[i].TempNo = HCStyle.Null;
-            }
-
-            for (int i = 0; i <= FSections.Count - 1; i++)
-                FSections[i].MarkStyleUsed(true, AParts);
-            
-            int vUnCount = 0;
-            for (int i = 0; i <= FStyle.TextStyles.Count - 1; i++)
-            {
-                if (FStyle.TextStyles[i].CheckSaveUsed)
-                    FStyle.TextStyles[i].TempNo = i - vUnCount;
-                else
-                    vUnCount++;
-            }
-            
-            vUnCount = 0;
-            for (int i = 0; i <= FStyle.ParaStyles.Count - 1; i++)
-            {
-                if (FStyle.ParaStyles[i].CheckSaveUsed)
-                    FStyle.ParaStyles[i].TempNo = i - vUnCount;
-                else
-                    vUnCount++;
-            }
-
-            for (int i = 0; i <= FSections.Count - 1; i++)
-                FSections[i].MarkStyleUsed(false, AParts);
-
-            for (int i = FStyle.TextStyles.Count - 1; i >= 0; i--)
-            {
-                if (!FStyle.TextStyles[i].CheckSaveUsed)
-                    FStyle.TextStyles.RemoveAt(i);
-            }
-
-            for (int i = FStyle.ParaStyles.Count - 1; i >= 0; i--)
-            {
-                if (!FStyle.ParaStyles[i].CheckSaveUsed)
-                    FStyle.ParaStyles.RemoveAt(i);
-            }
-        }
-
-        private int GetHScrollValue()
-        {
-            return FHScrollBar.Position;
-        }
-
-        private int GetVScrollValue()
-        {
-            return FVScrollBar.Position;
-        }
-
-        private bool GetShowLineActiveMark()
-        {
-            return FSections[0].PageData.ShowLineActiveMark;
-        }
-
-        private void SetShowLineActiveMark(bool Value)
-        {
-            for (int i = 0; i <= FSections.Count - 1; i++)
-                FSections[i].PageData.ShowLineActiveMark = Value;
-
-            UpdateView();
-        }
-
-        private bool GetShowLineNo()
-        {
-            return FSections[0].PageData.ShowLineNo;
-        }
-
-        private void SetShowLineNo(bool Value)
-        {
-            for (int i = 0; i <= FSections.Count - 1; i++)
-                FSections[i].PageData.ShowLineNo = Value;
-
-            UpdateView();
-        }
-
-        private bool GetShowUnderLine()
-        {
-            return FSections[0].PageData.ShowUnderLine;
-        }
-
-        private void SetShowUnderLine(bool Value)
-        {
-            for (int i = 0; i <= FSections.Count - 1; i++)
-                FSections[i].PageData.ShowUnderLine = Value;
-
-            UpdateView();
-        }
-
-        private bool GetReadOnly()
-        {
-            for (int i = 0; i <= FSections.Count - 1; i++)
-            {
-                if (!FSections[i].ReadOnly)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private void SetReadOnly(bool Value)
-        {
-            for (int i = 0; i <= FSections.Count - 1; i++)
-                FSections[i].ReadOnly = Value;
-        }
-
-        private void SetPageNoFormat(string value)
-        {
-            if (FPageNoFormat != value)
-            {
-                FPageNoFormat = value;
-                UpdateView();
-            }
-        }
-
-        private void AutoScrollTimer(bool aStart)
-        {
-            if (!aStart)
-                User.KillTimer(Handle, 2);
-            else
-            {
-                if (User.SetTimer(Handle, 2, 100, IntPtr.Zero) == 0)
-                    throw new Exception(HC.HCS_EXCEPTION_TIMERRESOURCEOUTOF);
-            }
-        }
-
-        // Imm
-        private void UpdateImmPosition()
-        {
-            LOGFONT vLogFont = new LOGFONT();
-            Imm.ImmGetCompositionFont(FhImc, ref vLogFont);
-            vLogFont.lfHeight = 22;
-            Imm.ImmSetCompositionFont(FhImc, ref vLogFont);
-            // 告诉输入法当前光标位置信息
-            COMPOSITIONFORM vCF = new COMPOSITIONFORM();
-            vCF.ptCurrentPos = new POINT(FCaret.X, FCaret.Y + 5);  // 输入法弹出窗体位置
-            vCF.dwStyle = 1;
-
-            Rectangle vr = this.ClientRectangle;
-
-            vCF.rcArea = new RECT(vr.Left, vr.Top, vr.Right, vr.Bottom);
-            Imm.ImmSetCompositionWindow(FhImc, ref vCF);
-        }  
-     
-        // =============== private end =============== //
         private void DoCaretChange()
         {
-             if (FOnCaretChange != null)
-                 FOnCaretChange(this, null);
+            if (FOnCaretChange != null)
+                FOnCaretChange(this, null);
         }
 
         private void DoSectionDataChange(Object Sender, EventArgs e)
@@ -530,14 +221,14 @@ namespace HC.View
                 FVScrollBar.Position = (sender as HCSectionUndo).VScrollPos;
             }
             else
-            if (sender is HCSectionUndoGroupBegin)
-            {
-                if (FActiveSectionIndex != (sender as HCSectionUndoGroupBegin).SectionIndex)
-                    SetActiveSectionIndex((sender as HCSectionUndoGroupBegin).SectionIndex);
+                if (sender is HCSectionUndoGroupBegin)
+                {
+                    if (FActiveSectionIndex != (sender as HCSectionUndoGroupBegin).SectionIndex)
+                        SetActiveSectionIndex((sender as HCSectionUndoGroupBegin).SectionIndex);
 
-                FHScrollBar.Position = (sender as HCSectionUndoGroupBegin).HScrollPos;
-                FVScrollBar.Position = (sender as HCSectionUndoGroupBegin).VScrollPos;
-            }
+                    FHScrollBar.Position = (sender as HCSectionUndoGroupBegin).HScrollPos;
+                    FVScrollBar.Position = (sender as HCSectionUndoGroupBegin).VScrollPos;
+                }
 
             ActiveSection.Undo(sender);
         }
@@ -581,12 +272,6 @@ namespace HC.View
             }
         }
 
-        private void DoSectionCreateItem(Object sender, EventArgs e)
-        {
-            if (FOnSectionCreateItem != null)
-                FOnSectionCreateItem(this, null);
-        }
-
         private void DoSectionReadOnlySwitch(Object sender, EventArgs e)
         {
             if (FOnSectionReadOnlySwitch != null)
@@ -596,25 +281,13 @@ namespace HC.View
         private POINT DoSectionGetScreenCoord(int x, int y)
         {
             Point vPt = this.PointToScreen(new Point(x, y));
-            return new POINT(vPt.X , vPt.Y);
+            return new POINT(vPt.X, vPt.Y);
         }
 
-        private void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        private void DoSectionItemMouseUp(object sender, HCCustomData aData, int aItemNo, MouseEventArgs e)
         {
-            if (FOnSectionInsertItem != null)
-                FOnSectionInsertItem(sender, aData, aItem);
-        }
-
-        private void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
-        {
-            if (FOnSectionRemoveItem != null)
-                FOnSectionRemoveItem(sender, aData, aItem);
-        }
-
-        private void DoSectionItemMouseUp(object sender, HCCustomData aData,
-            int aItemNo, MouseEventArgs e)
-        {
-            // 转到超链接
+            if ( ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) && (aData.Items[aItemNo].HyperLink != ""))
+                System.Diagnostics.Process.Start(aData.Items[aItemNo].HyperLink); 
         }
 
         private void DoSectionItemResize(HCCustomData aData, int aItemNo)
@@ -685,21 +358,23 @@ namespace HC.View
                 FOnSectionPaintPage(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        private void DoSectionPaintWholePageBefor(object sender, int aPageIndex,
-            RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private void DoSectionPaintPaperBefor(object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            if (FOnSectionPaintWholePageBefor != null)
-                FOnSectionPaintWholePageBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+            if (aPaintInfo.Print && (FAnnotatePre.DrawCount > 0))
+                FAnnotatePre.ClearDrawAnnotate();
+
+            if (FOnSectionPaintPaperBefor != null)
+                FOnSectionPaintPaperBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        private void DoSectionPaintWholePageAfter(object sender, int aPageIndex,
+        private void DoSectionPaintPaperAfter(object sender, int aPageIndex,
             RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            if (FAnnotate.Count > 0)  // 当前页有批注，绘制批注尾巴
-                FAnnotate.PaintPageAnnotateLastPart(sender, aRect, aCanvas, aPaintInfo);
+            if (FAnnotatePre.Count > 0)  // 当前页有批注，绘制批注
+                FAnnotatePre.PaintDrawAnnotate(sender, aRect, aCanvas, aPaintInfo);
 
-            if (FOnSectionPaintWholePageAfter != null)
-                FOnSectionPaintWholePageAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+            if (FOnSectionPaintPaperAfter != null)
+                FOnSectionPaintPaperAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
         private void DoSectionDrawItemAnnotate(object sender, HCCustomData aData,
@@ -709,7 +384,7 @@ namespace HC.View
             vDrawAnnotate.Data = aData;
             vDrawAnnotate.DrawRect = aDrawRect;
             vDrawAnnotate.DataAnnotate = aDataAnnotate;
-            FAnnotate.AddDrawAnnotate(vDrawAnnotate);
+            FAnnotatePre.AddDrawAnnotate(vDrawAnnotate);
         }
 
         private HCUndoList DoSectionGetUndoList()
@@ -719,17 +394,420 @@ namespace HC.View
 
         private void DoSectionInsertAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
         {
-            FAnnotate.InsertDataAnnotate(aDataAnnotate);
+            FAnnotatePre.InsertDataAnnotate(aDataAnnotate);
         }
 
         private void DoSectionRemoveAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
         {
-            FAnnotate.RemoveDataAnnotate(aDataAnnotate);
+            FAnnotatePre.RemoveDataAnnotate(aDataAnnotate);
+        }
+
+        private void DoSectionCurParaNoChange(object sender, EventArgs e)
+        {
+            if (FOnSectionCurParaNoChange != null)
+                FOnSectionCurParaNoChange(sender, e);
+        }
+
+        private void DoSectionActivePageChange(object sender, EventArgs e)
+        {
+            if (FOnSectionActivePageChange != null)
+                FOnSectionActivePageChange(sender, e);
         }
 
         private void DoStyleInvalidateRect(RECT aRect)
         {
             UpdateView(aRect);
+        }
+
+        private void DoAnnotatePreUpdateView(object sender, EventArgs e)
+        {
+            if (FAnnotatePre.Visible)
+            {
+                FStyle.UpdateInfoRePaint();
+                DoMapChanged();
+            }
+            else
+                UpdateView();
+        }
+
+        private HCSection NewDefaultSection()
+        {
+            HCSection Result = new HCSection(FStyle);
+            // 创建节后马上赋值事件（保证后续插入表格等需要这些事件的操作可获取到事件）
+            Result.OnDataChange = DoSectionDataChange;
+            Result.OnChangeTopLevelData = DoSectionChangeTopLevelData;
+            Result.OnCheckUpdateInfo = DoSectionDataCheckUpdateInfo;
+            Result.OnCreateItem = DoSectionCreateItem;
+            Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
+            Result.OnCanEdit = DoSectionCanEdit;
+            Result.OnInsertItem = DoSectionInsertItem;
+            Result.OnRemoveItem = DoSectionRemoveItem;
+            Result.OnItemMouseUp = DoSectionItemMouseUp;
+            Result.OnItemResize = DoSectionItemResize;
+            Result.OnReadOnlySwitch = DoSectionReadOnlySwitch;
+            Result.OnGetScreenCoord = DoSectionGetScreenCoord;
+            Result.OnDrawItemPaintAfter = DoSectionDrawItemPaintAfter;
+            Result.OnDrawItemPaintBefor = DoSectionDrawItemPaintBefor;
+            Result.OnDrawItemPaintContent = DoSectionDrawItemPaintContent;
+            Result.OnPaintHeader = DoSectionPaintHeader;
+            Result.OnPaintFooter = DoSectionPaintFooter;
+            Result.OnPaintPage = DoSectionPaintPage;
+            Result.OnPaintPaperBefor = DoSectionPaintPaperBefor;
+            Result.OnPaintPaperAfter = DoSectionPaintPaperAfter;
+            Result.OnInsertAnnotate = DoSectionInsertAnnotate;
+            Result.OnRemoveAnnotate = DoSectionRemoveAnnotate;
+            Result.OnDrawItemAnnotate = DoSectionDrawItemAnnotate;
+            Result.OnGetUndoList = DoSectionGetUndoList;
+            Result.OnCurParaNoChange = DoSectionCurParaNoChange;
+            Result.OnActivePageChange = DoSectionActivePageChange;
+
+            return Result;
+        }
+
+        private RECT GetViewRect()
+        {
+            return HC.Bounds(0, 0, FViewWidth, FViewHeight);
+        }
+
+        private void ReBuildCaret()
+        {
+            if (FCaret == null)
+                return;
+
+            if ((!this.Focused) || ((!Style.UpdateInfo.Draging) && ActiveSection.SelectExists()))
+            {
+                FCaret.Hide();
+                return;
+            }
+
+            // 初始化光标信息，为处理表格内往外迭代，只能放在这里
+            HCCaretInfo vCaretInfo = new HCCaretInfo();
+            vCaretInfo.X = 0;
+            vCaretInfo.Y = 0;
+            vCaretInfo.Height = 0;
+            vCaretInfo.Visible = true;
+
+            ActiveSection.GetPageCaretInfo(ref vCaretInfo);
+            if (!vCaretInfo.Visible)
+            {
+                FCaret.Hide();
+                return;
+            }
+            FCaret.X = ZoomIn(GetSectionDrawLeft(FActiveSectionIndex) + vCaretInfo.X) - FHScrollBar.Position;
+            FCaret.Y = ZoomIn(GetSectionTopFilm(FActiveSectionIndex) + vCaretInfo.Y) - FVScrollBar.Position;
+            FCaret.Height = ZoomIn(vCaretInfo.Height);
+
+            if (!FStyle.UpdateInfo.ReScroll)
+            {
+                if ((FCaret.X < 0) || (FCaret.X > FViewWidth))
+                {
+                    FCaret.Hide();
+                    return;
+                }
+
+                if ((FCaret.Y + FCaret.Height < 0) || (FCaret.Y > FViewHeight))
+                {
+                    FCaret.Hide();
+                    return;
+                }
+            }
+            else  // 非滚动条(方向键、点击等)引起的光标位置变化
+            {
+                if (FCaret.Height < FViewHeight)
+                {
+                    if (FCaret.Y < 0)
+                        FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - FPagePadding;
+                    else
+                        if (FCaret.Y + FCaret.Height + FPagePadding > FViewHeight)
+                            FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + FPagePadding - FViewHeight;
+
+                    if (FCaret.X < 0)
+                        FHScrollBar.Position = FHScrollBar.Position + FCaret.X - FPagePadding;
+                    else
+                        if (FCaret.X + FPagePadding > FViewWidth)
+                            FHScrollBar.Position = FHScrollBar.Position + FCaret.X + FPagePadding - FViewWidth;
+                }
+            }
+
+            if (FCaret.Y + FCaret.Height > FViewHeight)
+                FCaret.Height = FViewHeight - FCaret.Y;
+
+            FCaret.Show();
+            DoCaretChange();
+        }
+
+        private void GetSectionByCrood(int X, int Y, ref int ASectionIndex)
+        {
+            ASectionIndex = -1;
+            int vY = 0;
+            for (int i = 0; i <= FSections.Count - 1; i++)
+            {
+                vY = vY + FSections[i].GetFilmHeight();
+                if (vY > Y)
+                {
+                    ASectionIndex = i;
+                    break;
+                }
+            }
+            if ((ASectionIndex < 0) && (vY + FPagePadding >= Y))
+                ASectionIndex = FSections.Count - 1;
+
+            if (ASectionIndex < 0)
+                throw new Exception("没有获取到正确的节序号！");
+        }
+
+        private void SetZoom(Single Value)
+        {
+            Single vValue = Value;
+            if (vValue < 0.25)
+                vValue = 0.25f;
+            else
+                if (vValue > 5)
+                    vValue = 5f;
+
+            if (FZoom != vValue)
+            {
+                this.Focus();
+                FZoom = vValue;
+                FStyle.UpdateInfoRePaint();
+                FStyle.UpdateInfoReCaret(false);
+                if (FOnZoomChanged != null)
+                    FOnZoomChanged(this, null);
+
+                DoMapChanged();
+                DoViewResize();
+            }
+        }
+
+        private int GetHScrollValue()
+        {
+            return FHScrollBar.Position;
+        }
+
+        private int GetCurStyleNo()
+        {
+            return ActiveSection.CurStyleNo;
+        }
+
+        private int GetCurParaNo()
+        {
+            return ActiveSection.CurParaNo;
+        }
+
+        private bool GetShowLineActiveMark()
+        {
+            return FSections[0].Page.ShowLineActiveMark;
+        }
+
+        private void SetShowLineActiveMark(bool Value)
+        {
+            for (int i = 0; i <= FSections.Count - 1; i++)
+                FSections[i].Page.ShowLineActiveMark = Value;
+
+            UpdateView();
+        }
+
+        private bool GetShowLineNo()
+        {
+            return FSections[0].Page.ShowLineNo;
+        }
+
+        private void SetShowLineNo(bool Value)
+        {
+            for (int i = 0; i <= FSections.Count - 1; i++)
+                FSections[i].Page.ShowLineNo = Value;
+
+            UpdateView();
+        }
+
+        private bool GetShowUnderLine()
+        {
+            return FSections[0].Page.ShowUnderLine;
+        }
+
+        private void SetShowUnderLine(bool Value)
+        {
+            for (int i = 0; i <= FSections.Count - 1; i++)
+                FSections[i].Page.ShowUnderLine = Value;
+
+            UpdateView();
+        }
+
+        private bool GetReadOnly()
+        {
+            for (int i = 0; i <= FSections.Count - 1; i++)
+            {
+                if (!FSections[i].ReadOnly)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void SetReadOnly(bool Value)
+        {
+            for (int i = 0; i <= FSections.Count - 1; i++)
+                FSections[i].ReadOnly = Value;
+        }
+
+        private void SetPageNoFormat(string value)
+        {
+            if (FPageNoFormat != value)
+            {
+                FPageNoFormat = value;
+                UpdateView();
+            }
+        }
+
+        private void SetViewModel(HCViewModel value)
+        {
+            if (FViewModel != value)
+            {
+                FViewModel = value;
+
+                for (int i = 0; i <= FSections.Count - 1; i++)
+                    FSections[i].ViewModel = value;
+
+                if (value == HCViewModel.hvmFilm)
+                    PagePadding = 20;
+                else
+                    PagePadding = 0;
+            }
+        }
+
+        private void SetActiveSectionIndex(int value)
+        {
+            if (FActiveSectionIndex != value)
+            {
+                if (FActiveSectionIndex >= 0)
+                    FSections[FActiveSectionIndex].DisActive();
+
+                FActiveSectionIndex = value;
+                DoViewResize();
+            }
+        }
+
+        private void SetIsChanged(bool Value)
+        {
+            if (FIsChanged != Value)
+            {
+                FIsChanged = Value;
+                if (FOnChangedSwitch != null)
+                    FOnChangedSwitch(this, null);
+            }
+        }
+
+        private void SetPagePadding(byte value)
+        {
+            if (FPagePadding != value)
+            {
+                FPagePadding = value;
+                for (int i = 0; i <= FSections.Count - 1; i++)
+                    FSections[i].PagePadding = FPagePadding;
+
+                FStyle.UpdateInfoRePaint();
+                FStyle.UpdateInfoReCaret(false);
+                DoMapChanged();
+                DoViewResize();
+            }
+        }
+
+        /// <summary> 获取当前节对象 </summary>
+        private HCSection GetActiveSection()
+        {
+            return FSections[FActiveSectionIndex];
+        }
+
+        private void AutoScrollTimer(bool aStart)
+        {
+            if (!aStart)
+                User.KillTimer(Handle, 2);
+            else
+            {
+                if (User.SetTimer(Handle, 2, 100, IntPtr.Zero) == 0)
+                    throw new Exception(HC.HCS_EXCEPTION_TIMERRESOURCEOUTOF);
+            }
+        }
+
+        // Imm
+        private void UpdateImmPosition()
+        {
+            // 全局 FhImc
+            LOGFONT vLogFont = new LOGFONT();
+            Imm.ImmGetCompositionFont(FhImc, ref vLogFont);
+            vLogFont.lfHeight = 22;
+            Imm.ImmSetCompositionFont(FhImc, ref vLogFont);
+            // 告诉输入法当前光标位置信息
+            COMPOSITIONFORM vCF = new COMPOSITIONFORM();
+            vCF.ptCurrentPos = new POINT(FCaret.X, FCaret.Y + 5);  // 输入法弹出窗体位置
+            vCF.dwStyle = 1;
+
+            Rectangle vr = this.ClientRectangle;
+            vCF.rcArea = new RECT(vr.Left, vr.Top, vr.Right, vr.Bottom);
+            Imm.ImmSetCompositionWindow(FhImc, ref vCF);
+        }
+
+        protected override void CreateHandle()
+        {
+            base.CreateHandle();
+            if (!DesignMode)
+                FCaret = new HCCaret(this.Handle);
+
+            if (FDC == IntPtr.Zero)
+            {
+                FDC = User.GetDC(this.Handle);
+                //FMemDC = (IntPtr)GDI.CreateCompatibleDC(FDC);
+            }
+
+            FhImc = Imm.ImmGetContext(this.Handle);
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            GDI.DeleteDC(FMemDC);
+            User.ReleaseDC(this.Handle, FDC);
+
+            Imm.ImmReleaseContext(this.Handle, FhImc);
+            base.OnHandleDestroyed(e);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            //base.OnPaint(e);
+
+            GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FMemDC, 0, 0, GDI.SRCCOPY);
+
+            using (SolidBrush vBrush = new SolidBrush(this.BackColor))
+            {
+                e.Graphics.FillRectangle(vBrush, new Rectangle(FVScrollBar.Left, FHScrollBar.Top, FVScrollBar.Width, FHScrollBar.Height));
+            }
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+
+            GetViewWidth();
+            GetViewHeight();
+
+            if (FAutoZoom)
+            {
+                if (FAnnotatePre.Visible)
+                    FZoom = (FViewWidth - FPagePadding * 2) / (ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                else
+                    FZoom = (FViewWidth - FPagePadding * 2) / ActiveSection.PaperWidthPix;
+            }
+
+            CalcScrollRang();
+
+            FStyle.UpdateInfoRePaint();
+            if (FCaret != null)
+                FStyle.UpdateInfoReCaret(false);
+
+            CheckUpdateInfo();
+            DoViewResize();
         }
 
         protected virtual void DoChange()
@@ -740,7 +818,41 @@ namespace HC.View
                 FOnChange(this, null);
         }
 
-        protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
+        protected void DoSectionCreateItem(Object sender, EventArgs e)
+        {
+            if (FOnSectionCreateItem != null)
+                FOnSectionCreateItem(this, null);
+        }
+
+        protected HCCustomItem DoSectionCreateStyleItem(HCCustomData AData, int AStyleNo)
+        {
+            if (FOnSectionCreateStyleItem != null)
+                return FOnSectionCreateStyleItem(AData, AStyleNo);
+            else
+                return null;
+        }
+
+        protected void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        {
+            if (FOnSectionInsertItem != null)
+                FOnSectionInsertItem(sender, aData, aItem);
+        }
+
+        protected void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        {
+            if (FOnSectionRemoveItem != null)
+                FOnSectionRemoveItem(sender, aData, aItem);
+        }
+
+        protected bool DoSectionCanEdit(object sender)
+        {
+            if (FOnSectionCanEdit != null)
+                return FOnSectionCanEdit(sender);
+            else
+                return true;
+        }
+
+        protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnSectionDrawItemPaintAfter != null)
@@ -781,11 +893,8 @@ namespace HC.View
         /// <summary> 读取文档后触发事件，便于确认订制特征数据 </summary>
         protected virtual void DoLoadStreamAfter(Stream aStream, ushort aFileVersion) { }
 
-        //
         protected override void OnMouseDown(MouseEventArgs e)
         {
- 	        base.OnMouseDown(e);
-
             int vSectionIndex = -1;
             GetSectionByCrood(ZoomOut(FHScrollBar.Position + e.X), ZoomOut(FVScrollBar.Position + e.Y), ref vSectionIndex);
             if (vSectionIndex != FActiveSectionIndex)
@@ -795,18 +904,9 @@ namespace HC.View
 
             int vSectionDrawLeft = GetSectionDrawLeft(FActiveSectionIndex);
 
-            if (FAnnotate.DrawCount > 0)  // 有批注被绘制
-            {
-                if ((e.X > vSectionDrawLeft + FSections[FActiveSectionIndex].PageWidthPix)
-                  && (e.X < vSectionDrawLeft + FSections[FActiveSectionIndex].PageWidthPix + HC.AnnotationWidth))
-                {
-                    FAnnotate.MouseDown(e.X, e.Y);
-                    FStyle.UpdateInfoRePaint();
-                    DoSectionDataCheckUpdateInfo(this, null);
-                    return;
-                }
-            }
-            
+            if (FAnnotatePre.DrawCount > 0)  // 有批注被绘制
+                FAnnotatePre.MouseDown(ZoomOut(e.X), ZoomOut(e.Y));
+
             // 映射到节页面(白色区域)
             Point vPt = new Point();
             vPt.X = ZoomOut(FHScrollBar.Position + e.X) - vSectionDrawLeft;
@@ -814,18 +914,20 @@ namespace HC.View
             //vPageIndex := FSections[FActiveSectionIndex].GetPageByFilm(vPt.Y);
             MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vPt.X, vPt.Y, e.Delta);
             FSections[FActiveSectionIndex].MouseDown(vMouseArgs);
-            
+
             CheckUpdateInfo();  // 换光标、切换激活Item
+
+            base.OnMouseDown(e);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
- 	        base.OnMouseMove(e);
+            base.OnMouseMove(e);
             if (FActiveSectionIndex >= 0)
             {
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
                     ZoomOut(FHScrollBar.Position + e.X) - GetSectionDrawLeft(FActiveSectionIndex),
-                    ZoomOut(FVScrollBar.Position + e.Y) - GetSectionTopFilm(FActiveSectionIndex), 
+                    ZoomOut(FVScrollBar.Position + e.Y) - GetSectionTopFilm(FActiveSectionIndex),
                     e.Clicks);
                 FSections[FActiveSectionIndex].MouseMove(vMouseArgs);
 
@@ -835,6 +937,9 @@ namespace HC.View
                 if (FStyle.UpdateInfo.Selecting)
                     AutoScrollTimer(true);
             }
+
+            if (FAnnotatePre.DrawCount > 0)  // 有批注被绘制
+                FAnnotatePre.MouseMove(ZoomOut(e.X), ZoomOut(e.Y));
 
             CheckUpdateInfo();
 
@@ -846,8 +951,6 @@ namespace HC.View
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            base.OnMouseUp(e);
-
             if (FStyle.UpdateInfo.Selecting)
                 AutoScrollTimer(false);
 
@@ -870,10 +973,10 @@ namespace HC.View
 
             CheckUpdateInfo();
 
-            base.OnMouseUp(e);
-
             FStyle.UpdateInfo.Selecting = false;
             FStyle.UpdateInfo.Draging = false;
+
+            base.OnMouseUp(e);
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)
@@ -888,36 +991,36 @@ namespace HC.View
             }
             else
             {
-                if (FPageScrollModel == HCPageScrollModel.psmVertical)
-                    FVScrollBar.Position -= e.Delta;
-                else
+                if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)  // 按下shift
                     FHScrollBar.Position -= e.Delta;
+                else
+                    FVScrollBar.Position -= e.Delta;
             }
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
-              if ((e.Control) && (e.Shift) && (e.KeyCode == Keys.C))
+            if ((e.Control) && (e.Shift) && (e.KeyCode == Keys.C))
                 this.CopyAsText();
-              else
-              if ((e.Control) && (e.KeyCode == Keys.C))
+            else
+            if ((e.Control) && (e.KeyCode == Keys.C))
                 this.Copy();
-              else
-              if ((e.Control) && (e.KeyCode == Keys.X))
+            else
+            if ((e.Control) && (e.KeyCode == Keys.X))
                 this.Cut();
-              else
-              if ((e.Control) && (e.KeyCode == Keys.V))
+            else
+            if ((e.Control) && (e.KeyCode == Keys.V))
                 this.Paste();
-              else
-              if ((e.Control) && (e.KeyCode == Keys.A))
+            else
+            if ((e.Control) && (e.KeyCode == Keys.A))
                 this.SelectAll();
-              else
-              if ((e.Control) && (e.KeyCode == Keys.Z))
+            else
+            if ((e.Control) && (e.KeyCode == Keys.Z))
                 this.Undo();
-              else
-              if ((e.Control) && (e.KeyCode == Keys.Y))
+            else
+            if ((e.Control) && (e.KeyCode == Keys.Y))
                 this.Redo();
-              else
+            else
                 ActiveSection.KeyDown(e);
         }
 
@@ -947,7 +1050,10 @@ namespace HC.View
 
                 case User.WM_SETFOCUS:
                     base.WndProc(ref Message);
-                    ReBuildCaret();
+                    FStyle.UpdateInfoReCaret(false);
+                    FStyle.UpdateInfoRePaint();
+                    //FStyle.UpdateInfoReScroll();
+                    CheckUpdateInfo();
                     return;
 
                 case User.WM_KILLFOCUS:
@@ -982,7 +1088,7 @@ namespace HC.View
                                     return;
                                 }
                             }
-                            
+
                             Message.Result = IntPtr.Zero;
                         }
                     }
@@ -1007,41 +1113,58 @@ namespace HC.View
                         if (vPt.Y > this.Height - FHScrollBar.Height)
                             FVScrollBar.Position = FVScrollBar.Position + 60;
                         else
-                        if (vPt.Y < 0)
-                            FVScrollBar.Position = FVScrollBar.Position - 60;
+                            if (vPt.Y < 0)
+                                FVScrollBar.Position = FVScrollBar.Position - 60;
 
                         if (vPt.X > this.Width - FVScrollBar.Width)
                             FHScrollBar.Position = FHScrollBar.Position + 60;
                         else
-                        if (vPt.X < 0)
-                            FHScrollBar.Position = FHScrollBar.Position - 60;
+                            if (vPt.X < 0)
+                                FHScrollBar.Position = FHScrollBar.Position - 60;
                     }
                     break;
             }
 
             base.WndProc(ref Message);
         }
-        
+
         protected void CalcScrollRang()
         {
-            int vVMax = 0, vWidth = 0;
-            int vHMax = FSections[0].PageWidthPix;
-            for (int i = 0; i <= Sections.Count - 1; i++)  //  计算节垂直总和，以及节中最宽的页宽
+            int vVMax = 0, vHMax = 0, vWidth = 0;
+
+            if (FViewModel == HCViewModel.hvmFilm)
             {
-                vVMax = vVMax + FSections[i].GetFilmHeight();
-                
-                vWidth = FSections[i].PageWidthPix;
-                
-                if (vWidth > vHMax)
-                    vHMax = vWidth;
+                vHMax = FSections[0].PaperWidthPix;
+                for (int i = 0; i <= Sections.Count - 1; i++)  //  计算节垂直总和，以及节中最宽的页宽
+                {
+                    vVMax = vVMax + FSections[i].GetFilmHeight();
+
+                    vWidth = FSections[i].PaperWidthPix;
+
+                    if (vWidth > vHMax)
+                        vHMax = vWidth;
+                }
+            }
+            else
+            {
+                vHMax = FSections[0].GetPageWidth();
+                for (int i = 0; i <= Sections.Count - 1; i++)  //  计算节垂直总和，以及节中最宽的页宽
+                {
+                    vVMax = vVMax + FSections[i].GetFilmHeight();
+
+                    vWidth = FSections[i].GetPageWidth();
+
+                    if (vWidth > vHMax)
+                        vHMax = vWidth;
+                }
             }
 
-            if (FAnnotate.Count > 0)
+            if (FAnnotatePre.Count > 0)
                 vHMax = vHMax + HC.AnnotationWidth;
-            
-            vVMax = ZoomIn(vVMax + HC.PagePadding);  // 补充最后一页后面的PagePadding
-            vHMax = ZoomIn(vHMax + HC.PagePadding + HC.PagePadding);
-            
+
+            vVMax = ZoomIn(vVMax + FPagePadding);  // 补充最后一页后面的PagePadding
+            vHMax = ZoomIn(vHMax + FPagePadding + FPagePadding);
+
             FVScrollBar.Max = vVMax;
             FHScrollBar.Max = vHMax;
         }
@@ -1052,65 +1175,28 @@ namespace HC.View
             if (FUpdateCount > 0)
                 return;
 
-            bool vCaretChange = false;
             if ((FCaret != null) && FStyle.UpdateInfo.ReCaret)
             {
                 ReBuildCaret();
-                vCaretChange = true;
                 FStyle.UpdateInfo.ReCaret = false;
                 FStyle.UpdateInfo.ReStyle = false;
                 FStyle.UpdateInfo.ReScroll = false;
                 UpdateImmPosition();
             }
-            else
-                vCaretChange = false;
 
             if (FStyle.UpdateInfo.RePaint)
             {
                 FStyle.UpdateInfo.RePaint = false;
                 UpdateView();
             }
-
-            if (vCaretChange)
-                DoCaretChange();
         }
 
-        protected  void SetPageScrollModel(HCPageScrollModel Value)
+        private void InitializeComponent()
         {
-            if (FViewModel == HCViewModel.vmWeb)
-                return;
+            this.SuspendLayout();
+            this.Name = "HCView";
+            this.ResumeLayout(false);
 
-            if (FPageScrollModel != Value)
-                FPageScrollModel = Value;
-        }
-
-        protected void SetViewModel(HCViewModel value)
-        {
-            if (FPageScrollModel == HCPageScrollModel.psmHorizontal)
-                return;
-            if (FViewModel != value)
-                FViewModel = value;
-        }
-
-        protected void SetActiveSectionIndex(int value)
-        {
-            if (FActiveSectionIndex != value)
-            {
-                if (FActiveSectionIndex >= 0)
-                    FSections[FActiveSectionIndex].DisActive();
-                FActiveSectionIndex = value;
-            }
-        }
-
-        protected void SetIsChanged(bool Value)
-        {
-            if (FIsChanged != Value)
-            {
-                FIsChanged = Value;
-
-                if (FOnChangedSwitch != null)
-                    FOnChangedSwitch(this, null);
-            }
         }
 
         /// <summary> 便于子类在构造函数前执行 </summary>
@@ -1122,9 +1208,10 @@ namespace HC.View
         public HCView()
         {
             HCUnitConversion.Initialization();
+            //this.DoubleBuffered = true;
             Create();  // 便于子类在构造函数前执行
             FHCExtFormat = DataFormats.GetFormat(HC.HC_EXT);
-            SetStyle(ControlStyles.Selectable, true);
+            SetStyle(ControlStyles.Selectable, true);  // 可接收焦点
             this.BackColor = Color.FromArgb(82, 89, 107);
 
             FUndoList = new HCUndoList();
@@ -1134,15 +1221,16 @@ namespace HC.View
             FUndoList.OnUndoGroupStart = DoUndoGroupBegin;
             FUndoList.OnUndoGroupEnd = DoUndoGroupEnd;
 
-            FAnnotate = new HCAnnotate();
+            FAnnotatePre = new HCAnnotatePre();
+            FAnnotatePre.OnUpdateView = DoAnnotatePreUpdateView;
 
             FFileName = "";
             FPageNoFormat = "{0}/{1}";
             FIsChanged = false;
             FZoom = 1;
             FAutoZoom = false;
-            FViewModel = HCViewModel.vmPage;
-            FPageScrollModel = HCPageScrollModel.psmVertical;
+            FViewModel = HCViewModel.hvmFilm;
+            FPagePadding = 20;
 
             FStyle = new HCStyle(true, true);
             FStyle.OnInvalidateRect = DoStyleInvalidateRect;
@@ -1167,58 +1255,6 @@ namespace HC.View
             CalcScrollRang();
         }
 
-        private void InitializeComponent()
-        {
-            this.SuspendLayout();
-            this.Name = "HCView";
-        }
-
-        protected override void CreateHandle()
-        {
- 	        base.CreateHandle();
-            if (!DesignMode)
-                FCaret = new HCCaret(this.Handle);
-            if (FDC == IntPtr.Zero)
-            {
-                FDC = User.GetDC(this.Handle);
-                //FMemDC = (IntPtr)GDI.CreateCompatibleDC(FDC);
-            }
-
-            FhImc = Imm.ImmGetContext(this.Handle);
-        }
-
-        protected override void OnHandleDestroyed(EventArgs e)
-        {
-            GDI.DeleteDC(FMemDC);
-            User.ReleaseDC(this.Handle, FDC);
-            base.OnHandleDestroyed(e);
-        }
-
-        protected override void OnResize(EventArgs e)
-        {
- 	        base.OnResize(e);
-
-            GetViewWidth();
-            GetViewHeight();
-
-            if (FAutoZoom)
-            {
-                if (FAnnotate.Count > 0)
-                    FZoom = (FViewWidth - HC.PagePadding * 2) / (ActiveSection.PageWidthPix + HC.AnnotationWidth);
-                else
-                    FZoom = (FViewWidth - HC.PagePadding * 2) / ActiveSection.PageWidthPix;
-            }
-
-            CalcScrollRang();
-
-            FStyle.UpdateInfoRePaint();
-            if (FCaret != null)
-                FStyle.UpdateInfoReCaret(false);
-
-            CheckUpdateInfo();
-            DoViewResize();
-        }
-
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
             base.SetBoundsCore(x, y, width, height, specified);
@@ -1232,14 +1268,54 @@ namespace HC.View
             this.Refresh();
         }
 
-        protected override void OnPaint(PaintEventArgs e)
+        /// <summary> 删除不使用的文本样式 </summary>
+        public static void DeleteUnUsedStyle(HCStyle aStyle, List<HCSection> aSections, HashSet<SectionArea> AParts)  //  = (saHeader, saPage, saFooter)
         {
-            //base.OnPaint(e);
-            GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FMemDC, 0, 0, GDI.SRCCOPY);
- 	        
-            using (SolidBrush vBrush = new SolidBrush(this.BackColor))
+            for (int i = 0; i <= aStyle.TextStyles.Count - 1; i++)
             {
-                e.Graphics.FillRectangle(vBrush, new Rectangle(FVScrollBar.Left, FHScrollBar.Top, FVScrollBar.Width, FHScrollBar.Height));
+                aStyle.TextStyles[i].CheckSaveUsed = false;
+                aStyle.TextStyles[i].TempNo = HCStyle.Null;
+            }
+            for (int i = 0; i <= aStyle.ParaStyles.Count - 1; i++)
+            {
+                aStyle.ParaStyles[i].CheckSaveUsed = false;
+                aStyle.ParaStyles[i].TempNo = HCStyle.Null;
+            }
+
+            for (int i = 0; i <= aSections.Count - 1; i++)
+                aSections[i].MarkStyleUsed(true, AParts);
+            
+            int vUnCount = 0;
+            for (int i = 0; i <= aStyle.TextStyles.Count - 1; i++)
+            {
+                if (aStyle.TextStyles[i].CheckSaveUsed)
+                    aStyle.TextStyles[i].TempNo = i - vUnCount;
+                else
+                    vUnCount++;
+            }
+            
+            vUnCount = 0;
+            for (int i = 0; i <= aStyle.ParaStyles.Count - 1; i++)
+            {
+                if (aStyle.ParaStyles[i].CheckSaveUsed)
+                    aStyle.ParaStyles[i].TempNo = i - vUnCount;
+                else
+                    vUnCount++;
+            }
+
+            for (int i = 0; i <= aSections.Count - 1; i++)
+                aSections[i].MarkStyleUsed(false, AParts);
+
+            for (int i = aStyle.TextStyles.Count - 1; i >= 0; i--)
+            {
+                if (!aStyle.TextStyles[i].CheckSaveUsed)
+                    aStyle.TextStyles.RemoveAt(i);
+            }
+
+            for (int i = aStyle.ParaStyles.Count - 1; i >= 0; i--)
+            {
+                if (!aStyle.ParaStyles[i].CheckSaveUsed)
+                    aStyle.ParaStyles.RemoveAt(i);
             }
         }
 
@@ -1248,6 +1324,11 @@ namespace HC.View
         {
             ActiveSection.ResetMargin();
             DoViewResize();
+        }
+
+        public void ReAdaptActiveItem()
+        {
+            ActiveSection.ReAdaptActiveItem();
         }
 
         /// <summary> 全部清空(清除各节页眉、页脚、页面的Item及DrawItem) </summary>
@@ -1274,6 +1355,7 @@ namespace HC.View
             FStyle.UpdateInfoRePaint();
             FStyle.UpdateInfoReCaret();
             DoMapChanged();
+            DoViewResize();
         }
 
         /// <summary> 取消选中 </summary>
@@ -1287,6 +1369,21 @@ namespace HC.View
         public void DeleteSelected()
         {
             ActiveSection.DeleteSelected();
+        }
+
+        /// <summary> 删除当前域 </summary>
+        public bool DeleteActiveDomain()
+        {
+            return ActiveSection.DeleteActiveDomain();
+        }
+
+        /// <summary> 删除当前Data指定范围内的Item </summary>
+        public void DeleteActiveDataItems(int aStartNo, int aEndNo = -1)
+        {
+            if (aEndNo < aStartNo)
+                ActiveSection.DeleteActiveDataItems(aStartNo, aStartNo);
+            else
+                ActiveSection.DeleteActiveDataItems(aStartNo, aEndNo);
         }
 
         /// <summary> 删除当前节 </summary>
@@ -1344,7 +1441,7 @@ namespace HC.View
                                 // 不循环，只插入第一节的正文
                                 vSection.LoadFromStream(aStream, vStyle, aFileVersion);
                                 vDataStream.SetLength(0);
-                                vSection.PageData.SaveToStream(vDataStream);
+                                vSection.Page.SaveToStream(vDataStream);
                                 vDataStream.Position = 0;
 
                                 bool vShowUnderLine = false;
@@ -1377,7 +1474,7 @@ namespace HC.View
             {
                 this.EndUpdate();
             }
-            
+
             return vResult;
         }
 
@@ -1396,12 +1493,38 @@ namespace HC.View
         }
 
         /// <summary> 插入指定行列的表格 </summary>
-        public bool InsertTable(int aRowCount, int  aColCount)
+        public bool InsertTable(int aRowCount, int aColCount)
         {
             this.BeginUpdate();
             try
             {
                 return ActiveSection.InsertTable(aRowCount, aColCount);
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
+        }
+
+        public bool InsertImage(string aFile)
+        {
+            this.BeginUpdate();
+            try
+            {
+                return ActiveSection.InsertImage(aFile);
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
+        }
+
+        public bool InsertGifImage(string aFile)
+        {
+            this.BeginUpdate();
+            try
+            {
+                return ActiveSection.InsertGifImage(aFile);
             }
             finally
             {
@@ -1545,9 +1668,9 @@ namespace HC.View
         public void ApplyParaLeftIndent(bool add = true)
         {
             if (add)
-                ActiveSection.ApplyParaLeftIndent(FStyle.ParaStyles[FStyle.CurParaNo].LeftIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                ActiveSection.ApplyParaLeftIndent(FStyle.ParaStyles[CurParaNo].LeftIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
             else
-                ActiveSection.ApplyParaLeftIndent(FStyle.ParaStyles[FStyle.CurParaNo].LeftIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                ActiveSection.ApplyParaLeftIndent(FStyle.ParaStyles[CurParaNo].LeftIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
         }
 
         /// <summary> 修改当前光标所在段左缩进 </summary>
@@ -1629,7 +1752,6 @@ namespace HC.View
                     DoCopyDataBefor(vStream);  // 通知保存事件
 
                     HashSet<SectionArea> vSaveParts = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-                    _DeleteUnUsedStyle(vSaveParts);  // 保存已使用的样式
                     FStyle.SaveToStream(vStream);
                     this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
 
@@ -1663,8 +1785,7 @@ namespace HC.View
                         return;
                     }
 
-                    //vBuffer = new byte[System.Text.Encoding.Default.GetByteCount() + 1];
-                    vBuffer = System.Text.Encoding.Default.GetBytes(this.ActiveSectionTopLevelData().SaveSelectToText());
+                    vBuffer = System.Text.Encoding.Unicode.GetBytes(this.ActiveSectionTopLevelData().SaveSelectToText());
                     IntPtr vMem = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, vBuffer.Length + 1);
                     try
                     {
@@ -1762,13 +1883,13 @@ namespace HC.View
             else
             if (vIData.GetDataPresent(DataFormats.Bitmap))
             {
-                MemoryStream vStream = (MemoryStream)vIData.GetData(HC.HC_EXT);
-                vStream.Position = 0;
+                Image vImage = (Image)vIData.GetData(typeof(Bitmap));
 
-                HCRichData vTopData = this.ActiveSectionTopLevelData();
+                HCRichData vTopData = this.ActiveSectionTopLevelData() as HCRichData;
                 HCImageItem vImageItem = new HCImageItem(vTopData);
-                vImageItem.Image = new Bitmap(vStream);
-
+                
+                vImageItem.Image = new Bitmap(vImage);
+                
                 vImageItem.Width = vImageItem.Image.Width;
                 vImageItem.Height = vImageItem.Image.Height;
 
@@ -1797,7 +1918,7 @@ namespace HC.View
             UpdateView(GetViewRect());
         }
 
-#region
+        #region UpdateView UpdateView子方法CalcDisplaySectionAndPage
         private void CalcDisplaySectionAndPage()
         {
             if (FDisplayFirstSection >= 0)
@@ -1817,56 +1938,67 @@ namespace HC.View
             int vFirstPage = -1;
             int vLastPage = -1;
             int vPos = 0;
-            if (FPageScrollModel == HCPageScrollModel.psmVertical)
+
+            for (int i = 0; i <= Sections.Count - 1; i++)
             {
-                for (int i = 0; i <= Sections.Count - 1; i++)
+                for (int j = 0; j <= Sections[i].PageCount - 1; j++)
                 {
-                    for (int j = 0; j <= Sections[i].PageCount - 1; j++)
+                    if (FSections[i].ViewModel == HCViewModel.hvmFilm)
+                        vPos = vPos + ZoomIn(FPagePadding + FSections[i].PaperHeightPix);
+                    else
+                        vPos = vPos + ZoomIn(FPagePadding + FSections[i].GetPageHeight());
+
+                    if (vPos > FVScrollBar.Position)
                     {
-                        vPos = vPos + ZoomIn(HC.PagePadding + FSections[i].PageHeightPix);
-                        if (vPos > FVScrollBar.Position)
-                        {
-                            vFirstPage = j;
-                            break;
-                        }
-                    }
-                    if (vFirstPage >= 0)
-                    {
-                        FDisplayFirstSection = i;
-                        FSections[FDisplayFirstSection].DisplayFirstPageIndex = vFirstPage;
+                        vFirstPage = j;
                         break;
                     }
                 }
-                if (FDisplayFirstSection >= 0)
+
+                if (vFirstPage >= 0)
                 {
-                    int vY = FVScrollBar.Position + FViewHeight;
-                    for (int i = FDisplayFirstSection; i <= Sections.Count - 1; i++)
-                    {
-                        for (int j = vFirstPage; j <= Sections[i].PageCount - 1; j++)
-                        {
-                            if (vPos < vY)
-                                vPos = vPos + ZoomIn(HC.PagePadding + FSections[i].PageHeightPix);
-                            else
-                            {
-                                vLastPage = j;
-                                break;
-                            }
-                        }
-                        if (vLastPage >= 0)
-                        {
-                            FDisplayLastSection = i;
-                            FSections[FDisplayLastSection].DisplayLastPageIndex = vLastPage;
-                            break;
-                    }
-                }
-                    if (FDisplayLastSection < 0)
-                    {
-                        FDisplayLastSection = FSections.Count - 1;
-                        FSections[FDisplayLastSection].DisplayLastPageIndex = FSections[FDisplayLastSection].PageCount - 1;
-                    }
+                    FDisplayFirstSection = i;
+                    FSections[FDisplayFirstSection].DisplayFirstPageIndex = vFirstPage;
+                    break;
                 }
             }
+                
+            if (FDisplayFirstSection >= 0)
+            {
+                int vY = FVScrollBar.Position + FViewHeight;
+                for (int i = FDisplayFirstSection; i <= Sections.Count - 1; i++)
+                {
+                    for (int j = vFirstPage; j <= Sections[i].PageCount - 1; j++)
+                    {
+                        if (vPos < vY)
+                        {
+                            if (FSections[i].ViewModel == HCViewModel.hvmFilm)
+                                vPos = vPos + ZoomIn(FPagePadding + FSections[i].PaperHeightPix);
+                            else
+                                vPos = vPos + ZoomIn(FPagePadding + FSections[i].GetPageHeight());
+                        }
+                        else
+                        {
+                            vLastPage = j;
+                            break;
+                        }
+                    }
 
+                    if (vLastPage >= 0)
+                    {
+                        FDisplayLastSection = i;
+                        FSections[FDisplayLastSection].DisplayLastPageIndex = vLastPage;
+                        break;
+                    }
+                }
+
+                if (FDisplayLastSection < 0)
+                {
+                    FDisplayLastSection = FSections.Count - 1;
+                    FSections[FDisplayLastSection].DisplayLastPageIndex = FSections[FDisplayLastSection].PageCount - 1;
+                }
+            }
+            
             if ((FDisplayFirstSection < 0) || (FDisplayLastSection < 0))
                 throw new Exception("异常：获取当前显示起始页和结束页失败！");
             else
@@ -1878,10 +2010,10 @@ namespace HC.View
                 }
             }
         }
-#endregion
+        #endregion
 
         /// <summary> 重绘客户区指定区域 </summary>
-        public void UpdateView(RECT ARect)
+        public void UpdateView(RECT aRect)
         {
             if ((FUpdateCount == 0) && IsHandleCreated)
             {
@@ -1895,10 +2027,14 @@ namespace HC.View
                     using (HCCanvas vDataBmpCanvas = new HCCanvas(FMemDC))
                     {
                         // 创建一个新的剪切区域，该区域是当前剪切区域和一个特定矩形的交集
-                        GDI.IntersectClipRect(vDataBmpCanvas.Handle, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom);
+                        GDI.IntersectClipRect(vDataBmpCanvas.Handle, aRect.Left, aRect.Top, aRect.Right, aRect.Bottom);
 
                         // 控件背景
-                        vDataBmpCanvas.Brush.Color = this.BackColor;// $00E7BE9F;
+                        if (FViewModel == HCViewModel.hvmFilm)
+                            vDataBmpCanvas.Brush.Color = this.BackColor;// $00E7BE9F;
+                        else
+                            vDataBmpCanvas.Brush.Color = FStyle.BackgroudColor;
+
                         vDataBmpCanvas.FillRect(new RECT(0, 0, FViewWidth, FViewHeight));
                         // 因基于此计算当前页面数据起始结束，所以不能用ARect代替
                         CalcDisplaySectionAndPage();  // 计算当前范围内可显示的起始节、页和结束节、页
@@ -1909,6 +2045,7 @@ namespace HC.View
                             vPaintInfo.ScaleX = FZoom;
                             vPaintInfo.ScaleY = FZoom;
                             vPaintInfo.Zoom = FZoom;
+                            vPaintInfo.ViewModel = FViewModel;
                             vPaintInfo.WindowWidth = FViewWidth;
                             vPaintInfo.WindowHeight = FViewHeight;
 
@@ -1918,8 +2055,8 @@ namespace HC.View
                                 if (FOnPaintViewBefor != null)
                                     FOnPaintViewBefor(vDataBmpCanvas);
 
-                                if (FAnnotate.DrawCount > 0)
-                                    FAnnotate.ClearDrawAnnotate();
+                                if (FAnnotatePre.DrawCount > 0)
+                                    FAnnotatePre.ClearDrawAnnotate();
 
                                 int vOffsetY = 0;
                                 for (int i = FDisplayFirstSection; i <= FDisplayLastSection; i++)
@@ -1947,8 +2084,8 @@ namespace HC.View
                             vPaintInfo.Dispose();
                         }
 
-                        GDI.BitBlt(FDC, ARect.Left, ARect.Top, ARect.Width, ARect.Height,
-                            FMemDC, ARect.Left, ARect.Top, GDI.SRCCOPY);
+                        GDI.BitBlt(FDC, aRect.Left, aRect.Top, aRect.Width, aRect.Height,
+                            FMemDC, aRect.Left, aRect.Top, GDI.SRCCOPY);
                     }
                 }
                 finally
@@ -1956,7 +2093,8 @@ namespace HC.View
                     GDI.DeleteObject(vBitmap);
                 }
 
-                User.InvalidateRect(this.Handle, ref ARect, 0);  // 只更新变动区域，防止闪烁，解决BitBlt光标滞留问题
+                User.InvalidateRect(this.Handle, ref aRect, 0);  // 只更新变动区域，防止闪烁，解决BitBlt光标滞留问题
+                User.UpdateWindow(this.Handle);
             }
         }
 
@@ -1975,10 +2113,28 @@ namespace HC.View
             DoMapChanged();
         }
 
-        /// <summary> 返回当前节当前Item </summary>
-        public HCCustomItem GetCurItem()
+        public void UndoGroupBegin()
         {
-            return ActiveSection.GetCurItem();
+            if (FUndoList.Enable)
+            {
+                HCRichData vData = ActiveSection.ActiveData;
+                FUndoList.UndoGroupBegin(vData.SelectInfo.StartItemNo, vData.SelectInfo.StartItemOffset);
+            }
+        }
+
+        public void UndoGroupEnd()
+        {
+            if (FUndoList.Enable)
+            {
+                HCRichData vData = ActiveSection.ActiveData;
+                FUndoList.UndoGroupEnd(vData.SelectInfo.StartItemNo, vData.SelectInfo.StartItemOffset);
+            }
+        }
+
+        /// <summary> 返回当前节当前Item </summary>
+        public HCCustomItem GetActiveItem()
+        {
+            return ActiveSection.GetActiveItem();
         }
 
         /// <summary> 返回当前节顶层Item </summary>
@@ -2012,9 +2168,7 @@ namespace HC.View
             for (int i = 0; i <= ActiveSectionIndex - 1; i++)
                 Result = Result + FSections[i].PageCount;
     
-            Result = Result + FSections[FActiveSectionIndex].DisplayFirstPageIndex;
-
-            return Result;
+            return Result + FSections[FActiveSectionIndex].DisplayFirstPageIndex;
         }
 
         /// <summary> 返回总页数 </summary>
@@ -2031,11 +2185,14 @@ namespace HC.View
         public int GetSectionDrawLeft(int ASectionIndex)
         {
             int Result = 0;
-            if (FAnnotate.Count > 0)
-                Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PageWidthPix + HC.AnnotationWidth)) / 2, ZoomIn(HC.PagePadding));
-            else
-                Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PageWidthPix)) / 2, ZoomIn(HC.PagePadding));
-    
+            if (FViewModel == HCViewModel.hvmFilm)
+            {
+                if (FAnnotatePre.Visible)
+                    Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PaperWidthPix + HC.AnnotationWidth)) / 2, ZoomIn(FPagePadding));
+                else
+                    Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PaperWidthPix)) / 2, ZoomIn(FPagePadding));
+            }
+
             Result = ZoomOut(Result);
 
             return Result;
@@ -2050,7 +2207,7 @@ namespace HC.View
             
             // 映射到节页面(白色区域)
             Result.X = ZoomIn(GetSectionDrawLeft(this.ActiveSectionIndex)
-                + (ActiveSection.GetPageMarginLeft(vPageIndex) + Result.X)) - this.HScrollValue;
+                + (ActiveSection.GetPageMarginLeft(vPageIndex) + Result.X)) - FHScrollBar.Position;
             
             if (ActiveSection.ActiveData == ActiveSection.Header)
                 Result.Y = ZoomIn(GetSectionTopFilm(this.ActiveSectionIndex)
@@ -2058,24 +2215,29 @@ namespace HC.View
                     + ActiveSection.GetHeaderPageDrawTop()
                     + Result.Y
                     - ActiveSection.GetPageDataFmtTop(vPageIndex))  // 0
-                    - this.VScrollValue;
+                    - FVScrollBar.Position;
             else
             if (ActiveSection.ActiveData == ActiveSection.Footer)
                 Result.Y = ZoomIn(GetSectionTopFilm(this.ActiveSectionIndex)
                     + ActiveSection.GetPageTopFilm(vPageIndex)  // 20
-                    + ActiveSection.PageHeightPix - ActiveSection.PageMarginBottomPix
+                    + ActiveSection.PaperHeightPix - ActiveSection.PaperMarginBottomPix
                     + Result.Y
                     - ActiveSection.GetPageDataFmtTop(vPageIndex))  // 0
-                    - this.VScrollValue;
+                    - FVScrollBar.Position;
             else
                 Result.Y = ZoomIn(GetSectionTopFilm(this.ActiveSectionIndex)
                 + ActiveSection.GetPageTopFilm(vPageIndex)  // 20
                 + ActiveSection.GetHeaderAreaHeight() // 94
                 + Result.Y
                 - ActiveSection.GetPageDataFmtTop(vPageIndex))  // 0
-                - this.VScrollValue;
+                - FVScrollBar.Position;
 
             return Result;
+        }
+
+        public void SetActiveItemText(string aText)
+        {
+            ActiveSection.SetActiveItemText(aText);
         }
 
         /// <summary> 格式化指定节的数据 </summary>
@@ -2089,14 +2251,8 @@ namespace HC.View
             DoChange();
         }
 
-        /// <summary> 获取当前节对象 </summary>
-        public HCSection GetActiveSection()
-        {
-            return FSections[FActiveSectionIndex];
-        }
-
         /// <summary> 获取当前节顶层Data </summary>
-        public HCRichData ActiveSectionTopLevelData()
+        public HCCustomData ActiveSectionTopLevelData()
         {
             return ActiveSection.ActiveData.GetTopLevelData();
         }
@@ -2140,6 +2296,16 @@ namespace HC.View
             {
                 vStream.Dispose();
             }
+        }
+
+        public void LoadFromDocumentFile(string aFileName, string aExt)
+        {
+
+        }
+
+        public void SaveToDocumentFile(string aFileName, string aExt)
+        {
+
         }
 
         /// <summary> 文档保存为PDF格式 </summary>
@@ -2195,6 +2361,7 @@ namespace HC.View
             byte[] vPreamble = aEncoding.GetPreamble();
             if (vPreamble.Length > 0)
                 aStream.Write(vPreamble, 0, vPreamble.Length);
+
             aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
@@ -2212,12 +2379,11 @@ namespace HC.View
         public virtual void SaveToStream(Stream aStream, bool aQuick, HashSet<SectionArea> aAreas)
         {
             HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
+            DoSaveStreamBefor(aStream);
 
             if (!aQuick)
-            {
-                DoSaveStreamBefor(aStream);
-                _DeleteUnUsedStyle(aAreas);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
-            }
+                DeleteUnUsedStyle(FStyle, FSections, aAreas);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
+
             FStyle.SaveToStream(aStream);
             // 节数量
             byte vByte = (byte)FSections.Count;
@@ -2226,8 +2392,7 @@ namespace HC.View
             for (int i = 0; i <= Sections.Count - 1; i++)
                 FSections[i].SaveToStream(aStream, aAreas);
             
-            if (!aQuick)
-                DoSaveStreamAfter(aStream);
+            DoSaveStreamAfter(aStream);
         }
 
         /// <summary> 读取文件流 </summary>
@@ -2242,8 +2407,8 @@ namespace HC.View
                 try
                 {
                     FUndoList.Enable = false;
-
                     this.Clear();
+
                     aStream.Position = 0;
                     LoadSectionProcHandler vEvent = delegate(ushort AFileVersion)
                     {
@@ -2276,7 +2441,7 @@ namespace HC.View
         public void SaveToXml(string aFileName, System.Text.Encoding aEncoding)
         {
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-            _DeleteUnUsedStyle(vParts);
+            DeleteUnUsedStyle(FStyle, FSections, vParts);
 
             XmlDocument vXml = new XmlDocument();
             //vXml. = "1.0";
@@ -2365,7 +2530,8 @@ namespace HC.View
         public void SaveToHtml(string aFileName, bool aSeparateSrc = false)
         {
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-            _DeleteUnUsedStyle(vParts);
+            DeleteUnUsedStyle(FStyle, FSections, vParts);
+
             FStyle.GetHtmlFileTempName(true);
 
             string vPath = "";
@@ -2439,7 +2605,7 @@ namespace HC.View
         /// <param name="AEndPageIndex">结束页序号</param>
         /// <param name="ACopies">打印份数</param>
         /// <returns></returns>
-        public PrintResult Print(string APrinter, int AStartPageIndex, int  AEndPageIndex, short ACopies)
+        public PrintResult Print(string APrinter, int AStartPageIndex, int AEndPageIndex, short ACopies)
         {
             int[] vPages = new int[AEndPageIndex - AStartPageIndex + 1];
             for (int i = AStartPageIndex; i <= AEndPageIndex; i++)
@@ -2475,7 +2641,7 @@ namespace HC.View
                 vPaintInfo.Print = true;
 
                 HCCanvas vPrintCanvas = new HCCanvas();
-                int vPageIndex = 0, vSectionIndex = 0, vPrintWidth = 0, vPrintHeight = 0, vPrintPageIndex = 0, i = 0;
+                int vFirstPageIndex = 0, vSectionIndex = 0, vPrintWidth = 0, vPrintHeight = 0, vPrintPageIndex = 0, i = 0;
 
                 vPrintPageIndex = APages[i];
 
@@ -2485,17 +2651,29 @@ namespace HC.View
                         vPrintCanvas.Graphics = e.Graphics;
             
                     // 根据页码获取起始节和结束节
-                    vSectionIndex = GetSectionPageIndexByPageIndex(APages[vPrintPageIndex], ref vPageIndex);
+                    vSectionIndex = GetSectionPageIndexByPageIndex(APages[vPrintPageIndex], ref vFirstPageIndex);
                     if (vPaintInfo.SectionIndex != vSectionIndex)
                     {
                         vPaintInfo.SectionIndex = vSectionIndex;
+
                         SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, vSectionIndex);
-                        
+                        //HCPrinter.NewPage(False);
                         vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);  // 4961
                         vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);  // 7016
-                        
-                        vPaintInfo.ScaleX = (float)vPrintWidth / FSections[vSectionIndex].PageWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                        vPaintInfo.ScaleY = (float)vPrintHeight / FSections[vSectionIndex].PageHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+
+                        if (FSections[vSectionIndex].Page.DataAnnotates.Count > 0)
+                        {
+                            vPaintInfo.ScaleX = (float)vPrintWidth / (FSections[vSectionIndex].PaperWidthPix + HC.AnnotationWidth);
+                            vPaintInfo.ScaleY = (float)vPrintHeight / (FSections[vSectionIndex].PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                            vPaintInfo.Zoom = FSections[vSectionIndex].PaperWidthPix / (FSections[vSectionIndex].PaperWidthPix + HC.AnnotationWidth);
+                        }
+                        else
+                        {
+                            vPaintInfo.ScaleX = (float)vPrintWidth / FSections[vSectionIndex].PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                            vPaintInfo.ScaleY = (float)vPrintHeight / FSections[vSectionIndex].PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                            vPaintInfo.Zoom = 1;
+                        }
+
                         vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
                         vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
                         
@@ -2506,10 +2684,10 @@ namespace HC.View
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
                     {
-                        vPaintInfo.PageIndex = APages[vPrintPageIndex];
-                        
-                        FSections[vSectionIndex].PaintPage(APages[vPrintPageIndex], vPrintOffsetX, vPrintOffsetY,
-                            vPrintCanvas, vPaintInfo);
+                        vPaintInfo.PageIndex = APages[i];
+
+                        FSections[vSectionIndex].PaintPaper(APages[i] - vFirstPageIndex, 
+                            vPrintOffsetX, vPrintOffsetY, vPrintCanvas, vPaintInfo);
                     }
                     finally
                     {
@@ -2560,8 +2738,19 @@ namespace HC.View
                 int vPrintWidth = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Width;  //  GetDeviceCaps(Printer.Handle, PHYSICALWIDTH);
                 int vPrintHeight = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Height;  // GetDeviceCaps(Printer.Handle, PHYSICALHEIGHT);
 
-                vPaintInfo.ScaleX = vPrintWidth / this.ActiveSection.PageWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                vPaintInfo.ScaleY = vPrintHeight / this.ActiveSection.PageHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                if (this.ActiveSection.Page.DataAnnotates.Count > 0)
+                {
+                    vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                    vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                    vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                }
+                else
+                {
+                    vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                    vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                    vPaintInfo.Zoom = 1;
+                }
+                    
                 vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
                 vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
 
@@ -2574,15 +2763,14 @@ namespace HC.View
                 {
                     vPrintCanvas.Graphics = e.Graphics;
 
-
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
                     {                       
-                        this.ActiveSection.PaintPage(this.ActiveSection.ActivePageIndex, vPrintOffsetX, vPrintOffsetY,
-                            vPrintCanvas, vPaintInfo);
+                        this.ActiveSection.PaintPaper(this.ActiveSection.ActivePageIndex, 
+                            vPrintOffsetX, vPrintOffsetY, vPrintCanvas, vPaintInfo);
 
                         POINT vPt;
-                         if (this.ActiveSection.ActiveData == this.ActiveSection.PageData)
+                        if (this.ActiveSection.ActiveData == this.ActiveSection.Page)
                         {
                             vPt = this.ActiveSection.GetActiveDrawItemCoord();
                             vPt.Y = vPt.Y - ActiveSection.GetPageDataFmtTop(this.ActiveSection.ActivePageIndex);
@@ -2600,16 +2788,22 @@ namespace HC.View
 
                         RECT vRect = new RECT();
                         if (APrintHeader)
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
-                                this.ActiveSection.PageWidthPix - vMarginLeft - vMarginRight, vPt.Y);
+                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, 
+                                vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
+                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
                         else  // 不打印页眉
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, vPrintOffsetY, this.ActiveSection.PageWidthPix - vMarginLeft - vMarginRight,
+                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
+                                vPrintOffsetY, this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight,
                                 this.ActiveSection.GetHeaderAreaHeight() + vPt.Y);
+
                         vPrintCanvas.FillRect(vRect);
                         if (!APrintFooter)
                         {
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, vPrintOffsetY + this.ActiveSection.PageHeightPix - this.ActiveSection.PageMarginBottomPix,
-                                this.ActiveSection.PageWidthPix - vMarginLeft - vMarginRight, this.ActiveSection.PageMarginBottomPix);
+                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
+                                vPrintOffsetY + this.ActiveSection.PaperHeightPix - this.ActiveSection.PaperMarginBottomPix,
+                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, 
+                                this.ActiveSection.PaperMarginBottomPix);
+                            
                             vPrintCanvas.FillRect(vRect);
                         }
                     }
@@ -2656,8 +2850,19 @@ namespace HC.View
                 int vPrintWidth = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Width;  //  GetDeviceCaps(Printer.Handle, PHYSICALWIDTH);
                 int vPrintHeight = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Height;  // GetDeviceCaps(Printer.Handle, PHYSICALHEIGHT);
 
-                vPaintInfo.ScaleX = vPrintWidth / this.ActiveSection.PageWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                vPaintInfo.ScaleY = vPrintHeight / this.ActiveSection.PageHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                if (this.ActiveSection.Page.DataAnnotates.Count > 0)
+                {
+                    vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                    vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                    vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                }
+                else
+                {
+                    vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                    vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                    vPaintInfo.Zoom = 1;
+                }
+                
                 vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
                 vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
 
@@ -2670,17 +2875,16 @@ namespace HC.View
                 {
                     vPrintCanvas.Graphics = e.Graphics;
 
-
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
                     {                       
-                        this.ActiveSection.PaintPage(this.ActiveSection.ActivePageIndex, vPrintOffsetX, vPrintOffsetY,
-                            vPrintCanvas, vPaintInfo);
+                        this.ActiveSection.PaintPaper(this.ActiveSection.ActivePageIndex, 
+                            vPrintOffsetX, vPrintOffsetY, vPrintCanvas, vPaintInfo);
 
                         POINT vPt;
                         HCRichData vData = null;
                         int vDrawItemNo = -1;
-                         if (this.ActiveSection.ActiveData == this.ActiveSection.PageData)
+                        if (this.ActiveSection.ActiveData == this.ActiveSection.Page)
                         {
                             vData = this.ActiveSection.ActiveData;
                             vDrawItemNo = vData.GetDrawItemNoByOffset(AStartItemNo, AStartOffset);
@@ -2694,7 +2898,8 @@ namespace HC.View
                         }
 
                         int vMarginLeft = -1, vMarginRight = -1;
-                        this.ActiveSection.GetPageMarginLeftAndRight(this.ActiveSection.ActivePageIndex, ref vMarginLeft, ref vMarginRight);
+                        this.ActiveSection.GetPageMarginLeftAndRight(this.ActiveSection.ActivePageIndex, 
+                            ref vMarginLeft, ref vMarginRight);
                         // "抹"掉不需要显示的地方
                         vPrintCanvas.Brush.Color = Color.White;
 
@@ -2702,15 +2907,19 @@ namespace HC.View
                         if (APrintHeader)
                             vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
-                                this.ActiveSection.PageWidthPix - vMarginLeft - vMarginRight, vPt.Y);
+                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
                         else  // 不打印页眉
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, vPrintOffsetY, this.ActiveSection.PageWidthPix - vMarginLeft - vMarginRight,
+                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, vPrintOffsetY, 
+                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight,
                                 this.ActiveSection.GetHeaderAreaHeight() + vPt.Y);
+
                         vPrintCanvas.FillRect(vRect);
                         
-                        vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y,
-                            vData.GetDrawItemOffsetWidth(vDrawItemNo, AStartOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
+                        vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, 
+                            vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y,
+                            vData.DrawItems[vDrawItemNo].Rect.Left + vData.GetDrawItemOffsetWidth(vDrawItemNo, AStartOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
                             vData.DrawItems[vDrawItemNo].Rect.Height);
+
                         vPrintCanvas.FillRect(vRect);
 
                         //
@@ -2718,21 +2927,31 @@ namespace HC.View
                         vPt = vData.DrawItems[vDrawItemNo].Rect.TopLeft();
                         vPt.Y = vPt.Y - ActiveSection.GetPageDataFmtTop(this.ActiveSection.ActivePageIndex);
 
-                        vRect = new RECT(vPrintOffsetX + vMarginLeft + vData.GetDrawItemOffsetWidth(vDrawItemNo, AEndOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
-                            vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y, vPrintOffsetX + this.ActiveSection.PageWidthPix - vMarginRight,
+                        vRect = new RECT(vPrintOffsetX + vMarginLeft + vData.DrawItems[vDrawItemNo].Rect.Left +
+                            vData.GetDrawItemOffsetWidth(vDrawItemNo, AEndOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
+                            vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y,
+                            vPrintOffsetX + this.ActiveSection.PaperWidthPix - vMarginRight,
                             vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height);
+                        
                         vPrintCanvas.FillRect(vRect);
 
                         if (!APrintFooter)
                         {
-                            vRect = new RECT(vPrintOffsetX + vMarginLeft, vPrintOffsetY + + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height,
-                                vPrintOffsetX + this.ActiveSection.PageWidthPix - vMarginRight, vPrintOffsetY + this.ActiveSection.PageHeightPix);
+                            vRect = new RECT(vPrintOffsetX + vMarginLeft, 
+                                vPrintOffsetY + + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height,
+                                vPrintOffsetX + this.ActiveSection.PaperWidthPix - vMarginRight,
+                                vPrintOffsetY + this.ActiveSection.PaperHeightPix);
+
                             vPrintCanvas.FillRect(vRect);
                         }
                         else  // 打印页脚
                         {
-                            vRect = new RECT(vPrintOffsetX + vMarginLeft, vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height,
-                                vPrintOffsetX + this.ActiveSection.PageWidthPix - vMarginRight, vPrintOffsetY + this.ActiveSection.PageHeightPix - this.ActiveSection.PageMarginBottomPix);
+                            vRect = new RECT(vPrintOffsetX + vMarginLeft, 
+                                vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height,
+                                vPrintOffsetX + this.ActiveSection.PaperWidthPix - vMarginRight,
+                                vPrintOffsetY + this.ActiveSection.PaperHeightPix - this.ActiveSection.PaperMarginBottomPix);
+
+                            vPrintCanvas.FillRect(vRect);
                         }
                     }
                     finally
@@ -2838,7 +3057,7 @@ namespace HC.View
             if (Result)
             {
                 POINT vPt = GetActiveDrawItemClientCoord();  // 返回光标处DrawItem相对当前页显示的窗体坐标，有选中时，以选中结束位置的DrawItem格式化坐标
-                HCRichData vTopData = ActiveSectionTopLevelData();
+                HCCustomData vTopData = ActiveSectionTopLevelData();
 
                 int vStartDrawItemNo = vTopData.GetDrawItemNoByOffset(vTopData.SelectInfo.StartItemNo, vTopData.SelectInfo.StartItemOffset);
                 int vEndDrawItemNo = vTopData.GetDrawItemNoByOffset(vTopData.SelectInfo.EndItemNo, vTopData.SelectInfo.EndItemOffset);
@@ -2908,11 +3127,6 @@ namespace HC.View
             get { return FStyle; }
         }
 
-        public HCSection ActiveSection
-        {
-            get { return GetActiveSection(); }
-        }
-
         /// <summary> 是否对称边距 </summary>
         public bool SymmetryMargin
         {
@@ -2945,16 +3159,33 @@ namespace HC.View
             set { SetActiveSectionIndex(value); }
         }
 
-        /// <summary> 水平滚动条的值 </summary>
-        public int HScrollValue
+        public HCSection ActiveSection
         {
-            get { return GetHScrollValue(); }
+            get { return GetActiveSection(); }
         }
 
-        /// <summary> 垂直滚动条的值 </summary>
-        public int VScrollValue
+        /// <summary> 水平滚动条 </summary>
+        public HCScrollBar HScrollBar
         {
-            get { return GetVScrollValue(); }
+            get { return FHScrollBar; }
+        }
+
+        /// <summary> 垂直滚动条 </summary>
+        public HCRichScrollBar VScrollBar
+        {
+            get { return FVScrollBar; }
+        }
+
+        /// <summary> 当前光标处的文本样式 </summary>
+        public int CurStyleNo
+        {
+            get { return GetCurStyleNo(); }
+        }
+
+        /// <summary> 当前光标处的段样式 </summary>
+        public int CurParaNo
+        {
+            get { return GetCurParaNo(); }
         }
 
         /// <summary> 缩放值 </summary>
@@ -2996,6 +3227,17 @@ namespace HC.View
         {
             get { return FIsChanged; }
             set { SetIsChanged(value); }
+        }
+
+        public byte PagePadding
+        {
+            get { return FPagePadding; }
+            set { SetPagePadding(value); }
+        }
+
+        public HCAnnotatePre AnnotatePre
+        {
+            get { return FAnnotatePre; }
         }
 
         public int ViewWidth
@@ -3043,37 +3285,37 @@ namespace HC.View
         }
 
         /// <summary> 节页眉绘制时触发 </summary>
-        public SectionPagePaintEventHandler OnSectionPaintHeader
+        public SectionPaintEventHandler OnSectionPaintHeader
         {
             get { return FOnSectionPaintHeader; }
             set { FOnSectionPaintHeader = value; }
         }
 
         /// <summary> 节页脚绘制时触发 </summary>
-        public SectionPagePaintEventHandler OnSectionPaintFooter
+        public SectionPaintEventHandler OnSectionPaintFooter
         {
             get { return FOnSectionPaintFooter; }
             set { FOnSectionPaintFooter = value; }
         }
 
         /// <summary> 节页面绘制时触发 </summary>
-        public SectionPagePaintEventHandler OnSectionPaintPage
+        public SectionPaintEventHandler OnSectionPaintPage
         {
             get { return FOnSectionPaintPage; }
             set { FOnSectionPaintPage = value; }
         }
 
         /// <summary> 节整页绘制时触发 </summary>
-        public SectionPagePaintEventHandler OnSectionPaintWholePageBefor
+        public SectionPaintEventHandler OnSectionPaintPaperBefor
         {
-            get { return FOnSectionPaintWholePageBefor; }
-            set { FOnSectionPaintWholePageBefor = value; }
+            get { return FOnSectionPaintPaperBefor; }
+            set { FOnSectionPaintPaperBefor = value; }
         }
 
-        public SectionPagePaintEventHandler OnSectionPaintWholePageAfter
+        public SectionPaintEventHandler OnSectionPaintPaperAfter
         {
-            get { return FOnSectionPaintWholePageAfter; }
-            set { FOnSectionPaintWholePageAfter = value; }
+            get { return FOnSectionPaintPaperAfter; }
+            set { FOnSectionPaintPaperAfter = value; }
         }
 
         /// <summary> 节只读属性有变化时触发 </summary>
@@ -3081,13 +3323,6 @@ namespace HC.View
         {
             get { return FOnSectionReadOnlySwitch; }
             set { FOnSectionReadOnlySwitch = value; }
-        }
-
-        /// <summary> 页面滚动显示模式：纵向、横向 </summary>
-        public HCPageScrollModel PageScrollModel
-        {
-            get { return FPageScrollModel; }
-            set { SetPageScrollModel(value); }
         }
 
         /// <summary> 界面显示模式：页面、Web </summary>
@@ -3186,44 +3421,22 @@ namespace HC.View
             set { FOnSectionCanEdit = value; }
         }
 
+        public EventHandler OnSectionCurParaNoChange
+        {
+            get { return FOnSectionCurParaNoChange; }
+            set { FOnSectionCurParaNoChange = value; }
+        }
+
+        public EventHandler OnSectionActivePageChange
+        {
+            get { return FOnSectionActivePageChange; }
+            set { FOnSectionActivePageChange = value; }
+        }
+
         public EventHandler OnViewResize
         {
             get { return FOnViewResize; }
             set { FOnViewResize = value; }
-        }
-    }
-
-    public delegate void LoadSectionProcHandler(ushort AFileVersion);
-
-    public enum HCPageScrollModel : byte
-    {
-        psmVertical, psmHorizontal
-    }
-
-    public delegate void PaintEventHandler(HCCanvas aCanvas);
-
-    public class Annotate : Object  // 批注
-    {
-        private RECT FDrawItemRect, FPaintRect;
-
-        private string FText;
-
-        public RECT DrawItemRect
-        {
-            get { return FDrawItemRect; }
-            set { FDrawItemRect = value; }
-        }
-
-        public RECT PaintRect
-        {
-            get { return FPaintRect; }
-            set { FPaintRect = value; }
-        }
-
-        public string Text
-        {
-            get { return FText; }
-            set { FText = value; }
         }
     }
 
@@ -3233,24 +3446,77 @@ namespace HC.View
         public RECT Rect;
     }
 
-    public class HCAnnotate : object
+    public class HCDrawAnnotateDynamic : HCDrawAnnotate
     {
-        private int FCount, FHotIndex, FActiveIndex;
+        public string Title;
+        public string Text;
+    }
+
+    public class HCAnnotatePre : HCObject
+    {
+        private RECT FDrawRect;
+        private int FCount;
+        private bool FMouseIn, FVisible;
         private List<HCDrawAnnotate> FDrawAnnotates;
+        private int FActiveDrawAnnotateIndex;
+        private EventHandler FOnUpdateView;
+
         private int GetDrawCount()
         {
             return FDrawAnnotates.Count;
         }
 
-        public HCAnnotate()
+        private int GetDrawAnnotateAt(int x, int y)
         {
-            FDrawAnnotates = new List<HCDrawAnnotate>();
-            FHotIndex = -1;
-            FActiveIndex = -1;
-            FCount = 0;
+            return GetDrawAnnotateAt(new POINT(x, y));
         }
 
-        ~HCAnnotate()
+        private int GetDrawAnnotateAt(POINT aPoint)
+        {
+            int Result = -1;
+            for (int i = 0; i <= FDrawAnnotates.Count - 1; i++)
+            {
+                if (HC.PtInRect(FDrawAnnotates[i].Rect, aPoint))
+                {
+                    Result = i;
+                    break;
+                }
+            }
+
+            return Result;
+        }
+
+        private void DoUpdateView()
+        {
+            if (FOnUpdateView != null)
+                FOnUpdateView(this, null);
+        }
+
+        private void SetMouseIn(bool value)
+        {
+            if (FMouseIn != value)
+            {
+                FMouseIn = value;
+                DoUpdateView();
+            }
+        }
+
+        protected bool MouseIn
+        {
+            get { return FMouseIn; }
+            set { SetMouseIn(value); }
+        }
+
+        public HCAnnotatePre()
+        {
+            FDrawAnnotates = new List<HCDrawAnnotate>();
+            FCount = 0;
+            FVisible = false;
+            FMouseIn = false;
+            FActiveDrawAnnotateIndex = -1;
+        }
+
+        ~HCAnnotatePre()
         {
             FDrawAnnotates.Clear();
         }
@@ -3260,11 +3526,19 @@ namespace HC.View
         /// <param name="APageRect"></param>
         /// <param name="ACanvas"></param>
         /// <param name="APaintInfo"></param>
-        public void PaintPageAnnotateLastPart(object sender, RECT aPageRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        public void PaintDrawAnnotate(object sender, RECT aPageRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            aCanvas.Brush.Color = Color.FromArgb(0xF4, 0xF4, 0xF4);  // 填充批注区域
-            aCanvas.FillRect(new RECT(aPageRect.Right, aPageRect.Top,
-                aPageRect.Right + HC.AnnotationWidth, aPageRect.Bottom));
+            FDrawRect = new RECT(aPageRect.Right, aPageRect.Top, aPageRect.Right + HC.AnnotationWidth, aPageRect.Bottom);
+
+            if (!aPaintInfo.Print)
+            {
+                if (FMouseIn)
+                    aCanvas.Brush.Color = Color.FromArgb(0xD0, 0xD1, 0xD5);
+                else
+                    aCanvas.Brush.Color = Color.FromArgb(0xF4, 0xF4, 0xF4);  // 填充批注区域
+
+                aCanvas.FillRect(FDrawRect);
+            }
 
             if (FDrawAnnotates.Count > 0)  // 有批注
             {
@@ -3276,7 +3550,8 @@ namespace HC.View
                 //正文中的批注
                 int vVOffset = aPageRect.Top + vHeaderAreaHeight - aPaintInfo.PageDataFmtTop;
                 int vTop = aPaintInfo.PageDataFmtTop + vVOffset;
-                int vBottom = vTop + vSection.PageHeightPix - vHeaderAreaHeight - vSection.PageMarginBottomPix;
+                int vBottom = vTop + vSection.PaperHeightPix - vHeaderAreaHeight - vSection.PaperMarginBottomPix;
+
                 for (int i = 0; i <= FDrawAnnotates.Count - 1; i++)  // 找本页的起始和结束批
                 {
                     vDrawAnnotate = FDrawAnnotates[i];
@@ -3302,7 +3577,11 @@ namespace HC.View
                         if (vDrawAnnotate.DrawRect.Top > vTop)
                             vTop = vDrawAnnotate.DrawRect.Top;
 
-                        vText = vDrawAnnotate.DataAnnotate.Text;
+                        if (vDrawAnnotate is HCDrawAnnotateDynamic)
+                            vText = (vDrawAnnotate as HCDrawAnnotateDynamic).Title + ":" + (vDrawAnnotate as HCDrawAnnotateDynamic).Text;
+                        else
+                            vText = vDrawAnnotate.DataAnnotate.Title + ":" + vDrawAnnotate.DataAnnotate.Text;
+
                         vDrawAnnotate.Rect = new RECT(0, 0, HC.AnnotationWidth - 30, 0);
                         DRAWTEXTPARAMS lpDrawTextParams = new DRAWTEXTPARAMS();
                         User.DrawTextEx(aCanvas.Handle, vText, -1, ref vDrawAnnotate.Rect,
@@ -3319,6 +3598,7 @@ namespace HC.View
                     if (FDrawAnnotates[vLast].Rect.Bottom > aPageRect.Bottom)
                     {
                         vVOffset = FDrawAnnotates[vLast].Rect.Bottom - aPageRect.Bottom + 5;  // 需要上移这么大的空间可放下
+
                         int vSpace = 0;  // 各批注之间除固定间距外的空隙
                         int vRePlace = -1;  // 从哪一个开始调整
                         vTop = FDrawAnnotates[vLast].Rect.Top;
@@ -3360,33 +3640,43 @@ namespace HC.View
                     for (int i = vFirst; i <= vLast; i++)  // 绘制批
                     {
                         vDrawAnnotate = FDrawAnnotates[i];
-                        HCAnnotateData vData = vDrawAnnotate.Data as HCAnnotateData;
-                        if (vDrawAnnotate.DataAnnotate == vData.HotAnnotate)
+                        if (vDrawAnnotate is HCDrawAnnotateDynamic)
                         {
+                            vText = (vDrawAnnotate as HCDrawAnnotateDynamic).Text + ":" + (vDrawAnnotate as HCDrawAnnotateDynamic).Text;
                             aCanvas.Pen.Style = HCPenStyle.psSolid;
                             aCanvas.Pen.Width = 1;
                             aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
                         }
                         else
-                            if (vDrawAnnotate.DataAnnotate == vData.ActiveAnnotate)
+                        {
+                            vText = vDrawAnnotate.DataAnnotate.Title + ":" + vDrawAnnotate.DataAnnotate.Text;
+                            HCAnnotateData vData = vDrawAnnotate.Data as HCAnnotateData;
+
+                            if (vDrawAnnotate.DataAnnotate == vData.HotAnnotate)
                             {
                                 aCanvas.Pen.Style = HCPenStyle.psSolid;
-                                aCanvas.Pen.Width = 2;
+                                aCanvas.Pen.Width = 1;
                                 aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
                             }
                             else
-                            {
-                                aCanvas.Pen.Style = HCPenStyle.psDot;
-                                aCanvas.Pen.Width = 1;
-                                aCanvas.Brush.Color = HC.AnnotateBKColor;
-                            }
+                                if (vDrawAnnotate.DataAnnotate == vData.ActiveAnnotate)
+                                {
+                                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                                    aCanvas.Pen.Width = 2;
+                                    aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
+                                }
+                                else
+                                {
+                                    aCanvas.Pen.Style = HCPenStyle.psDot;
+                                    aCanvas.Pen.Width = 1;
+                                    aCanvas.Brush.Color = HC.AnnotateBKColor;
+                                }
+                        }
+
                         if (aPaintInfo.Print)
                             aCanvas.Brush.Style = HCBrushStyle.bsClear;
 
                         aCanvas.RoundRect(vDrawAnnotate.Rect, 5, 5);  // 填充批注区域
-
-                        // 绘制批注文本
-                        vText = vDrawAnnotate.DataAnnotate.Text;
                         RECT vTextRect = vDrawAnnotate.Rect;
                         vTextRect.Inflate(-5, -5);
                         DRAWTEXTPARAMS lpDrawTextParams = new DRAWTEXTPARAMS();
@@ -3401,13 +3691,13 @@ namespace HC.View
                     }
                 }
             }
-
         }
 
         /// <summary> 有批注插入 </summary>
         public void InsertDataAnnotate(HCDataAnnotate aDataAnnotate)
         {
             FCount++;
+            FVisible = true;
         }
 
         public void RemoveDataAnnotate(HCDataAnnotate aDataAnnotate)
@@ -3425,18 +3715,49 @@ namespace HC.View
             FDrawAnnotates.Clear();
         }
 
+        public HCDataAnnotate ActiveAnnotate()
+        {
+            if (FActiveDrawAnnotateIndex < 0)
+                return null;
+            else
+                return FDrawAnnotates[FActiveDrawAnnotateIndex].DataAnnotate;
+        }
+
+        public void DeleteDataAnnotateByDraw(int aIndex)
+        {
+            if (aIndex >= 0)
+            {
+                (FDrawAnnotates[aIndex].Data as HCAnnotateData).DataAnnotates.DeleteByID(FDrawAnnotates[aIndex].DataAnnotate.ID);
+                DoUpdateView();
+            }
+        }
+
         public void MouseDown(int x, int y)
         {
-            FActiveIndex = -1;
+            FActiveDrawAnnotateIndex = GetDrawAnnotateAt(x, y);
+        }
+
+        public void MouseMove(int x, int y)
+        {
             POINT vPt = new POINT(x, y);
-            for (int i = 0; i <= FDrawAnnotates.Count - 1; i++)
-            {
-                if (HC.PtInRect(FDrawAnnotates[i].Rect, vPt))
-                {
-                    FActiveIndex = i;
-                    break;
-                }
-            }
+            MouseIn = HC.PtInRect(FDrawRect, vPt);
+            //vIndex = GetDrawAnnotateAt(vPt);
+        }
+
+        public int DrawCount
+        {
+            get { return GetDrawCount(); }
+        }
+
+        public List<HCDrawAnnotate> DrawAnnotates
+        {
+            get { return FDrawAnnotates; }
+        }
+
+        public bool Visible
+        {
+            get { return FVisible; }
+            set { FVisible = value; }
         }
 
         public int Count
@@ -3444,9 +3765,21 @@ namespace HC.View
             get { return FCount; }
         }
 
-        public int DrawCount
+        public RECT DrawRect
         {
-            get { return GetDrawCount(); }
+            get { return FDrawRect; }
+        }
+
+        public int ActiveDrawAnnotateIndex
+        {
+            get { return FActiveDrawAnnotateIndex; }
+        }
+
+        public EventHandler OnUpdateView
+        {
+            get { return FOnUpdateView; }
+            set { FOnUpdateView = value; }
         }
     }
+
 }

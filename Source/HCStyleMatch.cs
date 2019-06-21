@@ -22,10 +22,26 @@ namespace HC.View
     public abstract class HCStyleMatch : Object  // 文本样式匹配类
     {
         private bool FAppend = false;
+        private bool FLock;
         private OnTextStyle FOnTextStyle;
+
+        protected void SetAppend(bool value)
+        {
+            if ((FAppend != value) && (!FLock))
+            {
+                FAppend = value;
+                FLock = true;
+            }
+        }
 
         protected abstract bool DoMatchCur(HCTextStyle aTextStyle);
         protected abstract void DoMatchNew(HCTextStyle aTextStyle);
+
+        public HCStyleMatch()
+        {
+            FLock = false;
+        }
+
         public int GetMatchStyleNo(HCStyle aStyle, int aCurStyleNo)
         {
             if (DoMatchCur(aStyle.TextStyles[aCurStyleNo]))
@@ -50,7 +66,7 @@ namespace HC.View
         public bool Append
         {
             get { return FAppend; }
-            set { FAppend = value; }
+            set { SetAppend(value); }
         }
 
         public OnTextStyle OnTextStyle

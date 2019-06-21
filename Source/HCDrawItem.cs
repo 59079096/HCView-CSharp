@@ -34,13 +34,9 @@ namespace HC.View
         protected void SetLineFirst(bool value)
         {
             if (value)
-            {
                 FOptions.Add(DrawOption.doLineFirst);
-            }
             else
-            {
                 FOptions.Remove(DrawOption.doLineFirst);
-            }
         }
 
         protected bool GetParaFirst()
@@ -51,13 +47,9 @@ namespace HC.View
         protected void SetParaFirst(bool value)
         {
             if (value)
-            {
                 FOptions.Add(DrawOption.doParaFirst);
-            }
             else
-            {
                 FOptions.Remove(DrawOption.doParaFirst);
-            }
         }
 
         public int 
@@ -102,7 +94,7 @@ namespace HC.View
 
     public class HCDrawItems : HCInhList<HCCustomDrawItem>
     {
-        private int FDeleteStartDrawItemNo, FDeleteCount, FFormatBeforBottom;
+        private int FDeleteStartDrawItemNo, FDeleteCount;
 
         private void HCDrawItems_OnInsert(object sender, NListInhEventArgs<HCCustomDrawItem> e)
         {
@@ -150,14 +142,6 @@ namespace HC.View
         {
             FDeleteStartDrawItemNo = -1;
             FDeleteCount = 0;
-            FFormatBeforBottom = -1;
-        }
-
-        /// <summary> 格式化前对应的DrawItem底部位置 </summary>
-        public int FormatBeforBottom
-        {
-            get { return FFormatBeforBottom; }
-            set { FFormatBeforBottom = value; }
         }
     }
 }

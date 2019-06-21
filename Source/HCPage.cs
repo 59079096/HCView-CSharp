@@ -18,77 +18,65 @@ using System.Runtime.InteropServices;
 
 namespace HC.View
 {
-    public class HCPageSize : HCObject
+    public class HCPaper : HCObject
     {
-        private PaperKind FPaperKind;  // 纸张大小如A4、B5等
-        private Single FPaperWidth, FPaperHeight;  // 纸张宽、高（单位mm）
-        private int FPageWidthPix, FPageHeightPix;  // 页面大小
-        private Single FPaperMarginTop, FPaperMarginLeft, FPaperMarginRight, FPaperMarginBottom;  // 纸张边距（单位mm）
-        private int FPageMarginTopPix, FPageMarginLeftPix, FPageMarginRightPix, FPageMarginBottomPix;  // 页边距
+        private PaperKind FSize;  // 纸张大小如A4、B5等
+        private Single FWidth, FHeight;  // 纸张宽、高（单位mm）
+        private int FWidthPix, FHeightPix;  // 页面大小
+        private Single FMarginTop, FMarginLeft, FMarginRight, FMarginBottom;  // 纸张边距（单位mm）
+        private int FMarginTopPix, FMarginLeftPix, FMarginRightPix, FMarginBottomPix;  // 页边距
 
-        protected void SetPaperKind(PaperKind value)
+        protected void SetSize(PaperKind value)
         {
-            if (FPaperKind != value)
-            {
-                FPaperKind = value;
-
-                switch (FPaperKind )
-                {
-                    case PaperKind.A4:
-                        PaperWidth = 210;
-                        PaperHeight = 297;
-                        break;
-                    default:
-                        PaperWidth = 210;
-                        PaperHeight = 297;
-                        break;
-                }
-            }
+            if (FSize != value)
+                FSize = value;
         }
 
-        protected void SetPaperWidth(Single value)
+        protected void SetWidth(Single value)
         {
-            FPaperWidth = value;
-            FPageWidthPix = HCUnitConversion.MillimeterToPixX(FPaperWidth);
+            FWidth = value;
+            FWidthPix = HCUnitConversion.MillimeterToPixX(FWidth);
         }
 
-        protected void SetPaperHeight(Single value)
+        protected void SetHeight(Single value)
         {
-            FPaperHeight = value;
-            FPageHeightPix = HCUnitConversion.MillimeterToPixY(FPaperHeight);
+            FHeight = value;
+            FHeightPix = HCUnitConversion.MillimeterToPixY(FHeight);
         }
 
-        protected void SetPaperMarginTop(Single value)
+        protected void SetMarginTop(Single value)
         {
-            FPaperMarginTop = value;
-            FPageMarginTopPix = HCUnitConversion.MillimeterToPixY(FPaperMarginTop);
+            FMarginTop = value;
+            FMarginTopPix = HCUnitConversion.MillimeterToPixY(FMarginTop);
         }
 
-        protected void SetPaperMarginLeft(Single value)
+        protected void SetMarginLeft(Single value)
         {
-            FPaperMarginLeft = value;
-            FPageMarginLeftPix = HCUnitConversion.MillimeterToPixX(FPaperMarginLeft);
+            FMarginLeft = value;
+            FMarginLeftPix = HCUnitConversion.MillimeterToPixX(FMarginLeft);
         }
 
-        protected void SetPaperMarginRight(Single value)
+        protected void SetMarginRight(Single value)
         {
-            FPaperMarginRight = value;
-            FPageMarginRightPix = HCUnitConversion.MillimeterToPixX(FPaperMarginRight);
+            FMarginRight = value;
+            FMarginRightPix = HCUnitConversion.MillimeterToPixX(FMarginRight);
         }
 
-        protected void SetPaperMarginBottom(Single value)
+        protected void SetMarginBottom(Single value)
         {
-            FPaperMarginBottom = value;
-            FPageMarginBottomPix = HCUnitConversion.MillimeterToPixY(FPaperMarginBottom); ;
+            FMarginBottom = value;
+            FMarginBottomPix = HCUnitConversion.MillimeterToPixY(FMarginBottom); ;
         }
 
-        public HCPageSize()
+        public HCPaper()
         {  
-            PaperMarginLeft = 25;
-            PaperMarginTop = 25;
-            PaperMarginRight = 20;
-            PaperMarginBottom = 20;
-            PaperKind = PaperKind.A4;  // 默认A4 210 297
+            MarginLeft = 25;
+            MarginTop = 25;
+            MarginRight = 20;
+            MarginBottom = 20;
+            Size = PaperKind.A4;  // 默认A4 210 297
+            Width = 210;
+            Height = 297;
         }
 
         public void SaveToStream(Stream aStream)
@@ -99,25 +87,25 @@ namespace HC.View
             byte[] vBuffer = System.BitConverter.GetBytes(vBegPos);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位
 
-            vBuffer = System.BitConverter.GetBytes((int)FPaperKind);
+            vBuffer = System.BitConverter.GetBytes((int)FSize);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            vBuffer = System.BitConverter.GetBytes(FPaperWidth);
+            vBuffer = System.BitConverter.GetBytes(FWidth);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            vBuffer = System.BitConverter.GetBytes(FPaperHeight);
+            vBuffer = System.BitConverter.GetBytes(FHeight);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            vBuffer = System.BitConverter.GetBytes(FPaperMarginLeft);
+            vBuffer = System.BitConverter.GetBytes(FMarginLeft);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            vBuffer = System.BitConverter.GetBytes(FPaperMarginTop);
+            vBuffer = System.BitConverter.GetBytes(FMarginTop);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            vBuffer = System.BitConverter.GetBytes(FPaperMarginRight);
+            vBuffer = System.BitConverter.GetBytes(FMarginRight);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            vBuffer = System.BitConverter.GetBytes(FPaperMarginBottom);
+            vBuffer = System.BitConverter.GetBytes(FMarginBottom);
             aStream.Write(vBuffer, 0, vBuffer.Length);
   
             vEndPos = aStream.Position;
@@ -137,105 +125,105 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             vDataSize = System.BitConverter.ToInt64(vBuffer, 0);
 
-            vBuffer = System.BitConverter.GetBytes((int)FPaperKind);
+            vBuffer = System.BitConverter.GetBytes((int)FSize);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            PaperKind = (PaperKind)BitConverter.ToInt32(vBuffer, 0);
+            Size = (PaperKind)BitConverter.ToInt32(vBuffer, 0);
 
-            vBuffer = BitConverter.GetBytes(FPaperWidth);
+            vBuffer = BitConverter.GetBytes(FWidth);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            PaperWidth = System.BitConverter.ToSingle(vBuffer, 0);
+            Width = System.BitConverter.ToSingle(vBuffer, 0);
 
-            vBuffer = BitConverter.GetBytes(FPaperHeight);
+            vBuffer = BitConverter.GetBytes(FHeight);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            PaperHeight = System.BitConverter.ToSingle(vBuffer, 0);
+            Height = System.BitConverter.ToSingle(vBuffer, 0);
 
-            vBuffer = BitConverter.GetBytes(FPaperMarginLeft);
+            vBuffer = BitConverter.GetBytes(FMarginLeft);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            PaperMarginLeft = System.BitConverter.ToSingle(vBuffer, 0);
+            MarginLeft = System.BitConverter.ToSingle(vBuffer, 0);
 
-            vBuffer = BitConverter.GetBytes(FPaperMarginTop);
+            vBuffer = BitConverter.GetBytes(FMarginTop);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            PaperMarginTop = System.BitConverter.ToSingle(vBuffer, 0);
+            MarginTop = System.BitConverter.ToSingle(vBuffer, 0);
 
-            vBuffer = BitConverter.GetBytes(FPaperMarginRight);
+            vBuffer = BitConverter.GetBytes(FMarginRight);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            PaperMarginRight = System.BitConverter.ToSingle(vBuffer, 0);
+            MarginRight = System.BitConverter.ToSingle(vBuffer, 0);
 
-            vBuffer = BitConverter.GetBytes(FPaperMarginBottom);
+            vBuffer = BitConverter.GetBytes(FMarginBottom);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            PaperMarginBottom = System.BitConverter.ToSingle(vBuffer, 0);
+            MarginBottom = System.BitConverter.ToSingle(vBuffer, 0);
         }
 
-        public PaperKind PaperKind
+        public PaperKind Size
         {
-            get { return FPaperKind; }
-            set { SetPaperKind(value); }
+            get { return FSize; }
+            set { SetSize(value); }
         }
 
-        public Single PaperWidth
+        public Single Width
         {
-            get { return FPaperWidth; }
-            set { SetPaperWidth(value); }
+            get { return FWidth; }
+            set { SetWidth(value); }
         }
 
-        public Single PaperHeight
+        public Single Height
         {
-            get { return FPaperHeight; }
-            set { SetPaperHeight(value); }
+            get { return FHeight; }
+            set { SetHeight(value); }
         }
 
-        public Single PaperMarginTop
+        public Single MarginTop
         {
-            get { return FPaperMarginTop; }
-            set { SetPaperMarginTop(value); }
+            get { return FMarginTop; }
+            set { SetMarginTop(value); }
         }
 
-        public Single PaperMarginLeft
+        public Single MarginLeft
         {
-            get { return FPaperMarginLeft; }
-            set { SetPaperMarginLeft(value); }
+            get { return FMarginLeft; }
+            set { SetMarginLeft(value); }
         }
         
-        public Single PaperMarginRight
+        public Single MarginRight
         {
-            get { return FPaperMarginRight; }
-            set { SetPaperMarginRight(value); }
+            get { return FMarginRight; }
+            set { SetMarginRight(value); }
         }
 
-        public Single PaperMarginBottom
+        public Single MarginBottom
         {
-            get { return FPaperMarginBottom; }
-            set { SetPaperMarginBottom(value); }
+            get { return FMarginBottom; }
+            set { SetMarginBottom(value); }
         }
 
-        public int PageWidthPix  // 页宽(含页左右边距)
+        public int WidthPix  // 页宽(含页左右边距)
         {
-            get { return FPageWidthPix; }
+            get { return FWidthPix; }
         }
 
-        public int PageHeightPix  // 页高(含页眉、页脚)
+        public int HeightPix  // 页高(含页眉、页脚)
         {
-            get { return FPageHeightPix; }
+            get { return FHeightPix; }
         }
 
-        public int PageMarginTopPix 
+        public int MarginTopPix 
         {
-            get { return FPageMarginTopPix; }
+            get { return FMarginTopPix; }
         }
 
-        public int PageMarginLeftPix  
+        public int MarginLeftPix  
         {
-            get { return FPageMarginLeftPix; }
+            get { return FMarginLeftPix; }
         }
 
-        public int PageMarginRightPix 
+        public int MarginRightPix 
         {
-            get { return FPageMarginRightPix; }
+            get { return FMarginRightPix; }
         }
 
-        public int PageMarginBottomPix 
+        public int MarginBottomPix 
         {
-            get { return FPageMarginBottomPix; }
+            get { return FMarginBottomPix; }
         }
     }
 

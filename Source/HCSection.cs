@@ -34,6 +34,7 @@ namespace HC.View
         {
             FSectionIndex = -1;
             FPageIndex  = -1;
+            FPageDataFmtTop = 0;
         }
 
         public int SectionIndex
@@ -55,7 +56,7 @@ namespace HC.View
         }
     }
 
-    public delegate void SectionPagePaintEventHandler(object sender, int aPageIndex,
+    public delegate void SectionPaintEventHandler(object sender, int aPageIndex,
         RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo);
 
     public delegate void SectionDrawItemPaintEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
@@ -73,17 +74,21 @@ namespace HC.View
     public class HCCustomSection : HCObject
     {
         private HCStyle FStyle;
-        private bool FSymmetryMargin;  // 是否对称边距
         private HCPages FPages;  // 所有页面
-        private HCPageSize FPageSize;
+        private HCPaper FPaper;
         private PageOrientation FPageOrientation;
         private HCHeaderData FHeader;
         private HCFooterData FFooter;
-        private HCPageData FPageData;
+        private HCPageData FPage;
+        private HCViewModel FViewModel;
         private HCSectionData FActiveData;  // 页眉、正文、页脚
         private HCSectionData FMoveData;
 
+        /// <summary> 是否对称边距 </summary>
+        bool FSymmetryMargin;
         bool FPageNoVisible;  // 是否显示页码
+
+        byte FPagePadding;
 
         int FPageNoFrom,  // 页码从几开始
             FActivePageIndex,  // 当前激活的页
@@ -100,7 +105,7 @@ namespace HC.View
 
         GetScreenCoordEventHandler FOnGetScreenCoord;
 
-        SectionPagePaintEventHandler FOnPaintHeader, FOnPaintFooter, FOnPaintPage, FOnPaintWholePageBefor, FOnPaintWholePageAfter;
+        SectionPaintEventHandler FOnPaintHeader, FOnPaintFooter, FOnPaintPage, FOnPaintPaperBefor, FOnPaintPaperAfter;
 
         SectionDrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
 
@@ -112,7 +117,7 @@ namespace HC.View
         SectionDataItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
         SectionDataItemMouseEventHandler FOnItemMouseUp;
         DataItemEventHandler FOnItemResize;
-        EventHandler FOnCreateItem;
+        EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
         StyleItemEventHandler FOnCreateItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
         GetUndoListEventHandler FOnGetUndoList;
@@ -123,7 +128,11 @@ namespace HC.View
             int vPos = 0;
             for (int i = 0; i <= FPages.Count - 1; i++)
             {
-                vPos = vPos + HC.PagePadding + FPageSize.PageHeightPix;
+                if (FViewModel == HCViewModel.hvmFilm)
+                    vPos = vPos + FPagePadding + FPaper.HeightPix;
+                else
+                    vPos = vPos + GetPageHeight();
+
                 if (vPos >= aVOffset)
                 {
                     Result = i;
@@ -230,17 +239,16 @@ namespace HC.View
         private void DoDataItemResized(HCCustomData aData, int aItemNo)
         {
             HCResizeRectItem vResizeItem = aData.Items[aItemNo] as HCResizeRectItem;
-            int vWidth = GetContentWidth();  // 页宽
+            int vWidth = GetPageWidth();  // 页宽
             int vHeight = 0;
             HCCustomData vData = aData.GetRootData();  // 获取是哪一部分的ResizeItem
             if (vData == FHeader)
                 vHeight = GetHeaderAreaHeight();
             else
                 if (vData == FFooter)
-                    vHeight = FPageSize.PageMarginBottomPix;
+                    vHeight = FPaper.MarginBottomPix;
                 else
-                    if (vData == FPageData)
-                        vHeight = GetContentHeight();// - FStyle.ParaStyles[vResizeItem.ParaNo].LineSpace;
+                    vHeight = GetPageHeight();// - FStyle.ParaStyles[vResizeItem.ParaNo].LineSpace;
 
             vResizeItem.RestrainSize(vWidth, vHeight);
 
@@ -270,6 +278,12 @@ namespace HC.View
                 FOnCreateItem(sender, null);
         }
 
+        private void DoDataCurParaNoChange(object sender, EventArgs e)
+        {
+            if (FOnCurParaNoChange != null)
+                FOnCurParaNoChange(sender, e);
+        }
+
         private HCUndoList DoDataGetUndoList()
         {
             if (FOnGetUndoList != null)
@@ -283,9 +297,10 @@ namespace HC.View
         /// <returns></returns>
         private int GetPageIndexByPageDataDrawItem(int aDrawItemNo)
         {
-            int Result = 0;
             if (aDrawItemNo < 0)
-                Result = FPages.Count - 1;
+                return 0;
+
+            int Result = FPages.Count - 1;
             for (int i = 0; i <= FPages.Count - 1; i++)
             {
                 if (FPages[i].EndDrawItemNo >= aDrawItemNo)
@@ -307,8 +322,11 @@ namespace HC.View
         private void PageCoordToData(int aPageIndex, HCViewData aData, ref int aX, ref int aY,
           bool ARestrain = false)
         {
-            int vMarginLeft = -1, vMarginRight = -1, viTemp = -1; ;
-            GetPageMarginLeftAndRight(aPageIndex, ref vMarginLeft, ref vMarginRight);
+            if (FViewModel != HCViewModel.hvmFilm)
+                return;
+
+            int viTemp = -1;
+            int vMarginLeft = GetPageMarginLeft(aPageIndex);
             aX = aX - vMarginLeft;
             if (ARestrain)
             {
@@ -316,7 +334,7 @@ namespace HC.View
                     aX = 0;
                 else
                 {
-                    viTemp = FPageSize.PageWidthPix - vMarginLeft - vMarginRight;
+                    viTemp = GetPageWidth();
                     if (aX > viTemp)
                         aX = viTemp;
                 }
@@ -341,20 +359,19 @@ namespace HC.View
             else
             if (aData == FFooter)
             {
-                aY = aY - FPageSize.PageHeightPix + FPageSize.PageMarginBottomPix;
+                aY = aY - FPaper.HeightPix + FPaper.MarginBottomPix;
                 if (ARestrain)
                 {
                     if (aY < 0)
                         aY = 1;
                     else
-                        if (aY > FPageSize.PageMarginBottomPix)
-                            aY = FPageSize.PageMarginBottomPix - 1;
+                        if (aY > FPaper.MarginBottomPix)
+                            aY = FPaper.MarginBottomPix - 1;
                 }
             }
             else
-            if (aData == FPageData)
+            if (aData == FPage)
             {
-                viTemp = GetHeaderAreaHeight();
                 aY = aY - GetHeaderAreaHeight();
                 if (ARestrain)
                 {
@@ -362,7 +379,7 @@ namespace HC.View
                         aY = 1;  // 处理激活正文，在页眉页脚中点击
                     else
                     {
-                        viTemp = FPageSize.PageHeightPix - GetHeaderAreaHeight() - FPageSize.PageMarginBottomPix;
+                        viTemp = GetPageHeight();
                         if (aY > viTemp)
                             aY = viTemp - 1;
                     }
@@ -372,600 +389,34 @@ namespace HC.View
 
         private bool GetReadOnly()
         {
-            return FHeader.ReadOnly && FFooter.ReadOnly && FPageData.ReadOnly;
+            return FHeader.ReadOnly && FFooter.ReadOnly && FPage.ReadOnly;
         }
 
         private void SetReadOnly(bool value)
         {
             FHeader.ReadOnly = value;
             FFooter.ReadOnly = value;
-            FPageData.ReadOnly = value;
+            FPage.ReadOnly = value;
         }
 
-        /// <summary> 获取光标在Dtat中的位置信息并映射到指定页面 </summary>
-        /// <param name="APageIndex">要映射到的页序号</param>
-        /// <param name="aCaretInfo">光标位置信息</param>
-        public virtual void GetPageCaretInfo(ref HCCaretInfo aCaretInfo)
+        private void SetActivePageIndex(int Value)
         {
-            int vMarginLeft = -1, vMarginRight = -1, vPageIndex = -1;
-            if (FStyle.UpdateInfo.Draging)
-                vPageIndex = FMousePageIndex;
-            else
-                vPageIndex = FActivePageIndex;
-
-            if ((FActiveData.SelectInfo.StartItemNo < 0) || (vPageIndex < 0))
+            if (FActivePageIndex != Value)
             {
-                aCaretInfo.Visible = false;
-                return;
-            }
-
-            aCaretInfo.PageIndex = vPageIndex;  // 鼠标点击处所在的页
-            FActiveData.GetCaretInfoCur(ref aCaretInfo);
-           
-            if (aCaretInfo.Visible)
-            {
-                if (FActiveData == FPageData)
-                {
-                    vMarginLeft = GetPageIndexByFormat(aCaretInfo.Y);  // 借用变量vMarginLeft表示页序号
-                    if (vPageIndex != vMarginLeft)
-                    {
-                        vPageIndex = vMarginLeft;
-                        FActivePageIndex = vPageIndex;
-                    }
-                }
-
-                GetPageMarginLeftAndRight(vPageIndex, ref vMarginLeft, ref vMarginRight);
-                aCaretInfo.X = aCaretInfo.X + vMarginLeft;
-                aCaretInfo.Y = aCaretInfo.Y + GetPageTopFilm(vPageIndex);
-
-                if (FActiveData == FHeader)
-                    aCaretInfo.Y = aCaretInfo.Y + GetHeaderPageDrawTop(); // 页在节中的Top位置
-                else
-                    if (FActiveData == FPageData)
-                        aCaretInfo.Y = aCaretInfo.Y + GetHeaderAreaHeight() - GetPageDataFmtTop(vPageIndex);  // - 页起始数据在Data中的位置
-                    else
-                        if (FActiveData == FFooter)
-                            aCaretInfo.Y = aCaretInfo.Y + FPageSize.PageHeightPix - FPageSize.PageMarginBottomPix;
+                FActivePageIndex = Value;
+                if (FOnActivePageChange != null)
+                    FOnActivePageChange(this, null);
             }
         }
 
-#region 绘制页眉数据
-        private void PaintHeader(int vPageDrawTop, int vPageDrawLeft, int vPageDrawRight, int vMarginLeft, int vMarginRight,
-            int vHeaderAreaHeight, int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private int GetCurStyleNo()
         {
-            int vHeaderDataDrawTop = vPageDrawTop + GetHeaderPageDrawTop();
-            int vHeaderDataDrawBottom = vPageDrawTop + vHeaderAreaHeight;
-        
-            FHeader.PaintData(vPageDrawLeft + vMarginLeft, vHeaderDataDrawTop,
-                vHeaderDataDrawBottom, Math.Max(vHeaderDataDrawTop, 0),
-                Math.Min(vHeaderDataDrawBottom, aPaintInfo.WindowHeight), 0, aCanvas, aPaintInfo);
-            
-            if ((!aPaintInfo.Print) && (FActiveData == FHeader))
-            {
-                aCanvas.Pen.Color = Color.Blue;
-                aCanvas.DrawLines(new Point[2] {
-                    new Point(vPageDrawLeft, vHeaderDataDrawBottom - 1),
-                    new Point(vPageDrawRight, vHeaderDataDrawBottom - 1) });
-            }
-            if (FOnPaintHeader != null)
-            {
-                int vDCState = GDI.SaveDC(aCanvas.Handle);
-                try
-                {
-                    FOnPaintHeader(this, aPageIndex, 
-                        new RECT(vPageDrawLeft + vMarginLeft, vHeaderDataDrawTop,
-                                vPageDrawRight - vMarginRight, vHeaderDataDrawBottom), 
-                        aCanvas, aPaintInfo);
-                }
-                finally
-                {
-                    GDI.RestoreDC(aCanvas.Handle, vDCState);
-                }
-            }
-        }
-#endregion  
-        
-#region 绘制页脚数据
-        private void PaintFooter(int vPageDrawLeft, int vPageDrawRight, int vPageDrawBottom, int vMarginLeft, 
-            int vMarginRight, int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            int vFooterDataDrawTop = vPageDrawBottom - FPageSize.PageMarginBottomPix;
-            FFooter.PaintData(vPageDrawLeft + vMarginLeft, vFooterDataDrawTop, vPageDrawBottom,
-                Math.Max(vFooterDataDrawTop, 0), Math.Min(vPageDrawBottom, aPaintInfo.WindowHeight), 
-                0, aCanvas, aPaintInfo);
-
-            if ((!aPaintInfo.Print) && (FActiveData == FFooter))
-            {
-                aCanvas.Pen.Color = Color.Blue;
-                aCanvas.DrawLines(new Point[2] {
-                    new Point(vPageDrawLeft, vFooterDataDrawTop),
-                    new Point(vPageDrawRight, vFooterDataDrawTop) });
-            }
-
-            if (FOnPaintFooter != null)
-            {
-                int vDCState = GDI.SaveDC(aCanvas.Handle);
-                try
-                {
-                    FOnPaintFooter(this, aPageIndex, 
-                        new RECT(vPageDrawLeft + vMarginLeft, vFooterDataDrawTop,
-                        vPageDrawRight - vMarginRight, vPageDrawBottom), aCanvas, aPaintInfo);
-                }
-                finally
-                {
-                    GDI.RestoreDC(aCanvas.Handle, vDCState);
-                }
-            }
-        }
-#endregion
-
-#region 绘制页面数据
-        void PaintPageData(int vPageDrawLeft, int vPageDrawTop, int vPageDrawRight, int vPageDrawBottom,
-            int vMarginLeft, int vMarginRight, int vHeaderAreaHeight, int vPageDataScreenTop, int vPageDataScreenBottom, 
-            int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            if ((FPages[aPageIndex].StartDrawItemNo < 0) || (FPages[aPageIndex].EndDrawItemNo < 0))
-                return;
-
-            /* 绘制数据，把Data中指定位置的数据，绘制到指定的页区域中，并按照可显示出来的区域约束 }*/
-            FPageData.PaintData(vPageDrawLeft + vMarginLeft,  // 当前页数据要绘制到的Left
-                vPageDrawTop + vHeaderAreaHeight,     // 当前页数据要绘制到的Top
-                vPageDrawBottom - PageMarginBottomPix,  // 当前页数据要绘制的Bottom
-                vPageDataScreenTop,     // 界面呈现当前页数据的Top位置
-                vPageDataScreenBottom,  // 界面呈现当前页数据Bottom位置
-                aPaintInfo.PageDataFmtTop,  // 指定从哪个位置开始的数据绘制到页数据起始位置
-                FPages[aPageIndex].StartDrawItemNo,
-                FPages[aPageIndex].EndDrawItemNo,
-                aCanvas,
-                aPaintInfo);
-            if (FOnPaintPage != null)
-            {
-                int vDCState = GDI.SaveDC(aCanvas.Handle);
-                try
-                {
-                    FOnPaintPage(this, aPageIndex, 
-                        new RECT(vPageDrawLeft + vMarginLeft,
-                            vPageDrawTop + vHeaderAreaHeight, 
-                            vPageDrawRight - vMarginRight,
-                            vPageDrawBottom - PageMarginBottomPix), aCanvas, aPaintInfo);
-                }
-                finally
-                {
-                    GDI.RestoreDC(aCanvas.Handle, vDCState);
-                }
-            }
-        }
-#endregion
-
-
-        /// <summary> 绘制指定页到指定的位置，为配合打印，开放ADisplayWidth, ADisplayHeight参数 </summary>
-        /// <param name="aPageIndex">要绘制的页码</param>
-        /// <param name="aLeft">绘制X偏移</param>
-        /// <param name="aTop">绘制Y偏移</param>
-        /// <param name="aCanvas"></param>
-        public virtual void PaintPage(int aPageIndex, int  aLeft, int  aTop, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            int vX = -1, vY = -1, vHeaderAreaHeight, vMarginLeft = -1, vMarginRight = -1,
-              vPageDrawLeft, vPageDrawRight, vPageDrawTop, vPageDrawBottom,  // 页区域各位置
-              vPageDataScreenTop, vPageDataScreenBottom,  // 页数据屏幕位置
-              vScaleWidth, vScaleHeight;
-
-            IntPtr vPaintRegion = IntPtr.Zero;
-            RECT vClipBoxRect = new RECT();
-
-            vScaleWidth = (int)Math.Round(aPaintInfo.WindowWidth / aPaintInfo.ScaleX);
-            vScaleHeight = (int)Math.Round(aPaintInfo.WindowHeight / aPaintInfo.ScaleY);
-            
-            vPageDrawLeft = aLeft;
-            vPageDrawRight = vPageDrawLeft + FPageSize.PageWidthPix;
-            
-            vHeaderAreaHeight = GetHeaderAreaHeight();  // 页眉区域实际高 = 页眉数据顶部偏移 + 内容高度，大于上边距时以此为准
-            GetPageMarginLeftAndRight(aPageIndex, ref vMarginLeft, ref vMarginRight);  // 获取页左右边距绘制位置
-            
-            vPageDrawTop = aTop;  // 映射到当前页面左上角为原点的起始位置(可为负数)
-            vPageDrawBottom = vPageDrawTop + FPageSize.PageHeightPix;  // 页面结束位置(可为负数)
-            // 当前页数据能显示出来的区域边界
-            vPageDataScreenTop = Math.Max(vPageDrawTop + vHeaderAreaHeight, 0);
-            vPageDataScreenBottom = Math.Min(vPageDrawBottom - FPageSize.PageMarginBottomPix, vScaleHeight);
-
-            aPaintInfo.PageDataFmtTop = GetPageDataFmtTop(aPageIndex);
-            
-            GDI.GetClipBox(aCanvas.Handle, ref vClipBoxRect);  // 保存当前的绘图区域
-            
-            if (!aPaintInfo.Print)
-            {
-
-#region 非打印时填充页面背景
-                aCanvas.Brush.Color = FStyle.BackgroudColor;
-                aCanvas.FillRect(new RECT(vPageDrawLeft, vPageDrawTop, Math.Min(vPageDrawRight, vScaleWidth),  // 约束边界
-                    Math.Min(vPageDrawBottom, vScaleHeight)));
-#endregion
-
-#region 页眉边距指示符
-                if (vPageDrawTop + vHeaderAreaHeight > 0)
-                {
-                    vY = vPageDrawTop + vHeaderAreaHeight;
-                    if (vHeaderAreaHeight > FPageSize.PageMarginTopPix)
-                    {
-                        aCanvas.Pen.BeginUpdate();
-                        try
-                        {
-                            aCanvas.Pen.Style = HCPenStyle.psDot;
-                            aCanvas.Pen.Color = Color.Gray;
-                        }
-                        finally
-                        {
-                            aCanvas.Pen.EndUpdate();
-                        }
-
-                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[2] { new Point(vPageDrawLeft, vY - 1), new Point(vPageDrawRight, vY - 1) });
-                    }
-
-                    aCanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        aCanvas.Pen.Width = 1;
-                        aCanvas.Pen.Color = Color.Gray;
-                        aCanvas.Pen.Style = HCPenStyle.psSolid;
-                    }
-                    finally
-                    {
-                        aCanvas.Pen.EndUpdate();
-                    }
-
-                    // 左上， 左-原-上
-                    vX = vPageDrawLeft + vMarginLeft;
-                    vY = vPageDrawTop + FPageSize.PageMarginTopPix;
-                    aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vX - HC.PMSLineHeight, vY),
-                        new Point(vX, vY), new Point(vX, vY - HC.PMSLineHeight) });
-                    // 右上，右-原-上
-                    vX = vPageDrawLeft + FPageSize.PageWidthPix - vMarginRight;
-                    aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vX + HC.PMSLineHeight, vY), new Point(vX, vY), new Point(vX, vY - HC.PMSLineHeight) });
-                }
-#endregion
-
-#region 页脚边距指示符
-                vY = vPageDrawBottom - FPageSize.PageMarginBottomPix;
-                if (vY < aPaintInfo.WindowHeight)
-                {
-                    aCanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        aCanvas.Pen.Width = 1;
-                        aCanvas.Pen.Color = Color.Gray;
-                        aCanvas.Pen.Style = HCPenStyle.psSolid;
-                    }
-                    finally
-                    {
-                        aCanvas.Pen.EndUpdate();
-                    }
-
-                    // 左下，左-原-下
-                    vX = vPageDrawLeft + vMarginLeft;
-                    aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vX - HC.PMSLineHeight, vY),
-                        new Point(vX, vY), new Point(vX, vY + HC.PMSLineHeight) });
-                    // 右下，右-原-下
-                    vX = vPageDrawRight - vMarginRight;
-                    aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vX + HC.PMSLineHeight, vY),
-                        new Point(vX, vY), new Point(vX, vY + HC.PMSLineHeight) });
-                }
-#endregion
-
-            }
-
-            if (FOnPaintWholePageBefor != null)
-                FOnPaintWholePageBefor(this, aPageIndex,
-                    new RECT(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom),
-                    aCanvas, aPaintInfo);
-
-#region 绘制页眉
-            if (vPageDrawTop + vHeaderAreaHeight > 0)
-            {
-                vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
-                    Math.Max(aPaintInfo.GetScaleY(vPageDrawTop + FHeaderOffset), 0),
-                    aPaintInfo.GetScaleX(vPageDrawRight),
-                Math.Min(aPaintInfo.GetScaleY(vPageDrawTop + vHeaderAreaHeight), aPaintInfo.WindowHeight));
-                try
-                {
-                    GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);  // 设置绘制有效区域
-                    PaintHeader(vPageDrawTop, vPageDrawLeft, vPageDrawRight, vMarginLeft, vMarginRight,
-                        vHeaderAreaHeight, aPageIndex, aCanvas, aPaintInfo);
-                }
-                finally
-                {
-                    GDI.DeleteObject(vPaintRegion);
-                }
-            }
-#endregion
-            
-#region 绘制页脚
-            if (aPaintInfo.GetScaleY(vPageDrawBottom - FPageSize.PageMarginBottomPix) < aPaintInfo.WindowHeight)  // 页脚可显示
-            {
-                vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
-                    Math.Max(aPaintInfo.GetScaleY(vPageDrawBottom - FPageSize.PageMarginBottomPix), 0),
-                    aPaintInfo.GetScaleX(vPageDrawRight),
-                    Math.Min(aPaintInfo.GetScaleY(vPageDrawBottom), aPaintInfo.WindowHeight));
-                try
-                {
-                    GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);  // 设置绘制有效区域
-                    PaintFooter(vPageDrawLeft, vPageDrawRight, vPageDrawBottom, vMarginLeft, vMarginRight,
-                        aPageIndex, aCanvas, aPaintInfo);
-                }
-                finally
-                {
-                    GDI.DeleteObject(vPaintRegion);
-                }
-            }
-#endregion
-
-#region 绘制页面
-            if (vPageDataScreenBottom > vPageDataScreenTop)  // 能露出数据则绘制当前页，绘制正文
-            {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-                vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
-                        aPaintInfo.GetScaleY(Math.Max(vPageDrawTop + vHeaderAreaHeight, vPageDataScreenTop)),
-                        aPaintInfo.GetScaleX(vPageDrawRight),
-                        aPaintInfo.GetScaleY(Math.Min(vPageDrawBottom - FPageSize.PageMarginBottomPix, vPageDataScreenBottom)) + 1);
-                try
-                {
-                    GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);  // 设置绘制有效区域
-                    PaintPageData(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom, 
-                        vMarginLeft, vMarginRight, vHeaderAreaHeight, vPageDataScreenTop, vPageDataScreenBottom,
-                        aPageIndex, aCanvas, aPaintInfo);
-                }
-                finally
-                {
-                    GDI.DeleteObject(vPaintRegion);
-                }
-            }
-#endregion
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-            vPaintRegion = (IntPtr)GDI.CreateRectRgn(
-                aPaintInfo.GetScaleX(vPageDrawLeft),
-                aPaintInfo.GetScaleX(vPageDrawTop),
-                aPaintInfo.GetScaleX(vPageDrawRight),
-                aPaintInfo.GetScaleX(vPageDrawBottom));
-            try
-            {
-                GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
-            
-                FHeader.PaintFloatItems(aPageIndex, vPageDrawLeft + vMarginLeft,
-                    vPageDrawTop + GetHeaderPageDrawTop(), 0, aCanvas, aPaintInfo);
-            
-                FFooter.PaintFloatItems(aPageIndex, vPageDrawLeft + vMarginLeft,
-                    vPageDrawBottom - FPageSize.PageMarginBottomPix, 0, aCanvas, aPaintInfo);
-
-                FPageData.PaintFloatItems(aPageIndex, vPageDrawLeft + vMarginLeft,  // 当前页绘制到的Left
-                vPageDrawTop + vHeaderAreaHeight,     // 当前页绘制到的Top
-                GetPageDataFmtTop(aPageIndex),  // 指定从哪个位置开始的数据绘制到页数据起始位置
-                aCanvas,
-                aPaintInfo);
-            }
-            finally
-            {
-                GDI.DeleteObject(vPaintRegion);
-            }
-
-            // 恢复区域，准备给外部绘制用
-            vPaintRegion = (IntPtr)GDI.CreateRectRgn(
-                aPaintInfo.GetScaleX(vClipBoxRect.Left),
-                aPaintInfo.GetScaleX(vClipBoxRect.Top),
-                aPaintInfo.GetScaleX(vClipBoxRect.Right),
-                aPaintInfo.GetScaleX(vClipBoxRect.Bottom));
-            try
-            {
-                GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
-            }
-            finally
-            {
-                GDI.DeleteObject(vPaintRegion);
-            }
-
-            if (FOnPaintWholePageAfter != null)  // 公开页面绘制后事件
-            {
-                FOnPaintWholePageAfter(this, aPageIndex, 
-                    new RECT(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom),
-                    aCanvas, aPaintInfo);
-            }
+            return FActiveData.GetTopLevelData().CurStyleNo;
         }
 
-        public virtual void Clear()
+        private int GetCurParaNo()
         {
-            FHeader.Clear();
-            FFooter.Clear();
-            FPageData.Clear();
-            FPages.ClearEx();
-            FActivePageIndex = 0;
-        }
-
-        public virtual void MouseDown(MouseEventArgs e)
-        {
-            bool vChangeActiveData = false;
-            HCRichData vOldTopData = FActiveData.GetTopLevelData();
-            int vPageIndex = GetPageIndexByFilm(e.Y);  // 鼠标点击处所在的页(和光标所在页可能并不是同一页，如表格跨页时，空单元格第二页点击时，光标回前一页)
-            if (FActivePageIndex != vPageIndex)
-                FActivePageIndex = vPageIndex;
-            
-            int vX = -1, vY = -1;
-            if (FActiveData.FloatItems.Count > 0)
-            {
-                SectionCoordToPage(FActivePageIndex, e.X, e.Y, ref vX, ref vY);
-                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
-                if (FActiveData == FPageData)
-                    vY = vY + GetPageDataFmtTop(FActivePageIndex);
-
-                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-                if (FActiveData.MouseDownFloatItem(vMouseArgs))
-                    return;
-            }
-           
-            SectionCoordToPage(FActivePageIndex, e.X, e.Y, ref vX, ref vY);  // X，Y转换到指定页的坐标vX,vY
-            
-            HCSectionData vNewActiveData = GetSectionDataAt(vX, vY);
-            if ((vNewActiveData != FActiveData) && (e.Clicks == 2))
-            {
-                SetActiveData(vNewActiveData);
-                vChangeActiveData = true;
-            }
-
-            if ((vNewActiveData != FActiveData) && (FActiveData == FPageData))
-                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY, true);  // 约束到Data中，防止点页脚认为是下一页
-            else
-                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
-            
-            if (FActiveData == FPageData)
-                vY = vY + GetPageDataFmtTop(FActivePageIndex);
-            
-            if ((e.Clicks == 2) && (!vChangeActiveData))
-                FActiveData.DblClick(vX, vY);
-            else
-            {
-                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-                FActiveData.MouseDown(vMouseArgs);
-            }
-
-            if (vOldTopData != FActiveData.GetTopLevelData())
-            {
-                if (FOnChangeTopLevelData != null)
-                    FOnChangeTopLevelData(this, null);
-            }
-        }
-
-        public virtual void MouseMove(MouseEventArgs e)
-        {
-            int vMarginLeft = -1, vMarginRight = -1;
-
-            GetPageMarginLeftAndRight(FMousePageIndex, ref vMarginLeft, ref vMarginRight);
-
-            if (e.X < vMarginLeft)
-                HC.GCursor = Cursors.Default;
-            else
-            if (e.X > FPageSize.PageWidthPix - vMarginRight)
-                HC.GCursor = Cursors.Default;
-            else
-                HC.GCursor = Cursors.IBeam;
-
-            FMousePageIndex = GetPageIndexByFilm(e.Y);
-            //Assert(FMousePageIndex >= 0, "不应该出现鼠标移动到空页面上的情况！");
-            //if FMousePageIndex < 0 then Exit;  应该永远不会出现
-            
-            int vX = -1, vY = -1;
-            MouseEventArgs vEventArgs = null;
-
-            if (FActiveData.FloatItems.Count > 0)
-            {
-                if ((e.Button == MouseButtons.Left) && (FActiveData.FloatItemIndex >= 0))
-                {
-                    if (!FActiveData.ActiveFloatItem.Resizing)
-                        FActiveData.ActiveFloatItem.PageIndex = FMousePageIndex;
-                }
-                
-                if (FActiveData == FPageData)
-                {
-                    if ((FActiveData.FloatItemIndex >= 0) && (FActiveData.ActiveFloatItem.Resizing))
-                    {
-                        SectionCoordToPage(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY);
-                        vY = vY + GetPageDataFmtTop(FActiveData.ActiveFloatItem.PageIndex);
-                    }
-                    else
-                    {
-                        SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
-                        vY = vY + GetPageDataFmtTop(FMousePageIndex);
-                    }
-                }
-                else  // FloatItem在Header或Footer
-                {
-                    if ((FActiveData.FloatItemIndex >= 0) && (FActiveData.ActiveFloatItem.Resizing))
-                    {
-                        SectionCoordToPage(FActivePageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
-                    }
-                    else
-                    {
-                        SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
-                    }
-                }
-
-                vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-                if (FActiveData.MouseMoveFloatItem(vEventArgs))
-                    return;
-            }
-
-            SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
-            
-            HCSectionData vMoveData = GetSectionDataAt(vX, vY);
-            if (vMoveData != FMoveData)
-            {
-                if (FMoveData != null)
-                    FMoveData.MouseLeave();
-            
-                FMoveData = vMoveData;
-            }
-
-            PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY, FActiveData.Selecting);  // 划选时约束到Data中
-            
-            if (FActiveData == FPageData)
-                vY = vY + GetPageDataFmtTop(FMousePageIndex);
-            
-            vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-            FActiveData.MouseMove(vEventArgs);
-        }
-
-        public virtual void MouseUp(MouseEventArgs e)
-        {
-            int vPageIndex = GetPageIndexByFilm(e.Y);
-
-            int vX = -1, vY = -1;
-            MouseEventArgs vEventArgs = null;
-            if ((FActiveData.FloatItems.Count > 0) && (FActiveData.FloatItemIndex >= 0))
-            {
-                if (FActiveData == FPageData)
-                {
-                    SectionCoordToPage(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
-                    PageCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY);
-                    vY = vY + GetPageDataFmtTop(FActiveData.ActiveFloatItem.PageIndex);
-                }
-                else  // FloatItem在Header或Footer
-                {
-                    SectionCoordToPage(vPageIndex, e.X, e.Y, ref vX, ref vY);
-                    PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY);
-                }
-
-                vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-                if (FActiveData.MouseUpFloatItem(vEventArgs))
-                    return;
-            }
-            
-            SectionCoordToPage(vPageIndex, e.X, e.Y, ref vX, ref vY);
-                
-            //if  <> FActiveData then Exit;  // 不在当前激活的Data上
-            if ((GetSectionDataAt(vX, vY) != FActiveData) && (FActiveData == FPageData))
-                PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY, true);
-            else
-                PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY);
-
-            if (FActiveData == FPageData)
-                vY = vY + GetPageDataFmtTop(vPageIndex);
-            
-            // RectItem的缩放在MouseUp中处理，所以需要判断是否需要改变
-            if (FActiveData.SelectedResizing())
-            {
-                HCFunction vEvent = delegate()
-                {
-                    vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-                    FActiveData.MouseUp(vEventArgs);
-                    return true;
-                };
-   
-                ActiveDataChangeByAction(vEvent);
-            }
-            else
-            {
-                vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-                FActiveData.MouseUp(vEventArgs);
-            }
+            return FActiveData.GetTopLevelData().CurParaNo;
         }
 
         protected void KillFocus()
@@ -974,117 +425,105 @@ namespace HC.View
         }
 
         // 纸张信息
-        protected PaperKind GetPaperKind()
+        protected PaperKind GetPaperSize()
         {
-            return FPageSize.PaperKind;
+            return FPaper.Size;
         }
 
-        protected void SetPaperKind(PaperKind Value)
+        protected void SetPaperSize(PaperKind Value)
         {
-            FPageSize.PaperKind = Value;
+            FPaper.Size = Value;
         }
+
         // 边距信息
         protected Single GetPaperWidth()
         {
-            return FPageSize.PaperWidth;
+            return FPaper.Width;
         }
 
         protected Single GetPaperHeight()
         {
-            return FPageSize.PaperHeight;
+            return FPaper.Height;
         }
 
         protected Single GetPaperMarginTop()
         {
-            return FPageSize.PaperMarginTop;
+            return FPaper.MarginTop;
         }
 
         protected Single GetPaperMarginLeft()
         {
-            return FPageSize.PaperMarginLeft;
+            return FPaper.MarginLeft;
         }
 
         protected Single GetPaperMarginRight()
         {
-            return FPageSize.PaperMarginRight;
+            return FPaper.MarginRight;
         }
 
         protected Single GetPaperMarginBottom()
         {
-            return FPageSize.PaperMarginBottom;
+            return FPaper.MarginBottom;
         }
 
         protected void SetPaperWidth(Single value)
         {
-            FPageSize.PaperWidth = value;
-            FPageSize.PaperKind = System.Drawing.Printing.PaperKind.Custom;
+            FPaper.Width = value;
         }
 
         protected void SetPaperHeight(Single value)
         {
-            FPageSize.PaperHeight = value;
-            FPageSize.PaperKind = System.Drawing.Printing.PaperKind.Custom;
+            FPaper.Height = value;
         }
 
         protected void SetPaperMarginTop(Single value)
         {
-            FPageSize.PaperMarginTop = value;
+            FPaper.MarginTop = value;
         }
 
         protected void SetPaperMarginLeft(Single value)
         {
-            FPageSize.PaperMarginLeft = value;
+            FPaper.MarginLeft = value;
         }
 
         protected void SetPaperMarginRight(Single value)
         {
-            FPageSize.PaperMarginRight = value;
+            FPaper.MarginRight = value;
         }
 
         protected void SetPaperMarginBottom(Single value)
         {
-            FPageSize.PaperMarginBottom = value;
+            FPaper.MarginBottom = value;
         }
 
-        protected void SetPageOrientation(PageOrientation value)
+        protected int GetPaperWidthPix()
         {
-            if (FPageOrientation != value)
-            {
-                FPageOrientation = value;
-                Single vfW = FPageSize.PaperWidth;
-                FPageSize.PaperWidth = FPageSize.PaperHeight;
-                FPageSize.PaperHeight = vfW;
-            }
+            return FPaper.WidthPix;
         }
 
-        protected int GetPageWidthPix()
+        protected int GetPaperHeightPix()
         {
-            return FPageSize.PageWidthPix;
+            return FPaper.HeightPix;
         }
 
-        protected int GetPageHeightPix()
+        protected int GetPaperMarginTopPix()
         {
-            return FPageSize.PageHeightPix;
+            return FPaper.MarginTopPix;
         }
 
-        protected int GetPageMarginTopPix()
+        protected int GetPaperMarginLeftPix()
         {
-            return FPageSize.PageMarginTopPix;
+            return FPaper.MarginLeftPix;
         }
 
-        protected int GetPageMarginLeftPix()
+        protected int GetPaperMarginRightPix()
         {
-            return FPageSize.PageMarginLeftPix;
+            return FPaper.MarginRightPix;
         }
 
-        protected int GetPageMarginRightPix()
+        protected int GetPaperMarginBottomPix()
         {
-            return FPageSize.PageMarginRightPix;
-        }
-
-        protected int GetPageMarginBottomPix()
-        {
-            return FPageSize.PageMarginBottomPix;
+            return FPaper.MarginBottomPix;
         }
 
         protected void SetHeaderOffset(int value)
@@ -1119,7 +558,7 @@ namespace HC.View
             {
                 return FActiveData;
             }
-            if (x > FPageSize.PageWidthPix)
+            if (x > FPaper.WidthPix)
             {
                 return FActiveData;
             }
@@ -1127,12 +566,12 @@ namespace HC.View
             {
                 return FActiveData;
             }
-            if (y > FPageSize.PageHeightPix)
+            if (y > FPaper.HeightPix)
             {
                 return FActiveData;
             }
             // 边距信息，先上下，再左右
-            if (y > FPageSize.PageHeightPix - FPageSize.PageMarginBottomPix)
+            if (y > FPaper.HeightPix - FPaper.MarginBottomPix)
                 return FFooter;
             // 页眉区域实际高(页眉内容高度>上边距时，取页眉内容高度)
             if (y < GetHeaderAreaHeight())
@@ -1140,7 +579,7 @@ namespace HC.View
             //if X > FPageSize.PageWidthPix - vMarginRight then Exit;  // 点击在页右边距区域TEditArea.eaMarginRight
             //if X < vMarginLeft then Exit;  // 点击在页左边距区域TEditArea.eaMarginLeft
             //如果要区分左、右边距不是正文，注意双击等判断ActiveData为nil
-            return FPageData;
+            return FPage;
         }
 
         protected SectionArea GetActiveArea()
@@ -1175,60 +614,42 @@ namespace HC.View
         protected int GetDataFmtTopFilm(int aVertical)
         {
             int Result = 0, vTop = 0;
-            int vContentHeight = GetContentHeight();
+            int vPageHeight = GetPageHeight();
 
             for (int i = 0; i <= FPages.Count - 1; i++)
             {
-                vTop = vTop + vContentHeight;
+                vTop = vTop + vPageHeight;
                 if (vTop >= aVertical)
                 {
-                    vTop = aVertical - (vTop - vContentHeight);
+                    vTop = aVertical - (vTop - vPageHeight);
                     break;
                 }
                 else
-                    Result = Result + HC.PagePadding + FPageSize.PageHeightPix;
+                    Result = Result + FPagePadding + FPaper.HeightPix;
             }
-            Result = Result + HC.PagePadding + GetHeaderAreaHeight() + vTop;
+            Result = Result + FPagePadding + GetHeaderAreaHeight() + vTop;
 
             return Result;
         }
 
         protected bool ActiveDataChangeByAction(HCFunction aFunction)
         {
-            int vHeight, vDrawItemCount, vCurItemNo, vNewItemNo;
-            bool Result = false;
-
             if (!FActiveData.CanEdit())
                 return false;
 
             if (FActiveData.FloatItemIndex >= 0)
                 return false;
 
-            // 记录变动前的状态
-            vHeight = FActiveData.Height;
-            // 应用选中文本样式等操作，并不引起高度变化，但会引起DrawItem数量变化
-            // 也需要重新计算各页起始结束DrawItem
-            vDrawItemCount = FActiveData.DrawItems.Count;  // 变动前的DrawItem数量
-            vCurItemNo = FActiveData.GetCurItemNo();
+            bool Result = aFunction();  // 处理变动
 
-            Result = aFunction();  // 处理变动
-
-            // 变动后的状态
-            vNewItemNo = FActiveData.GetCurItemNo();  // 变动后的当前ItemNo
-            if (vNewItemNo < 0)  // 如果变动后小于0，修正为第0个
-                vNewItemNo = 0;
-
-            if ((vDrawItemCount != FActiveData.DrawItems.Count)  // DrawItem数量变化了
-              || (vHeight != FActiveData.Height))  // 数据高度变化了
+            if (FActiveData.FormatChange)
             {
-                if (FActiveData == FPageData)
-                {
-                    BuildSectionPages(Math.Min(Math.Min(vCurItemNo, vNewItemNo), FPageData.ReFormatStartItemNo));
-                }
+                FActiveData.FormatChange = false;
+
+                if (FActiveData == FPage)
+                    BuildSectionPages(FActiveData.FormatStartDrawItemNo);
                 else
-                {
                     BuildSectionPages(0);
-                }
             }
 
             DoDataChanged(this);
@@ -1241,6 +662,18 @@ namespace HC.View
             get { return FStyle; }
         }
 
+        protected void SetPageOrientation(PageOrientation value)
+        {
+            if (FPageOrientation != value)
+            {
+                FPageOrientation = value;
+                Single vfW = FPaper.Width;
+                FPaper.Width = FPaper.Height;
+                FPaper.Height = vfW;
+            }
+        }
+
+        // HCCustomSection子方法
         protected void SetDataProperty(int vWidth, HCSectionData aData)
         {
             aData.Width = vWidth;
@@ -1260,6 +693,7 @@ namespace HC.View
             aData.OnRemoveAnnotate = DoDataRemoveAnnotate;
             aData.OnDrawItemAnnotate = DoDataDrawItemAnnotate;
             aData.OnGetUndoList = DoDataGetUndoList;
+            aData.OnCurParaNoChange = DoDataCurParaNoChange;
         }
 
         public HCCustomSection(HCStyle aStyle)
@@ -1270,21 +704,29 @@ namespace HC.View
             FPageNoVisible = true;
             FPageNoFrom = 1;
             FHeaderOffset = 20;
+            FViewModel = HCViewModel.hvmFilm;
+            FPagePadding = 20;
             FDisplayFirstPageIndex = -1;
             FDisplayLastPageIndex = -1;
-            FPageSize = new HCPageSize();
+
+            FPaper = new HCPaper();
             FPageOrientation = PageOrientation.cpoPortrait;
-            int vWidth = GetContentWidth();
-            FPageData = new HCPageData(aStyle);
-            SetDataProperty(vWidth, FPageData);
+            int vWidth = GetPageWidth();
+
+            FPage = new HCPageData(aStyle);
+            SetDataProperty(vWidth, FPage);
+
             // FData.PageHeight := PageHeightPix - PageMarginBottomPix - GetHeaderAreaHeight;
             // 在ReFormatSectionData中处理了FData.PageHeight
             FHeader = new HCHeaderData(aStyle);
             SetDataProperty(vWidth, FHeader);
+
             FFooter = new HCFooterData(aStyle);
             SetDataProperty(vWidth, FFooter);
-            FActiveData = FPageData;
+
+            FActiveData = FPage;
             FSymmetryMargin = true;  // 对称页边距 debug
+
             FPages = new HCPages();
             NewEmptyPage();           // 创建空白页
             FPages[0].StartDrawItemNo = 0;
@@ -1293,39 +735,55 @@ namespace HC.View
 
         ~HCCustomSection()
         {
-            
+
         }
 
         public override void Dispose()
         {
-            base.Dispose();
             FHeader.Dispose();
             FFooter.Dispose();
-            FPageData.Dispose();
-            FPageSize.Dispose();
-            //FPages.Free;
+            FPage.Dispose();
+            FPaper.Dispose();
+            base.Dispose();
         }
 
         /// <summary> 修改纸张边距 </summary>
         public void ResetMargin()
         {
-            FPageData.Width = GetContentWidth();
-            FHeader.Width = FPageData.Width;
-            FFooter.Width = FPageData.Width;
+            FPage.Width = GetPageWidth();
+
+            FHeader.Width = FPage.Width;
+            FFooter.Width = FPage.Width;
+
             FormatData();
+
             BuildSectionPages(0);
+
             FStyle.UpdateInfoRePaint();
             FStyle.UpdateInfoReCaret(false);
+
             DoDataChanged(this);
+        }
+
+        public void ReAdaptActiveItem()
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.ReAdaptActiveItem();
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
         }
 
         public void DisActive()
         {
             FActiveData.DisSelect();
+
             FHeader.InitializeField();
             FFooter.InitializeField();
-            FPageData.InitializeField();
-            FActiveData = FPageData;
+            FPage.InitializeField();
+            FActiveData = FPage;
         }
 
         public bool SelectExists()
@@ -1340,12 +798,12 @@ namespace HC.View
 
         public string GetHint()
         {
-            return FActiveData.GetTopLevelData().GetHint();
+            return (FActiveData.GetTopLevelData() as HCRichData).GetHint();
         }
 
-        public HCCustomItem GetCurItem()
+        public HCCustomItem GetActiveItem()
         {
-            return FActiveData.GetCurItem();
+            return FActiveData.GetActiveItem();
         }
 
         public HCCustomItem GetTopLevelItem()
@@ -1367,18 +825,18 @@ namespace HC.View
         public int GetPageIndexByCurrent()
         {
             int Result = -1, vCaretDrawItemNo = -1;
-            if (FActiveData != FPageData)
+            if (FActiveData != FPage)
                 Result = FActivePageIndex;
             else
             {
-                if (FPageData.CaretDrawItemNo < 0)
+                if (FPage.CaretDrawItemNo < 0)
                 {
-                    vCaretDrawItemNo = FPageData.GetDrawItemNoByOffset(FPageData.SelectInfo.StartItemNo,
-                        FPageData.SelectInfo.StartItemOffset);
+                    vCaretDrawItemNo = FPage.GetDrawItemNoByOffset(FPage.SelectInfo.StartItemNo,
+                        FPage.SelectInfo.StartItemOffset);
                 }
                 else
-                    vCaretDrawItemNo = FPageData.CaretDrawItemNo;
-            
+                    vCaretDrawItemNo = FPage.CaretDrawItemNo;
+
                 HCCaretInfo vCaretInfo = new HCCaretInfo();
                 for (int i = 0; i <= FPages.Count - 1; i++)
                 {
@@ -1386,11 +844,12 @@ namespace HC.View
                     {
                         if ((i < FPages.Count - 1) && (FPages[i + 1].StartDrawItemNo == vCaretDrawItemNo))
                         {
-                            if (FPageData.SelectInfo.StartItemNo >= 0)
+                            if (FPage.SelectInfo.StartItemNo >= 0)
                             {
                                 vCaretInfo.Y = 0;
-                                (FPageData as HCCustomData).GetCaretInfo(FPageData.SelectInfo.StartItemNo,
-                                    FPageData.SelectInfo.StartItemOffset, ref vCaretInfo);
+                                (FPage as HCCustomData).GetCaretInfo(FPage.SelectInfo.StartItemNo,
+                                    FPage.SelectInfo.StartItemOffset, ref vCaretInfo);
+
                                 Result = GetPageIndexByFormat(vCaretInfo.Y);
                             }
                             else
@@ -1398,7 +857,7 @@ namespace HC.View
                         }
                         else
                             Result = i;
-            
+
                         break;
                     }
                 }
@@ -1410,7 +869,19 @@ namespace HC.View
         /// <summary> 返回正文格式位置所在页序号 </summary>
         public int GetPageIndexByFormat(int aVOffset)
         {
-            return aVOffset / GetContentHeight();
+            return aVOffset / GetPageHeight();
+        }
+
+        /// <summary> 直接设置当前TextItem的Text值 </summary>
+        public void SetActiveItemText(string aText)
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.SetActiveItemText(aText);
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
         }
 
         public void PaintDisplayPage(int aFilmOffsetX, int aFilmOffsetY, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
@@ -1418,9 +889,14 @@ namespace HC.View
             for (int i = FDisplayFirstPageIndex; i <= FDisplayLastPageIndex; i++)
             {
                 aPaintInfo.PageIndex = i;
-                int vPageFilmTop = GetPageTopFilm(i);
-                int vPageDrawTop = vPageFilmTop - aFilmOffsetY;  // 映射到当前页面为原点的屏显起始位置(可为负数)
-                PaintPage(i, aFilmOffsetX, vPageDrawTop, aCanvas, aPaintInfo);
+                int vPaperFilmTop = 0;
+                if (aPaintInfo.ViewModel == HCViewModel.hvmFilm)
+                    vPaperFilmTop = GetPageTopFilm(i);
+                else
+                    vPaperFilmTop = GetPageTop(i);
+
+                int vPageDrawTop = vPaperFilmTop - aFilmOffsetY;  // 映射到当前页面为原点的屏显起始位置(可为负数)
+                PaintPaper(i, aFilmOffsetX, vPageDrawTop, aCanvas, aPaintInfo);
             }
         }
 
@@ -1440,7 +916,7 @@ namespace HC.View
                 };
 
                 ActiveDataChangeByAction(vEvent);
-            
+
                 e.KeyChar = vKey;
             }
             else
@@ -1457,7 +933,7 @@ namespace HC.View
                 DoActiveDataCheckUpdateInfo();
                 return;
             }
-         
+
             int Key = e.KeyValue;
             if (HC.IsKeyDownWant(Key))
             {
@@ -1474,11 +950,11 @@ namespace HC.View
                                 return true;
                             };
                             ActiveDataChangeByAction(vEvent);
-                        
-                        //Key = vKey;
+
+                            //Key = vKey;
                         }
                         break;
-            
+
                     case User.VK_LEFT:
                     case User.VK_RIGHT:
                     case User.VK_UP:
@@ -1486,7 +962,7 @@ namespace HC.View
                     case User.VK_HOME:
                     case User.VK_END:
                         FActiveData.KeyDown(e);
-                        FActivePageIndex = GetPageIndexByCurrent();  // 方向键可能移动到了其他页
+                        SetActivePageIndex(GetPageIndexByCurrent());  // 方向键可能移动到了其他页
                         DoActiveDataCheckUpdateInfo();
                         break;
                 }
@@ -1557,6 +1033,17 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
+        public void ApplyTableCellAlign(HCContentAlign aAlign)
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.ApplyTableCellAlign(aAlign);
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
+        }
+
         public bool InsertText(string aText)
         {
             HCFunction vEvent = delegate()
@@ -1567,11 +1054,31 @@ namespace HC.View
             return ActiveDataChangeByAction(vEvent);
         }
 
-        public bool InsertTable(int aRowCount, int  aColCount)
+        public bool InsertTable(int aRowCount, int aColCount)
         {
             HCFunction vEvent = delegate()
             {
                 return FActiveData.InsertTable(aRowCount, aColCount);
+            };
+
+            return ActiveDataChangeByAction(vEvent);
+        }
+
+        public bool InsertImage(string aFile)
+        {
+            HCFunction vEvent = delegate()
+            {
+                return FActiveData.InsertImage(aFile);
+            };
+
+            return ActiveDataChangeByAction(vEvent);
+        }
+
+        public bool InsertGifImage(string aFile)
+        {
+            HCFunction vEvent = delegate()
+            {
+                return FActiveData.InsertGifImage(aFile);
             };
 
             return ActiveDataChangeByAction(vEvent);
@@ -1618,22 +1125,22 @@ namespace HC.View
             return ActiveDataChangeByAction(vEvent);
         }
 
-        public bool InsertDomain(HCDomainItem aMouldDomain)
-        {
-            HCFunction vEvent = delegate()
-            {
-                return FActiveData.InsertDomain(aMouldDomain);
-            };
-
-            return ActiveDataChangeByAction(vEvent);
-        }
-
         /// <summary> 从当前位置后分页 </summary>
         public bool InsertPageBreak()
         {
             HCFunction vEvent = delegate()
             {
-                return FPageData.InsertPageBreak();
+                return FPage.InsertPageBreak();
+            };
+
+            return ActiveDataChangeByAction(vEvent);
+        }
+
+        public bool InsertDomain(HCDomainItem aMouldDomain)
+        {
+            HCFunction vEvent = delegate()
+            {
+                return FActiveData.InsertDomain(aMouldDomain);
             };
 
             return ActiveDataChangeByAction(vEvent);
@@ -1731,12 +1238,17 @@ namespace HC.View
             return ActiveDataChangeByAction(vEvent);
         }
 
-        //
         //// <summary>  节坐标转换到指定页坐标 </summary>
         public void SectionCoordToPage(int aPageIndex, int x, int y, ref int aPageX, ref int aPageY)
         {
             aPageX = x;// - vMarginLeft;
-            int vPageFilmTop = GetPageTopFilm(aPageIndex);
+
+            int vPageFilmTop = 0;
+            if (FViewModel == HCViewModel.hvmFilm)
+                vPageFilmTop = GetPageTopFilm(aPageIndex);
+            else
+                vPageFilmTop = GetPageTop(aPageIndex);
+
             aPageY = y - vPageFilmTop;  // 映射到当前页面为原点的屏显起始位置(可为负数)
         }
 
@@ -1819,15 +1331,707 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
+        /// <summary> 获取光标在Dtat中的位置信息并映射到指定页面 </summary>
+        /// <param name="APageIndex">要映射到的页序号</param>
+        /// <param name="aCaretInfo">光标位置信息</param>
+        public virtual void GetPageCaretInfo(ref HCCaretInfo aCaretInfo)
+        {
+            int vMarginLeft = -1, vPageIndex = -1;
+            if (FStyle.UpdateInfo.Draging)
+                vPageIndex = FMousePageIndex;
+            else
+                vPageIndex = FActivePageIndex;
+
+            if ((FActiveData.SelectInfo.StartItemNo < 0) || (vPageIndex < 0))
+            {
+                aCaretInfo.Visible = false;
+                return;
+            }
+
+            aCaretInfo.PageIndex = vPageIndex;  // 鼠标点击处所在的页
+            FActiveData.GetCaretInfoCur(ref aCaretInfo);
+
+            if (aCaretInfo.Visible)
+            {
+                if (FActiveData == FPage)
+                {
+                    vMarginLeft = GetPageIndexByFormat(aCaretInfo.Y);  // 借用变量vMarginLeft表示页序号
+                    if (vPageIndex != vMarginLeft)
+                    {
+                        vPageIndex = vMarginLeft;
+                        SetActivePageIndex(vPageIndex);
+                    }
+                }
+
+                if (FViewModel == HCViewModel.hvmFilm)
+                {
+                    vMarginLeft = GetPageMarginLeft(vPageIndex);
+                    aCaretInfo.X = aCaretInfo.X + vMarginLeft;
+                    aCaretInfo.Y = aCaretInfo.Y + GetPageTopFilm(vPageIndex);
+
+                    if (FActiveData == FHeader)
+                        aCaretInfo.Y = aCaretInfo.Y + GetHeaderPageDrawTop(); // 页在节中的Top位置
+                    else
+                        if (FActiveData == FPage)
+                            aCaretInfo.Y = aCaretInfo.Y + GetHeaderAreaHeight() - GetPageDataFmtTop(vPageIndex);  // - 页起始数据在Data中的位置
+                        else
+                            if (FActiveData == FFooter)
+                                aCaretInfo.Y = aCaretInfo.Y + FPaper.HeightPix - FPaper.MarginBottomPix;
+                }
+                else
+                {
+                    aCaretInfo.Y = aCaretInfo.Y + GetPageTop(vPageIndex);
+                    if (FActiveData == FPage)
+                        aCaretInfo.Y = aCaretInfo.Y - GetPageDataFmtTop(vPageIndex);  // - 页起始数据在Data中的位置
+                }
+            }
+        }
+
+        #region 绘制页眉数据
+        private void PaintHeader(int vPaperDrawTop, int vPageDrawTop, int vPageDrawLeft, int vPageDrawRight, int vMarginLeft, int vMarginRight,
+            int vHeaderAreaHeight, int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            int vHeaderDataDrawTop = vPaperDrawTop + GetHeaderPageDrawTop();
+
+            FHeader.PaintData(vPageDrawLeft, vHeaderDataDrawTop,
+                vPageDrawTop, Math.Max(vHeaderDataDrawTop, 0),
+                Math.Min(vPageDrawTop, aPaintInfo.WindowHeight), 0, aCanvas, aPaintInfo);
+
+            if (FOnPaintHeader != null)
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintHeader(this, aPageIndex,
+                        new RECT(vPageDrawLeft, vHeaderDataDrawTop, vPageDrawRight, vPageDrawTop), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+        }
+        #endregion
+
+        #region 绘制页脚数据
+        private void PaintFooter(int vPaperDrawBottom, int vPageDrawLeft, int vPageDrawRight, int vPageDrawBottom, int vMarginLeft,
+            int vMarginRight, int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            FFooter.PaintData(vPageDrawLeft, vPageDrawBottom, vPaperDrawBottom,
+                Math.Max(vPageDrawBottom, 0), Math.Min(vPaperDrawBottom, aPaintInfo.WindowHeight),
+                0, aCanvas, aPaintInfo);
+
+            if (FOnPaintFooter != null)
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintFooter(this, aPageIndex,
+                        new RECT(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPaperDrawBottom), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+        }
+        #endregion
+
+        #region 绘制页面数据
+        void PaintPage(int vPageDrawLeft, int vPageDrawTop, int vPageDrawRight, int vPageDrawBottom,
+            int vMarginLeft, int vMarginRight, int vHeaderAreaHeight, int vPageDataScreenTop, int vPageDataScreenBottom,
+            int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if ((FPages[aPageIndex].StartDrawItemNo < 0) || (FPages[aPageIndex].EndDrawItemNo < 0))
+                return;
+
+            /* 绘制数据，把Data中指定位置的数据，绘制到指定的页区域中，并按照可显示出来的区域约束 }*/
+            FPage.PaintData(vPageDrawLeft,  // 当前页数据要绘制到的Left
+                vPageDrawTop,     // 当前页数据要绘制到的Top
+                vPageDrawBottom,  // 当前页数据要绘制的Bottom
+                vPageDataScreenTop,     // 界面呈现当前页数据的Top位置
+                vPageDataScreenBottom,  // 界面呈现当前页数据Bottom位置
+                aPaintInfo.PageDataFmtTop,  // 指定从哪个位置开始的数据绘制到页数据起始位置
+                FPages[aPageIndex].StartDrawItemNo,
+                FPages[aPageIndex].EndDrawItemNo,
+                aCanvas,
+                aPaintInfo);
+
+            if (FOnPaintPage != null)
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintPage(this, aPageIndex,
+                        new RECT(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+        }
+        #endregion
+
+
+        /// <summary> 绘制指定页到指定的位置，为配合打印，开放ADisplayWidth, ADisplayHeight参数 </summary>
+        /// <param name="aPageIndex">要绘制的页码</param>
+        /// <param name="aLeft">绘制X偏移</param>
+        /// <param name="aTop">绘制Y偏移</param>
+        /// <param name="aCanvas"></param>
+        public void PaintPaper(int aPageIndex, int aLeft, int aTop, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            int vHeaderAreaHeight, vMarginLeft = -1, vMarginRight = -1,
+              vPaperDrawLeft, vPaperDrawTop, vPaperDrawRight, vPaperDrawBottom,  
+              vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom,  // 页区域各位置
+              vPageDataScreenTop, vPageDataScreenBottom,  // 页数据屏幕位置
+              vScaleWidth, vScaleHeight;
+
+            IntPtr vPaintRegion = IntPtr.Zero;
+            RECT vClipBoxRect = new RECT();
+
+            vScaleWidth = (int)Math.Round(aPaintInfo.WindowWidth / aPaintInfo.ScaleX);
+            vScaleHeight = (int)Math.Round(aPaintInfo.WindowHeight / aPaintInfo.ScaleY);
+
+            if (aPaintInfo.ViewModel == HCViewModel.hvmFilm)
+            {
+                vPaperDrawLeft = aLeft;
+                vPaperDrawRight = aLeft + FPaper.WidthPix;
+                vPaperDrawTop = aTop;
+                vPaperDrawBottom = vPaperDrawTop + FPaper.HeightPix;
+
+                GetPageMarginLeftAndRight(aPageIndex, ref vMarginLeft, ref vMarginRight);  // 获取页左右边距绘制位置
+                vPageDrawLeft = vPaperDrawLeft + vMarginLeft;
+                vPageDrawRight = vPaperDrawRight - vMarginRight;
+                vHeaderAreaHeight = GetHeaderAreaHeight();  // 页眉区域实际高 = 页眉数据顶部偏移 + 内容高度，大于上边距时以此为准
+                vPageDrawTop = vPaperDrawTop + vHeaderAreaHeight;  // 映射到当前页面左上角为原点的起始位置(可为负数)
+                vPageDrawBottom = vPaperDrawBottom - FPaper.MarginBottomPix;  // 页面结束位置(可为负数)
+            }
+            else
+            {
+                vPaperDrawLeft = aLeft;
+                vPaperDrawRight = aLeft + GetPageWidth();
+                vPaperDrawTop = aTop;
+                vPaperDrawBottom = aTop + GetPageHeight();
+
+                vPageDrawLeft = vPaperDrawLeft;
+                vPageDrawRight = vPaperDrawRight;
+                vHeaderAreaHeight = 0;
+                vMarginLeft = 0;
+                vMarginRight = 0;
+                vPageDrawTop = vPaperDrawTop;  // 映射到当前页面左上角为原点的起始位置(可为负数)
+                vPageDrawBottom = vPaperDrawBottom - 1;  // 页面结束位置(可为负数)
+            }
+
+            // 当前页数据能显示出来的区域边界
+            vPageDataScreenTop = Math.Max(vPageDrawTop, 0);
+            vPageDataScreenBottom = Math.Min(vPageDrawBottom, vScaleHeight);
+
+            aPaintInfo.PageDataFmtTop = GetPageDataFmtTop(aPageIndex);
+
+            GDI.GetClipBox(aCanvas.Handle, ref vClipBoxRect);  // 保存当前的绘图区域
+
+            if (!aPaintInfo.Print)
+            {
+
+                #region 非打印时填充页面背景
+                aCanvas.Brush.Color = FStyle.BackgroudColor;
+                aCanvas.FillRect(new RECT(vPaperDrawLeft, vPaperDrawTop, Math.Min(vPaperDrawRight, vScaleWidth),  // 约束边界
+                    Math.Min(vPaperDrawBottom, vScaleHeight)));
+                #endregion
+
+                if (aPaintInfo.ViewModel == HCViewModel.hvmFilm)
+                {
+                    #region 页眉边距指示符
+                    if (vPageDrawTop > 0)
+                    {
+                        if (vHeaderAreaHeight > FPaper.MarginTopPix)
+                        {
+                            aCanvas.Pen.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Pen.Style = HCPenStyle.psDot;
+                                aCanvas.Pen.Color = Color.Gray;
+                            }
+                            finally
+                            {
+                                aCanvas.Pen.EndUpdate();
+                            }
+
+                            aPaintInfo.DrawNoScaleLine(aCanvas, new Point[2] { new Point(vPageDrawLeft, vPageDrawTop - 1), new Point(vPageDrawRight, vPageDrawTop - 1) });
+                        }
+
+                        if (FActiveData == FHeader)
+                        {
+                            aCanvas.Pen.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Pen.Width = 1;
+                                aCanvas.Pen.Color = Color.Blue;
+                                aCanvas.Pen.Style = HCPenStyle.psSolid;
+                            }
+                            finally
+                            {
+                                aCanvas.Pen.EndUpdate();
+                            }
+
+                            aCanvas.DrawLine(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawTop);
+                        }
+                        else
+                        {
+                            aCanvas.Pen.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Pen.Width = 1;
+                                aCanvas.Pen.Color = Color.Gray;
+                                aCanvas.Pen.Style = HCPenStyle.psSolid;
+                            }
+                            finally
+                            {
+                                aCanvas.Pen.EndUpdate();
+                            }
+                        }
+
+                        // 左上， 左-原-上
+                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vPageDrawLeft - HC.PMSLineHeight, vPageDrawTop),
+                            new Point(vPageDrawLeft, vPageDrawTop), new Point(vPageDrawLeft, vPageDrawTop - HC.PMSLineHeight) });
+                        // 右上，右-原-上
+                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vPageDrawRight + HC.PMSLineHeight, vPageDrawTop),
+                            new Point(vPageDrawRight, vPageDrawTop), new Point(vPageDrawRight, vPageDrawTop - HC.PMSLineHeight) });
+                    }
+                    #endregion
+
+                    #region 页脚边距指示符
+                    if (vPageDrawBottom < aPaintInfo.WindowHeight)
+                    {
+                        if (FActiveData == FFooter)
+                        {
+                            aCanvas.Pen.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Pen.Width = 1;
+                                aCanvas.Pen.Color = Color.Blue;
+                                aCanvas.Pen.Style = HCPenStyle.psSolid;
+                            }
+                            finally
+                            {
+                                aCanvas.Pen.EndUpdate();
+                            }
+
+                            aCanvas.DrawLine(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPageDrawBottom);
+                        }
+                        else
+                        {
+                            aCanvas.Pen.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Pen.Width = 1;
+                                aCanvas.Pen.Color = Color.Gray;
+                                aCanvas.Pen.Style = HCPenStyle.psSolid;
+                            }
+                            finally
+                            {
+                                aCanvas.Pen.EndUpdate();
+                            }
+                        }
+
+                        // 左下，左-原-下
+                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vPageDrawLeft - HC.PMSLineHeight, vPageDrawBottom),
+                            new Point(vPageDrawLeft, vPageDrawBottom), new Point(vPageDrawLeft, vPageDrawBottom + HC.PMSLineHeight) });
+                        // 右下，右-原-下
+                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vPageDrawRight + HC.PMSLineHeight, vPageDrawBottom),
+                            new Point(vPageDrawRight, vPageDrawBottom), new Point(vPageDrawRight, vPageDrawBottom + HC.PMSLineHeight) });
+                    }
+                    #endregion
+                }
+                else
+                {
+                    if (vPageDrawBottom < aPaintInfo.WindowHeight)  // 页脚结束可显示
+                    {
+                        aCanvas.Pen.BeginUpdate();
+                        try
+                        {
+                            aCanvas.Pen.Width = 1;
+                            aCanvas.Pen.Color = Color.Gray;
+                            aCanvas.Pen.Style = HCPenStyle.psDashDot;
+                        }
+                        finally
+                        {
+                            aCanvas.Pen.EndUpdate();
+                        }
+
+                        aCanvas.DrawLine(vPaperDrawLeft, vPageDrawBottom, vPaperDrawRight, vPageDrawBottom);
+                    }
+                }
+            }
+
+            if (FOnPaintPaperBefor != null)  // 公开页面绘制前事件
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintPaperBefor(this, aPageIndex,
+                        new RECT(vPaperDrawLeft, vPaperDrawTop, vPaperDrawRight, vPaperDrawBottom), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+
+            if (aPaintInfo.ViewModel == HCViewModel.hvmFilm)
+            {
+                #region 绘制页眉
+                if (vPageDrawTop > 0)
+                {
+                    vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
+                        Math.Max(aPaintInfo.GetScaleY(vPageDrawTop + FHeaderOffset), 0),
+                        aPaintInfo.GetScaleX(vPageDrawRight),
+                        Math.Min(aPaintInfo.GetScaleY(vPageDrawTop), aPaintInfo.WindowHeight));
+
+                    try
+                    {
+                        GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);  // 设置绘制有效区域
+                        PaintHeader(vPaperDrawTop, vPageDrawTop, vPageDrawLeft, vPageDrawRight, vMarginLeft, vMarginRight,
+                            vHeaderAreaHeight, aPageIndex, aCanvas, aPaintInfo);
+                    }
+                    finally
+                    {
+                        GDI.DeleteObject(vPaintRegion);
+                    }
+                }
+                #endregion
+
+                #region 绘制页脚
+                if (aPaintInfo.GetScaleY(vPageDrawBottom) < aPaintInfo.WindowHeight)  // 页脚可显示
+                {
+                    vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
+                        Math.Max(aPaintInfo.GetScaleY(vPageDrawBottom), 0),
+                        aPaintInfo.GetScaleX(vPageDrawRight),
+                        Math.Min(aPaintInfo.GetScaleY(vPaperDrawBottom), aPaintInfo.WindowHeight));
+
+                    try
+                    {
+                        GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);  // 设置绘制有效区域
+                        PaintFooter(vPaperDrawBottom, vPageDrawLeft, vPageDrawRight, vPageDrawBottom, vMarginLeft, vMarginRight,
+                            aPageIndex, aCanvas, aPaintInfo);
+                    }
+                    finally
+                    {
+                        GDI.DeleteObject(vPaintRegion);
+                    }
+                }
+                #endregion
+            }
+
+            #region 绘制页面
+            if (vPageDataScreenBottom > vPageDataScreenTop)  // 能露出数据则绘制当前页，绘制正文
+            {
+                vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
+                        aPaintInfo.GetScaleY(Math.Max(vPageDrawTop, vPageDataScreenTop)),
+                        aPaintInfo.GetScaleX(vPageDrawRight),
+                        aPaintInfo.GetScaleY(Math.Min(vPageDrawBottom, vPageDataScreenBottom)) + 1);
+
+                try
+                {
+                    GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);  // 设置绘制有效区域
+                    PaintPage(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom,
+                        vMarginLeft, vMarginRight, vHeaderAreaHeight, vPageDataScreenTop, vPageDataScreenBottom,
+                        aPageIndex, aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.DeleteObject(vPaintRegion);
+                }
+            }
+            #endregion
+
+            // 恢复区域，准备给整页绘制用(各部分浮动Item)
+            vPaintRegion = (IntPtr)GDI.CreateRectRgn(
+                aPaintInfo.GetScaleX(vPageDrawLeft),
+                aPaintInfo.GetScaleX(vPageDrawTop),
+                aPaintInfo.GetScaleX(vPageDrawRight),
+                aPaintInfo.GetScaleX(vPageDrawBottom));
+
+            try
+            {
+                GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
+
+                FHeader.PaintFloatItems(aPageIndex, vPageDrawLeft,
+                    vPageDrawTop + GetHeaderPageDrawTop(), 0, aCanvas, aPaintInfo);
+
+                FFooter.PaintFloatItems(aPageIndex, vPageDrawLeft,
+                    vPageDrawBottom, 0, aCanvas, aPaintInfo);
+
+                FPage.PaintFloatItems(aPageIndex, vPageDrawLeft,  // 当前页绘制到的Left
+                vPageDrawTop,     // 当前页绘制到的Top
+                GetPageDataFmtTop(aPageIndex),  // 指定从哪个位置开始的数据绘制到页数据起始位置
+                aCanvas,
+                aPaintInfo);
+            }
+            finally
+            {
+                GDI.DeleteObject(vPaintRegion);
+            }
+
+            // 恢复区域，准备给外部绘制用
+            vPaintRegion = (IntPtr)GDI.CreateRectRgn(
+                aPaintInfo.GetScaleX(vClipBoxRect.Left),
+                aPaintInfo.GetScaleX(vClipBoxRect.Top),
+                aPaintInfo.GetScaleX(vClipBoxRect.Right),
+                aPaintInfo.GetScaleX(vClipBoxRect.Bottom));
+            try
+            {
+                GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
+            }
+            finally
+            {
+                GDI.DeleteObject(vPaintRegion);
+            }
+
+            if (FOnPaintPaperAfter != null)  // 公开页面绘制后事件
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintPaperAfter(this, aPageIndex,
+                        new RECT(vPaperDrawLeft, vPaperDrawTop, vPaperDrawRight, vPaperDrawBottom),
+                        aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+        }
+
+        public virtual void Clear()
+        {
+            FHeader.Clear();
+            FFooter.Clear();
+            FPage.Clear();
+            FPages.ClearEx();
+            FActivePageIndex = 0;
+        }
+
+        public virtual void MouseDown(MouseEventArgs e)
+        {
+            bool vChangeActiveData = false;
+            HCCustomData vOldTopData = FActiveData.GetTopLevelData();
+            int vPageIndex = GetPageIndexByFilm(e.Y);  // 鼠标点击处所在的页(和光标所在页可能并不是同一页，如表格跨页时，空单元格第二页点击时，光标回前一页)
+            if (FActivePageIndex != vPageIndex)
+                FActivePageIndex = vPageIndex;
+
+            int vX = -1, vY = -1;
+            SectionCoordToPage(FActivePageIndex, e.X, e.Y, ref vX, ref vY);  // X，Y转换到指定页的坐标vX,vY
+
+            #region 有FloatItem时短路
+            if (FActiveData.FloatItems.Count > 0)
+            {
+                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
+                if (FActiveData == FPage)
+                    vY = vY + GetPageDataFmtTop(FActivePageIndex);
+
+                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                if (FActiveData.MouseDownFloatItem(vMouseArgs))
+                    return;
+            }
+
+            #endregion
+           
+            HCSectionData vNewActiveData = GetSectionDataAt(vX, vY);
+
+            if ((vNewActiveData != FActiveData) && (e.Clicks == 2))
+            {
+                SetActiveData(vNewActiveData);
+                vChangeActiveData = true;
+            }
+
+            if ((vNewActiveData != FActiveData) && (FActiveData == FPage))
+                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY, true);  // 约束到Data中，防止点页脚认为是下一页
+            else
+                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
+
+            if (FActiveData == FPage)
+                vY = vY + GetPageDataFmtTop(FActivePageIndex);
+
+            if ((e.Clicks == 2) && (!vChangeActiveData))
+                FActiveData.DblClick(vX, vY);
+            else
+            {
+                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                FActiveData.MouseDown(vMouseArgs);
+            }
+
+            if (vOldTopData != FActiveData.GetTopLevelData())
+            {
+                if (FOnChangeTopLevelData != null)
+                    FOnChangeTopLevelData(this, null);
+            }
+        }
+
+        public virtual void MouseMove(MouseEventArgs e)
+        {
+            int vMarginLeft = -1, vMarginRight = -1;
+
+            GetPageMarginLeftAndRight(FMousePageIndex, ref vMarginLeft, ref vMarginRight);
+
+            if (e.X < vMarginLeft)
+                HC.GCursor = Cursors.Default;
+            else
+                if (e.X > FPaper.WidthPix - vMarginRight)
+                    HC.GCursor = Cursors.Default;
+                else
+                    HC.GCursor = Cursors.IBeam;
+
+            FMousePageIndex = GetPageIndexByFilm(e.Y);
+            //Assert(FMousePageIndex >= 0, "不应该出现鼠标移动到空页面上的情况！");
+            //if FMousePageIndex < 0 then Exit;  应该永远不会出现
+
+            int vX = -1, vY = -1;
+            MouseEventArgs vEventArgs = null;
+
+            #region 有FloatItem时短路
+            if (FActiveData.FloatItems.Count > 0)
+            {
+                if ((e.Button == MouseButtons.Left) && (FActiveData.FloatItemIndex >= 0))
+                {
+                    if (!FActiveData.ActiveFloatItem.Resizing)
+                        FActiveData.ActiveFloatItem.PageIndex = FMousePageIndex;
+                }
+
+                if (FActiveData == FPage)
+                {
+                    if ((FActiveData.FloatItemIndex >= 0) && (FActiveData.ActiveFloatItem.Resizing))
+                    {
+                        SectionCoordToPage(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
+                        PageCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY);
+                        vY = vY + GetPageDataFmtTop(FActiveData.ActiveFloatItem.PageIndex);
+                    }
+                    else
+                    {
+                        SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
+                        PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
+                        vY = vY + GetPageDataFmtTop(FMousePageIndex);
+                    }
+                }
+                else  // FloatItem在Header或Footer
+                {
+                    if ((FActiveData.FloatItemIndex >= 0) && (FActiveData.ActiveFloatItem.Resizing))
+                    {
+                        SectionCoordToPage(FActivePageIndex, e.X, e.Y, ref vX, ref vY);
+                        PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
+                    }
+                    else
+                    {
+                        SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
+                        PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
+                    }
+                }
+
+                vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                if (FActiveData.MouseMoveFloatItem(vEventArgs))
+                    return;
+            }
+            #endregion
+
+            SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
+
+            HCSectionData vMoveData = GetSectionDataAt(vX, vY);
+            if (vMoveData != FMoveData)
+            {
+                if (FMoveData != null)
+                    FMoveData.MouseLeave();
+
+                FMoveData = vMoveData;
+            }
+
+            PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY, FActiveData.Selecting);  // 划选时约束到Data中
+
+            if (FActiveData == FPage)
+                vY = vY + GetPageDataFmtTop(FMousePageIndex);
+
+            vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+            FActiveData.MouseMove(vEventArgs);
+        }
+
+        public virtual void MouseUp(MouseEventArgs e)
+        {
+            int vPageIndex = GetPageIndexByFilm(e.Y);
+
+            int vX = -1, vY = -1;
+            MouseEventArgs vEventArgs = null;
+
+            #region 有FloatItem时短路
+            if ((FActiveData.FloatItems.Count > 0) && (FActiveData.FloatItemIndex >= 0))
+            {
+                if (FActiveData == FPage)
+                {
+                    SectionCoordToPage(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
+                    PageCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY);
+                    vY = vY + GetPageDataFmtTop(FActiveData.ActiveFloatItem.PageIndex);
+                }
+                else  // FloatItem在Header或Footer
+                {
+                    SectionCoordToPage(vPageIndex, e.X, e.Y, ref vX, ref vY);
+                    PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY);
+                }
+
+                vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                if (FActiveData.MouseUpFloatItem(vEventArgs))
+                    return;
+            }
+            #endregion
+
+            SectionCoordToPage(vPageIndex, e.X, e.Y, ref vX, ref vY);
+
+            //if  <> FActiveData then Exit;  // 不在当前激活的Data上
+            if ((GetSectionDataAt(vX, vY) != FActiveData) && (FActiveData == FPage))
+                PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY, true);
+            else
+                PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY);
+
+            if (FActiveData == FPage)
+                vY = vY + GetPageDataFmtTop(vPageIndex);
+
+            // RectItem的缩放在MouseUp中处理，所以需要判断是否需要改变
+            if (FActiveData.SelectedResizing())
+            {
+                HCFunction vEvent = delegate()
+                {
+                    vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                    FActiveData.MouseUp(vEventArgs);
+                    return true;
+                };
+
+                ActiveDataChangeByAction(vEvent);
+            }
+            else
+            {
+                vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                FActiveData.MouseUp(vEventArgs);
+            }
+        }
+
         /// <summary> 某页在整个节中的Top位置 </summary>
         /// <param name="aPageIndex"></param>
         /// <returns></returns>
         public int GetPageTopFilm(int aPageIndex)
         {
-            int Result = HC.PagePadding;
+            int Result = FPagePadding;
             for (int i = 0; i <= aPageIndex - 1; i++)
-                Result = Result + FPageSize.PageHeightPix + HC.PagePadding;  // 每一页和其上面的分隔计为一整个处理单元
-            
+                Result = Result + FPaper.HeightPix + FPagePadding;  // 每一页和其上面的分隔计为一整个处理单元
+
+            return Result;
+        }
+
+        public int GetPageTop(int aPageIndex)
+        {
+            int Result = 0;
+            int vPageHeight = GetPageHeight();
+            for (int i = 0; i <= aPageIndex - 1; i++)
+                Result = Result + vPageHeight;
+
             return Result;
         }
 
@@ -1839,9 +2043,10 @@ namespace HC.View
             int Result = 0;
             if (aPageIndex > 0)
             {
-                int vContentHeight = GetContentHeight();
+                int vPageHeight = GetPageHeight();
+
                 for (int i = 0; i <= aPageIndex - 1; i++)
-                    Result = Result + vContentHeight;
+                    Result = Result + vPageHeight;
             }
 
             return Result;
@@ -1853,8 +2058,8 @@ namespace HC.View
         {
             int Result = FHeaderOffset;
             int vHeaderHeight = FHeader.Height;
-            if (vHeaderHeight < (FPageSize.PageMarginTopPix - FHeaderOffset))
-                Result = Result + (FPageSize.PageMarginTopPix - FHeaderOffset - vHeaderHeight) / 2;
+            if (vHeaderHeight < (FPaper.MarginTopPix - FHeaderOffset))
+                Result = Result + (FPaper.MarginTopPix - FHeaderOffset - vHeaderHeight) / 2;
 
             return Result;
         }
@@ -1875,18 +2080,18 @@ namespace HC.View
         {
             if (FSymmetryMargin && HC.IsOdd(aPageIndex))
             {
-                aMarginLeft = FPageSize.PageMarginRightPix;
-                aMarginRight = FPageSize.PageMarginLeftPix;
+                aMarginLeft = FPaper.MarginRightPix;
+                aMarginRight = FPaper.MarginLeftPix;
             }
             else
             {
-                aMarginLeft = FPageSize.PageMarginLeftPix;
-                aMarginRight = FPageSize.PageMarginRightPix;
+                aMarginLeft = FPaper.MarginLeftPix;
+                aMarginRight = FPaper.MarginRightPix;
             }
         }
 
-#region 内部方法
-        private void _FormatNewPage(ref int vPageIndex, int aPrioEndDItemNo, int  aNewStartDItemNo)
+        #region BuildSectionPages内部方法
+        private void _FormatNewPage(ref int vPageIndex, int aPrioEndDItemNo, int aNewStartDItemNo)
         {
             FPages[vPageIndex].EndDrawItemNo = aPrioEndDItemNo;
             HCPage vPage = new HCPage();
@@ -1896,148 +2101,149 @@ namespace HC.View
         }
 
         private void _RectItemCheckPage(int ADrawItemNo, int vPageDataFmtBottom, int AStartSeat,
-            int vContentHeight, HCCustomRectItem vRectItem, ref int vPageIndex, 
+            int vPageHeight, HCCustomRectItem vRectItem, ref int vPageIndex,
             ref int vBreakSeat, ref int vSuplus, ref int vPageDataFmtTop)
         {
             int vFmtHeightInc = -1, vFmtOffset = -1;
 
-            if (FPageData.GetDrawItemStyle(ADrawItemNo) == HCStyle.PageBreak)
+            if (FPage.GetDrawItemStyle(ADrawItemNo) == HCStyle.PageBreak)
             {
-                vFmtOffset = vPageDataFmtBottom - FPageData.DrawItems[ADrawItemNo].Rect.Top;
-                
+                vFmtOffset = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Top;
+
                 vSuplus = vSuplus + vFmtOffset;
                 if (vFmtOffset > 0)
-                    HC.OffsetRect(ref FPageData.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
+                    HC.OffsetRect(ref FPage.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
 
                 vPageDataFmtTop = vPageDataFmtBottom;
-                vPageDataFmtBottom = vPageDataFmtTop + vContentHeight;
-        
+                vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+
                 _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
             }
             else
-            if (FPageData.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
-            {
-                if ((FPages[vPageIndex].StartDrawItemNo == ADrawItemNo)
-                    && (AStartSeat == 0)
-                    && (!vRectItem.CanPageBreak))
+                if (FPage.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
                 {
-                    vFmtHeightInc = vPageDataFmtBottom - FPageData.DrawItems[ADrawItemNo].Rect.Bottom;
-                    vSuplus = vSuplus + vFmtHeightInc;
-                    FPageData.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
-                    FPageData.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
-                    vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
-        
-                    return;
-                }
-        
-                RECT vDrawRect = FPageData.DrawItems[ADrawItemNo].Rect;
-                
-                //if vSuplus = 0 then  // 第一次计算分页
-                HC.InflateRect(ref vDrawRect, 0, -FPageData.GetLineBlankSpace(ADrawItemNo) / 2);  // 减掉行间距，为了达到去年行间距能放下不换页的效果
-        
-                vRectItem.CheckFormatPageBreak(  // 去除行间距后，判断表格跨页位置
-                    FPages.Count - 1,
-                    vDrawRect.Top,  // 表格的顶部位置 FPageData.DrawItems[ADrawItemNo].Rect.Top,
-                    vDrawRect.Bottom,  // 表格的底部位置 FPageData.DrawItems[ADrawItemNo].Rect.Bottom,
-                    vPageDataFmtTop,
-                    vPageDataFmtBottom,  // 当前页的数据底部位置
-                    AStartSeat,  // 起始位置
-                    ref vBreakSeat,  // 当前页分页的行(位置)
-                    ref vFmtOffset,  // 当前RectItem为了避开分页位置整体向下偏移的高度
-                    ref vFmtHeightInc  // 当前行各列为了避开分页位置单元格内容额外偏移的最大高度
-                    );
+                    if ((FPages[vPageIndex].StartDrawItemNo == ADrawItemNo)
+                        && (AStartSeat == 0)
+                        && (!vRectItem.CanPageBreak))
+                    {
+                        vFmtHeightInc = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Bottom;
+                        vSuplus = vSuplus + vFmtHeightInc;
+                        FPage.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
+                            FPage.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
+                        vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
 
-                if (vBreakSeat < 0)
-                {
-                    vSuplus = vSuplus + vPageDataFmtBottom - vDrawRect.Bottom;
+                        return;
+                    }
+
+                    RECT vDrawRect = FPage.DrawItems[ADrawItemNo].Rect;
+
+                    //if vSuplus = 0 then  // 第一次计算分页
+                    HC.InflateRect(ref vDrawRect, 0, -FPage.GetLineBlankSpace(ADrawItemNo) / 2);  // 减掉行间距，为了达到去年行间距能放下不换页的效果
+
+                    vRectItem.CheckFormatPageBreak(  // 去除行间距后，判断表格跨页位置
+                        FPages.Count - 1,
+                        vDrawRect.Top,  // 表格的顶部位置 FPageData.DrawItems[ADrawItemNo].Rect.Top,
+                        vDrawRect.Bottom,  // 表格的底部位置 FPageData.DrawItems[ADrawItemNo].Rect.Bottom,
+                        vPageDataFmtTop,
+                        vPageDataFmtBottom,  // 当前页的数据底部位置
+                        AStartSeat,  // 起始位置
+                        ref vBreakSeat,  // 当前页分页的行(位置)
+                        ref vFmtOffset,  // 当前RectItem为了避开分页位置整体向下偏移的高度
+                        ref vFmtHeightInc  // 当前行各列为了避开分页位置单元格内容额外偏移的最大高度
+                        );
+
+                    if (vBreakSeat < 0)
+                    {
+                        vSuplus = vSuplus + vPageDataFmtBottom - vDrawRect.Bottom;
+                    }
+                    else  // vBreakSeat >= 0 从vBreakSeat位置跨页
+                        if (vFmtOffset > 0)
+                        {
+                            vFmtOffset = vFmtOffset + FPage.GetLineBlankSpace(ADrawItemNo) / 2;  // 整体向下移动增加上面减掉的行间距
+                            vSuplus = vSuplus + vFmtOffset + vFmtHeightInc;
+
+                            HC.OffsetRect(ref FPage.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
+
+                            vPageDataFmtTop = vPageDataFmtBottom;
+                            vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+                            _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
+                            _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, AStartSeat, vPageHeight,
+                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);
+                        }
+                        else  // 跨页，但未整体下移
+                        {
+                            vSuplus = vSuplus + vFmtHeightInc;
+                            FPage.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
+                                FPage.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
+                            vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
+
+                            vPageDataFmtTop = vPageDataFmtBottom;
+                            vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+                            _FormatNewPage(ref vPageIndex, ADrawItemNo, ADrawItemNo);  // 新建页
+
+                            _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, AStartSeat, vPageHeight,
+                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);  // 从分页位置后面继续检查是否分页
+                        }
                 }
-                else  // vBreakSeat >= 0 从vBreakSeat位置跨页
-                if (vFmtOffset > 0)
-                {
-                    vFmtOffset = vFmtOffset + FPageData.GetLineBlankSpace(ADrawItemNo) / 2;  // 整体向下移动增加上面减掉的行间距
-                    vSuplus = vSuplus + vFmtOffset + vFmtHeightInc;
-                    HC.OffsetRect(ref FPageData.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
-                    vPageDataFmtTop = vPageDataFmtBottom;
-                    vPageDataFmtBottom = vPageDataFmtTop + vContentHeight;
-                    _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
-                    _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, AStartSeat, vContentHeight,
-                        vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);
-                 }
-                else  // 跨页，但未整体下移
-                {
-                    vSuplus = vSuplus + vFmtHeightInc;
-                    FPageData.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
-                        FPageData.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
-                    vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
-    
-                    vPageDataFmtTop = vPageDataFmtBottom;
-                    vPageDataFmtBottom = vPageDataFmtTop + vContentHeight;
-                    _FormatNewPage(ref vPageIndex, ADrawItemNo, ADrawItemNo);  // 新建页
-                    
-                    _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, AStartSeat, vContentHeight,
-                        vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);  // 从分页位置后面继续检查是否分页
-                }
-            }
         }
 
-        private void _FormatRectItemCheckPageBreak(int vPageDataFmtBottom, int vContentHeight,
+        private void _FormatRectItemCheckPageBreak(int vPageDataFmtBottom, int vPageHeight,
             ref int vPageIndex, ref int vPageDataFmtTop, int ADrawItemNo)
         {
-            HCCustomRectItem vRectItem;
             int vSuplus = 0;  // 所有因换页向下偏移量的总和
             int vBreakSeat = 0;  // 分页位置，不同RectItem的含义不同，表格表示 vBreakRow
 
-            vRectItem = FPageData.Items[FPageData.DrawItems[ADrawItemNo].ItemNo] as HCCustomRectItem;
-            vSuplus = 0;
-            vBreakSeat = 0;
-            
+            HCCustomRectItem vRectItem = FPage.Items[FPage.DrawItems[ADrawItemNo].ItemNo] as HCCustomRectItem;
+
             vRectItem.CheckFormatPageBreakBefor();
-            _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, 0, vContentHeight, vRectItem, 
+            _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, 0, vPageHeight, vRectItem,
                 ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);  // 从最开始位置，检测表格各行内容是否能显示在当前页
-            
+
             if (vSuplus != 0)
             {
-                for (int i = ADrawItemNo + 1; i <= FPageData.DrawItems.Count - 1; i++)
-                    HC.OffsetRect(ref FPageData.DrawItems[i].Rect, 0, vSuplus);
+                for (int i = ADrawItemNo + 1; i <= FPage.DrawItems.Count - 1; i++)
+                    HC.OffsetRect(ref FPage.DrawItems[i].Rect, 0, vSuplus);
             }
         }
 
-        private  void _FormatTextItemCheckPageBreak(int vContentHeight, int ADrawItemNo,
+        private void _FormatTextItemCheckPageBreak(int vPageHeight, int ADrawItemNo,
             ref int vPageDataFmtTop, ref int vPageDataFmtBottom, ref int vPageIndex)
         {
             //if not DrawItems[ADrawItemNo].LineFirst then Exit; // 注意如果文字环绕时这里就不能只判断行第1个
-            if (FPageData.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
+            if (FPage.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
             {
-                int vH = vPageDataFmtBottom - FPageData.DrawItems[ADrawItemNo].Rect.Top;
-                for (int i = ADrawItemNo; i <= FPageData.DrawItems.Count - 1; i++)
-                    HC.OffsetRect(ref FPageData.DrawItems[i].Rect, 0, vH);
-            
+                int vH = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Top;
+                for (int i = ADrawItemNo; i <= FPage.DrawItems.Count - 1; i++)
+                    HC.OffsetRect(ref FPage.DrawItems[i].Rect, 0, vH);
+
                 vPageDataFmtTop = vPageDataFmtBottom;
-                vPageDataFmtBottom = vPageDataFmtTop + vContentHeight;
+                vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
                 _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo); // 新建页
             }
-    }
-#endregion
+        }
+        #endregion
 
         /// <summary> 从正文指定Item开始重新计算页 </summary>
         /// <param name="aStartItemNo"></param>
-        public void BuildSectionPages(int aStartItemNo)
+        public void BuildSectionPages(int aStartDrawItemNo)
         {
-            int vPrioDrawItemNo = -1;
-            HCPage vPage = null;                
+            int vPrioDrawItemNo = aStartDrawItemNo;
+            HCPage vPage = null;
 
-            if (aStartItemNo > 0)
-                vPrioDrawItemNo = FPageData.GetItemLastDrawItemNo(aStartItemNo - 1);  // 上一个最后的DItem
-            else
-                vPrioDrawItemNo = -1;
-            
-            // 上一个DrawItemNo所在页作为格式化起始页
-            int vPageIndex = -1;
-            if (vPrioDrawItemNo < 0)
-                vPageIndex = 0;
-            else  // 指定了DrawItemNo
+            while (vPrioDrawItemNo > 0)
             {
-                for (int i = FPages.Count - 1; i >= 0; i--)  // 对于跨页的，按最后位置所在页，所以倒序
+                if (FPage.DrawItems[vPrioDrawItemNo].LineFirst)
+                    break;
+
+                vPrioDrawItemNo--;
+            }
+
+            vPrioDrawItemNo--;  // 上一行末尾
+            
+            int vPageIndex = 0;
+            if (vPrioDrawItemNo > 0)
+            {
+                for (int i = FPages.Count - 1; i >= 0; i--)  // 对于跨页的，按最后位置所在页，所以倒
                 {
                     vPage = FPages[i];
                     if ((vPrioDrawItemNo >= vPage.StartDrawItemNo)
@@ -2049,59 +2255,38 @@ namespace HC.View
                 }
             }
 
-            // 因为行首可能是分页，所以需要从行首开始判断跨页
-            for (int i = FPageData.Items[aStartItemNo].FirstDItemNo; i >= 0; i--)
-            {
-                if (FPageData.DrawItems[i].LineFirst)
-                {
-                    vPrioDrawItemNo = i;
-                    break;
-                }
-            }
+            FPages.RemoveRange(vPageIndex + 1, FPages.Count - vPageIndex - 1);  // 删除当前页后面的，准备格式化
 
-            if (vPrioDrawItemNo == FPages[vPageIndex].StartDrawItemNo)
-            {
-                FPages.RemoveRange(vPageIndex, FPages.Count - vPageIndex);  // 删除当前页一直到最后
-                
-                // 从上一页最后开始计算分页
-                vPageIndex--;
-                if (vPageIndex >= 0)
-                    FPages[vPageIndex].EndDrawItemNo = -1;
-            }
-            else  // 行首不是页的第一个DrawItem
-                FPages.RemoveRange(vPageIndex + 1, FPages.Count - vPageIndex - 1);  // 删除当前页后面的，准备格式化
-            
             if (FPages.Count == 0)
             {
-            
                 vPage = new HCPage();
-                vPage.StartDrawItemNo = vPrioDrawItemNo;
+                vPage.StartDrawItemNo = 0;
                 FPages.Add(vPage);
                 vPageIndex = 0;
             }
 
             int vPageDataFmtTop = GetPageDataFmtTop(vPageIndex);
-            int vContentHeight = GetContentHeight();
-            int vPageDataFmtBottom = vPageDataFmtTop + vContentHeight;
-            
-            for (int i = vPrioDrawItemNo; i <= FPageData.DrawItems.Count - 1; i++)
+            int vPageHeight = GetPageHeight();
+            int vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+
+            for (int i = vPrioDrawItemNo + 1; i <= FPage.DrawItems.Count - 1; i++)
             {
-                if (FPageData.DrawItems[i].LineFirst)
+                if (FPage.DrawItems[i].LineFirst)
                 {
-                    if (FPageData.Items[FPageData.DrawItems[i].ItemNo].StyleNo < HCStyle.Null)
-                        _FormatRectItemCheckPageBreak(vPageDataFmtBottom, vContentHeight, ref vPageIndex, ref vPageDataFmtTop, i);
+                    if (FPage.GetDrawItemStyle(i) < HCStyle.Null)
+                        _FormatRectItemCheckPageBreak(vPageDataFmtBottom, vPageHeight, ref vPageIndex, ref vPageDataFmtTop, i);
                     else
-                        _FormatTextItemCheckPageBreak(vContentHeight, i, ref vPageDataFmtTop, ref vPageDataFmtBottom, ref vPageIndex);
+                        _FormatTextItemCheckPageBreak(vPageHeight, i, ref vPageDataFmtTop, ref vPageDataFmtBottom, ref vPageIndex);
                 }
             }
 
-            FPages[vPageIndex].EndDrawItemNo = FPageData.DrawItems.Count - 1;
-            FActivePageIndex = GetPageIndexByCurrent();
-            
-            for (int i = FPageData.FloatItems.Count - 1; i >= 0; i--)  // 正文中删除页序号超过页总数的FloatItem
+            FPages[vPageIndex].EndDrawItemNo = FPage.DrawItems.Count - 1;
+            SetActivePageIndex(GetPageIndexByCurrent());
+
+            for (int i = FPage.FloatItems.Count - 1; i >= 0; i--)  // 正文中删除页序号超过页总数的FloatItem
             {
-                if (FPageData.FloatItems[i].PageIndex > FPages.Count - 1)
-                    FPageData.FloatItems.RemoveAt(i);
+                if (FPage.FloatItems[i].PageIndex > FPages.Count - 1)
+                    FPage.FloatItems.RemoveAt(i);
             }
         }
 
@@ -2118,6 +2303,27 @@ namespace HC.View
         public void DisSelect()
         {
             FActiveData.GetTopLevelData().DisSelect();
+        }
+
+        public bool DeleteActiveDomain()
+        {
+            HCFunction vEvent = delegate()
+            {
+                return FActiveData.DeleteActiveDomain();
+            };
+
+            return ActiveDataChangeByAction(vEvent);
+        }
+
+        public bool DeleteActiveDataItems(int aStartNo, int aEndNo)
+        {
+            HCFunction vEvent = delegate()
+            {
+                FActiveData.DeleteActiveDataItems(aStartNo, aEndNo);
+                return true;
+            };
+
+            return ActiveDataChangeByAction(vEvent);
         }
 
         public bool MergeTableSelectCells()
@@ -2155,31 +2361,33 @@ namespace HC.View
         public int GetHeaderAreaHeight()
         {
             int Result = FHeaderOffset + FHeader.Height;
-            if (Result < FPageSize.PageMarginTopPix)
-                Result = FPageSize.PageMarginTopPix;
+            if (Result < FPaper.MarginTopPix)
+                Result = FPaper.MarginTopPix;
 
             return Result;
         }
 
-        public int GetContentHeight()
+        public int GetPageHeight()
         {
-            return FPageSize.PageHeightPix  // 节页面正文区域高度，即页面除页眉、页脚后净高
-                - FPageSize.PageMarginBottomPix - GetHeaderAreaHeight();
+            return FPaper.HeightPix - GetHeaderAreaHeight() - FPaper.MarginBottomPix;
         }
 
-        public int GetContentWidth()
+        public int GetPageWidth()
         {
-            return FPageSize.PageWidthPix - FPageSize.PageMarginLeftPix - FPageSize.PageMarginRightPix;
+            return FPaper.WidthPix - FPaper.MarginLeftPix - FPaper.MarginRightPix;
         }
 
         public int GetFilmHeight()
         {
-            return FPages.Count * (HC.PagePadding + FPageSize.PageHeightPix);
+            if (FViewModel == HCViewModel.hvmFilm)
+                return FPages.Count * (FPagePadding + FPaper.HeightPix);
+            else
+                return FPages.Count * GetPageHeight();
         }
 
         public int GetFilmWidth()
         {
-            return FPages.Count * (HC.PagePadding + FPageSize.PageWidthPix);
+            return FPages.Count * (FPagePadding + FPaper.WidthPix);
         }
 
         /// <summary> 标记样式是否在用或删除不使用的样式后修正样式序号 </summary>
@@ -2193,7 +2401,7 @@ namespace HC.View
                 FFooter.MarkStyleUsed(aMark);
 
             if (aParts.Contains(SectionArea.saPage))
-                FPageData.MarkStyleUsed(aMark);
+                FPage.MarkStyleUsed(aMark);
         }
 
         public void SaveToStream(Stream aStream, HashSet<SectionArea> aSaveParts)
@@ -2211,37 +2419,37 @@ namespace HC.View
                 aStream.Write(vBuffer, 0, vBuffer.Length);  // 是否对称页边距
 
                 aStream.WriteByte((byte)FPageOrientation);  // 纸张方向
-                
+
                 vBuffer = BitConverter.GetBytes(FPageNoVisible);
                 aStream.Write(vBuffer, 0, vBuffer.Length);  // 是否显示页码
-                
-                FPageSize.SaveToStream(aStream);  // 页面参数
-                
+
+                FPaper.SaveToStream(aStream);  // 页面参数
+
                 bool vArea = aSaveParts.Contains(SectionArea.saHeader);  // 存页眉
                 vBuffer = BitConverter.GetBytes(vArea);
-                aStream.Write(vBuffer, 0, vBuffer.Length); 
+                aStream.Write(vBuffer, 0, vBuffer.Length);
 
                 vArea = aSaveParts.Contains(SectionArea.saFooter);  // 存页脚
                 vBuffer = BitConverter.GetBytes(vArea);
-                aStream.Write(vBuffer, 0, vBuffer.Length); 
+                aStream.Write(vBuffer, 0, vBuffer.Length);
 
                 vArea = aSaveParts.Contains(SectionArea.saPage);  // 存页面
                 vBuffer = BitConverter.GetBytes(vArea);
-                aStream.Write(vBuffer, 0, vBuffer.Length); 
+                aStream.Write(vBuffer, 0, vBuffer.Length);
 
-                if (aSaveParts.Contains(SectionArea.saHeader))
+                if (aSaveParts.Contains(SectionArea.saHeader))  // 存页眉
                 {
                     vBuffer = BitConverter.GetBytes(FHeaderOffset);
                     aStream.Write(vBuffer, 0, vBuffer.Length);
-            
+
                     FHeader.SaveToStream(aStream);
                 }
-                
-                if (aSaveParts.Contains(SectionArea.saFooter))
+
+                if (aSaveParts.Contains(SectionArea.saFooter))  // 存页脚
                     FFooter.SaveToStream(aStream);
-                
-                if (aSaveParts.Contains(SectionArea.saPage))
-                    FPageData.SaveToStream(aStream);
+
+                if (aSaveParts.Contains(SectionArea.saPage))  // 存页面
+                    FPage.SaveToStream(aStream);
             }
             //
             vBuffer = BitConverter.GetBytes(vBegPos);
@@ -2257,10 +2465,10 @@ namespace HC.View
 
         public string SaveToText()
         {
-            return FPageData.SaveToText();
+            return FPage.SaveToText();
         }
 
-        public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion, bool aNatural = false)
         {
             long vDataSize = 0;
             bool vArea = false;
@@ -2285,8 +2493,8 @@ namespace HC.View
                 FPageNoVisible = BitConverter.ToBoolean(vBuffer, 0);
             }
 
-            FPageSize.LoadToStream(aStream, aFileVersion);  // 页面参数
-            FPageData.Width = GetContentWidth();
+            FPaper.LoadToStream(aStream, aFileVersion);  // 页面参数
+            FPage.Width = GetPageWidth();
 
             // 文档都有哪些部件的数据
             vLoadParts.Clear();
@@ -2314,20 +2522,21 @@ namespace HC.View
                 vBuffer = BitConverter.GetBytes(FHeaderOffset);
                 aStream.Read(vBuffer, 0, vBuffer.Length);
                 FHeaderOffset = BitConverter.ToInt32(vBuffer, 0);
-                FHeader.Width = FPageData.Width;
+                FHeader.Width = FPage.Width;
                 FHeader.LoadFromStream(aStream, FStyle, aFileVersion);
             }
 
             if (vLoadParts.Contains(SectionArea.saFooter))
             {
-                FFooter.Width = FPageData.Width;
+                FFooter.Width = FPage.Width;
                 FFooter.LoadFromStream(aStream, FStyle, aFileVersion);
             }
 
             if (vLoadParts.Contains(SectionArea.saPage))
-                FPageData.LoadFromStream(aStream, FStyle, aFileVersion);
+                FPage.LoadFromStream(aStream, FStyle, aFileVersion);
 
-            BuildSectionPages(0);
+            if (!aNatural)
+                BuildSectionPages(0);
         }
 
         public bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -2343,9 +2552,9 @@ namespace HC.View
         public void FormatData()
         {
             FActiveData.DisSelect();  // 先清选中，防止格式化后选中位置不存在
-            FHeader.ReFormat(0);
-            Footer.ReFormat(0);
-            FPageData.ReFormat(0);
+            FHeader.ReFormat();
+            Footer.ReFormat();
+            FPage.ReFormat();
         }
 
         /// <summary> 设置选中范围(如不需要更新界面可直接调用Data的SetSelectBound) </summary>
@@ -2358,7 +2567,7 @@ namespace HC.View
 
             DoActiveDataCheckUpdateInfo();
         }
-        
+
         public void Undo(HCUndo aUndo)
         {
             HCUndoList vUndoList = DoDataGetUndoList();
@@ -2401,10 +2610,10 @@ namespace HC.View
 
         // 属性
         // 页面
-        public System.Drawing.Printing.PaperKind PaperKind
+        public System.Drawing.Printing.PaperKind PaperSize
         {
-            get { return GetPaperKind(); }
-            set { SetPaperKind(value); }
+            get { return GetPaperSize(); }
+            set { SetPaperSize(value); }
         }
 
         public Single PaperWidth
@@ -2450,34 +2659,34 @@ namespace HC.View
         }
 
         //
-        public int PageWidthPix
+        public int PaperWidthPix
         {
-            get { return GetPageWidthPix(); }
+            get { return GetPaperWidthPix(); }
         }
 
-        public int PageHeightPix
+        public int PaperHeightPix
         {
-            get { return GetPageHeightPix(); }
+            get { return GetPaperHeightPix(); }
         }
 
-        public int PageMarginTopPix
+        public int PaperMarginTopPix
         {
-            get { return GetPageMarginTopPix(); }
+            get { return GetPaperMarginTopPix(); }
         }
 
-        public int PageMarginLeftPix
+        public int PaperMarginLeftPix
         {
-            get { return GetPageMarginLeftPix(); }
+            get { return GetPaperMarginLeftPix(); }
         }
 
-        public int PageMarginRightPix
+        public int PaperMarginRightPix
         {
-            get { return GetPageMarginRightPix(); }
+            get { return GetPaperMarginRightPix(); }
         }
 
-        public int PageMarginBottomPix
+        public int PaperMarginBottomPix
         {
-            get { return GetPageMarginBottomPix(); }
+            get { return GetPaperMarginBottomPix(); }
         }
 
         public int HeaderOffset
@@ -2496,9 +2705,19 @@ namespace HC.View
             get { return FFooter; }
         }
 
-        public HCPageData PageData
+        public HCPageData Page
         {
-            get { return FPageData; }
+            get { return FPage; }
+        }
+
+        public int CurStyleNo
+        {
+            get { return GetCurStyleNo(); }
+        }
+
+        public int CurParaNo
+        {
+            get { return GetCurParaNo(); }
         }
 
         /// <summary> 当前文档激活区域(页眉、页脚、页面)的数据对象 </summary>
@@ -2517,6 +2736,12 @@ namespace HC.View
         public int ActivePageIndex
         {
             get { return FActivePageIndex; }
+        }
+
+        public HCViewModel ViewModel
+        {
+            get { return FViewModel; }
+            set { FViewModel = value; }
         }
 
         /// <summary> 是否对称边距 </summary>
@@ -2553,6 +2778,12 @@ namespace HC.View
         {
             get { return FPageNoFrom; }
             set { FPageNoFrom = value; }
+        }
+
+        public byte PagePadding
+        {
+            get { return FPagePadding; }
+            set { FPagePadding = value; }
         }
 
         /// <summary> 文档所有部分是否只读 </summary>
@@ -2616,34 +2847,34 @@ namespace HC.View
             set { FOnItemMouseUp = value; }
         }
 
-        public SectionPagePaintEventHandler OnPaintHeader
+        public SectionPaintEventHandler OnPaintHeader
         {
             get { return FOnPaintHeader; }
             set { FOnPaintHeader = value; }
         }
 
-        public SectionPagePaintEventHandler OnPaintFooter
+        public SectionPaintEventHandler OnPaintFooter
         {
             get { return FOnPaintFooter; }
             set { FOnPaintFooter = value; }
         }
 
-        public SectionPagePaintEventHandler OnPaintPage
+        public SectionPaintEventHandler OnPaintPage
         {
             get { return FOnPaintPage; }
             set { FOnPaintPage = value; }
         }
 
-        public SectionPagePaintEventHandler OnPaintWholePageBefor
+        public SectionPaintEventHandler OnPaintPaperBefor
         {
-            get { return FOnPaintWholePageBefor; }
-            set { FOnPaintWholePageBefor = value; }
+            get { return FOnPaintPaperBefor; }
+            set { FOnPaintPaperBefor = value; }
         }
 
-        public SectionPagePaintEventHandler OnPaintWholePageAfter
+        public SectionPaintEventHandler OnPaintPaperAfter
         {
-            get { return FOnPaintWholePageAfter; }
-            set { FOnPaintWholePageAfter = value; }
+            get { return FOnPaintPaperAfter; }
+            set { FOnPaintPaperAfter = value; }
         }
 
         public SectionDrawItemPaintEventHandler OnDrawItemPaintBefor
@@ -2706,10 +2937,16 @@ namespace HC.View
             set { FOnGetUndoList = value; }
         }
 
-        protected HCPageSize PageSize
+        public EventHandler OnCurParaNoChange
         {
-            get { return FPageSize; }
-            set { FPageSize = value; }
+            get { return FOnCurParaNoChange; }
+            set { FOnCurParaNoChange = value; }
+        }
+
+        public EventHandler OnActivePageChange
+        {
+            get { return FOnActivePageChange; }
+            set { FOnActivePageChange = value; }
         }
     }
 
@@ -2767,7 +3004,7 @@ namespace HC.View
 
         public string ToHtml(string aPath)
         {
-            return PageData.ToHtml(aPath);
+            return Page.ToHtml(aPath);
         }
 
         public void ToXml(XmlElement aNode)
@@ -2777,15 +3014,15 @@ namespace HC.View
             aNode.Attributes["pagenovisible"].Value = PageNoVisible.ToString();  // 是否显示页码
 
             aNode.Attributes["pagesize"].Value =  // 纸张大小
-                ((int)PageSize.PaperKind).ToString()
-                + "," + string.Format("{0:0.#}", PageSize.PaperWidth)
-                + "," + string.Format("{0:0.#}", PageSize.PaperHeight);
+                ((int)this.PaperSize).ToString()
+                + "," + string.Format("{0:0.#}", this.PaperWidth)
+                + "," + string.Format("{0:0.#}", this.PaperHeight);
 
             aNode.Attributes["margin"].Value =  // 边距
-                string.Format("{0:0.#}", PageSize.PaperMarginLeft) + ","
-                + string.Format("{0:0.#}", PageSize.PaperMarginTop) + ","
-                + string.Format("{0:0.#}", PageSize.PaperMarginRight) + ","
-                + string.Format("{0:0.#}", PageSize.PaperMarginBottom);
+                string.Format("{0:0.#}", this.PaperMarginLeft) + ","
+                + string.Format("{0:0.#}", this.PaperMarginTop) + ","
+                + string.Format("{0:0.#}", this.PaperMarginRight) + ","
+                + string.Format("{0:0.#}", this.PaperMarginBottom);
 
             // 存页眉
             XmlElement vNode = aNode.OwnerDocument.CreateElement("header");
@@ -2800,7 +3037,7 @@ namespace HC.View
 
             // 存页面
             vNode = aNode.OwnerDocument.CreateElement("page");
-            PageData.ToXml(vNode);
+            this.Page.ToXml(vNode);
             aNode.AppendChild(vNode);
         }
 
@@ -2810,17 +3047,18 @@ namespace HC.View
             PageOrientation = (PageOrientation)(byte.Parse(aNode.Attributes["ori"].Value));  // 纸张方向
 
             PageNoVisible = bool.Parse(aNode.Attributes["pagenovisible"].Value);  // 是否对称页边距
-            
-            string[] vStrings = aNode.Attributes["pagesize"].Value.Split(new string[] { "," }, StringSplitOptions.None);
-            PageSize.PaperKind = (PaperKind)(int.Parse(vStrings[0]));
-            PageSize.PaperWidth = int.Parse(vStrings[1]);
-            PageSize.PaperHeight = int.Parse(vStrings[2]);
 
+            // GetXmlPaper_
+            string[] vStrings = aNode.Attributes["pagesize"].Value.Split(new string[] { "," }, StringSplitOptions.None);
+            this.PaperSize = (PaperKind)(int.Parse(vStrings[0]));
+            this.PaperWidth = int.Parse(vStrings[1]);
+            this.PaperHeight = int.Parse(vStrings[2]);
+            // GetXmlPaperMargin_
             vStrings = aNode.Attributes["margin"].Value.Split(new string[] { "," }, StringSplitOptions.None);
-            PageSize.PaperMarginLeft = int.Parse(vStrings[0]);
-            PageSize.PaperMarginTop = int.Parse(vStrings[1]);
-            PageSize.PaperMarginRight = int.Parse(vStrings[2]);
-            PageSize.PaperMarginBottom = int.Parse(vStrings[3]);
+            this.PaperMarginLeft = int.Parse(vStrings[0]);
+            this.PaperMarginTop = int.Parse(vStrings[1]);
+            this.PaperMarginRight = int.Parse(vStrings[2]);
+            this.PaperMarginBottom = int.Parse(vStrings[3]);
 
             for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
             {
@@ -2834,7 +3072,7 @@ namespace HC.View
                     Footer.ParseXml(aNode.ChildNodes[i] as XmlElement);
                 else
                 if (aNode.ChildNodes[i].Name == "page")
-                    PageData.ParseXml(aNode.ChildNodes[i] as XmlElement);
+                    this.Page.ParseXml(aNode.ChildNodes[i] as XmlElement);
             }
 
             BuildSectionPages(0);

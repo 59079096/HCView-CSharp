@@ -54,11 +54,15 @@ namespace HC.View
 
         public static System.Windows.Forms.Cursor GCursor;
 
+        public const byte
+            HC_PROGRAMLANGUAGE = 2,  // 1字节表示使用的编程语言 1:delphi, 2:C#, 3:VC++, 4:HTML5
+            TabCharWidth = 28;  // 默认Tab宽度(五号) 14 * 2个
+
         public const int
-              LineSpaceMin = 8,  // 行间距最小值
-              PagePadding = 20,  // 节页面显示时之间的间距
+              DefaultColWidth = 50,
               PMSLineHeight = 24,  // 书写范围线的长度
-              AnnotationWidth = 200;  // 批注显示区域宽度
+              AnnotationWidth = 200,  // 批注显示区域宽度
+              DMPAPER_HC_16K = -1000;
 
         public const string 
             HC_EXCEPTION = "HC异常：",
@@ -70,11 +74,26 @@ namespace HC.View
             HCS_EXCEPTION_VOIDSOURCECELL = HC_EXCEPTION + "源单元格无法再获取源单元格！",
             HCS_EXCEPTION_TIMERRESOURCEOUTOF = HC_EXCEPTION + "安装计时器的资源不足！",
 
+            #if UNPLACEHOLDERCHAR
+            UnPlaceholderChar = "\u0F74\u0F7A\u0F7C\u0F72"
+                + "\u0FB8\u0F7E\u0F83\u0F37\u0F35\u0F7F\u0FB7\u0FBA\u0F95"
+                + "\u0F96\u0F7B\u0FB2\u0F9F\u0FB1\u0FAD\u0F80\u0F7D\u0FA5"
+                + "\u0FA9\u0FAA\u0FAB\u0FB0\u0FB6\u0FA1\u0FA6\u0F94\u0FA8"
+                + "\u0F84\u0F92\u0F92\u0FAE\u0FAF\u0FB4\u0F90\u0F91\u0FA4"
+                + "\u0FA3\u0FA0\u0F97\u0F99\u0FBC\u0FBB\u0F19\u0F71\u0F3E"
+                + "\u0F3F\u0F87\u0F86\u0F76\u0F77\u0F78\u0F79\u0F73\u0F9A"
+                + "\u0F75\u0F73\u0F9C\u0FC6\u0FB5\u0FB9\u0F82\u0F9E\u0F9B",
+            #endif
             // 不能在行首的字符
-            DontLineFirstChar = @"`-=[]\;,./~!@#$%^&*()_+{}|:""<>?·－＝【】＼；’，。、～！＠＃￥％……＆×（）——＋｛｝｜：”《》？°",
+            DontLineFirstChar = @"`-=[]\;,./~!@#$%^&*()_+{}|:""<>?·－＝【】＼；’，。、～！＠＃￥％……＆×（）——＋｛｝｜：”《》？°"
+            #if UNPLACEHOLDERCHAR
+                + UnPlaceholderChar
+            #endif
+                ,
             DontLineLastChar = @"/\＼“‘",
             sLineBreak = "\r\n",
             HC_EXT = ".hcf",
+            HC_EXT_DOCX = ".docx",
 
             // 1.3 支持浮动对象保存和读取(未处理向下兼容)
             // 1.4 支持表格单元格边框显示属性的保存和读取
@@ -86,18 +105,28 @@ namespace HC.View
             // 2.0 ImageItem存图像时增加图像数据大小的存储以兼容不同语言图像数据的存储方式
             // 2.1 GifImage保存读取改用兼容其他语言的方式
             // 2.2 增加段缩进的存储
-            HC_FileVersion = "2.2";
+            // 2.3 增加批注的保存和读取
+            // 2.4 兼容EmrView保存保护元素属性
+            // 2.5 使用unicode字符集保存文档以便支持藏文等
+            HC_FileVersion = "2.5";
 
         public const ushort
-            HC_FileVersionInt = 22;
+            HC_FileVersionInt = 25;
 
-        public const byte
-            HC_PROGRAMLANGUAGE = 2,  // 1字节表示使用的编程语言 1:delphi, 2:C#, 3:VC++, 4:HTML5
-            TabCharWidth = 28;  // 默认Tab宽度(五号) 14 * 2个
+        public static ushort SwapBytes(ushort aValue)
+        {
+            return (ushort)((aValue >> 8) | ((ushort)(aValue << 8)));
+        }
 
         public static bool IsKeyPressWant(KeyPressEventArgs aKey)
         {
+            #if UNPLACEHOLDERCHAR
+            return ((aKey.KeyChar >= 32) && (aKey.KeyChar <= 126))
+                || ((aKey.KeyChar >= 3840) && (aKey.KeyChar <= 4095))  // 藏文
+                || ((aKey.KeyChar >= 6144) && (aKey.KeyChar <= 6319));  // 蒙古文
+            #else
             return (aKey.KeyChar >= 32) && (aKey.KeyChar <= 126);
+            #endif
         }
 
         public static bool IsKeyDownWant(int aKey)
@@ -112,6 +141,67 @@ namespace HC.View
                 || (aKey == User.VK_HOME)
                 || (aKey == User.VK_END)
                 || (aKey == User.VK_TAB));
+        }
+
+        public static bool IsKeyDownEdit(int aKey)
+        {
+            return ((aKey == User.VK_BACK)
+                || (aKey == User.VK_DELETE)
+                || (aKey == User.VK_RETURN)
+                || (aKey == User.VK_TAB));
+        }
+
+        public static bool IsDirectionKey(int aKey)
+        {
+            return ((aKey == User.VK_LEFT)
+                || (aKey == User.VK_UP)
+                || (aKey == User.VK_RIGHT)
+                || (aKey == User.VK_DOWN));
+        }
+
+        public static IntPtr CreateExtPen(HCPen aPen)
+        {
+            LOGBRUSH vPenParams = new LOGBRUSH();
+
+            switch (aPen.Style)
+            {
+                case HCPenStyle.psSolid:
+                case HCPenStyle.psInsideFrame:
+                    vPenParams.lbStyle = GDI.PS_SOLID;
+                    break;
+
+                case HCPenStyle.psDash:
+                    vPenParams.lbStyle = GDI.PS_DASH;
+                    break;
+
+                case HCPenStyle.psDot:
+                    vPenParams.lbStyle = GDI.PS_DOT;
+                    break;
+
+                case HCPenStyle.psDashDot:
+                    vPenParams.lbStyle = GDI.PS_DASHDOT;
+                    break;
+
+                case HCPenStyle.psDashDotDot:
+                    vPenParams.lbStyle = GDI.PS_DASHDOTDOT;
+                    break;
+
+                case HCPenStyle.psClear:
+                    vPenParams.lbStyle = GDI.PS_NULL;
+                    break;
+
+                default:
+                    vPenParams.lbStyle = GDI.PS_SOLID;
+                    break;
+            }
+
+            vPenParams.lbColor = aPen.Color.ToRGB_UInt();
+            vPenParams.lbHatch = 0;
+
+            if (aPen.Width != 1)
+                return (IntPtr)(GDI.ExtCreatePen(GDI.PS_GEOMETRIC | GDI.PS_ENDCAP_SQUARE, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
+            else
+                return (IntPtr)(GDI.ExtCreatePen(GDI.PS_COSMETIC | GDI.PS_ENDCAP_SQUARE, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
         }
 
         public static int PosCharHC(Char aChar, string aStr)
@@ -129,30 +219,133 @@ namespace HC.View
             return Result;
         }
 
-        public static int GetCharOffsetAt(HCCanvas aCanvas, string aText, int x)
+        #if UNPLACEHOLDERCHAR
+        public static bool IsUnPlaceHolderChar(char aChar)
+        {
+            return HC.UnPlaceholderChar.IndexOf(aChar) >= 0;
+        }
+
+        public static int GetTextActualOffset(string aText, int aOffset, bool aAfter = false)
+        {
+            int Result = aOffset;
+
+            int vLen = aText.Length;
+            if (aAfter)
+            {
+                while (Result < vLen)
+                {
+                    if (HC.UnPlaceholderChar.IndexOf(aText[Result + 1 - 1]) >= 0)
+                        Result++;
+                    else
+                        break;
+                }
+            }
+            else
+            {
+                while (Result > 1)
+                {
+                    if (HC.UnPlaceholderChar.IndexOf(aText[Result - 1]) >= 0)
+                        Result--;
+                    else
+                        break;
+                }
+            }
+
+            return Result;
+        }
+
+        public static int GetCharHalfFarfrom(string aText, int aOffset, int[] aCharWArr)
+        {
+            int Result = 0;
+
+            int vEndOffs = GetTextActualOffset(aText, aOffset, true);
+            int vBeginOffs = GetTextActualOffset(aText, aOffset) - 1;
+
+            if (vBeginOffs > 0)
+            {
+                if (vEndOffs == vBeginOffs)
+                {
+                    if (vBeginOffs > 1)
+                        Result = aCharWArr[vBeginOffs - 2] + ((aCharWArr[vEndOffs - 1] - aCharWArr[vBeginOffs - 2]) / 2);
+                    else
+                        Result = aCharWArr[vBeginOffs - 1] / 2;
+                }
+                else
+                    Result = aCharWArr[vBeginOffs - 1] + ((aCharWArr[vEndOffs - 1] - aCharWArr[vBeginOffs - 1]) / 2);
+            }
+            else
+                Result = aCharWArr[vEndOffs - 1] / 2;
+
+            return Result;
+        }
+        #else
+        public static int GetCharHalfFarfrom(int aOffset, int[] aCharWArr)
+        {
+            int Result = 0;
+
+            if (aOffset > 1)
+                Result = aCharWArr[aOffset - 2] + ((aCharWArr[aOffset - 1] - aCharWArr[aOffset - 2]) / 2);
+            else
+            if (aOffset == 1)
+                Result = aCharWArr[aOffset - 1] / 2;
+
+            return Result;
+        }
+        #endif
+
+        public static int GetNorAlignCharOffsetAt(HCCanvas aCanvas, string aText, int x)
         {
             int Result = -1;
+
             if (x < 0)
                 Result = 0;
             else
-            if (x > aCanvas.TextWidth(aText))
-                Result = aText.Length;
-            else
             {
-                int vX = 0, vCharWidth = 0;
+                int vLen = aText.Length;
+                int[] vCharWArr = new int[vLen];
+                SIZE vSize = new SIZE(0, 0);
+                aCanvas.GetTextExtentExPoint(aText, vLen, vCharWArr, ref vSize);
 
-                for (int i = 1; i <= aText.Length; i++)
+                if (x > vSize.cx)
+                    Result = vLen;
+                else
                 {
-                    vCharWidth = aCanvas.TextWidth(aText[i - 1]);
-                    vX = vX + vCharWidth;
-                    if (vX > x)
+                    int i = 1;
+                    while (i <= vLen)
                     {
-                        if (vX - vCharWidth / 2 > x)
-                            Result = i - 1;  // 计为前一个后面
-                        else
-                            Result = i;
+                        #if UNPLACEHOLDERCHAR
+                        i = HC.GetTextActualOffset(aText, i, true);
+                        #endif
 
-                        break;
+                        if (x < vCharWArr[i - 1])
+                        {
+                            Result = i;
+                            break;
+                        }
+                        else
+                        if (x > vCharWArr[i - 1])
+                            i++;
+                        else
+                        {
+                            if (x > HC.GetCharHalfFarfrom(
+                                #if UNPLACEHOLDERCHAR
+                                aText,
+                                #endif
+                                i, vCharWArr))
+                            {
+                                Result = i;
+                            }
+                            else
+                            {
+                                #if UNPLACEHOLDERCHAR
+                                Result = HC.GetTextActualOffset(aText, i) - 1;
+                                #else
+                                Result = i - 1;
+                                #endif
+                            }
+
+                            break;
+                        }
                     }
                 }
             }
@@ -322,7 +515,7 @@ namespace HC.View
 
         public static void HCSaveTextToStream(Stream aStream, string s)
         {
-            int vLen = System.Text.Encoding.Default.GetByteCount(s);
+            int vLen = System.Text.Encoding.Unicode.GetByteCount(s);
             if (vLen > ushort.MaxValue)
                 throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
 
@@ -331,7 +524,7 @@ namespace HC.View
             aStream.Write(vBuffer, 0, vBuffer.Length);
             if (vSize > 0)
             {
-                vBuffer = System.Text.Encoding.Default.GetBytes(s);
+                vBuffer = System.Text.Encoding.Unicode.GetBytes(s);
                 aStream.Write(vBuffer, 0, vBuffer.Length);
             }
         }
@@ -347,7 +540,11 @@ namespace HC.View
             {
                 vBuffer = new byte[vSize];
                 aStream.Read(vBuffer, 0, vSize);
-                s = System.Text.Encoding.Default.GetString(vBuffer);
+
+                if (HC.HC_FileVersionInt > 24)
+                    s = System.Text.Encoding.Unicode.GetString(vBuffer);
+                else
+                    s = System.Text.Encoding.Default.GetString(vBuffer);
             }
             else
                 s = "";
@@ -515,92 +712,6 @@ namespace HC.View
             MemoryStream vStream = new MemoryStream(vArr);
             aGraphic = Image.FromStream(vStream);
         }
-        
-        public static BreakPosition MatchBreak(CharType aPrevType, CharType aPosType, string aText, int aIndex)
-        {
-            switch (aPosType)
-            {
-                case CharType.jctHZ:
-                    {
-                        if ((aPrevType == CharType.jctZM) 
-                            || (aPrevType == CharType.jctSZ) 
-                            || (aPrevType == CharType.jctHZ)
-                            || (aPrevType == CharType.jctFH))  // 当前位置是汉字，前一个是字母、数字、汉字
-                        {
-                            return BreakPosition.jbpPrev;
-                        }
-                    }
-                    break;
-
-                case CharType.jctZM:
-                    {
-                        if ((aPrevType != CharType.jctZM) && (aPrevType != CharType.jctSZ)) // 当前是字母，前一个不是数字、字母
-                        {
-                            return BreakPosition.jbpPrev;
-                        }
-                    }
-                    break;
-
-                case CharType.jctSZ:
-                    {
-                        switch (aPrevType)
-                        {
-                            case CharType.jctZM:
-                            case CharType.jctSZ:
-                                break;
-
-                            case CharType.jctFH:
-                                {
-                                    if (aText.Substring(aIndex - 1) == "￠")
-                                    {
-
-                                    }
-                                    else
-                                    {
-                                        string vChar = aText.Substring(aIndex - 1 - 1, 1);
-                                        if ((vChar != ".") && (vChar != ":") && (vChar != "-") && (vChar != "^") && (vChar != "*") && (vChar != "/"))
-                                            return BreakPosition.jbpPrev;
-                                    }
-                                }
-                                break;
-
-                            default:
-                                return BreakPosition.jbpPrev;
-                        }
-                    }
-                    break;
-
-                case CharType.jctFH:
-                    {
-                        switch (aPrevType)
-                        {
-                            case CharType.jctFH:
-                                break;
-
-                            case CharType.jctSZ:
-                                {
-                                    string vChar = aText.Substring(aIndex - 1, 1);
-                                    if ((vChar != ".") && (vChar != ":") && (vChar != "-") && (vChar != "^") && (vChar != "*") && (vChar != "/"))
-                                        return BreakPosition.jbpPrev;
-                                }
-                                break;
-
-                            case CharType.jctZM:
-                                {
-                                    if (aText.Substring(aIndex - 1, 1) != ":")
-                                        return BreakPosition.jbpPrev;
-                                }
-                                break;
-
-                            default:
-                                return BreakPosition.jbpPrev;
-                        }
-                    }
-                    break;
-            }
-
-            return BreakPosition.jbpNone;
-        }
 
         public static CharType GetUnicodeCharType(uint aChar)
         {
@@ -627,8 +738,8 @@ namespace HC.View
                 )
                 return CharType.jctHZ;  // 汉字
 
-            if ((aChar >= 0xF00) && (aChar <= 0xFFF))
-                return CharType.jctHZ;  // 汉字，藏语
+            if ((aChar >= 0x0F00) && (aChar <= 0x0FFF))
+                return CharType.jctHZ;  // 汉字，藏文
 
             if ((aChar >= 0x1800) && (aChar <= 0x18AF))
                 return CharType.jctHZ;  // 汉字，蒙古字符
@@ -719,14 +830,6 @@ namespace HC.View
 
     }
 
-    public enum HCViewModel : byte
-    {
-        [Description("页面视图")]
-        vmPage,  // 页面视图，显示页眉、页脚
-        [Description("Web视图")]
-        vmWeb  // Web视图，不显示页眉、页脚
-    }
-
     public enum SectionArea : byte  // 当前激活的是文档哪一部分
     {
         saHeader = 1, 
@@ -738,6 +841,12 @@ namespace HC.View
     {
         jbpNone,  // 不截断
         jbpPrev  // 在前一个后面截断
+    }
+
+    public enum HCContentAlign : byte   // 表格单元格对齐方式
+    {
+        tcaTopLeft, tcaTopCenter, tcaTopRight, tcaCenterLeft, tcaCenterCenter, 
+        tcaCenterRight, tcaBottomLeft, tcaBottomCenter, tcaBottomRight
     }
 
     public enum CharType : byte 
@@ -985,6 +1094,43 @@ namespace HC.View
                 }
                 index++;
             }
+        }
+
+        public void Delete(int index)
+        {
+            RemoveAt(index);
+        }
+
+        private T GetFirst()
+        {
+            return this[0];
+        }
+
+        private void SetFirst(T item)
+        {
+            this[0] = item;
+        }
+
+        private T GetLast()
+        {
+            return this[this.Count - 1];
+        }
+
+        private void SetLast(T item)
+        {
+            this[this.Count - 1] = item;
+        }
+
+        public T First
+        {
+            get { return GetFirst(); }
+            set { SetFirst(value); }
+        }
+
+        public T Last
+        {
+            get { return GetLast(); }
+            set { SetLast(value); }
         }
     }
 

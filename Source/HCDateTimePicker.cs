@@ -39,7 +39,7 @@ namespace HC.View
         private string FNewYear;
         private bool FJoinKey;
 
-        #region
+        #region 未翻译完成
         private void AppendFormat(ref RECT aRect, string aFormat)
         {
 
@@ -52,8 +52,9 @@ namespace HC.View
             if (aArea == DateTimeArea.dtaNone)
                 return Result;
 
-            int vCharOffset = 0;
-            int vAppendLevel = 0;
+            //int vCharOffset = 0; 
+            //int vAppendLevel = 0;
+
             HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
             try
             {
@@ -100,12 +101,59 @@ namespace HC.View
 
         private void SetDateTime(DateTime value)
         {
+            if (FDateTime != value)
+            {
+                FDateTime = value;
+                this.Text = string.Format(FFormat, DateTime);
+                FAreaRect = GetAreaRect(FActiveArea);
+            }
+        }
 
+        #region SetInputYear子方法
+        private uint Power10(byte Sqr)
+        {
+            uint Result = 10;
+            for (int i = 2; i <= Result; i++)
+                Result = Result * 10;
+
+            return Result;
+        }
+
+        private int GetYear(string aYear)
+        {
+            int Result = FDateTime.Year;
+            int vYear = 1999;
+            if (!int.TryParse(aYear, out vYear))
+            {
+                if (vYear < Result)
+                {
+                    uint vPie = Power10((byte)aYear.Length);
+                    Result = (int)(Result / vPie);
+                    Result = (int)(Result * vPie) + vYear;
+                }
+            }
+
+            return Result;
+        }
+        #endregion
+
+        private void SetInputYear()
+        {
+            if (FNewYear != "")
+            {
+                this.DateTime = new System.DateTime(GetYear(FNewYear), FDateTime.Month, FDateTime.Day);
+                FNewYear = "";
+            }
         }
 
         private void SetFormat(string value)
         {
-
+            if (FFormat != value)
+            {
+                FFormat = value;
+                this.Text = string.Format(FFormat, FDateTime);
+                FAreaRect = GetAreaRect(FActiveArea);
+            }
         }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
@@ -129,14 +177,40 @@ namespace HC.View
             }
         }
 
+        protected override void SetActive(bool Value)
+        {
+            base.SetActive(Value);
+            if (!this.Active)
+            {
+                if (FActiveArea == DateTimeArea.dtaYear)
+                    SetInputYear();
+
+                FActiveArea = DateTimeArea.dtaNone;
+            }
+        }
+
         public override void MouseDown(System.Windows.Forms.MouseEventArgs e)
         {
- 	         base.MouseDown(e);
+ 	         //base.MouseDown(e);
+            this.Active = HC.PtInRect(new RECT(0, 0, Width, Height), new POINT(e.X, e.Y));
+
+            DateTimeArea vArea = GetAreaAt(e.X, e.Y);
+            if (vArea != FActiveArea)
+            {
+                if (FActiveArea == DateTimeArea.dtaYear)
+                    SetInputYear();
+
+                FActiveArea = vArea;
+                if (FActiveArea != DateTimeArea.dtaNone)
+                    FAreaRect = GetAreaRect(FActiveArea);
+
+                this.OwnerData.Style.UpdateInfoRePaint();
+            }
         }
 
         public override bool WantKeyDown(System.Windows.Forms.KeyEventArgs e)
         {
- 	         return base.WantKeyDown(e);
+            return true;
         }
 
         public override void KeyDown(System.Windows.Forms.KeyEventArgs e)
@@ -152,9 +226,20 @@ namespace HC.View
                     }
                     break;
 
+                case User.VK_RETURN:
+                    if (FActiveArea == DateTimeArea.dtaYear)
+                    {
+                        SetInputYear();
+                        this.OwnerData.Style.UpdateInfoRePaint();
+                    }
+                    break;
+
                 case User.VK_LEFT:
                     if ((byte)FActiveArea > (byte)DateTimeArea.dtaNone)
                     {
+                        if (FActiveArea == DateTimeArea.dtaYear)
+                            SetInputYear();
+
                         FActiveArea = (DateTimeArea)(((byte)FActiveArea) >> 1);
                         FAreaRect = GetAreaRect(FActiveArea);
                         this.OwnerData.Style.UpdateInfoRePaint();
@@ -164,6 +249,9 @@ namespace HC.View
                 case User.VK_RIGHT:
                     if ((byte)FActiveArea < (byte)DateTimeArea.dtaMillisecond)
                     {
+                        if (FActiveArea == DateTimeArea.dtaYear)
+                            SetInputYear();
+
                         FActiveArea = (DateTimeArea)(((byte)FActiveArea) << 1);
                         FAreaRect = GetAreaRect(FActiveArea);
                         this.OwnerData.Style.UpdateInfoRePaint();
@@ -179,7 +267,7 @@ namespace HC.View
 
         public override bool InsertText(string aText)
         {
- 	         return base.InsertText(aText);
+            return false;// base.InsertText(aText);
         }
 
         public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
@@ -201,7 +289,7 @@ namespace HC.View
 
         public override void Assign(HCCustomItem source)
         {
- 	         base.Assign(source);
+ 	        base.Assign(source);
             FFormat = (source as HCDateTimePicker).Format;
             DateTime = (source as HCDateTimePicker).DateTime;
         }
@@ -226,14 +314,18 @@ namespace HC.View
             FDateTime = DateTime.FromOADate(vDT);
         }
 
-        public override void  ToXml(System.Xml.XmlElement aNode)
+        public override void ToXml(System.Xml.XmlElement aNode)
         {
- 	         base.ToXml(aNode);
+ 	        base.ToXml(aNode);
+            aNode.Attributes["format"].Value = FFormat;
+            aNode.Attributes["datetime"].Value = FDateTime.ToString();
         }
 
         public override void  ParseXml(System.Xml.XmlElement aNode)
         {
- 	         base.ParseXml(aNode);
+            base.ParseXml(aNode);
+            FFormat = aNode.Attributes["format"].Value;
+            FDateTime = DateTime.Parse(aNode.Attributes["datetime"].Value);
         }
 
         public string Format

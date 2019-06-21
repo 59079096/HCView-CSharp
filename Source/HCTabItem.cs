@@ -27,8 +27,8 @@ namespace HC.View
         public HCTabItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             StyleNo = HCStyle.Tab;
-            aOwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(aOwnerData.Style.DefCanvas);
-            SIZE vSize = aOwnerData.Style.DefCanvas.TextExtent("汉字");
+            aOwnerData.Style.ApplyTempStyle(TextStyleNo);
+            SIZE vSize = aOwnerData.Style.TempCanvas.TextExtent("汉字");
             Width = vSize.cx;
             Height = vSize.cy;
         }
@@ -38,17 +38,17 @@ namespace HC.View
             
         }
 
+        public override bool JustifySplit()
+        {
+            return false;
+        }
+
         public override int GetOffsetAt(int x)
         {
             if (x < Width / 2)
                 return HC.OffsetBefor;
             else
                 return HC.OffsetAfter;
-        }
-
-        public override bool JustifySplit()
-        {
-            return false;
         }
     }
 }

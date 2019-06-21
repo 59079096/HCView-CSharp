@@ -45,27 +45,6 @@ namespace HC.View
 
         }
 
-        public int ClearFormatExtraHeight()
-        {
-            int Result = FFmtOffset;
-            FFmtOffset = 0;
-            int vMaxDiff = 0;
-            for (int i = 0; i <= ColCount - 1; i++)
-                vMaxDiff = Math.Max(vMaxDiff, this[i].ClearFormatExtraHeight());
-            
-            if (vMaxDiff > 0)
-            {
-                for (int i = 0; i <= ColCount - 1; i++)
-                    this[i].Height = this[i].Height - vMaxDiff;
-                FHeight = FHeight - vMaxDiff;
-            }
-            Result = Result + vMaxDiff;
-
-            return Result;
-        }
-
-        //
-        //function CalcFormatHeight: Integer;
         public void SetRowWidth(int aWidth)
         {
             int vWidth = aWidth / this.Count;
@@ -101,14 +80,6 @@ namespace HC.View
             }
         }
 
-        public void ParseXml(XmlElement aNode)
-        {
-            FAutoHeight = bool.Parse(aNode.Attributes["autoheight"].Value);
-            FHeight = int.Parse(aNode.Attributes["height"].Value);
-            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
-                this[i].ParseXml(aNode.ChildNodes[i] as XmlElement);
-        }
-
         public void ToXml(XmlElement aNode)
         {
             aNode.Attributes["autoheight"].Value = FAutoHeight.ToString();
@@ -119,6 +90,14 @@ namespace HC.View
                 this[i].ToXml(vNode);
                 aNode.AppendChild(vNode);
             }
+        }
+
+        public void ParseXml(XmlElement aNode)
+        {
+            FAutoHeight = bool.Parse(aNode.Attributes["autoheight"].Value);
+            FHeight = int.Parse(aNode.Attributes["height"].Value);
+            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
+                this[i].ParseXml(aNode.ChildNodes[i] as XmlElement);
         }
 
         //property Capacity: Integer read FCapacity write SetCapacity;

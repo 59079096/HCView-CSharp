@@ -55,8 +55,6 @@ namespace HC.View
 
     public delegate HCCustomItem StyleItemEventHandler(HCCustomData aData, int aStyleNo);
     public delegate bool OnCanEditEventHandler(object sender);
-    public delegate void DrawItemPaintContentEventHandler(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
-        string aDrawText, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo);
 
     public class HCViewData : HCViewDevData  // 富文本数据类，可做为其他显示富文本类的基类
     {
@@ -71,10 +69,11 @@ namespace HC.View
 
         private StyleItemEventHandler FOnCreateItemByStyle;
         private OnCanEditEventHandler FOnCanEdit;
-        private DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
+
         private void GetDomainFrom(int aItemNo, int aOffset, HCDomainInfo aDomainInfo)
         {
             aDomainInfo.Clear();
+
             if ((aItemNo < 0) || (aOffset < 0))
                 return;
 
@@ -91,6 +90,7 @@ namespace HC.View
                     if (aOffset == HC.OffsetAfter)
                     {
                         aDomainInfo.BeginNo = aItemNo;  // 当前即为起始标识
+                        vLevel = (Items[aItemNo] as HCDomainItem).Level;
                         vEndNo = aItemNo + 1;
                     }
                     else  // 光标在前面
@@ -117,7 +117,7 @@ namespace HC.View
                     }
                 }
             }
-                
+
             if (aDomainInfo.BeginNo < 0)
             {
                 vCount = 0;
@@ -203,11 +203,32 @@ namespace HC.View
                                 }
                             }
                         }
-                       
+
                         if (aDomainInfo.BeginNo < 0)
                             throw new Exception("异常：获取域起始位置出错！");
                     }
                 }
+            }
+            else
+            if (aDomainInfo.EndNo < 0)
+            {
+                for (int i = vEndNo; i <= this.Items.Count - 1; i++)
+                {
+                    if (Items[i] is HCDomainItem)
+                    {
+                        if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结尾
+                        {
+                            if ((Items[i] as HCDomainItem).Level == vLevel)
+                            {
+                                aDomainInfo.EndNo = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (aDomainInfo.EndNo < 0)
+                    throw new Exception("异常：获取域起始位置出错！");
             }
         }
 
@@ -355,7 +376,7 @@ namespace HC.View
             }
         }
 
-        #region
+        #region DoDrawItemPaintAfter 子方法
         private void DrawLineLastMrak(HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo)
         {
             aCanvas.Pen.BeginUpdate();
@@ -374,14 +395,16 @@ namespace HC.View
             GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vPt);
             try
             {
-                aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 4,
-                aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
+                aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 4, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
                 aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
                 aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
+
                 aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right),     aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
                 aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
+
                 aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 4);
                 aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 1);
+
                 aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 5);
                 aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom));
             }
@@ -413,18 +436,6 @@ namespace HC.View
             }
         }
 
-        protected override void DoDrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
-            RECT aClearRect, string aDrawText, int aDataDrawLeft, int aDataDrawBottom, 
-            int aDataScreenTop, int ADataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            base.DoDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText, 
-                aDataDrawLeft, aDataDrawBottom, aDataScreenTop, ADataScreenBottom, aCanvas, aPaintInfo);
-
-            if (FOnDrawItemPaintContent != null)
-                FOnDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText, 
-                aDataDrawLeft, aDataDrawBottom, aDataScreenTop, ADataScreenBottom, aCanvas, aPaintInfo);
-        }
-
         public HCViewData(HCStyle aStyle) : base(aStyle)
         {
             FDomainStartDeletes = new List<int>();
@@ -445,15 +456,6 @@ namespace HC.View
             FHotDomain.Dispose();
             FActiveDomain.Dispose();
             //FDomainStartDeletes.Free;
-        }
-
-        public override bool CanEdit()
-        {
-            bool Result = base.CanEdit();
-            if ((Result) && (FOnCanEdit != null))
-                Result = FOnCanEdit(this);
-
-            return Result;
         }
 
         public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom, 
@@ -520,7 +522,7 @@ namespace HC.View
             // 赋值激活Group信息，清除在 MouseDown
             if (this.SelectInfo.StartItemNo >= 0)
             {
-                HCRichData vTopData = GetTopLevelData();
+                HCCustomData vTopData = GetTopLevelData();
                 if (vTopData == this)
                 {
                     if (FActiveDomain.BeginNo >= 0)
@@ -530,7 +532,8 @@ namespace HC.View
                         Style.UpdateInfoRePaint();
                         }
                     // 获取当前光标处ActiveDeGroup信息
-                    this.GetDomainFrom(this.SelectInfo.StartItemNo, this.SelectInfo.StartItemOffset, FActiveDomain);
+                    GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
+
                     if (FActiveDomain.BeginNo >= 0)
                     {
                         FDrawActiveDomainRegion = true;
@@ -545,6 +548,86 @@ namespace HC.View
             FDomainStartDeletes.Clear();
             return base.DeleteSelected();
         }
+
+        public bool DeleteActiveDomain()
+        {
+            if (SelectExists())
+                return false;
+
+            bool Result = false;
+            if (FActiveDomain.BeginNo >= 0)
+                Result = DeleteDomain(FActiveDomain);
+            else
+            if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+            {
+                Result = (Items[SelectInfo.StartItemNo] as HCCustomRectItem).DeleteActiveDomain();
+                if (Result)
+                {
+                    int vFirstDrawItemNo = -1, vLastItemNo = -1;
+                    GetFormatRange(ref vFirstDrawItemNo, ref vLastItemNo);
+                    FormatPrepare(vFirstDrawItemNo, vLastItemNo);
+                    ReFormatData(vFirstDrawItemNo, vLastItemNo);
+
+                    Style.UpdateInfoRePaint();
+                    Style.UpdateInfoReCaret();
+                }
+            }
+
+            return Result;
+        }
+
+        public bool DeleteDomain(HCDomainInfo aDomain)
+        {
+            if (aDomain.BeginNo < 0)
+                return false;
+        
+            Undo_New();
+        
+            int vCaretItemNo = aDomain.BeginNo;
+
+            int vFirstDrawItemNo = GetFormatFirstDrawItem(Items[aDomain.BeginNo].FirstDItemNo);
+            int vParaLastItemNo = GetParaLastItemNo(aDomain.EndNo);
+        
+            if (Items[aDomain.BeginNo].ParaFirst)
+            {
+                if (aDomain.EndNo == vParaLastItemNo)
+                {
+                    if (aDomain.BeginNo > 0)
+                        vFirstDrawItemNo = GetFormatFirstDrawItem(Items[aDomain.BeginNo].FirstDItemNo - 1);
+                }
+                else  // 域结束不是段尾，起始是段首
+                {
+                    UndoAction_ItemParaFirst(aDomain.EndNo + 1, 0, true);
+                    Items[aDomain.EndNo + 1].ParaFirst = true;
+                }
+            }
+        
+            FormatPrepare(vFirstDrawItemNo, vParaLastItemNo);
+        
+            int vDelCount = 0;
+         
+            for (int i = aDomain.EndNo; i >= aDomain.BeginNo; i--)  // 删除域及域范围内的Ite
+            {
+                UndoAction_DeleteItem(i, 0);
+                Items.Delete(i);
+                vDelCount++;
+            }
+
+            FActiveDomain.Clear();
+            ReFormatData(vFirstDrawItemNo, vParaLastItemNo - vDelCount, -vDelCount);
+        
+            this.InitializeField();
+            if (vCaretItemNo > Items.Count - 1)
+                ReSetSelectAndCaret(vCaretItemNo - 1);
+            else
+                ReSetSelectAndCaret(vCaretItemNo, 0);
+
+            Style.UpdateInfoRePaint();
+            Style.UpdateInfoReCaret();
+
+            return true;
+        }
+
 
         public override void MouseDown(MouseEventArgs e)
         {
@@ -599,6 +682,28 @@ namespace HC.View
             return Result;
         }
 
+        public override bool InsertItem(int aIndex, HCCustomItem aItem, bool aOffsetBefor = true)
+        {
+            bool Result = base.InsertItem(aIndex, aItem, aOffsetBefor);
+            if (Result)
+            {
+                Style.UpdateInfoRePaint();
+                Style.UpdateInfoReCaret();
+                Style.UpdateInfoReScroll();
+            }
+
+            return Result;
+        }
+
+        public override bool CanEdit()
+        {
+            bool Result = base.CanEdit();
+            if ((Result) && (FOnCanEdit != null))
+                Result = FOnCanEdit(this);
+
+            return Result;
+        }
+
         public bool InsertDomain(HCDomainItem aMouldDomain)
         {
             if (!CanEdit())
@@ -616,6 +721,7 @@ namespace HC.View
                     vDomainItem = CreateDefaultDomainItem() as HCDomainItem;
                     if (aMouldDomain != null)
                         vDomainItem.Assign(aMouldDomain);
+
                     vDomainItem.MarkType = MarkType.cmtBeg;
                     if (FActiveDomain.BeginNo >= 0)
                         vDomainItem.Level = (byte)((Items[FActiveDomain.BeginNo] as HCDomainItem).Level + 1);
@@ -627,6 +733,7 @@ namespace HC.View
                         vDomainItem = CreateDefaultDomainItem() as HCDomainItem;
                         if (aMouldDomain != null)
                             vDomainItem.Assign(aMouldDomain);
+
                         vDomainItem.MarkType = MarkType.cmtEnd;
                         if (FActiveDomain.BeginNo >= 0)
                             vDomainItem.Level = (byte)((Items[FActiveDomain.BeginNo] as HCDomainItem).Level + 1);
@@ -642,19 +749,6 @@ namespace HC.View
             finally
             {
                 Undo_GroupEnd(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-            }
-
-            return Result;
-        }
-
-        public override bool InsertItem(int aIndex, HCCustomItem aItem, bool aOffsetBefor = true)
-        {
-            bool Result = base.InsertItem(aIndex, aItem, aOffsetBefor);
-            if (Result)
-            {
-                Style.UpdateInfoRePaint();
-                Style.UpdateInfoReCaret();
-                Style.UpdateInfoReScroll();
             }
 
             return Result;
@@ -735,6 +829,11 @@ namespace HC.View
             SelectItemAfterWithCaret(Items.Count - 1);
         }
 
+        public void SelectFirstItemBeforWithCaret()
+        {
+            ReSetSelectAndCaret(0, 0);
+        }
+
         /// <summary> 获取DomainItem配对的另一个ItemNo </summary>
         public int GetDomainAnother(int aItemNo)
         {
@@ -780,7 +879,7 @@ namespace HC.View
             return Result;
         }
 
-        #region
+        #region Search子方法
 
         private int ReversePos(string SubStr, string  S)
         {
@@ -803,11 +902,6 @@ namespace HC.View
             }
 
             return Result;
-        }
-
-        public bool Replace(string aText)
-        {
-            return InsertText(aText);
         }
 
         private bool DoSearchByOffset(string AKeyword, string vKeyword, bool AForward, bool AMatchCase, 
@@ -833,7 +927,7 @@ namespace HC.View
             {
                 if (AForward)
                 {
-                    vText = (this.Items[AItemNo] as HCTextItem).GetTextPart(1, AOffset);
+                    vText = (this.Items[AItemNo] as HCTextItem).SubString(1, AOffset);
                     if (!AMatchCase)
                         vText = vText.ToUpper();
             
@@ -841,7 +935,7 @@ namespace HC.View
                 }
                 else  // 向后找
                 {
-                    vText = (this.Items[AItemNo] as HCTextItem).GetTextPart(AOffset + 1,
+                    vText = (this.Items[AItemNo] as HCTextItem).SubString(AOffset + 1,
                     this.Items[AItemNo].Length - AOffset);
                     if (!AMatchCase)
                         vText = vText.ToUpper();
@@ -849,7 +943,6 @@ namespace HC.View
                     vPos = vText.IndexOf(vKeyword);
                 }
                
-                
                 if (vPos > 0)
                 {
                     this.SelectInfo.StartItemNo = AItemNo;
@@ -983,6 +1076,12 @@ namespace HC.View
                 vOffset = 0;
             }
             else
+            if (this.SelectInfo.EndItemNo >= 0)
+            {
+                vItemNo = this.SelectInfo.EndItemNo;
+                vOffset = this.SelectInfo.EndItemOffset;
+            }
+            else
             {
                 vItemNo = this.SelectInfo.StartItemNo;
                 vOffset = this.SelectInfo.StartItemOffset;
@@ -996,7 +1095,7 @@ namespace HC.View
                 {
                     for (int i = vItemNo - 1; i >= 0; i--)
                     {
-                        if (DoSearchByOffset(aKeyword, vKeyword, aForward, aMatchCase, i, GetItemAfterOffset(i)))
+                        if (DoSearchByOffset(aKeyword, vKeyword, aForward, aMatchCase, i, GetItemOffsetAfter(i)))
                         {
                             Result = true;
                             break;
@@ -1035,6 +1134,11 @@ namespace HC.View
             this.Style.UpdateInfoReCaret();
 
             return Result;
+        }
+
+        public bool Replace(string aText)
+        {
+            return InsertText(aText);
         }
 
         public void GetCaretInfoCur(ref HCCaretInfo aCaretInfo)
@@ -1081,12 +1185,6 @@ namespace HC.View
         {
             get { return FOnCanEdit; }
             set { FOnCanEdit = value; }
-        }
-
-        public DrawItemPaintContentEventHandler OnDrawItemPaintContent
-        {
-            get { return FOnDrawItemPaintContent; }
-            set { FOnDrawItemPaintContent = value; }
         }
     }
 }

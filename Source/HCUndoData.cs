@@ -17,10 +17,12 @@ using System.IO;
 
 namespace HC.View
 {
-    public class HCUndoData : HCCustomData  // 支持撤销恢复功能的Data
+    public class HCUndoData : HCFormatData  // 支持撤销恢复功能的Data
     {
-        private int FFormatFirstItemNo, FFormatLastItemNo, FUndoGroupCount, FItemAddCount;
+        private int FFormatFirstItemNo, FFormatFirstDrawItemNo, FFormatLastItemNo, 
+            FUndoGroupCount, FItemAddCount;
 
+        #region DoUndoRedo 子方法
         private void UndoRedoDeleteBackText(HCCustomUndoAction aAction, bool aIsUndo, ref int aCaretItemNo, ref int aCaretOffset)
         {
             HCTextUndoAction vAction = aAction as HCTextUndoAction;
@@ -77,6 +79,23 @@ namespace HC.View
             Items[vAction.ItemNo].Text = vText;
         }
 
+        private void UndoRedoSetItemText(HCCustomUndoAction aAction, bool aIsUndo, ref int aCaretItemNo, ref int aCaretOffset)
+        {
+            HCSetItemTextUndoAction vAction = aAction as HCSetItemTextUndoAction;
+            aCaretItemNo = vAction.ItemNo;
+
+            if (aIsUndo)
+            {
+                Items[vAction.ItemNo].Text = vAction.Text;
+                aCaretOffset = vAction.Offset;
+            }
+            else
+            {
+                Items[vAction.ItemNo].Text = vAction.NewText;
+                aCaretOffset = vAction.NewText.Length;
+            }
+        }
+
         private void UndoRedoDeleteItem(HCCustomUndoAction aAction, bool aIsUndo, ref int aCaretItemNo, ref int aCaretOffset)
         {
             HCItemUndoAction vAction = aAction as HCItemUndoAction;
@@ -114,10 +133,12 @@ namespace HC.View
         {
             HCItemUndoAction vAction = aAction as HCItemUndoAction;
             aCaretItemNo = vAction.ItemNo;
+
             if (aIsUndo)
             {
                 Items.RemoveAt(vAction.ItemNo);
                 FItemAddCount--;
+
                 if (aCaretItemNo > 0)
                 {
                     aCaretItemNo--;
@@ -152,6 +173,7 @@ namespace HC.View
             aCaretItemNo = vAction.ItemNo;
             aCaretOffset = vAction.Offset;
             HCCustomItem vItem = Items[vAction.ItemNo];
+
             switch (vAction.ItemProperty)
             {
                 case ItemProperty.uipStyleNo:
@@ -223,6 +245,10 @@ namespace HC.View
                     UndoRedoInsertText(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
+                case UndoActionTag.uatSetItemText:
+                    UndoRedoSetItemText(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
+                    break;
+
                 case UndoActionTag.uatDeleteItem: 
                     UndoRedoDeleteItem(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
@@ -245,22 +271,42 @@ namespace HC.View
             }
         }
 
-        private int GetActionAffect(HCCustomUndoAction aAction, bool aIsUndo)
+        private int GetActionAffectFirst(HCCustomUndoAction aAction, bool aIsUndo)
         {
             int Result = aAction.ItemNo;
             switch (aAction.Tag)
             {
                 case UndoActionTag.uatDeleteItem:
                     {
-                        if (aIsUndo && (Result > 0))
+                        if (Result > 0)
                             Result--;
                     }
                     break;
 
                 case UndoActionTag.uatInsertItem:
                     {
-                        if ((!aIsUndo) && (Result > Items.Count - 1))
-                            Result--;
+                        if (aIsUndo)
+                        {
+                            if (Result > 0)
+                                Result--;
+                        }
+                        else
+                        {
+                            if (Result > Items.Count - 1)
+                                Result--;
+                        }
+                    }
+                    break;
+
+                case UndoActionTag.uatItemProperty:
+                    if (aAction.Tag == UndoActionTag.uatItemProperty)
+                    {
+                        HCItemPropertyUndoAction vPropAction = aAction as HCItemPropertyUndoAction;
+                        if (vPropAction.ItemProperty == ItemProperty.uipParaFirst)
+                        {
+                            if (Result > 0)
+                                Result--;
+                        }
                     }
                     break;
 
@@ -275,6 +321,48 @@ namespace HC.View
             return Result;
         }
 
+        private int GetActionAffectLast(HCCustomUndoAction aAction, bool aIsUndo)
+        {
+            int Result = aAction.ItemNo;
+            switch (aAction.Tag)
+            {
+                case UndoActionTag.uatDeleteItem:
+                    if (aIsUndo)
+                    {
+                        if (Result > 0)
+                            Result--;
+                    }
+                    else
+                    {
+                        if (Result < Items.Count - 1)
+                            Result++;
+                    }
+                    break;
+
+                case UndoActionTag.uatInsertItem:
+                    if (aIsUndo)
+                    {
+                        if ((Result < Items.Count - 1) && aAction.ParaFirst)
+                            Result++;
+                    }
+                    else
+                    {
+                        if (Result > Items.Count - 1)
+                            Result--;
+                    }
+                    break;
+        
+                default:
+                    if (Result > Items.Count - 1)
+                        Result = Items.Count - 1;
+                    break;
+            }
+
+            return Result;
+        }
+
+        #endregion
+
         private void DoUndoRedo(HCCustomUndo aUndo)
         {
             if (aUndo is HCUndoGroupEnd)
@@ -287,15 +375,19 @@ namespace HC.View
                         FFormatFirstItemNo = (vUndoList[vUndoList.CurGroupBeginIndex] as HCUndoGroupBegin).ItemNo;
                         FFormatLastItemNo = (vUndoList[vUndoList.CurGroupEndIndex] as HCUndoGroupEnd).ItemNo;
 
+                        if (FFormatLastItemNo < Items.Count - 1)
+                            FFormatLastItemNo++;
+
                         if (FFormatFirstItemNo != FFormatLastItemNo)
                         {
                             FFormatFirstItemNo = GetParaFirstItemNo(FFormatFirstItemNo);
+                            FFormatFirstDrawItemNo = Items[FFormatFirstItemNo].FirstDItemNo;
                             FFormatLastItemNo = GetParaLastItemNo(FFormatLastItemNo);
                         }
                         else
-                            GetReformatItemRange(ref FFormatFirstItemNo, ref FFormatLastItemNo, FFormatFirstItemNo, 0);
+                            GetFormatRange(FFormatFirstItemNo, 1, ref FFormatFirstDrawItemNo, ref FFormatLastItemNo);
 
-                        _FormatItemPrepare(FFormatFirstItemNo, FFormatLastItemNo);
+                        FormatPrepare(FFormatFirstDrawItemNo, FFormatLastItemNo);
 
                         SelectInfo.Initialize();
                         this.InitializeField();
@@ -310,7 +402,7 @@ namespace HC.View
 
                     if (FUndoGroupCount == 0)
                     {
-                        _ReFormatData(FFormatFirstItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
+                        ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
 
                         SelectInfo.StartItemNo = (aUndo as HCUndoGroupEnd).ItemNo;
                         SelectInfo.StartItemOffset = (aUndo as HCUndoGroupEnd).Offset;
@@ -332,7 +424,7 @@ namespace HC.View
 
                     if (FUndoGroupCount == 0)
                     {
-                        _ReFormatData(FFormatFirstItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
+                        ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
 
                         SelectInfo.StartItemNo = (aUndo as HCUndoGroupBegin).ItemNo;
                         SelectInfo.StartItemOffset = (aUndo as HCUndoGroupBegin).Offset;
@@ -342,13 +434,19 @@ namespace HC.View
                         Style.UpdateInfoRePaint();
                     }
                 }
-                else
+                else  // 组恢复(无Action)
                 {
                     if (FUndoGroupCount == 0)
                     {
                         FFormatFirstItemNo = (aUndo as HCUndoGroupBegin).ItemNo;
-                        FFormatLastItemNo = FFormatFirstItemNo;
-                        _FormatItemPrepare(FFormatFirstItemNo, FFormatLastItemNo);
+                        FFormatFirstDrawItemNo = GetFormatFirstDrawItem(Items[FFormatFirstItemNo].FirstDItemNo);
+
+                        HCUndoList vUndoList = GetUndoList();
+                        FFormatLastItemNo = (vUndoList[vUndoList.CurGroupEndIndex] as HCUndoGroupEnd).ItemNo;
+                        if (FFormatLastItemNo > Items.Count - 1)  // 防止在最后插入Item的撤销后恢复访问越界
+                            FFormatLastItemNo--;
+
+                        FormatPrepare(FFormatFirstDrawItemNo, FFormatLastItemNo);
 
                         SelectInfo.Initialize();
                         this.InitializeField();
@@ -375,16 +473,17 @@ namespace HC.View
 
                 if (aUndo.Actions[0].ItemNo > aUndo.Actions[aUndo.Actions.Count - 1].ItemNo)
                 {
-                    FFormatFirstItemNo = GetParaFirstItemNo(GetActionAffect(aUndo.Actions[aUndo.Actions.Count - 1], aUndo.IsUndo));
-                    FFormatLastItemNo = GetParaLastItemNo(GetActionAffect(aUndo.Actions[0], aUndo.IsUndo));
+                    FFormatFirstItemNo = GetParaFirstItemNo(GetActionAffectFirst(aUndo.Actions.Last, aUndo.IsUndo));
+                    FFormatLastItemNo = GetParaLastItemNo(GetActionAffectLast(aUndo.Actions.First, aUndo.IsUndo));
                 }
                 else
                 {
-                    FFormatFirstItemNo = GetParaFirstItemNo(GetActionAffect(aUndo.Actions[0], aUndo.IsUndo));
-                    FFormatLastItemNo = GetParaLastItemNo(GetActionAffect(aUndo.Actions[aUndo.Actions.Count - 1], aUndo.IsUndo));
+                    FFormatFirstItemNo = GetParaFirstItemNo(GetActionAffectFirst(aUndo.Actions.First, aUndo.IsUndo));
+                    FFormatLastItemNo = GetParaLastItemNo(GetActionAffectLast(aUndo.Actions.Last, aUndo.IsUndo));
                 }
 
-                _FormatItemPrepare(FFormatFirstItemNo, FFormatLastItemNo);
+                FFormatFirstDrawItemNo = Items[FFormatFirstItemNo].FirstDItemNo;
+                FormatPrepare(FFormatFirstDrawItemNo, FFormatLastItemNo);
             }
 
             if (aUndo.IsUndo)
@@ -400,7 +499,7 @@ namespace HC.View
 
             if (FUndoGroupCount == 0)
             {
-                _ReFormatData(FFormatFirstItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
+                ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
 
                 if (vCaretDrawItemNo < 0)
                     vCaretDrawItemNo = GetDrawItemNoByOffset(vCaretItemNo, vCaretOffset);
@@ -509,10 +608,11 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatDeleteBackText, aItemNo, aOffset) as HCTextUndoAction;
+                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatDeleteBackText, aItemNo, aOffset,
+                        Items[aItemNo].ParaFirst) as HCTextUndoAction;
                     vTextAction.Text = aText;
                 }
             }
@@ -523,10 +623,11 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatDeleteText, aItemNo, aOffset) as HCTextUndoAction;
+                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatDeleteText, aItemNo, aOffset,
+                        Items[aItemNo].ParaFirst) as HCTextUndoAction;
                     vTextAction.Text = aText;
                 }
             }
@@ -537,11 +638,27 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatInsertText, aItemNo, aOffset) as HCTextUndoAction;
+                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatInsertText, aItemNo, aOffset,
+                        Items[aItemNo].ParaFirst) as HCTextUndoAction;
                     vTextAction.Text = aText;
+                }
+            }
+        }
+
+        protected void UndoAction_SetItemText(int aItemNo, int aOffset, string aNewText)
+        {
+            HCUndoList vUndoList = GetUndoList();
+            if ((vUndoList != null) && vUndoList.Enable)
+            {
+                HCUndo vUndo = vUndoList.Last;
+                if (vUndo != null)
+                {
+                    HCSetItemTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatSetItemText, aItemNo, aOffset,
+                        Items[aItemNo].ParaFirst) as HCSetItemTextUndoAction;
+                    vTextAction.NewText = aNewText;
                 }
             }
         }
@@ -551,10 +668,11 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatDeleteItem, aItemNo, aOffset) as HCItemUndoAction;
+                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatDeleteItem, aItemNo, aOffset,
+                        Items[aItemNo].ParaFirst) as HCItemUndoAction;
                     SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
                 }
             }
@@ -568,10 +686,11 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatInsertItem, aItemNo, aOffset) as HCItemUndoAction;
+                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatInsertItem, aItemNo, aOffset,
+                        Items[aItemNo].ParaFirst) as HCItemUndoAction;
                     SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
                 }
             }
@@ -582,7 +701,7 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
                     HCItemStyleUndoAction vItemAction = new HCItemStyleUndoAction();
@@ -590,6 +709,7 @@ namespace HC.View
                     vItemAction.Offset = aOffset;
                     vItemAction.OldStyleNo = Items[aItemNo].StyleNo;
                     vItemAction.NewStyleNo = aNewStyleNo;
+
                     vUndo.Actions.Add(vItemAction);
                 }
             }
@@ -600,7 +720,7 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
                     HCItemParaFirstUndoAction vItemAction = new HCItemParaFirstUndoAction();
@@ -608,6 +728,7 @@ namespace HC.View
                     vItemAction.Offset = aOffset;
                     vItemAction.OldParaFirst = Items[aItemNo].ParaFirst;
                     vItemAction.NewParaFirst = aNewParaFirst;
+
                     vUndo.Actions.Add(vItemAction);
                 }
             }
@@ -618,9 +739,9 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
-                    vUndo.ActionAppend(UndoActionTag.uatItemSelf, aItemNo, aOffset);
+                    vUndo.ActionAppend(UndoActionTag.uatItemSelf, aItemNo, aOffset, Items[aItemNo].ParaFirst);
             }
         }
 
@@ -629,10 +750,11 @@ namespace HC.View
             HCUndoList vUndoList = GetUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
             {
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatItemMirror, aItemNo, aOffset) as HCItemUndoAction;
+                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatItemMirror, aItemNo, aOffset,
+                        Items[aItemNo].ParaFirst) as HCItemUndoAction;
                     SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
                 }
             }

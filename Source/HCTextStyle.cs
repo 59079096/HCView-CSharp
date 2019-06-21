@@ -35,11 +35,18 @@ namespace HC.View
         public const Single MaxFontSize = 512F;
 
         private Single FSize;
+        private int FFontHeight;
         private string FFamily;
         private HCFontStyles FFontStyles;
         private Color FColor;  // 字体颜色
         private Color FBackColor;
         private TEXTMETRICW FTextMetric;
+
+        bool FCJKFont;
+        uint FOutMetSize;
+        IntPtr FOutlineTextmetricPtr;
+        OUTLINETEXTMETRICW FOutlineTextmetric;
+        TT_HHEA FFontHeader;
 
         protected void SetFamily(string value)
         {
@@ -70,23 +77,20 @@ namespace HC.View
             FColor = Color.Black;
             FBackColor = HC.HCTransparentColor;
             FTextMetric = new TEXTMETRICW();
+            FOutMetSize = 0;
+
+            FOutlineTextmetric = new OUTLINETEXTMETRICW();
+            FFontHeader = new TT_HHEA();
         }
 
         ~HCTextStyle()
         {
-
-        }
-        
-        public bool IsSizeStored()
-        {
-            return (FSize == DefaultFontSize);
+            if (FOutMetSize > 0)
+                Marshal.FreeHGlobal(FOutlineTextmetricPtr);
         }
 
-        public bool IsFamilyStored()
-        {
-            return (FFamily != DefaultFontFamily);
-        }
-
+        private const int MS_HHEA_TAG = 0x61656868;  // MS_MAKE_TAG('h','h','e','a')
+        private const uint CJK_CODEPAGE_BITS = (1 << 17) | (1 << 18) | (1 << 19) | (1 << 20) | (1 << 21);
         public void ApplyStyle(HCCanvas aCanvas, Single aScale = 1)
         {
             if (FBackColor == HC.HCTransparentColor)
@@ -105,13 +109,50 @@ namespace HC.View
                     aCanvas.Font.Size = FSize;
 
                 aCanvas.Font.FontStyles = FFontStyles;
-
-                aCanvas.GetTextMetrics(ref FTextMetric);
             }
             finally
             {
                 aCanvas.Font.EndUpdate();
             }
+
+            aCanvas.GetTextMetrics(ref FTextMetric);
+
+            FONTSIGNATURE vFontSignature = new FONTSIGNATURE();
+            FFontHeight = aCanvas.TextHeight("H");
+
+            if ((GDI.GetTextCharsetInfo(aCanvas.Handle, ref vFontSignature, 0) != GDI.DEFAULT_CHARSET)
+                && ((vFontSignature.fsCsb[0] & CJK_CODEPAGE_BITS) != 0))
+                FCJKFont = true;
+            else
+                FCJKFont = false;
+
+            if (FOutMetSize > 0)
+                Marshal.FreeHGlobal(FOutlineTextmetricPtr);
+
+
+            FOutMetSize = GDI.GetOutlineTextMetrics(aCanvas.Handle, 0, IntPtr.Zero);
+            if (FOutMetSize != 0)
+            {
+                //FOutMetSize = (uint)Marshal.SizeOf(FOutlineTextmetric);
+                FOutlineTextmetricPtr = Marshal.AllocHGlobal((int)FOutMetSize);
+
+
+                if (GDI.GetOutlineTextMetrics(aCanvas.Handle, FOutMetSize, FOutlineTextmetricPtr) != 0)
+                {
+                    //FOutlineTextmetric = new OUTLINETEXTMETRICW();
+                    //FOutlineTextmetric = (OUTLINETEXTMETRICW)Marshal.PtrToStructure(FOutlineTextmetricPtr, typeof(OUTLINETEXTMETRICW));
+                    //string otmpFamilyName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFamilyName));
+                    //string otmpFaceName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFaceName)); ;
+                    //string otmpStyleName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpStyleName)); ;
+                    //string otmpFullName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFullName)); ;
+                    // 以上为参考代码
+                    //Marshal.PtrToStructure(FOutlineTextmetricPtr, FOutlineTextmetric);
+                    FOutlineTextmetric = (OUTLINETEXTMETRICW)Marshal.PtrToStructure(FOutlineTextmetricPtr, typeof(OUTLINETEXTMETRICW));
+                }                
+            }
+
+            if ((uint)GDI.GetFontData(aCanvas.Handle, MS_HHEA_TAG, 0, ref FFontHeader, Marshal.SizeOf(FFontHeader)) == GDI.GDI_ERROR)
+                return;
         }
 
         public bool EqualsEx(HCTextStyle aSource)
@@ -137,13 +178,7 @@ namespace HC.View
             byte[] vBuffer = BitConverter.GetBytes(FSize);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            byte[] vBuffer2 = System.Text.Encoding.Default.GetBytes(FFamily);
-            ushort vSize = (ushort)vBuffer2.Length;
-
-            vBuffer = BitConverter.GetBytes(vSize);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-            if (vSize > 0)
-                aStream.Write(vBuffer2, 0, vSize);
+            HC.HCSaveTextToStream(aStream, FFamily);
 
             aStream.WriteByte(FFontStyles.Value);  // save FFontStyles
 
@@ -169,16 +204,7 @@ namespace HC.View
                 FSize = BitConverter.ToSingle(vBuffer1, 0);  // 字号
             }
 
-            // 字体
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            vSize = BitConverter.ToUInt16(vBuffer, 0);
-            if (vSize > 0)
-            {
-                vBuffer = new byte[vSize];
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                FFamily = System.Text.Encoding.Default.GetString(vBuffer);
-            }
+            HC.HCLoadTextFromStream(aStream, ref FFamily); // 字体
 
             FFontStyles.Value = (byte)aStream.ReadByte();  // load FFontStyles
 
@@ -186,6 +212,7 @@ namespace HC.View
             HC.HCLoadColorFromStream(aStream, ref FBackColor);  // load FBackColor
         }
 
+        // ToCSS 子方法
         private string GetTextDecoration()
         {
             string Result = "";
@@ -232,6 +259,7 @@ namespace HC.View
             return Result;
         }
 
+        // ToXml子方法
         private string GetFontStyleXML()
         {
             string Result = "";
@@ -325,6 +353,26 @@ namespace HC.View
             get { return FTextMetric; }
         }
 
+        public uint OutMetSize
+        {
+            get { return FOutMetSize; }
+        }
+
+        public OUTLINETEXTMETRICW OutlineTextmetric
+        {
+            get { return FOutlineTextmetric; }
+        }
+
+        public TT_HHEA FontHeader
+        {
+            get { return FFontHeader; }
+        }
+
+        public bool CJKFont
+        {
+            get { return FCJKFont; }
+        }
+
         public string Family
         {
             get { return FFamily; }
@@ -335,6 +383,11 @@ namespace HC.View
         {
             get { return FSize; }
             set { SetSize(value); }
+        }
+
+        public int FontHeight
+        {
+            get { return FFontHeight; }
         }
 
         public HCFontStyles FontStyles

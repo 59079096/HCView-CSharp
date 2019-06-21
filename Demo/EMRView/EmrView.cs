@@ -24,8 +24,8 @@ namespace EMRView
         {
             DeItem vEmrTraceItem = new DeItem();
             vEmrTraceItem.Text = aText;
-            vEmrTraceItem.StyleNo = Style.CurStyleNo;
-            vEmrTraceItem.ParaNo = Style.CurParaNo;
+            vEmrTraceItem.StyleNo = CurStyleNo;
+            vEmrTraceItem.ParaNo = CurParaNo;
             vEmrTraceItem.StyleEx = StyleExtra.cseAdd;
 
             this.InsertItem(vEmrTraceItem);
@@ -78,7 +78,7 @@ namespace EMRView
                 int vParaNo = HCStyle.Null;
                 StyleExtra vCurStyleEx = StyleExtra.cseNone;
 
-                HCRichData vData = this.ActiveSectionTopLevelData();
+                HCRichData vData = this.ActiveSectionTopLevelData() as HCRichData;
                 if (vData.SelectExists())
                 {
                     this.DisSelect();
@@ -118,7 +118,7 @@ namespace EMRView
                     if (vData.Items[vData.SelectInfo.StartItemNo] is DeItem)  // 文本
                     {
                         DeItem vDeItem = vData.Items[vData.SelectInfo.StartItemNo] as DeItem;
-                        vText = vDeItem.GetTextPart(vData.SelectInfo.StartItemOffset, 1);
+                        vText = vDeItem.SubString(vData.SelectInfo.StartItemOffset, 1);
                         vStyleNo = vDeItem.StyleNo;
                         vParaNo = vDeItem.ParaNo;
                         vCurStyleEx = vDeItem.StyleEx;
@@ -144,7 +144,7 @@ namespace EMRView
                     if (vData.Items[vData.SelectInfo.StartItemNo] is DeItem)  // 文本
                     {
                         DeItem vDeItem = vData.Items[vData.SelectInfo.StartItemNo] as DeItem;
-                        vText = vDeItem.GetTextPart(vData.SelectInfo.StartItemOffset + 1, 1);
+                        vText = vDeItem.SubString(vData.SelectInfo.StartItemOffset + 1, 1);
                         vStyleNo = vDeItem.StyleNo;
                         vParaNo = vDeItem.ParaNo;
                         vCurStyleEx = vDeItem.StyleEx;
@@ -239,7 +239,7 @@ namespace EMRView
             {
                 if (HC.View.HC.IsKeyPressWant(e))
                 {
-                    HCRichData vData = this.ActiveSectionTopLevelData();
+                    HCRichData vData = this.ActiveSectionTopLevelData() as HCRichData;
                     if (vData.SelectInfo.StartItemNo < 0)
                         return;
 
@@ -269,36 +269,6 @@ namespace EMRView
                 return base.DoInsertText(aText);
         }
 
-        /// <summary> 开始保存文档 </summary>
-        /// <param name="AStream"></param>
-        protected override void DoSaveBefor(Stream aStream)
-        {
-            base.DoSaveBefor(aStream);
-        }
-
-        /// <summary> 文档保存完成 </summary>
-        /// <param name="AStream"></param>
-        protected override void DoSaveAfter(Stream aStream)
-        {
-            base.DoSaveAfter(aStream);
-        }
-
-        /// <summary> 开始加载文档 </summary>
-        /// <param name="AStream"></param>
-        /// <param name="AFileVersion">文件版本号</param>
-        protected override void DoLoadBefor(Stream aStream, ushort aFileVersion)
-        {
-            base.DoLoadBefor(aStream, aFileVersion);
-        }
-
-        /// <summary> 文档加载完成 </summary>
-        /// <param name="AStream"></param>
-        /// <param name="AFileVersion">文件版本号</param>
-        protected override void DoLoadAfter(Stream aStream, ushort aFileVersion)
-        {
-            base.DoLoadAfter(aStream, aFileVersion);
-        }
-
         /// <summary> 文档某节的Item绘制完成 </summary>
         /// <param name="AData">当前绘制的Data</param>
         /// <param name="ADrawItemIndex">Item对应的DrawItem序号</param>
@@ -314,20 +284,6 @@ namespace EMRView
         {
             base.DoSectionDrawItemPaintAfter(sender, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom,
                 aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-        }
-
-        /// <summary> 控件绘制文档内容开始 </summary>
-        /// <param name="ACanvas">画布</param>
-        protected void DoUpdateViewBefor(HCCanvas aCanvas)
-        {
-
-        }
-
-        /// <summary> 控件绘制文档内容结束 </summary>
-        /// <param name="ACanvas">画布</param>
-        protected void DoUpdateViewAfter(HCCanvas aCanvas)
-        {
-
         }
 
         protected override void WndProc(ref Message Message)
@@ -349,8 +305,6 @@ namespace EMRView
             this.Width = 100;
             this.Height = 100;
             this.OnSectionCreateItem = DoSectionCreateItem;
-            this.OnUpdateViewBefor = DoUpdateViewBefor;
-            this.OnUpdateViewAfter = DoUpdateViewAfter;
             this.OnSectionCreateStyleItem = DoCreateStyleItem;
             this.OnSectionCanEdit = DoCanEdit; 
         }
@@ -384,20 +338,20 @@ namespace EMRView
         /// <param name="ATraverse">遍历时信息</param>
         public void TraverseItem(HCItemTraverse aTraverse)
         {
-            if (aTraverse.Area.Value == 0)
+            if (aTraverse.Areas.Count == 0)
                 return;
 
             for (int i = 0; i <= this.Sections.Count - 1; i++)
             {
                 if (!aTraverse.Stop)
                 {
-                    if (aTraverse.Area.Contains((byte)SectionArea.saHeader))
+                    if (aTraverse.Areas.Contains(SectionArea.saHeader))
                         this.Sections[i].Header.TraverseItem(aTraverse);
 
-                    if ((!aTraverse.Stop) && (aTraverse.Area.Contains((byte)SectionArea.saPage)))
-                        this.Sections[i].PageData.TraverseItem(aTraverse);
+                    if ((!aTraverse.Stop) && (aTraverse.Areas.Contains(SectionArea.saPage)))
+                        this.Sections[i].Page.TraverseItem(aTraverse);
 
-                    if ((!aTraverse.Stop) && (aTraverse.Area.Contains((byte)SectionArea.saFooter)))
+                    if ((!aTraverse.Stop) && (aTraverse.Areas.Contains(SectionArea.saFooter)))
                         this.Sections[i].Footer.TraverseItem(aTraverse);
                 }
             }
@@ -426,12 +380,12 @@ namespace EMRView
         {
             DeItem Result = new DeItem();
             Result.Text = aText;
-            if (this.Style.CurStyleNo > HCStyle.Null)
-                Result.StyleNo = this.Style.CurStyleNo;
+            if (this.CurStyleNo > HCStyle.Null)
+                Result.StyleNo = this.CurStyleNo;
             else
                 Result.StyleNo = 0;
 
-            Result.ParaNo = this.Style.CurParaNo;
+            Result.ParaNo = this.CurParaNo;
 
             return Result;
         }

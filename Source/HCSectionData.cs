@@ -69,14 +69,6 @@ namespace HC.View
                 return FFloatItems[FFloatItemIndex];
         }
 
-        public override POINT GetScreenCoord(int x, int y)
-        {
-            if (FOnGetScreenCoord != null)
-                return FOnGetScreenCoord(x, y);
-            else
-                return new POINT();
-        }
-
         protected override void SetReadOnly(bool value)
         {
             if (this.ReadOnly != value)
@@ -111,6 +103,7 @@ namespace HC.View
         {
             bool Result = true;
             FMouseDownIndex = GetFloatItemAt(e.X, e.Y);
+
             int vOldIndex = FFloatItemIndex;
             if (FFloatItemIndex != FMouseDownIndex)
             {
@@ -145,6 +138,7 @@ namespace HC.View
         public bool MouseMoveFloatItem(MouseEventArgs e)
         {
             bool Result = true;
+
             if ((e.Button == MouseButtons.Left) && (FMouseDownIndex >= 0))
             {
                 HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
@@ -258,6 +252,7 @@ namespace HC.View
             FMouseDownIndex = -1;
             FMouseMoveIndex = -1;
             FFloatItems.Clear();
+
             base.Clear();
         }
 
@@ -270,6 +265,14 @@ namespace HC.View
             }
 
             base.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
+        }
+
+        public override POINT GetScreenCoord(int x, int y)
+        {
+            if (FOnGetScreenCoord != null)
+                return FOnGetScreenCoord(x, y);
+            else
+                return new POINT();
         }
 
         /// <summary> 插入浮动Item </summary>
@@ -323,6 +326,7 @@ namespace HC.View
                     vBuffer = BitConverter.GetBytes(vStyleNo);
                     aStream.Read(vBuffer, 0, vBuffer.Length);
                     vStyleNo = BitConverter.ToInt32(vBuffer, 0);
+
                     vFloatItem = CreateFloatItemByStyle(vStyleNo);
                     vFloatItem.LoadFromStream(aStream, aStyle, aFileVersion);
                     FFloatItems.Add(vFloatItem);
@@ -346,6 +350,7 @@ namespace HC.View
                 FFloatItems[i].ToXml(vFloatItemNode);
                 vNode.AppendChild(vFloatItemNode);
             }
+
             aNode.AppendChild(vNode);
         }
 
@@ -353,6 +358,7 @@ namespace HC.View
         {
             XmlElement vItemsNode = aNode.SelectSingleNode("items") as XmlElement;
             base.ParseXml(aNode);
+
             vItemsNode = aNode.SelectSingleNode("floatitems") as XmlElement;
             for (int i = 0; i <= vItemsNode.ChildNodes.Count - 1; i++)
             {
@@ -432,25 +438,14 @@ namespace HC.View
         private bool FShowLineActiveMark;  // 当前激活的行前显示标识
         private bool FShowUnderLine;  // 下划线
         private bool FShowLineNo;  // 行号
-        private int FReFormatStartItemNo;
-
-        private int GetPageDataFmtTop(int aPageIndex)
-        {
-            return 0;
-        }
-
-        protected override void _ReFormatData(int aStartItemNo, int aLastItemNo = -1, int aExtraItemCount = 0)
-        {
-            FReFormatStartItemNo = aStartItemNo;
-            base._ReFormatData(aStartItemNo, aLastItemNo, aExtraItemCount);
-        }
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, 
             RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
-            aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
+                aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
+
             if (!APaintInfo.Print)
             {
                 if (FShowLineActiveMark)
@@ -576,6 +571,7 @@ namespace HC.View
         {
             byte[] vBuffer = BitConverter.GetBytes(FShowUnderLine);
             aStream.Write(vBuffer, 0, vBuffer.Length);
+            
             base.SaveToStream(aStream);
         }
 
@@ -584,6 +580,7 @@ namespace HC.View
             byte[] vBuffer = BitConverter.GetBytes(FShowUnderLine);
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FShowUnderLine = BitConverter.ToBoolean(vBuffer, 0);
+
             base.LoadFromStream(aStream, aStyle, aFileVersion);
         }
 
@@ -649,11 +646,6 @@ namespace HC.View
         {
             get { return FShowUnderLine; }
             set { FShowUnderLine = value; }
-        }
-
-        public int ReFormatStartItemNo
-        {
-            get { return FReFormatStartItemNo; }
         }
     }
 }

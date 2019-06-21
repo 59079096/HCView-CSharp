@@ -30,9 +30,7 @@ namespace HC.View
         protected override void SetText(string value)
         {
             if (FText != value)
-            {
                 FText = value;
-            }
         }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom,
@@ -59,37 +57,25 @@ namespace HC.View
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            int vLen = System.Text.Encoding.Default.GetByteCount(FText);
-            if (vLen > ushort.MaxValue)
-                throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
-
-            ushort vSize = (ushort)vLen;
-
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            if (vSize > 0)
-            {
-                vBuffer = System.Text.Encoding.Default.GetBytes(FText);
-                aStream.Write(vBuffer, 0, vBuffer.Length);
-            }
+            HC.HCSaveTextToStream(aStream, FText);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FText);
+        }
 
-            ushort vSize = 0;
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            vSize = BitConverter.ToUInt16(vBuffer, 0);
+        public override void ToXml(System.Xml.XmlElement aNode)
+        {
+ 	         base.ToXml(aNode);
+             aNode.InnerText = FText;
+        }
 
-            if (vSize > 0)
-            {
-                vBuffer = new byte[vSize];
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                FText = System.Text.Encoding.Default.GetString(vBuffer);
-            }
+        public override void ParseXml(System.Xml.XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FText = aNode.InnerText;
         }
 
         /// <summary> 约束到指定大小范围内 </summary>

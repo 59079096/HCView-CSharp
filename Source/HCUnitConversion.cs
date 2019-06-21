@@ -37,6 +37,26 @@ namespace HC.View
             PixelsPerMMY = PixelsPerInchY / 25.4f;  // 1毫米对应像素 = 1英寸dpi数 / 1英寸对应毫米
         }
 
+        public static uint TwipToPixel(Single aValue, Single aDpi)
+        {
+            return (uint)Math.Round(aValue * aDpi / 1440);
+        }
+
+        public static uint PixelToTwip(uint aValue, uint aDpi)
+        {
+            return (uint)Math.Round((Single)(aValue * 1440 / aDpi));
+        }
+
+        public static Single TwipToMillimeter(Single aValue)
+        {
+            return (Single)(aValue * 25.4 / 1440);
+        }
+
+        public static Single MillimeterToTwip(Single aValue)
+        {
+            return (Single)(aValue * 1440 / 25.4);
+        }
+
         /// <summary> 水平像素转为毫米 </summary>
         public static Single PixXToMillimeter(int value)
         {
@@ -60,6 +80,5 @@ namespace HC.View
         {
             return (int)Math.Round(value * PixelsPerMMY);
         }
-
     }
 }

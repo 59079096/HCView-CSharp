@@ -17,9 +17,120 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Xml;
+using System.Windows.Forms;
 
 namespace HC.View
 {
+    public enum TableSite : byte
+    {
+        tsOutside,  // 表格外面
+        tsCell,  // 单元格中
+        tsBorderLeft,  // 只有第一列使用此元素
+        tsBorderTop,    // 只有第一行使用此元素
+        tsBorderRight,  // 第X列右边
+        tsBorderBottom  // 第X行下边
+    }
+
+    public struct ResizeInfo  // 缩放信息
+    {
+        public TableSite TableSite;
+        public int DestX, DestY;
+    }
+
+    public struct OutsideInfo  // 表格外面信息
+    {
+        public int Row;  // 外面位置处对应的行
+        public bool Leftside;  // True：左边 False：右边
+    }
+
+    public class SelectCellRang : HCObject
+    {
+        private int
+            FStartRow,  // 选中起始行
+            FStartCol,  // 选中起始列
+            FEndRow,    // 选中结束行
+            FEndCol;     // 选中结束列
+
+        public SelectCellRang()
+        {
+            Initialize();
+        }
+
+        /// <summary> 初始化字段和变量 </summary>
+        public void Initialize()
+        {
+            FStartRow = -1;
+            FStartCol = -1;
+            InitializeEnd();
+        }
+
+        public void InitializeEnd()
+        {
+            FEndRow = -1;
+            FEndCol = -1;
+        }
+
+        public void SetStart(int aRow, int aCol)
+        {
+            FStartRow = aRow;
+            FStartCol = aCol;
+        }
+
+        public void SetEnd(int aRow, int aCol)
+        {
+            FEndRow = aRow;
+            FEndCol = aCol;
+        }
+
+        /// <summary> 在同一单元中编辑 </summary>
+        public bool EditCell()
+        {
+            return ((FStartRow >= 0) && (FEndRow < 0));
+        }
+
+        /// <summary> 选中在同一行 </summary>
+        public bool SameRow()
+        {
+            return ((FStartRow >= 0) && (FStartRow == FEndRow));
+        }
+
+        /// <summary> 选中在同一列 </summary>
+        public bool SameCol()
+        {
+            return ((FStartCol >= 0) && (FStartCol == FEndCol));
+        }
+
+        /// <summary> 选中1-n个单元格 </summary>
+        public bool SelectExists()
+        {
+            return ((FStartRow >= 0) && (FEndRow >= 0));
+        }
+
+        public int StartRow
+        {
+            get { return FStartRow; }
+            set { FStartRow = value; }
+        }
+
+        public int StartCol
+        {
+            get { return FStartCol; }
+            set { FStartCol = value; }
+        }
+
+        public int EndRow
+        {
+            get { return FEndRow; }
+            set { FEndRow = value; }
+        }
+
+        public int EndCol
+        {
+            get { return FEndCol; }
+            set { FEndCol = value; }
+        }
+    }
+
     /// <summary> 垂直对齐方式：上、居中、下) </summary>
     public enum HCAlignVert : byte
     {
@@ -31,18 +142,28 @@ namespace HC.View
         private HCTableCellData FCellData;
 
         private int FWidth;  // 被合并后记录原始宽(否则当行第一列被合并后，第二列无法确认水平起始位置)
-
         private int FHeight ;  // 被合并后记录原始高、记录拖动改变后高
-
         private int FRowSpan;  // 单元格跨几行，用于合并目标单元格记录合并了几行，合并源记录合并到单元格的行号，0没有行合并
-
         private int FColSpan ;  // 单元格跨几列，用于合并目标单元格记录合并了几列，合并源记录合并到单元格的列号，0没有列合并
 
         private Color FBackgroundColor;
-
         private HCAlignVert FAlignVert;
-
         private HCBorderSides FBorderSides;
+
+        private int GetCellDataTop(byte aCellVPadding)
+        {
+            switch (FAlignVert)
+            {
+                case HCAlignVert.cavTop:
+                    return aCellVPadding;
+
+                case HCAlignVert.cavCenter: 
+                    return (FHeight - aCellVPadding - FCellData.Height - aCellVPadding) / 2;
+
+                default: 
+                    return FHeight - aCellVPadding - FCellData.Height;
+            }
+        }
 
         protected bool GetActive()
         {
@@ -98,6 +219,36 @@ namespace HC.View
             FCellData.Dispose();
         }
 
+        public void MouseDown(MouseEventArgs e, byte aCellHPadding, byte aCellVPadding)
+        {
+            if (FCellData != null)
+            {
+                MouseEventArgs vEvent = new MouseEventArgs(e.Button, e.Clicks, e.X - aCellHPadding,
+                    e.Y - GetCellDataTop(aCellVPadding), e.Delta);
+                FCellData.MouseDown(vEvent);
+            }
+        }
+
+        public void MouseMove(MouseEventArgs e, byte aCellHPadding, byte aCellVPadding)
+        {
+            if (FCellData != null)
+            {
+                MouseEventArgs vEvent = new MouseEventArgs(e.Button, e.Clicks, e.X - aCellHPadding,
+                    e.Y - GetCellDataTop(aCellVPadding), e.Delta);
+                FCellData.MouseMove(vEvent);
+            }
+        }
+
+        public void MouseUp(MouseEventArgs e, byte aCellHPadding, byte aCellVPadding)
+        {
+            if (FCellData != null)
+            {
+                MouseEventArgs vEvent = new MouseEventArgs(e.Button, e.Clicks, e.X - aCellHPadding,
+                    e.Y - GetCellDataTop(aCellVPadding), e.Delta);
+                FCellData.MouseUp(vEvent);
+            }
+        }
+
         public bool IsMergeSource()
         {
             return (FCellData == null);
@@ -111,11 +262,10 @@ namespace HC.View
         /// <summary> 清除并返回为处理分页比净高增加的高度(为重新格式化时后面计算偏移用) </summary>
         public int ClearFormatExtraHeight()
         {
-            int Result = 0;
             if (FCellData != null)
-                Result = FCellData.ClearFormatExtraHeight();
-
-            return Result;
+                return FCellData.ClearFormatExtraHeight();
+            else
+                return 0;
         }
 
         public virtual void SaveToStream(Stream aStream)
@@ -140,7 +290,7 @@ namespace HC.View
 
             aStream.WriteByte(FBorderSides.Value);
 
-            /* 存数据 }*/
+            // 存数据
             bool vNullData = (FCellData == null);
             vBuffer = BitConverter.GetBytes(vNullData);
             aStream.Write(vBuffer, 0, vBuffer.Length);
@@ -204,6 +354,13 @@ namespace HC.View
             aNode.Attributes["vert"].Value = ((byte)FAlignVert).ToString();
             aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackgroundColor);
             aNode.Attributes["border"].Value = HC.GetBorderSidePro(FBorderSides);
+
+            if (FCellData != null)  // 存数据
+            {
+                XmlElement vNode = aNode.OwnerDocument.CreateElement("items");
+                FCellData.ToXml(vNode);
+                aNode.AppendChild(vNode);
+            }
         }
 
         public void ParseXml(XmlElement aNode)
@@ -225,18 +382,15 @@ namespace HC.View
                 FCellData.ParseXml(aNode.SelectSingleNode("items") as XmlElement);
         }
 
-        public void GetCaretInfo(int aItemNo, int  aOffset, ref HCCaretInfo aCaretInfo)
+        public void GetCaretInfo(int aItemNo, int aOffset, byte aCellHPadding, byte aCellVPadding, ref HCCaretInfo aCaretInfo)
         {
             if (FCellData != null)
             {
                 FCellData.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
                 if (aCaretInfo.Visible)
                 {
-                    if (FAlignVert == HCAlignVert.cavBottom)
-                        aCaretInfo.Y = aCaretInfo.Y + FHeight - FCellData.Height;
-                    else
-                    if (FAlignVert == HCAlignVert.cavCenter)
-                        aCaretInfo.Y = aCaretInfo.Y + (FHeight - FCellData.Height) / 2;
+                    aCaretInfo.X += aCellHPadding;
+                    aCaretInfo.Y += GetCellDataTop(aCellVPadding);
                 }
             }
             else
@@ -251,29 +405,14 @@ namespace HC.View
         /// <param name="aDataScreenBottom">屏幕区域Bottom</param>
         /// <param name="aVOffset">指定从哪个位置开始的数据绘制到目标区域的起始位置</param>
         /// <param name="ACanvas">画布</param>
-        public  void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom, 
-            int aDataScreenTop, int aDataScreenBottom, int aVOffset, 
+        public  void PaintTo(int aDrawLeft, int aDrawTop, int aDataDrawBottom, 
+            int aDataScreenTop, int aDataScreenBottom, int aVOffset, byte aCellHPadding, byte aCellVPadding,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FCellData != null)
             {
-                int vTop = 0;
-                switch (FAlignVert)
-                {
-                    case View.HCAlignVert.cavTop: 
-                        vTop = aDataDrawTop;
-                        break;
-
-                    case View.HCAlignVert.cavBottom: 
-                        vTop = aDataDrawTop + FHeight - FCellData.Height;
-                        break;
-
-                    case View.HCAlignVert.cavCenter: 
-                        vTop = aDataDrawTop + (FHeight - FCellData.Height) / 2;
-                        break;
-                }
-            
-                FCellData.PaintData(aDataDrawLeft, vTop, aDataDrawBottom, aDataScreenTop,
+                int vTop = aDrawTop + GetCellDataTop(aCellVPadding);
+                FCellData.PaintData(aDrawLeft + aCellHPadding, vTop, aDataDrawBottom, aDataScreenTop,
                     aDataScreenBottom, aVOffset, ACanvas, APaintInfo);
             }
         }

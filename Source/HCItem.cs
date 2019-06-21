@@ -18,6 +18,7 @@ using System.Text;
 using System.IO;
 using HC.Win32;
 using System.Xml;
+using System.ComponentModel;
 
 namespace HC.View
 {
@@ -28,6 +29,14 @@ namespace HC.View
         public SIZE WindowExt;
         public POINT ViewportOrg;
         public SIZE ViewportExt;
+    }
+
+    public enum HCViewModel : byte
+    {
+        [Description("胶卷视图，显示页眉、页脚")]
+        hvmFilm,
+        [Description("页面视图，不显示页眉、页脚")]
+        hvmPage
     }
 
     public enum ItemOption : byte 
@@ -43,6 +52,7 @@ namespace HC.View
     public class PaintInfo : HCObject
     {
         private bool FPrint;
+        private HCViewModel FViewModel;
         List<HCCustomItem> FTopItems;
         int FWindowWidth, FWindowHeight;
         Single
@@ -55,6 +65,7 @@ namespace HC.View
             FScaleX = 1;
             FScaleY = 1;
             FZoom = 1;
+            FViewModel = HCViewModel.hvmFilm;
         }
 
         ~PaintInfo()
@@ -122,6 +133,12 @@ namespace HC.View
         {
             get { return FPrint; }
             set { FPrint = value; }
+        }
+
+        public HCViewModel ViewModel
+        {
+            get { return FViewModel; }
+            set { FViewModel = value; }
         }
 
         /// <summary> 只管理不负责释放 </summary>

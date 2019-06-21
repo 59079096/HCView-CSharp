@@ -33,10 +33,10 @@ namespace HC.View
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             HCStyle vStyle = aRichData.Style;
-            vStyle.TextStyles[TextStyleNo].ApplyStyle(vStyle.DefCanvas);
-            int vH = vStyle.DefCanvas.TextHeight("H");
-            int vTopW = Math.Max(vStyle.DefCanvas.TextWidth(FTopText), FPadding);
-            int vBottomW = Math.Max(vStyle.DefCanvas.TextWidth(FBottomText), FPadding);
+            vStyle.ApplyTempStyle(TextStyleNo);
+            int vH = vStyle.TextStyles[TextStyleNo].FontHeight;
+            int vTopW = Math.Max(vStyle.TempCanvas.TextWidth(FTopText), FPadding);
+            int vBottomW = Math.Max(vStyle.TempCanvas.TextWidth(FBottomText), FPadding);
             // 计算尺寸
             if (vTopW > vBottomW)
                 Width = vTopW + 4 * FPadding;
@@ -61,8 +61,8 @@ namespace HC.View
                 aCanvas.Brush.Color = HC.clBtnFace;
                 aCanvas.FillRect(aDrawRect);
             }
-            
-            if (!FLineHide)
+
+            if (!FLineHide)  // 分数线
             {
                 aCanvas.Pen.Color = Color.Black;
                 aCanvas.MoveTo(aDrawRect.Left + FPadding, aDrawRect.Top + FTopRect.Bottom + FPadding);
@@ -167,8 +167,8 @@ namespace HC.View
             int vOffset = -1;
             if (FActiveArea != ExpressArea.ceaNone)
             {
-                OwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(OwnerData.Style.DefCanvas);
-                vOffset = HC.GetCharOffsetAt(OwnerData.Style.DefCanvas, vS, vX);
+                OwnerData.Style.ApplyTempStyle(TextStyleNo);
+                vOffset = HC.GetNorAlignCharOffsetAt(OwnerData.Style.TempCanvas, vS, vX);
             }
 
             if (vOffset != FCaretOffset)
@@ -316,14 +316,14 @@ namespace HC.View
         {
             if ((FActiveArea != ExpressArea.ceaNone) && (FCaretOffset >= 0))
             {
-                OwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(OwnerData.Style.DefCanvas);
+                OwnerData.Style.ApplyTempStyle(TextStyleNo);
                 if (FActiveArea == ExpressArea.ceaTop)
                 {
                     if (FCaretOffset < 0)
                         FCaretOffset = 0;
 
                     aCaretInfo.Height = FTopRect.Bottom - FTopRect.Top;
-                    aCaretInfo.X = FTopRect.Left + OwnerData.Style.DefCanvas.TextWidth(FTopText.Substring(0, FCaretOffset));
+                    aCaretInfo.X = FTopRect.Left + OwnerData.Style.TempCanvas.TextWidth(FTopText.Substring(0, FCaretOffset));
                     aCaretInfo.Y = FTopRect.Top;
                 }
                 else
@@ -333,40 +333,12 @@ namespace HC.View
                             FCaretOffset = 0;
 
                         aCaretInfo.Height = FBottomRect.Bottom - FBottomRect.Top;
-                        aCaretInfo.X = FBottomRect.Left + OwnerData.Style.DefCanvas.TextWidth(FBottomText.Substring(0, FCaretOffset));
+                        aCaretInfo.X = FBottomRect.Left + OwnerData.Style.TempCanvas.TextWidth(FBottomText.Substring(0, FCaretOffset));
                         aCaretInfo.Y = FBottomRect.Top;
                     }
             }
             else
                 aCaretInfo.Visible = false;
-        }
-
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
-        {
-            base.SaveToStream(aStream, aStart, aEnd);
-            HC.HCSaveTextToStream(aStream, FTopText);
-            HC.HCSaveTextToStream(aStream, FBottomText);
-        }
-
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.HCLoadTextFromStream(aStream, ref FTopText);
-            HC.HCLoadTextFromStream(aStream, ref FBottomText);
-        }
-
-        public override void ParseXml(System.Xml.XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FTopText = aNode.Attributes["toptext"].Value;
-            FBottomText = aNode.Attributes["bottomtext"].Value;
-        }
-
-        public override void ToXml(System.Xml.XmlElement aNode)
-        {
-            base.ToXml(aNode);
-            aNode.Attributes["toptext"].Value = FTopText;
-            aNode.Attributes["bottomtext"].Value = FBottomText;
         }
 
         protected virtual ExpressArea GetExpressArea(int x, int y)
@@ -393,7 +365,8 @@ namespace HC.View
             set { FBottomRect = value; }
         }
 
-        public HCFractionItem(HCCustomData aOwnerData, string aTopText, string aBottomText) : base(aOwnerData)
+        public HCFractionItem(HCCustomData aOwnerData, string aTopText, string aBottomText)
+            : base(aOwnerData)
         {
             this.StyleNo = HCStyle.Fraction;
             FPadding = 5;
@@ -409,6 +382,34 @@ namespace HC.View
             base.Assign(source);
             FTopText = (source as HCFractionItem).TopText;
             FBottomText = (source as HCFractionItem).BottomText;
+        }
+
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStream(aStream, aStart, aEnd);
+            HC.HCSaveTextToStream(aStream, FTopText);
+            HC.HCSaveTextToStream(aStream, FBottomText);
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FTopText);
+            HC.HCLoadTextFromStream(aStream, ref FBottomText);
+        }
+
+        public override void ToXml(System.Xml.XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["toptext"].Value = FTopText;
+            aNode.Attributes["bottomtext"].Value = FBottomText;
+        }
+
+        public override void ParseXml(System.Xml.XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FTopText = aNode.Attributes["toptext"].Value;
+            FBottomText = aNode.Attributes["bottomtext"].Value;
         }
 
         public byte Padding

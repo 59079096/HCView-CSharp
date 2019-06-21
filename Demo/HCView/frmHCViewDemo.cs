@@ -69,8 +69,8 @@ namespace HCViewDemo
         {
             GetPagesAndActive();
 
-            CurTextStyleChange(FHCView.Style.CurStyleNo);
-            CurParaStyleChange(FHCView.Style.CurParaNo);
+            CurTextStyleChange(FHCView.CurStyleNo);
+            CurParaStyleChange(FHCView.CurParaNo);
         }
 
         private void DoZoomChanged(object sender, EventArgs e)
@@ -107,7 +107,7 @@ namespace HCViewDemo
             FHCView.OnCaretChange = DoCaretChange;
             FHCView.OnZoomChanged = DoZoomChanged;
             FHCView.OnVerScroll = DoVerScroll;
-            FHCView.ContextMenuStrip = pmRichEdit;
+            FHCView.ContextMenuStrip = pmHCView;
             this.Controls.Add(FHCView);
             FHCView.Dock = DockStyle.Fill;
             FHCView.BringToFront();
@@ -264,7 +264,7 @@ namespace HCViewDemo
                 {
                     if (vOpenDlg.FileName != "")
                     {
-                        HCRichData vTopData = FHCView.ActiveSectionTopLevelData();
+                        HCRichData vTopData = FHCView.ActiveSectionTopLevelData() as HCRichData;
                         HCImageItem vImageItem = new HCImageItem(vTopData);
                         vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
                         vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
@@ -543,10 +543,29 @@ namespace HCViewDemo
                 FHCView.Focus();
         }
 
-        private void pmRichEdit_Opening(object sender, CancelEventArgs e)
+        private void pmHCView_Opening(object sender, CancelEventArgs e)
         {
+            if (FHCView.AnnotatePre.ActiveDrawAnnotateIndex >= 0)
+            {
+                for (int i = 0; i <= pmHCView.Items.Count - 1; i++)
+                    pmHCView.Items[i].Visible = false;
+
+                mniModAnnotate.Visible = true;
+                mniDelAnnotate.Visible = true;
+
+                return;
+            }
+            else
+            {
+                for (int i = 0; i <= pmHCView.Items.Count - 1; i++)
+                    pmHCView.Items[i].Visible = true;
+
+                mniModAnnotate.Visible = false;
+                mniDelAnnotate.Visible = false;
+            }
+
             HCCustomData vActiveData = FHCView.ActiveSection.ActiveData;
-            HCCustomItem vActiveItem = vActiveData.GetCurItem();
+            HCCustomItem vActiveItem = vActiveData.GetActiveItem();
 
             HCCustomData vTopData = null;
             HCCustomItem vTopItem = vActiveItem;
@@ -560,6 +579,9 @@ namespace HCViewDemo
                         vActiveData = vTopData;
                         vActiveItem = vTopItem;
                     }
+
+                    vTopData = (vTopItem as HCCustomRectItem).GetTopLevelData();
+                    vTopItem = vTopData.GetActiveItem();
                 }
                 else
                     break;
@@ -669,9 +691,9 @@ namespace HCViewDemo
 
         private void mniDisBorder_Click(object sender, EventArgs e)
         {
-            if (FHCView.ActiveSection.ActiveData.GetCurItem() is HCTableItem)
+            if (FHCView.ActiveSection.ActiveData.GetActiveItem() is HCTableItem)
             {
-                HCTableItem vTable = FHCView.ActiveSection.ActiveData.GetCurItem() as HCTableItem;
+                HCTableItem vTable = FHCView.ActiveSection.ActiveData.GetActiveItem() as HCTableItem;
                 vTable.BorderVisible = !vTable.BorderVisible;
                 FHCView.UpdateView();
             }

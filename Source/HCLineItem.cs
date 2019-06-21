@@ -58,6 +58,23 @@ namespace HC.View
             aCanvas.LineTo(aDrawRect.Right, vTop);
         }
 
+        public HCLineItem(HCCustomData aOwnerData, int aWidth, int aHeight)
+            : base(aOwnerData)
+        {
+            FLineHeight = 1;
+            Width = aWidth;
+            Height = aHeight;
+            FLineStyle = HCPenStyle.psSolid;
+            StyleNo = HCStyle.Line;
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FLineHeight = (source as HCLineItem).LineHeight;
+            FLineStyle = (source as HCLineItem).FLineStyle;
+        }
+
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
@@ -72,13 +89,6 @@ namespace HC.View
             FLineStyle = (HCPenStyle)aStream.ReadByte();
         }
 
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FLineHeight = byte.Parse(aNode.Attributes["height"].Value);
-            FLineStyle = (HCPenStyle)byte.Parse(aNode.Attributes["style"].Value);
-        }
-
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
@@ -86,20 +96,11 @@ namespace HC.View
             aNode.Attributes["style"].Value = ((byte)FLineStyle).ToString();
         }
 
-        public HCLineItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData)
+        public override void ParseXml(XmlElement aNode)
         {
-            FLineHeight = 1;
-            Width = aWidth;
-            Height = aHeight;
-            FLineStyle = HCPenStyle.psSolid;
-            StyleNo = HCStyle.Line;
-        }
-
-        public override void Assign(HCCustomItem source)
-        {
-            base.Assign(source);
-            FLineHeight = (source as HCLineItem).LineHeight;
-            FLineStyle = (source as HCLineItem).FLineStyle;
+            base.ParseXml(aNode);
+            FLineHeight = byte.Parse(aNode.Attributes["height"].Value);
+            FLineStyle = (HCPenStyle)byte.Parse(aNode.Attributes["style"].Value);
         }
 
         public HCPenStyle LineStyle

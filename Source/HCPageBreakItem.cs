@@ -28,24 +28,32 @@ namespace HC.View
         {
             StyleNo = HCStyle.PageBreak;
 
-            if (aOwnerData.Style.CurStyleNo > HCStyle.Null)
-                aOwnerData.Style.TextStyles[aOwnerData.Style.CurStyleNo].ApplyStyle(aOwnerData.Style.DefCanvas);
+            if (aOwnerData.CurStyleNo > HCStyle.Null)
+            {
+                aOwnerData.Style.ApplyTempStyle(aOwnerData.CurStyleNo);
+                Height = aOwnerData.Style.TextStyles[aOwnerData.CurStyleNo].FontHeight;
+            }
             else
-                aOwnerData.Style.TextStyles[0].ApplyStyle(aOwnerData.Style.DefCanvas);
-
-            Height = aOwnerData.Style.DefCanvas.TextHeight("H");
+            {
+                aOwnerData.Style.ApplyTempStyle(0);
+                Height = aOwnerData.Style.TextStyles[0].FontHeight;
+            }
         }
 
         public HCPageBreakItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
         {
             StyleNo = HCStyle.PageBreak;
 
-            if (aOwnerData.Style.CurStyleNo > HCStyle.Null)
-                aOwnerData.Style.TextStyles[aOwnerData.Style.CurStyleNo].ApplyStyle(aOwnerData.Style.DefCanvas);
+            if (aOwnerData.CurStyleNo > HCStyle.Null)
+            {
+                aOwnerData.Style.ApplyTempStyle(aOwnerData.CurStyleNo);
+                Height = aOwnerData.Style.TextStyles[aOwnerData.CurStyleNo].FontHeight;
+            }
             else
-                aOwnerData.Style.TextStyles[0].ApplyStyle(aOwnerData.Style.DefCanvas);
-
-            Height = aOwnerData.Style.DefCanvas.TextHeight("H");
+            {
+                aOwnerData.Style.ApplyTempStyle(0);
+                Height = aOwnerData.Style.TextStyles[0].FontHeight;
+            }
         }
     }
 }

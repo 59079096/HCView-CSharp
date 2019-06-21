@@ -25,8 +25,8 @@ namespace HC.View
 
         private void DoImageChange(Object sender)
         {
-            if (FImage.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb)
-                FImage = FImage.Clone(new Rectangle(0, 0, FImage.Width, FImage.Height), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            //if (FImage.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb)
+            //    FImage = FImage.Clone(new Rectangle(0, 0, FImage.Width, FImage.Height), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
         }
 
         protected override int GetWidth()
@@ -45,6 +45,109 @@ namespace HC.View
                 Result = FImage.Height;
 
             return Result;
+        }
+
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop,
+            int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            aCanvas.StretchDraw(aDrawRect, FImage);
+
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenBottom, aDataScreenBottom,
+                aCanvas, aPaintInfo);
+        }
+
+        public HCImageItem(HCCustomData aOwnerData)
+            : base(aOwnerData)
+        {
+            FImage = new Bitmap(1, 1);
+            StyleNo = HCStyle.Image;
+        }
+
+        public HCImageItem(HCCustomData aOwnerData, int aWidth, int aHeight)
+            : base(aOwnerData, aWidth, aHeight)
+        {
+            StyleNo = HCStyle.Image;
+        }
+
+        ~HCImageItem()
+        {
+            FImage.Dispose();
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FImage = new Bitmap((source as HCImageItem).Image);
+        }
+
+        public override void PaintTop(HCCanvas aCanvas)
+        {
+            using (Graphics vGraphicSrc = Graphics.FromImage(FImage))
+            {
+                BLENDFUNCTION vBlendFunction = new BLENDFUNCTION();
+                vBlendFunction.BlendOp = GDI.AC_SRC_OVER;
+                vBlendFunction.BlendFlags = 0;
+                vBlendFunction.AlphaFormat = GDI.AC_SRC_OVER;  // 通常为 0，如果源位图为32位真彩色，可为 AC_SRC_ALPHA
+                vBlendFunction.SourceConstantAlpha = 128; // 透明度
+
+
+                IntPtr vImageHDC = vGraphicSrc.GetHdc();
+                try
+                {
+                    IntPtr vMemDC = (IntPtr)GDI.CreateCompatibleDC(vImageHDC);
+                    IntPtr vBitmap = FImage.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
+                    GDI.SelectObject(vMemDC, vBitmap);
+
+                    GDI.AlphaBlend(
+                        aCanvas.Handle,
+                        ResizeRect.Left,
+                        ResizeRect.Top,
+                        ResizeWidth,
+                        ResizeHeight,
+                        vMemDC,
+                        0,
+                        0,
+                        FImage.Width,
+                        FImage.Height,
+                        vBlendFunction);
+
+                    GDI.DeleteDC(vMemDC);
+                    GDI.DeleteObject(vBitmap);
+                }
+                finally
+                {
+                    vGraphicSrc.ReleaseHdc(vImageHDC);
+                }
+            }
+
+            base.PaintTop(aCanvas);
+        }
+
+        /// <summary> 约束到指定大小范围内 </summary>
+        public override void RestrainSize(int aWidth, int aHeight)
+        {
+            if (Width > aWidth)
+            {
+                Single vBL = (float)Width / aWidth;
+                Width = aWidth;
+                Height = (int)Math.Round(Height / vBL);
+            }
+
+            if (Height > aHeight)
+            {
+                Single vBL = (float)Height / aHeight;
+                Height = aHeight;
+                Width = (int)Math.Round(Width / vBL);
+            }
+        }
+
+        public void LoadFromBmpFile(string aFileName)
+        {
+            FImage = new Bitmap(aFileName);
+            DoImageChange(this);
+
+            this.Width = FImage.Width;
+            this.Height = FImage.Height;
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
@@ -93,7 +196,7 @@ namespace HC.View
             DoImageChange(this);
         }
 
-        public string ToHtml(string aPath)
+        public override string ToHtml(string aPath)
         {
             if (aPath != "")  // 保存到指定的文件夹中
             {
@@ -121,108 +224,6 @@ namespace HC.View
             base.ParseXml(aNode);
             HC.Base64ToGraphic(aNode.InnerText, FImage);
             DoImageChange(this);
-        }
-
-        //
-        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, 
-            int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            aCanvas.StretchDraw(aDrawRect, FImage);
-
-            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenBottom, aDataScreenBottom,
-                aCanvas, aPaintInfo);
-        }
-
-        public override void PaintTop(HCCanvas aCanvas)
-        {
-            using (Graphics vGraphicSrc = Graphics.FromImage(FImage))
-            {
-                BLENDFUNCTION vBlendFunction = new BLENDFUNCTION();
-                vBlendFunction.BlendOp = GDI.AC_SRC_OVER;
-                vBlendFunction.BlendFlags = 0;
-                vBlendFunction.AlphaFormat = GDI.AC_SRC_OVER;  // 通常为 0，如果源位图为32位真彩色，可为 AC_SRC_ALPHA
-                vBlendFunction.SourceConstantAlpha = 128; // 透明度
-
-
-                IntPtr vImageHDC = vGraphicSrc.GetHdc();
-                try
-                {
-                    IntPtr vMemDC = (IntPtr)GDI.CreateCompatibleDC(vImageHDC);
-                    IntPtr vBitmap = FImage.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
-                    GDI.SelectObject(vMemDC, vBitmap);
-
-                    GDI.AlphaBlend(
-                        aCanvas.Handle,
-                        ResizeRect.Left,
-                        ResizeRect.Top,
-                        ResizeWidth,
-                        ResizeHeight,
-                        vMemDC,
-                        0,
-                        0,
-                        FImage.Width,
-                        FImage.Height,
-                        vBlendFunction);
-
-                    GDI.DeleteDC(vMemDC);
-                    GDI.DeleteObject(vBitmap);
-                }
-                finally
-                {
-                    vGraphicSrc.ReleaseHdc(vImageHDC);
-                }
-            }
-
-            base.PaintTop(aCanvas);
-        }
-
-        public HCImageItem(HCCustomData aOwnerData) : base(aOwnerData)
-        {
-            FImage = new Bitmap(1, 1);
-            StyleNo = HCStyle.Image;
-        }
-
-        public HCImageItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
-        {
-            StyleNo = HCStyle.Image;
-        }
-
-        ~HCImageItem()
-        {
-            FImage.Dispose();
-        }
-
-        public override void Assign(HCCustomItem source)
-        {
-            base.Assign(source);
-            FImage = new Bitmap((source as HCImageItem).Image);
-        }
-
-        /// <summary> 约束到指定大小范围内 </summary>
-        public override void RestrainSize(int aWidth, int aHeight)
-        {
-            if (Width > aWidth)
-            {
-                Single vBL = (float)Width / aWidth;
-                Width = aWidth;
-                Height = (int)Math.Round(Height / vBL);
-            }
-
-            if (Height > aHeight)
-            {
-                Single vBL = (float)Height / aHeight;
-                Height = aHeight;
-                Width = (int)Math.Round(Width / vBL);
-            }
-        }
-
-        public void LoadFromBmpFile(string aFileName)
-        {
-            FImage = new Bitmap(aFileName);
-            DoImageChange(this);
-
-            this.Width = FImage.Width;
-            this.Height = FImage.Height;
         }
 
         /// <summary> 恢复到原始尺寸 </summary>

@@ -66,7 +66,7 @@ namespace HC.View
             else
                 Result = Y;
 
-            Result /= DROPDOWNITEMHEIGHT;
+            Result = Result / DROPDOWNITEMHEIGHT;
 
             if (Result > FItems.Count - 1)
                 Result = FItems.Count - 1;
@@ -100,7 +100,7 @@ namespace HC.View
                         break;
                     }
                     else
-                        vH += DROPDOWNITEMHEIGHT;
+                        vH = vH + DROPDOWNITEMHEIGHT;
                 }
 
                 for (int i = AStartIndex; i <= FItems.Count - 1; i++)
@@ -111,7 +111,7 @@ namespace HC.View
                         break;
                     }
                     else
-                        vH += DROPDOWNITEMHEIGHT;
+                        vH = vH + DROPDOWNITEMHEIGHT;
                 }
             }
         }
@@ -173,7 +173,7 @@ namespace HC.View
             POINT vPt = OwnerData.GetScreenCoord(FButtonDrawRect.Left - (this.Width - FButtonDrawRect.Width),
                 FButtonDrawRect.Bottom + 1);
 
-            DoItemsChange(this);
+            //DoItemsChange(this);
 
             FPopupForm.Popup(vPt.X, vPt.Y);
         }
@@ -239,12 +239,13 @@ namespace HC.View
         {
             if (this.AutoSize)
             {
-                ARichData.Style.TextStyles[TextStyleNo].ApplyStyle(ARichData.Style.DefCanvas);
+                ARichData.Style.ApplyTempStyle(TextStyleNo);
                 SIZE vSize = new SIZE();
                 if (this.Text != "")
-                    vSize = ARichData.Style.DefCanvas.TextExtent(this.Text);
+                    vSize = ARichData.Style.TempCanvas.TextExtent(this.Text);
                 else
-                    vSize = ARichData.Style.DefCanvas.TextExtent("I");
+                    vSize = ARichData.Style.TempCanvas.TextExtent("H");
+
                 Width = FMargin + vSize.cx + FMargin + BTNWIDTH;  // 间距
                 Height = FMargin + vSize.cy + FMargin;
             }
@@ -337,72 +338,6 @@ namespace HC.View
                 ACaretInfo.Visible = false;
         }
 
-        public override void SaveToStream(Stream AStream, int AStart, int AEnd)
-        {
-            base.SaveToStream(AStream, AStart, AEnd);
-
-            ushort vSize = 0;
-
-            if (FSaveItem)
-            {
-                string vText = "";
-
-                if (FItems.Count > 0)
-                {
-                    vText = FItems[0];
-                    for (int i = 1; i < FItems.Count; i++)
-                        vText += HC.sLineBreak + FItems[i];
-                }
-
-                HC.HCSaveTextToStream(AStream, vText); 
-            }
-            else
-            {
-                byte[] vBuffer = BitConverter.GetBytes(vSize);
-                AStream.Write(vBuffer, 0, vBuffer.Length);
-            }
-        }
-
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
-        {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
-            FItems.Clear();
-            string vText = "";
-            HC.HCLoadTextFromStream(AStream, ref vText);
-            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-            for (int i = 0; i < vStrings.Length; i++)
-                FItems.Add(vStrings[i]);
-        }
-
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FItems.Clear();
-            string vText = aNode.Attributes["item"].Value;
-            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-
-            for (int i = 0; i < vStrings.Length; i++)
-                FItems.Add(vStrings[i]);
-        }
-
-        public override void ToXml(XmlElement aNode)
-        {
-            base.ToXml(aNode);
-            if (FSaveItem)
-            {
-                string vText = "";
-
-                if (FItems.Count > 0)
-                {
-                    vText = FItems[0];
-                    for (int i = 1; i < FItems.Count - 1; i++)
-                        vText += HC.sLineBreak + FItems[i];
-                }
-
-                aNode.Attributes["item"].Value = vText;
-            }
-        }
-
         protected void SetItems(List<string> Value)
         {
             if (!ReadOnly)
@@ -467,6 +402,72 @@ namespace HC.View
             HCComboboxItem vCombobox = Source as HCComboboxItem;
             for (int i = 0; i < vCombobox.Items.Count; i++)
                 FItems.Add(vCombobox.Items[i]);
+        }
+
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStream(aStream, aStart, aEnd);
+
+            ushort vSize = 0;
+
+            if (FSaveItem)
+            {
+                string vText = "";
+
+                if (FItems.Count > 0)
+                {
+                    vText = FItems[0];
+                    for (int i = 1; i < FItems.Count; i++)
+                        vText = vText + HC.sLineBreak + FItems[i];
+                }
+
+                HC.HCSaveTextToStream(aStream, vText);
+            }
+            else
+            {
+                byte[] vBuffer = BitConverter.GetBytes(vSize);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+            }
+        }
+
+        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        {
+            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            FItems.Clear();
+            string vText = "";
+            HC.HCLoadTextFromStream(AStream, ref vText);
+            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+            for (int i = 0; i < vStrings.Length; i++)
+                FItems.Add(vStrings[i]);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            if (FSaveItem)
+            {
+                string vText = "";
+
+                if (FItems.Count > 0)
+                {
+                    vText = FItems[0];
+                    for (int i = 1; i < FItems.Count - 1; i++)
+                        vText = vText + HC.sLineBreak + FItems[i];
+                }
+
+                aNode.Attributes["item"].Value = vText;
+            }
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FItems.Clear();
+            string vText = aNode.Attributes["item"].Value;
+            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+
+            for (int i = 0; i < vStrings.Length; i++)
+                FItems.Add(vStrings[i]);
         }
 
         public List<string> Items

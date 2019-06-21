@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNPLACEHOLDERCHAR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -26,7 +26,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;UNPLACEHOLDERCHAR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -50,16 +50,20 @@
     <Compile Include="HCCanvas.cs" />
     <Compile Include="HCCheckBoxItem.cs" />
     <Compile Include="HCComboboxItem.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="HCCommon.cs" />
     <Compile Include="HCCustomData.cs" />
     <Compile Include="HCDateTimePicker.cs" />
     <Compile Include="HCDrawItem.cs" />
+    <Compile Include="HCEdit.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="HCEditItem.cs" />
     <Compile Include="HCExpressItem.cs" />
     <Compile Include="HCCustomFloatItem.cs" />
     <Compile Include="HCFloatLineItem.cs" />
+    <Compile Include="HCFormatData.cs" />
     <Compile Include="HCFractionItem.cs" />
     <Compile Include="HCGifItem.cs" />
     <Compile Include="HCImageItem.cs" />
@@ -74,10 +78,10 @@
     <Compile Include="HCUnitConversion.cs" />
     <Compile Include="HCViewData.cs" />
     <Compile Include="HCRichScrollBar.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="HCScrollBar.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="HCSection.cs" />
     <Compile Include="HCSectionData.cs" />

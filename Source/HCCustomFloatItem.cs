@@ -22,9 +22,7 @@ namespace HC.View
     public class HCCustomFloatItem : HCResizeRectItem  // 可浮动Item
     {
         private int FLeft, FTop, FPageIndex;
-        
         private RECT FDrawRect;
-        
         public const byte PointSize = 5;
 
         public HCCustomFloatItem(HCCustomData aOwnerData)
@@ -98,15 +96,6 @@ namespace HC.View
             Height = BitConverter.ToInt32(vBuffer, 0);
         }
 
-        public override void ParseXml(XmlElement aNode)
-        {
-          StyleNo = int.Parse(aNode.Attributes["sno"].Value);
-          FLeft = int.Parse(aNode.Attributes["left"].Value);
-          FTop = int.Parse(aNode.Attributes["top"].Value);
-          Width = int.Parse(aNode.Attributes["width"].Value);
-          Height = int.Parse(aNode.Attributes["height"].Value);
-        }
-
         public override void ToXml(XmlElement aNode)
         {
             aNode.Attributes["sno"].Value = StyleNo.ToString();
@@ -114,6 +103,15 @@ namespace HC.View
             aNode.Attributes["top"].Value = FTop.ToString();
             aNode.Attributes["width"].Value = Width.ToString();
             aNode.Attributes["height"].Value = Height.ToString();
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            StyleNo = int.Parse(aNode.Attributes["sno"].Value);
+            FLeft = int.Parse(aNode.Attributes["left"].Value);
+            FTop = int.Parse(aNode.Attributes["top"].Value);
+            Width = int.Parse(aNode.Attributes["width"].Value);
+            Height = int.Parse(aNode.Attributes["height"].Value);
         }
 
         public RECT DrawRect

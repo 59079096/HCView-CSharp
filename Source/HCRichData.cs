@@ -20,20 +20,12 @@ using System.Xml;
 
 namespace HC.View
 {
+    public delegate bool InsertProcEventHandler(HCCustomItem aItem);
     public delegate void DataItemEventHandler(HCCustomData aData, int aItemNo);
+    public delegate void ItemMouseEventHandler(HCCustomData aData, int aItemNo, MouseEventArgs e);
 
     public class HCRichData : HCUndoData
     {
-        public delegate bool InsertProcEventHandler(HCCustomItem aItem);
-
-        public delegate void DrawItemPaintEventHandler(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
-            HCCanvas aCanvas, PaintInfo aPaintInfo);
-
-        public delegate void ItemMouseEventHandler(HCCustomData aData, int aItemNo, MouseEventArgs e);
-
-        private int FWidth;
-
         /// <summary> 鼠标左键按下(打开文件对话框双击文件后会触发MouseMouse，MouseUp) </summary>
         private bool FMouseLBDowning,
             /// <summary> 鼠标双击(处理双击自动选中，弹起清除选中的问题) </summary>
@@ -42,11 +34,13 @@ namespace HC.View
             FMouseMoveRestrain;  // 并不是在Item范围内MouseMove而是通过约束坐标找到的
 
         private int FMouseDownX, FMouseDownY,
+
             FMouseDownItemNo,
             FMouseDownItemOffset,
             FMouseMoveItemNo,
             FMouseMoveItemOffset,
             FMouseMoveDrawItemNo,
+
             FSelectSeekNo,
             FSelectSeekOffset;  // 选中操作时的游标
 
@@ -54,35 +48,282 @@ namespace HC.View
         private int FBatchInsertCount;
     
         private bool FReadOnly, FSelecting, FDraging;
-
         private DataItemEventHandler FOnItemResized;
-
         private ItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
-
-        private DrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
-
         private EventHandler FOnCreateItem;  // 新建了Item(目前主要是为了打字和用中文输入法输入英文时痕迹的处理)
 
-        private void FormatData(int aStartItemNo, int aLastItemNo)
+        private bool SelectByMouseDownShift(ref int AMouseDownItemNo, ref int AMouseDownItemOffset)
         {
-            int vPrioDrawItemNo = 0;
-            POINT vPos = new POINT();
+            bool Result = true;
 
-            _FormatReadyParam(aStartItemNo, ref vPrioDrawItemNo, ref vPos);
-            HCParaStyle vParaStyle = Style.ParaStyles[Items[aStartItemNo].ParaNo];
-
-            for (int i = aStartItemNo; i <= aLastItemNo; i++)
+            int vSelItemNo = -1, vSelItemOffset = -1;
+            if (this.SelectExists())  // 原来就有选中
             {
-                if (Items[i].ParaFirst)
+                if (IsSelectSeekStart())  // 上一次划选完成后是在选中起始
                 {
-                    vParaStyle = Style.ParaStyles[Items[i].ParaNo];
-                    vPos.X = vParaStyle.LeftIndentPix;
+                    if ((AMouseDownItemNo < FSelectSeekNo)
+                        || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset < FSelectSeekOffset)))
+                    {
+                        vSelItemNo = SelectInfo.EndItemNo;
+                        vSelItemOffset = SelectInfo.EndItemOffset;
+                        AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
+                    }
+                    else
+                        if (((AMouseDownItemNo > FSelectSeekNo) && (AMouseDownItemNo < SelectInfo.EndItemNo))
+                             || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset > FSelectSeekOffset))
+                             || ((AMouseDownItemNo == SelectInfo.EndItemNo) && (AMouseDownItemOffset < SelectInfo.EndItemOffset)))
+                        {
+                            vSelItemNo = SelectInfo.EndItemNo;
+                            vSelItemOffset = SelectInfo.EndItemOffset;
+
+                            AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
+                        }
+                        else
+                            if ((AMouseDownItemNo > SelectInfo.EndItemNo)
+                                || ((AMouseDownItemNo == SelectInfo.EndItemNo) && (AMouseDownItemOffset > SelectInfo.EndItemOffset)))
+                            {
+                                vSelItemNo = SelectInfo.EndItemNo;
+                                vSelItemOffset = SelectInfo.EndItemOffset;
+
+                                AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
+                            }
+                            else
+                                Result = false;
+                }
+                else  // 划选完成后是在结束
+                {
+                    if ((AMouseDownItemNo > FSelectSeekNo)
+                        || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset > FSelectSeekOffset)))
+                    {
+                        vSelItemNo = SelectInfo.StartItemNo;
+                        vSelItemOffset = SelectInfo.StartItemOffset;
+                        AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
+                    }
+                    else
+                        if (((AMouseDownItemNo > SelectInfo.StartItemNo) && (AMouseDownItemNo < FSelectSeekNo))
+                             || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset < FSelectSeekOffset))
+                             || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset > SelectInfo.StartItemOffset)))
+                        {
+                            vSelItemNo = SelectInfo.StartItemNo;
+                            vSelItemOffset = SelectInfo.StartItemOffset;
+
+                            AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
+                        }
+                        else
+                            if ((AMouseDownItemNo < SelectInfo.StartItemNo)
+                                || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset < SelectInfo.StartItemOffset)))
+                            {
+                                vSelItemNo = SelectInfo.StartItemNo;
+                                vSelItemOffset = SelectInfo.StartItemOffset;
+
+                                AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
+                            }
+                            else
+                                Result = false;
+                }
+            }
+            else  // 原来没有选中
+                if (SelectInfo.StartItemNo >= 0)
+                {
+                    if ((AMouseDownItemNo < SelectInfo.StartItemNo)
+                        || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset < SelectInfo.StartItemOffset)))
+                    {
+                        vSelItemNo = SelectInfo.StartItemNo;
+                        vSelItemOffset = SelectInfo.StartItemOffset;
+
+                        AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
+                    }
+                    else
+                        if ((AMouseDownItemNo > SelectInfo.StartItemNo)
+                            || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset > SelectInfo.StartItemOffset)))
+                        {
+                            vSelItemNo = SelectInfo.StartItemNo;
+                            vSelItemOffset = SelectInfo.StartItemOffset;
+
+                            AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
+                        }
+                        else
+                            Result = false;
                 }
 
-                _FormatItemToDrawItems(i, 1, vParaStyle.LeftIndentPix, 
-                    FWidth - vParaStyle.RightIndentPix, FWidth, ref vPos, ref vPrioDrawItemNo);
+            return Result;
+        }
+
+        #region AdjustSelectRange
+        /// <summary> 给定起始结束位置，判断正确的选中位置并修正输出 </summary>
+        /// <param name="ADrawItemNo">光标处的DrawItem(暂时无意义)</param>
+        /// <param name="AStartItemNo"></param>
+        /// <param name="AStartItemOffset"></param>
+        /// <param name="AEndItemNo"></param>
+        /// <param name="AEndItemNoOffset"></param>
+        private void AdjustSelectRange(ref int aStartItemNo, ref int aStartItemOffset, ref int aEndItemNo, ref int aEndItemNoOffset)
+        {
+            bool vLeftToRight = false;
+            // 记录原来选中范围
+            int vOldStartItemNo = SelectInfo.StartItemNo;
+            int vOldEndItemNo = SelectInfo.EndItemNo;
+
+            if (aStartItemNo < aEndItemNo)
+            {
+                vLeftToRight = true;
+
+                if (aStartItemOffset == GetItemOffsetAfter(aStartItemNo))  // 起始在Item最后面，改为下一个Item开始
+                {
+                    if (aStartItemNo < Items.Count - 1)
+                    {
+                        aStartItemNo = aStartItemNo + 1;
+                        aStartItemOffset = 0;
+                    }
+                }
+
+                if ((aStartItemNo != aEndItemNo) && (aEndItemNo >= 0) && (aEndItemNoOffset == 0))
+                {
+                    Items[aEndItemNo].DisSelect();  // 从前往后选，鼠标移动到前一次前面，原鼠标处被移出选中范围
+
+                    aEndItemNo = aEndItemNo - 1;
+                    aEndItemNoOffset = GetItemOffsetAfter(aEndItemNo);
+                }
+            }
+            else
+            {
+                if (aEndItemNo < aStartItemNo)
+                {
+                    vLeftToRight = false;
+
+                    if ((aStartItemNo > 0) && (aStartItemOffset == 0))
+                    {
+                        aStartItemNo = aStartItemNo - 1;
+                        aStartItemOffset = GetItemOffsetAfter(aStartItemNo);
+                    }
+
+                    if ((aStartItemNo != aEndItemNo) && (aEndItemNoOffset == GetItemOffsetAfter(aEndItemNo)))
+                    {
+                        Items[aEndItemNo].DisSelect();  // 从后往前选，鼠标移动到前一个后面，原鼠标处被移出选中范围
+
+                        if (aEndItemNo < Items.Count - 1)
+                        {
+                            aEndItemNo = aEndItemNo + 1;
+                            aEndItemNoOffset = 0;
+                        }
+                    }
+                }
+            }
+
+            if (aStartItemNo == aEndItemNo)
+            {
+                if (aEndItemNoOffset > aStartItemOffset)
+                {
+                    if (Items[aStartItemNo].StyleNo < HCStyle.Null)
+                    {
+                        SelectInfo.StartItemNo = aStartItemNo;
+                        SelectInfo.StartItemOffset = aStartItemOffset;
+
+                        if ((aStartItemOffset == HC.OffsetBefor) && (aEndItemNoOffset == HC.OffsetAfter))
+                        {
+                            SelectInfo.EndItemNo = aEndItemNo;
+                            SelectInfo.EndItemOffset = aEndItemNoOffset;
+                        }
+                        else  // 没有全选中
+                        {
+                            SelectInfo.EndItemNo = -1;
+                            SelectInfo.EndItemOffset = -1;
+                            //CaretDrawItemNo = vMoveDrawItemNo;
+                        }
+                    }
+                    else  // TextItem
+                    {
+                        SelectInfo.StartItemNo = aStartItemNo;
+                        SelectInfo.StartItemOffset = aStartItemOffset;
+                        SelectInfo.EndItemNo = aStartItemNo;
+                        SelectInfo.EndItemOffset = aEndItemNoOffset;
+                    }
+                }
+                else
+                {
+                    if (aEndItemNoOffset < aStartItemOffset)  // 选中结束位置小于起始位置
+                    {
+                        if (Items[aStartItemNo].StyleNo < HCStyle.Null)
+                        {
+                            if (aEndItemNoOffset == HC.OffsetBefor)
+                            {
+                                SelectInfo.StartItemNo = aStartItemNo;
+                                SelectInfo.StartItemOffset = aEndItemNoOffset;
+                                SelectInfo.EndItemNo = aStartItemNo;
+                                SelectInfo.EndItemOffset = aStartItemOffset;
+                            }
+                            else  // 从后往前选到OffsetInner了
+                            {
+                                SelectInfo.StartItemNo = aStartItemNo;
+                                SelectInfo.StartItemOffset = aStartItemOffset;
+                                SelectInfo.EndItemNo = -1;
+                                SelectInfo.EndItemOffset = -1;
+                            }
+                        }
+                        else  // TextItem
+                        {
+                            SelectInfo.StartItemNo = aEndItemNo;
+                            SelectInfo.StartItemOffset = aEndItemNoOffset;
+                            SelectInfo.EndItemNo = aEndItemNo;
+                            SelectInfo.EndItemOffset = aStartItemOffset;
+                        }
+                    }
+                    else  // 结束位置和起始位置相同(同一个Item)
+                    {
+                        if (SelectInfo.EndItemNo >= 0)
+                            Items[SelectInfo.EndItemNo].DisSelect();
+
+                        SelectInfo.StartItemNo = aStartItemNo;
+                        SelectInfo.StartItemOffset = aStartItemOffset;
+                        SelectInfo.EndItemNo = -1;
+                        SelectInfo.EndItemOffset = -1;
+                    }
+                }
+            }
+            else  // 选择操作不在同一个Item
+            {
+                if (vLeftToRight)
+                {
+                    SelectInfo.StartItemNo = aStartItemNo;
+                    SelectInfo.StartItemOffset = aStartItemOffset;
+                    SelectInfo.EndItemNo = aEndItemNo;
+                    SelectInfo.EndItemOffset = aEndItemNoOffset;
+                }
+                else
+                {
+                    SelectInfo.StartItemNo = aEndItemNo;
+                    SelectInfo.StartItemOffset = aEndItemNoOffset;
+                    SelectInfo.EndItemNo = aStartItemNo;
+                    SelectInfo.EndItemOffset = aStartItemOffset;
+                }
+            }
+
+            // 新选中范围外的清除选中
+            if (vOldStartItemNo >= 0)
+            {
+                if (vOldStartItemNo > SelectInfo.StartItemNo)
+                {
+                    for (int i = vOldStartItemNo; i >= SelectInfo.StartItemNo + 1; i--)
+                        Items[i].DisSelect();
+                }
+                else
+                {
+                    for (int i = vOldStartItemNo; i <= SelectInfo.StartItemNo - 1; i++)
+                        Items[i].DisSelect();
+                }
+            }
+
+            if (SelectInfo.EndItemNo < 0)
+            {
+                for (int i = vOldEndItemNo; i >= SelectInfo.StartItemNo + 1; i--)  // 当前后面的取消选中
+                    Items[i].DisSelect();
+            }
+            else  // 有选中结束
+            {
+                for (int i = vOldEndItemNo; i >= SelectInfo.EndItemNo + 1; i--)  // 原结束倒序到现结束下一个的取消选中
+                    Items[i].DisSelect();
             }
         }
+        #endregion
 
         /// <summary> 初始化为只有一个空Item的Data</summary>
         private void SetEmptyData()
@@ -93,8 +334,7 @@ namespace HC.View
                 vItem.ParaFirst = true;
                 Items.Add(vItem);
 
-                FormatData(0, 0);
-                ReSetSelectAndCaret(0);
+                ReFormat();
             }
         }
 
@@ -110,8 +350,9 @@ namespace HC.View
             aItem.ParaFirst = true;
             Items.Add(aItem);
             UndoAction_InsertItem(0, 0);
-            FormatData(0, 0);
-            ReSetSelectAndCaret(0);
+            SelectInfo.StartItemOffset = GetItemOffsetAfter(0);
+
+            ReFormat();
             return true;
         }
 
@@ -119,16 +360,20 @@ namespace HC.View
         private bool TableInsertRC(InsertProcEventHandler aProc)
         {
             bool Result = false;
-            int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-            int vCurItemNo = GetCurItemNo();
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            int vCurItemNo = GetActiveItemNo();
             if (Items[vCurItemNo] is HCTableItem)
             {
-                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, vCurItemNo, 0);
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                GetFormatRange(vCurItemNo, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                Undo_New();
+                UndoAction_ItemSelf(vCurItemNo, HC.OffsetInner);
+
                 Result = aProc(Items[vCurItemNo]);
                 if (Result)
                 {
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
                 }
@@ -155,212 +400,6 @@ namespace HC.View
         private bool IsSelectSeekStart()
         {
             return (FSelectSeekNo == SelectInfo.StartItemNo) && (FSelectSeekOffset == SelectInfo.StartItemOffset);
-        }
-
-        private bool SelectByMouseDownShift(ref int AMouseDownItemNo, ref int AMouseDownItemOffset)
-        {
-            bool Result = true;
-
-            int vSelItemNo = -1, vSelItemOffset = -1;
-            if (this.SelectExists())  // 原来就有选中
-            {
-                if (IsSelectSeekStart())  // 上一次划选完成后是在选中起始
-                {
-                    if ((AMouseDownItemNo < FSelectSeekNo)
-                        || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset < FSelectSeekOffset)))
-                    {
-                        vSelItemNo = SelectInfo.EndItemNo;
-                        vSelItemOffset = SelectInfo.EndItemOffset;
-                        AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
-                    }
-                    else
-                    if (    ((AMouseDownItemNo > FSelectSeekNo) && (AMouseDownItemNo < SelectInfo.EndItemNo))
-                         || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset > FSelectSeekOffset))
-                         || ((AMouseDownItemNo == SelectInfo.EndItemNo) && (AMouseDownItemOffset < SelectInfo.EndItemOffset)))
-                    {
-                        vSelItemNo = SelectInfo.EndItemNo;
-                        vSelItemOffset = SelectInfo.EndItemOffset;
-                
-                        AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
-                    }
-                    else
-                    if ((AMouseDownItemNo > SelectInfo.EndItemNo)
-                        || ((AMouseDownItemNo == SelectInfo.EndItemNo) && (AMouseDownItemOffset > SelectInfo.EndItemOffset)))
-                    {
-                        vSelItemNo = SelectInfo.EndItemNo;
-                        vSelItemOffset = SelectInfo.EndItemOffset;
-
-                        AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
-                    }
-                    else
-                        Result = false;
-                }
-                else  // 划选完成后是在结束
-                {
-                    if ((AMouseDownItemNo > FSelectSeekNo)
-                        || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset > FSelectSeekOffset)))
-                    {
-                        vSelItemNo = SelectInfo.StartItemNo;
-                        vSelItemOffset = SelectInfo.StartItemOffset;
-                        AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
-                    }
-                    else
-                    if (    ((AMouseDownItemNo > SelectInfo.StartItemNo) && (AMouseDownItemNo < FSelectSeekNo))
-                         || ((AMouseDownItemNo == FSelectSeekNo) && (AMouseDownItemOffset < FSelectSeekOffset))
-                         || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset > SelectInfo.StartItemOffset)))
-                    {
-                        vSelItemNo = SelectInfo.StartItemNo;
-                        vSelItemOffset = SelectInfo.StartItemOffset;
-
-                        AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
-                    }
-                    else
-                    if ((AMouseDownItemNo < SelectInfo.StartItemNo)
-                        || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset < SelectInfo.StartItemOffset)))
-                    {
-                        vSelItemNo = SelectInfo.StartItemNo;
-                        vSelItemOffset = SelectInfo.StartItemOffset;
-
-                        AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
-                    }
-                    else
-                        Result = false;
-                }
-            }
-            else  // 原来没有选中
-            if (SelectInfo.StartItemNo >= 0)
-            {
-                if ((AMouseDownItemNo < SelectInfo.StartItemNo)
-                    || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset < SelectInfo.StartItemOffset)))
-                {
-                    vSelItemNo = SelectInfo.StartItemNo;
-                    vSelItemOffset = SelectInfo.StartItemOffset;
-
-                    AdjustSelectRange(ref AMouseDownItemNo, ref AMouseDownItemOffset, ref vSelItemNo, ref vSelItemOffset);  // 确定SelectRang
-                }
-                else
-                if ((AMouseDownItemNo > SelectInfo.StartItemNo)
-                    || ((AMouseDownItemNo == SelectInfo.StartItemNo) && (AMouseDownItemOffset > SelectInfo.StartItemOffset)))
-                {
-                    vSelItemNo = SelectInfo.StartItemNo;
-                    vSelItemOffset = SelectInfo.StartItemOffset;
-                    AdjustSelectRange(ref vSelItemNo, ref vSelItemOffset, ref AMouseDownItemNo, ref AMouseDownItemOffset);  // 确定SelectRang
-                }
-                else
-                    Result = false;
-            }
-
-            return Result;
-        }
-
-        protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo,
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
-            int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
-                aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-
-            if (FOnDrawItemPaintBefor != null)
-                FOnDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-        }
-
-        protected override void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo,
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
-            int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
-                aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-
-            if (FOnDrawItemPaintAfter != null)
-                FOnDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-        }
-
-        /// <summary> 准备格式化参数 </summary>
-        /// <param name="aStartItemNo">开始格式化的Item</param>
-        /// <param name="APrioDItemNo">上一个Item的最后一个DrawItemNo</param>
-        /// <param name="aPos">开始格式化位置</param>
-        protected virtual void _FormatReadyParam(int aStartItemNo, ref int aPrioDrawItemNo, ref POINT aPos)
-        {
-            if (aStartItemNo > 0)
-            {
-                aPrioDrawItemNo = GetItemLastDrawItemNo(aStartItemNo - 1);  // 上一个最后的DItem
-                if (Items[aStartItemNo].ParaFirst)
-                {
-                    aPos.X = 0;
-                    aPos.Y = DrawItems[aPrioDrawItemNo].Rect.Bottom;
-                }
-                else
-                {
-                    aPos.X = DrawItems[aPrioDrawItemNo].Rect.Right;
-                    aPos.Y = DrawItems[aPrioDrawItemNo].Rect.Top;
-                }
-            }
-            else  // 是第一个
-            {
-                aPrioDrawItemNo = -1;
-                aPos.X = 0;
-                aPos.Y = 0;
-            }
-        }
-
-        // Format仅负责格式化Item，ReFormat负责格式化后对后面Item和DrawItem的关联处理
-        protected override void _ReFormatData(int aStartItemNo, int aLastItemNo = -1, int aExtraItemCount = 0)
-        {
-            int vDrawItemCount = DrawItems.Count;
-            if (aLastItemNo < 0)
-                FormatData(aStartItemNo, aStartItemNo);
-            else
-                FormatData(aStartItemNo, aLastItemNo);  // 格式化指定范围内的Item
-            DrawItems.DeleteFormatMark();
-            vDrawItemCount = DrawItems.Count - vDrawItemCount;
-
-            // 计算格式化后段的底部位置变化
-            int vLastDrawItemNo = -1;
-            if (aLastItemNo < 0)
-                vLastDrawItemNo = GetItemLastDrawItemNo(aStartItemNo);
-            else
-                vLastDrawItemNo = GetItemLastDrawItemNo(aLastItemNo);
-            int vFormatIncHight = DrawItems[vLastDrawItemNo].Rect.Bottom - DrawItems.FormatBeforBottom;  // 段格式化后，高度的增量
-
-            // 某段格式化后，处理对其后面Item对应DrawItem的影响
-            // 由图2017-6-8_1变为图2017-6-8_2的过程中，第3段位置没变，也没有新的Item数量变化，
-            // 但是DrawItem的数量有变化
-            // 第3段Item对应的FirstDItemNo需要修改，所以此处增加DrawItemCount数量的变化
-            // 目前格式化时ALastItemNo为段的最后一个，所以vLastDrawItemNo为段最后一个DrawItem
-            if ((vFormatIncHight != 0) || (aExtraItemCount != 0) || (vDrawItemCount != 0))
-            {
-                if (DrawItems.Count > vLastDrawItemNo)
-                {
-                    int vLastItemNo = -1, vFmtTopOffset = -1;;
-                    for (int i = vLastDrawItemNo + 1; i < DrawItems.Count; i++)  // 从格式化变动段的下一段开始
-                    {
-                        // 处理格式化后面各DrawItem对应的ItemNo偏移
-                        DrawItems[i].ItemNo = DrawItems[i].ItemNo + aExtraItemCount;
-                        if (vLastItemNo != DrawItems[i].ItemNo)
-                        {
-                            vLastItemNo = DrawItems[i].ItemNo;
-                            Items[vLastItemNo].FirstDItemNo = i;
-                        }
-
-                        if (vFormatIncHight != 0)
-                        {
-                            // 将原格式化因分页等原因引起的整体下移或增加的高度恢复回来
-                            // 如果不考虑上面处理ItemNo的偏移，可将TTableCellData.ClearFormatExtraHeight方法写到基类，这里直接调用
-                            
-                            if (DrawItems[i].LineFirst)
-                                vFmtTopOffset = DrawItems[i - 1].Rect.Bottom - DrawItems[i].Rect.Top;
-
-                            User.OffsetRect(ref DrawItems[i].Rect, 0, vFmtTopOffset);
-
-                            if (Items[DrawItems[i].ItemNo].StyleNo < HCStyle.Null)
-                            {
-                                int vClearFmtHeight = (Items[DrawItems[i].ItemNo] as HCCustomRectItem).ClearFormatExtraHeight();
-                                DrawItems[i].Rect.Bottom = DrawItems[i].Rect.Bottom - vClearFmtHeight;
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         protected override HCCustomItem CreateItemByStyle(int aStyleNo)
@@ -454,85 +493,6 @@ namespace HC.View
             return Result;
         }
 
-        // <summary> 设置光标位置到指定的Item最后面 </summary>
-        protected void ReSetSelectAndCaret(int aItemNo)
-        {
-            ReSetSelectAndCaret(aItemNo, GetItemAfterOffset(aItemNo));
-        }
-
-        /// <summary> 设置光标位置到指定的Item指定位置 </summary>
-        /// <param name="AItemNo">指定ItemNo</param>
-        /// <param name="AOffset">指定位置</param>
-        /// <param name="ANextWhenMid">如果此位置前后的DrawItem正好分行，True：后一个DrawItem前面，False：前一个后面</param>
-        protected void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
-        {
-            SelectInfo.StartItemNo = aItemNo;
-
-            int vOffset = -1;
-            if (Items[aItemNo].StyleNo > HCStyle.Null)
-            {
-                if (SelectInfo.StartItemOffset > Items[aItemNo].Length)
-                    vOffset = Items[aItemNo].Length;
-                else
-                    vOffset = aOffset;
-            }
-            else
-                vOffset = aOffset;
-
-            SelectInfo.StartItemOffset = vOffset;
-
-            int vDrawItemNo = GetDrawItemNoByOffset(aItemNo, aOffset);
-            if ((aNextWhenMid)
-                    && (vDrawItemNo < DrawItems.Count - 1)
-                    && (DrawItems[vDrawItemNo + 1].ItemNo == aItemNo)
-                    && (DrawItems[vDrawItemNo + 1].CharOffs == aOffset + 1))
-                vDrawItemNo++;
-
-            CaretDrawItemNo = vDrawItemNo;
-        }
-
-        /// <summary> 当前Item对应的格式化起始Item和结束Item(段最后一个Item) </summary>
-        /// <param name="aFirstItemNo">起始ItemNo</param>
-        /// <param name="aLastItemNo">结束ItemNo</param>
-        protected void GetReformatItemRange(ref int aFirstItemNo, ref int aLastItemNo)
-        {
-            GetReformatItemRange(ref aFirstItemNo, ref aLastItemNo, SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-        }
-
-        /// <summary> 指定Item对应的格式化起始Item和结束Item(段最后一个Item) </summary>
-        /// <param name="aFirstItemNo">起始ItemNo</param>
-        /// <param name="aLastItemNo">结束ItemNo</param>
-        protected void GetReformatItemRange(ref int aFirstItemNo, ref int aLastItemNo, int aItemNo, int aItemOffset)
-        {
-            if ((aItemNo > 0)
-                && DrawItems[Items[aItemNo].FirstDItemNo].LineFirst
-                && (aItemOffset == 0))
-            {
-                if (!Items[aItemNo].ParaFirst)
-                    aFirstItemNo = GetLineFirstItemNo(aItemNo - 1, Items[aItemNo - 1].Length);
-                else  // 是段首
-                    aFirstItemNo = aItemNo;
-            }
-            else
-                aFirstItemNo = GetLineFirstItemNo(aItemNo, 0);  // 取行第一个DrawItem对应的ItemNo
-
-            aLastItemNo = GetParaLastItemNo(aItemNo);
-        }
-
-        /// <summary>
-        /// 合并2个文本Item
-        /// </summary>
-        /// <param name="aDestItem">合并后的Item</param>
-        /// <param name="aSrcItem">源Item</param>
-        /// <returns>True:合并成功，False不能合并</returns>
-        protected virtual bool MergeItemText(HCCustomItem aDestItem, HCCustomItem aSrcItem)
-        {
-            bool Result = aDestItem.CanConcatItems(aSrcItem);
-            if (Result)
-                aDestItem.Text += aSrcItem.Text;
-            return Result;
-        }
-
         protected virtual bool CanDeleteItem(int aItemNo)
         {
             return CanEdit();
@@ -560,156 +520,6 @@ namespace HC.View
                 FOnItemResized(this, aItemNo);
         }
 
-        #region DoTextItemInsert 在文本Item前后或中间插入文
-        private bool DoTextItemInsert(int vCarteItemNo, string AText, ref int vFormatFirstItemNo, ref int vFormatLastItemNo)
-        {
-            bool Result = false;
-            HCTextItem vTextItem = Items[vCarteItemNo] as HCTextItem;
-            if (vTextItem.StyleNo == this.Style.CurStyleNo)
-            {
-                if (vTextItem.CanAccept(SelectInfo.StartItemOffset))
-                {
-                    Undo_New();
-                    UndoAction_InsertText(vCarteItemNo, SelectInfo.StartItemOffset + 1, AText);
-                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
-                    int vLen = -1;
-                    if (SelectInfo.StartItemOffset == 0)
-                    {
-                        vTextItem.Text = AText + vTextItem.Text;
-                        vLen = AText.Length;
-                    }
-                    else
-                        if (SelectInfo.StartItemOffset == vTextItem.Length)
-                        {
-                            vTextItem.Text = vTextItem.Text + AText;
-                            vLen = vTextItem.Length;
-                        }
-                        else  // 在Item中间
-                        {
-                            vLen = SelectInfo.StartItemOffset + AText.Length;
-                            string vS = vTextItem.Text;
-                            vS = vS.Insert(SelectInfo.StartItemOffset, AText);
-                            vTextItem.Text = vS;
-                        }
-
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
-                    ReSetSelectAndCaret(vCarteItemNo, vLen);
-                    Result = true;
-                }
-                else  // 此位置不可接受输入
-                {
-                    if ((SelectInfo.StartItemOffset == 0)
-                        || (SelectInfo.StartItemOffset == vTextItem.Length))   // 在首尾不可接受时，插入到前后位置
-                    {
-                        HCCustomItem vNewItem = CreateDefaultTextItem();
-                        vNewItem.Text = AText;
-
-                        if (SelectInfo.StartItemOffset == 0)
-                            Result = InsertItem(vCarteItemNo, vNewItem, true);
-                        else
-                            Result = InsertItem(vCarteItemNo + 1, vNewItem, false);
-                    }
-                }
-            }
-            else  // 插入位置TextItem样式和当前样式不同，在TextItem头、中、尾没选中，但应用了新样式，以新样式处理
-            {
-                HCCustomItem vNewItem = CreateDefaultTextItem();
-                vNewItem.Text = AText;
-                Result = InsertItem(vNewItem);
-            }
-
-            return Result;
-        }
-        #endregion
-
-        protected bool DoInsertText(string aText)
-        {
-            bool Result = false;
-            if (aText != "")
-            {
-                int vCarteItemNo = GetCurItemNo();
-                HCCustomItem vCarteItem = Items[vCarteItemNo];
-                int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-                if (vCarteItem.StyleNo < HCStyle.Null)
-                {
-                    if (SelectInfo.StartItemOffset == HC.OffsetInner)
-                    {
-                        Undo_New();
-                        UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
-
-                        HCCustomRectItem vRectItem = vCarteItem as HCCustomRectItem;
-                        Result = vRectItem.InsertText(aText);
-                        if (vRectItem.SizeChanged)
-                        {
-                            vRectItem.SizeChanged = false;
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
-                        }
-                    }
-                    else  // 其后或其前
-                        if (SelectInfo.StartItemOffset == HC.OffsetAfter)  // 在其后输入内容
-                        {
-                            if ((vCarteItemNo < Items.Count - 1)
-                                && (Items[vCarteItemNo + 1].StyleNo > HCStyle.Null)
-                                && (!Items[vCarteItemNo + 1].ParaFirst))  // 下一个是TextItem且不是段首，则合并到下一个开始
-                            {
-                                vCarteItemNo++;
-                                SelectInfo.StartItemNo = vCarteItemNo;
-                                SelectInfo.StartItemOffset = 0;
-                                this.Style.CurStyleNo = Items[vCarteItemNo].StyleNo;
-                                Result = DoTextItemInsert(vCarteItemNo, aText, ref vFormatFirstItemNo, ref vFormatLastItemNo);  // 在下一个TextItem前面插入
-                            }
-                            else  // 最后或下一个还是RectItem或当前是段尾
-                            {
-                                HCCustomItem vNewItem = CreateDefaultTextItem();
-                                vNewItem.Text = aText;
-                                SelectInfo.StartItemNo = vCarteItemNo + 1;
-                                Result = InsertItem(SelectInfo.StartItemNo, vNewItem, false);  // 在两个RectItem中间插入
-                            }
-                        }
-                        else  // 在其前输入内容
-                        {
-                            if ((vCarteItemNo > 0)
-                                && (Items[vCarteItemNo - 1].StyleNo > HCStyle.Null)
-                                && (!Items[vCarteItemNo].ParaFirst))  // 前一个是TextItem，当前不是段首，合并到前一个尾
-                            {
-                                vCarteItemNo--;
-                                SelectInfo.StartItemNo = vCarteItemNo;
-                                SelectInfo.StartItemOffset = Items[vCarteItemNo].Length;
-                                this.Style.CurStyleNo = Items[vCarteItemNo].StyleNo;
-                                Result = DoTextItemInsert(vCarteItemNo, aText, ref vFormatFirstItemNo, ref vFormatLastItemNo);  // 在前一个后面插入
-                            }
-                            else  // 最前或前一个还是RectItem
-                            {
-                                HCCustomItem vNewItem = CreateDefaultTextItem();
-                                vNewItem.Text = aText;
-                                Result = InsertItem(SelectInfo.StartItemNo, vNewItem, true);  // 在两个RectItem中间插入
-                            }
-                        }
-                }
-                else
-                    Result = DoTextItemInsert(vCarteItemNo, aText, ref vFormatFirstItemNo, ref vFormatLastItemNo);
-            }
-            else
-                Result = InsertBreak();
-
-            return Result;
-        }
-
-        protected virtual int GetWidth()
-        {
-            return FWidth;
-        }
-
-        protected void SetWidth(int value)
-        {
-            if (FWidth != value)
-                FWidth = value;
-        }
-
         protected virtual int GetHeight()
         {
             return CalcContentHeight();
@@ -720,12 +530,44 @@ namespace HC.View
             FReadOnly = value;
         }
 
-        protected int CalcContentHeight()
+        public void DeleteItems(int aStartNo, int aEndNo = -1)
         {
-            if (DrawItems.Count > 0)
-                return DrawItems[DrawItems.Count - 1].Rect.Bottom - DrawItems[0].Rect.Top;
-            else
-                return 0;
+            if (!CanEdit()) return;
+
+            if (aEndNo < aStartNo) return;
+
+            this.InitializeField();
+
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+            int vDelCount = aEndNo - aStartNo + 1;
+            Undo_New();
+            for (int i = aEndNo; i >= aStartNo; i--)
+            {
+                UndoAction_DeleteItem(i, 0);
+                Items.Delete(i);
+            }
+
+            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+            Style.UpdateInfoRePaint();
+            Style.UpdateInfoReCaret();
+
+            if (aStartNo > 0)
+                ReSetSelectAndCaret(aStartNo - 1);
+            else  // 从第一个开始删除
+            {
+                if (Items.Count == 0)
+                {
+                    HCCustomItem vItem = CreateDefaultTextItem();
+                    vItem.ParaFirst = true;
+                    Items.Add(vItem);
+                    UndoAction_InsertItem(0, 0);
+                }
+
+                ReSetSelectAndCaret(0);
+            }
         }
 
         protected int MouseMoveDrawItemNo
@@ -733,7 +575,8 @@ namespace HC.View
             get { return FMouseMoveDrawItemNo; }
         }
 
-        public HCRichData(HCStyle aStyle) : base(aStyle)
+        public HCRichData(HCStyle aStyle)
+            : base(aStyle)
         {
             FBatchInsertCount = 0;
             FReadOnly = false;
@@ -751,21 +594,7 @@ namespace HC.View
 
         // 选中内容应用样式
 
-        #region MergeItemToPrio 当前Item成功合并到同段前一个Item
-        private bool MergeItemToPrio(int aItemNo)
-        {
-            return (aItemNo > 0) && (!Items[aItemNo].ParaFirst) && MergeItemText(Items[aItemNo - 1], Items[aItemNo]);
-        }
-        #endregion
-
-        #region MergeItemToNext 同段后一个Item成功合并到当前Item
-        private bool MergeItemToNext(int aItemNo)
-        {
-            return (aItemNo < Items.Count - 1) && (!Items[aItemNo + 1].ParaFirst) && MergeItemText(Items[aItemNo], Items[aItemNo + 1]);
-        }
-        #endregion
-
-        #region ApplySameItem选中在同一个Item
+        #region ApplySelectTextStyle子方法 ApplySameItem选中在同一个Item
         private void ApplySameItem(int aItemNo, ref int vExtraCount, HCStyleMatch aMatchStyle)
         {
             HCCustomItem vItem = Items[aItemNo];
@@ -781,7 +610,7 @@ namespace HC.View
             else  // 文本
             {
                 int vStyleNo = aMatchStyle.GetMatchStyleNo(Style, vItem.StyleNo);
-                Style.CurStyleNo = vStyleNo;
+                CurStyleNo = vStyleNo;
                 if (vItem.IsSelectComplate)
                 {
                     UndoAction_ItemStyle(aItemNo, SelectInfo.EndItemOffset, vStyleNo);
@@ -898,7 +727,7 @@ namespace HC.View
         }
         #endregion
 
-        #region ApplyRangeStartItem选中在不同Item中，处理选中起始Item
+        #region ApplySelectTextStyle子方法 ApplyRangeStartItem选中在不同Item中，处理选中起始Item
         private void ApplyRangeStartItem(int aItemNo, ref int vExtraCount, HCStyleMatch aMatchStyle)
         {
             HCCustomItem vItem = Items[aItemNo];
@@ -925,12 +754,13 @@ namespace HC.View
                     {
                         HCCustomItem vAfterItem = Items[aItemNo].BreakByOffset(SelectInfo.StartItemOffset);  // 后半部分对应的Item
                         UndoAction_DeleteText(aItemNo, SelectInfo.StartItemOffset + 1, vAfterItem.Text);
-                        
+
                         Items.Insert(aItemNo + 1, vAfterItem);
                         UndoAction_InsertItem(aItemNo + 1, 0);
 
                         UndoAction_ItemStyle(aItemNo + 1, 0, vStyleNo);
                         vAfterItem.StyleNo = vStyleNo;
+
                         vExtraCount++;
 
                         SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
@@ -942,7 +772,7 @@ namespace HC.View
         }
         #endregion
 
-        #region ApplyRangeEndItem选中在不同Item中，处理选中结束Item
+        #region ApplySelectTextStyle子方法 ApplyRangeEndItem选中在不同Item中，处理选中结束Item
         private void ApplyRangeEndItem(int aItemNo, ref int vExtraCount, HCStyleMatch aMatchStyle)
         {
             HCCustomItem vItem = Items[aItemNo];
@@ -958,6 +788,7 @@ namespace HC.View
             else  // 文本
             {
                 int vStyleNo = aMatchStyle.GetMatchStyleNo(Style, vItem.StyleNo);
+
                 if (vItem.StyleNo != vStyleNo)
                 {
                     if (vItem.IsSelectComplate)
@@ -988,7 +819,7 @@ namespace HC.View
         }
         #endregion
 
-        #region ApplyNorItem选中在不同Item，处理中间Item
+        #region ApplySelectTextStyle子方法 ApplyNorItem选中在不同Item，处理中间Item
         private void ApplyRangeNorItem(int aItemNo, HCStyleMatch aMatchStyle)
         {
             HCCustomItem vItem = Items[aItemNo];
@@ -1010,39 +841,40 @@ namespace HC.View
         }
         #endregion
 
-        public override int ApplySelectTextStyle(HCStyleMatch aMatchStyle)
+        public override void ApplySelectTextStyle(HCStyleMatch aMatchStyle)
         {
             Undo_New();
 
             this.InitializeField();
-            int vExtraCount = 0, vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
+            int vExtraCount = 0, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
 
-            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
             if (!SelectExists())
             {
-                if (Style.CurStyleNo > HCStyle.Null)
+                if (CurStyleNo > HCStyle.Null)
                 {
-                    aMatchStyle.Append = !aMatchStyle.StyleHasMatch(Style, Style.CurStyleNo);  // 根据当前判断是添加样式还是减掉样式
-                    Style.CurStyleNo = aMatchStyle.GetMatchStyleNo(Style, Style.CurStyleNo);
+                    aMatchStyle.Append = !aMatchStyle.StyleHasMatch(Style, CurStyleNo);  // 根据当前判断是添加样式还是减掉样式
+                    CurStyleNo = aMatchStyle.GetMatchStyleNo(Style, CurStyleNo);
 
                     Style.UpdateInfoRePaint();
                     if (Items[SelectInfo.StartItemNo].Length == 0)
                     {
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                        UndoAction_ItemStyle(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, Style.CurStyleNo);
-                        Items[SelectInfo.StartItemNo].StyleNo = Style.CurStyleNo;
+                        UndoAction_ItemStyle(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, CurStyleNo);
+                        Items[SelectInfo.StartItemNo].StyleNo = CurStyleNo;
 
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         Style.UpdateInfoReCaret();
                     }
                     else  // 不是空行
                     {
                         if (Items[SelectInfo.StartItemNo] is HCTextRectItem)
                         {
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                            (Items[SelectInfo.StartItemNo] as HCTextRectItem).TextStyleNo = Style.CurStyleNo;
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                            (Items[SelectInfo.StartItemNo] as HCTextRectItem).TextStyleNo = CurStyleNo;
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         }
 
                         Style.UpdateInfoReCaret(false);
@@ -1050,29 +882,38 @@ namespace HC.View
                 }
 
                 ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-                return HCStyle.Null;
+                return;
             }
 
-            if (SelectInfo.EndItemNo < 0)
+            if (SelectInfo.EndItemNo < 0)  // 没有连续选中内容
             {
                 if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
                 {
-                    // 如果改变会引起RectItem宽度变化，则需要格式化到最后一个Item
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
                     if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
                         UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
                     else
                         UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                     (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ApplySelectTextStyle(Style, aMatchStyle);
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).SizeChanged)
+                    {
+                        // 如果改变会引起RectItem宽度变化，则需要格式化到最后一个Item
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        (Items[SelectInfo.StartItemNo] as HCCustomRectItem).SizeChanged = false;
+                    }
+                    else
+                        this.FormatInit();
                 }
             }
             else  // 有连续选中内容
             {
-                vFormatLastItemNo = GetParaLastItemNo(SelectInfo.EndItemNo);
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                if (SelectInfo.StartItemNo != SelectInfo.EndItemNo)
+                    vFormatLastItemNo = GetParaLastItemNo(SelectInfo.EndItemNo);
+
+                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                 for (int i = SelectInfo.StartItemNo; i <= SelectInfo.EndItemNo; i++)
                 {
@@ -1082,11 +923,13 @@ namespace HC.View
                         break;
                     }
                     else
+                    {
                         if (Items[i] is HCTextRectItem)
                         {
                             aMatchStyle.Append = !aMatchStyle.StyleHasMatch(Style, (Items[i] as HCTextRectItem).TextStyleNo);  // 根据第一个判断是添加样式还是减掉样式
                             break;
                         }
+                    }
                 }
 
                 if (SelectInfo.StartItemNo == SelectInfo.EndItemNo)
@@ -1098,7 +941,7 @@ namespace HC.View
                         ApplyRangeNorItem(i, aMatchStyle);  // 处理每一个Item的样式
                     ApplyRangeStartItem(SelectInfo.StartItemNo, ref vExtraCount, aMatchStyle);
 
-                    /* 样式变化后，从后往前处理选中范围内变化后的合并 }*/
+                    // 样式变化后，从后往前处理选中范围内变化后的合并 
                     if (SelectInfo.EndItemNo < vFormatLastItemNo + vExtraCount)
                     {
                         if (MergeItemToNext(SelectInfo.EndItemNo))
@@ -1139,7 +982,7 @@ namespace HC.View
                                 Items[SelectInfo.StartItemNo - 1].Length - Items[SelectInfo.StartItemNo].Length + 1,
                                 Items[SelectInfo.StartItemNo].Text);
                             UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
-                            Items.RemoveAt(SelectInfo.StartItemNo);
+                            Items.Delete(SelectInfo.StartItemNo);
                             vExtraCount--;
 
                             SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
@@ -1151,80 +994,100 @@ namespace HC.View
                     }
                 }
 
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + vExtraCount, vExtraCount);
+                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vExtraCount, vExtraCount);
             }
 
             MatchItemSelectState();
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
-
-            return 0;
         }
 
-        #region DoApplyParaStyle
-        private void DoApplyParaStyle(int aItemNo, HCParaMatch aMatchStyle)
+        #region ApplySelectParaStyle子方法DoApplyParagraphStyle
+        private void DoApplyParagraphStyle(int aItemNo, HCParaMatch aMatchStyle)
         {
-            if (GetItemStyle(aItemNo) < HCStyle.Null)
-                (Items[aItemNo] as HCCustomRectItem).ApplySelectParaStyle(this.Style, aMatchStyle);
-            else
+            int vFirstNo = -1, vLastNo = -1;
+            GetParaItemRang(aItemNo, ref vFirstNo, ref vLastNo);
+            int vParaNo = aMatchStyle.GetMatchParaNo(this.Style, GetItemParaStyle(aItemNo));
+
+            if (GetItemParaStyle(vFirstNo) != vParaNo)
             {
-                int vFirstNo = -1, vLastNo = -1;
-                GetParaItemRang(aItemNo, ref vFirstNo, ref vLastNo);
-                int vParaNo = aMatchStyle.GetMatchParaNo(this.Style, GetItemParaStyle(aItemNo));
-                if (GetItemParaStyle(vFirstNo) != vParaNo)
-                {
-                    for (int i = vFirstNo; i <= vLastNo; i++)
-                        Items[i].ParaNo = vParaNo;
-                }
+                for (int i = vFirstNo; i <= vLastNo; i++)
+                    Items[i].ParaNo = vParaNo;
             }
         }
         #endregion
 
-        #region ApplyParaSelectedRangStyle
-        private void ApplyParaSelectedRangStyle(HCParaMatch aMatchStyle)
+        #region ApplySelectParaStyle子方法ApplyParaSelectedRangStyle
+        private void ApplyParagraphSelecteStyle(HCParaMatch aMatchStyle)
         {
             int vFirstNo = -1, vLastNo = -1;
             GetParaItemRang(SelectInfo.StartItemNo, ref vFirstNo, ref vLastNo);
-            DoApplyParaStyle(SelectInfo.StartItemNo, aMatchStyle);
+            DoApplyParagraphStyle(SelectInfo.StartItemNo, aMatchStyle);
 
             int i = vLastNo + 1;
             while (i <= SelectInfo.EndItemNo)
             {
                 if (Items[i].ParaFirst)
-                    DoApplyParaStyle(i, aMatchStyle);
+                    DoApplyParagraphStyle(i, aMatchStyle);
 
                 i++;
             }
         }
         #endregion
 
-        public override int ApplySelectParaStyle(HCParaMatch aMatchStyle)
+        public override void ApplySelectParaStyle(HCParaMatch aMatchStyle)
         {
             if (SelectInfo.StartItemNo < 0)
-                return HCStyle.Null;
+                return;
 
             //GetReformatItemRange(vFormatFirstItemNo, vFormatLastItemNo);
+            int vFormatFirstDrawItemNo = -1;
             int vFormatLastItemNo = -1;
-            int vFormatFirstItemNo = GetParaFirstItemNo(SelectInfo.StartItemNo);
 
             if (SelectInfo.EndItemNo >= 0)
             {
+                vFormatFirstDrawItemNo = Items[GetParaFirstItemNo(SelectInfo.StartItemNo)].FirstDItemNo;
                 vFormatLastItemNo = GetParaLastItemNo(SelectInfo.EndItemNo);
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                ApplyParaSelectedRangStyle(aMatchStyle);
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                ApplyParagraphSelecteStyle(aMatchStyle);
+                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
             }
             else  // 没有选中内容
             {
-                vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                DoApplyParaStyle(SelectInfo.StartItemNo, aMatchStyle);  // 应用样式
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                if ((GetItemStyle(SelectInfo.StartItemNo) < HCStyle.Null)
+                && (SelectInfo.StartItemOffset == HC.OffsetInner))
+                {
+                    vFormatFirstDrawItemNo = Items[SelectInfo.StartItemNo].FirstDItemNo;
+                    FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
+                    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ApplySelectParaStyle(this.Style, aMatchStyle);
+                    ReFormatData(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
+                }
+                else
+                {
+                    vFormatFirstDrawItemNo = Items[GetParaFirstItemNo(SelectInfo.StartItemNo)].FirstDItemNo;
+                    vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    DoApplyParagraphStyle(SelectInfo.StartItemNo, aMatchStyle);  // 应用样式
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                }
             }
+
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
+        }
 
-            return 0;
+        public override void ApplyTableCellAlign(HCContentAlign aAlign)
+        {
+            if (!CanEdit()) 
+                return;
+
+            InsertProcEventHandler vEvent = delegate(HCCustomItem aItem)
+            {
+                (aItem as HCTableItem).ApplyContentAlign(aAlign);
+                return true;
+            };
+
+            TableInsertRC(vEvent);
         }
 
         public override bool DisSelect()
@@ -1245,7 +1108,7 @@ namespace HC.View
         /// <summary> 删除选中内容(内部已经判断了是否有选中) </summary>
         /// <returns>True:有选中且删除成功</returns>
 
-        #region DeleteItemSelectComplate删除全选中的单个Item
+        #region DeleteSelected子方法DeleteItemSelectComplate删除全选中的单个Item
         private bool DeleteItemSelectComplate(ref int vDelCount, int vParaFirstItemNo, int vParaLastItemNo)
         {
             if (CanDeleteItem(SelectInfo.StartItemNo))
@@ -1271,13 +1134,14 @@ namespace HC.View
                     else  // 删除位置前后不能合并，光标置为前一个后面
                     {
                         SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                        SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
+                        SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
                     }
                 }
                 else
-                    if (SelectInfo.StartItemNo == vParaFirstItemNo)
+                {
+                    if (SelectInfo.StartItemNo == vParaFirstItemNo)  // 段第一个ItemNo
                     {
-                        if (vParaFirstItemNo == vParaLastItemNo)
+                        if (vParaFirstItemNo == vParaLastItemNo)  // 段就一个Item全删除了
                         {
                             HCCustomItem vNewItem = CreateDefaultTextItem();
                             vNewItem.ParaFirst = true;
@@ -1294,7 +1158,8 @@ namespace HC.View
                         }
                     }
                     else
-                        if (SelectInfo.StartItemNo == vParaLastItemNo)
+                    {
+                        if (SelectInfo.StartItemNo == vParaLastItemNo)  // 段最后一个ItemNo
                         {
                             SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
                             SelectInfo.StartItemOffset = Items[SelectInfo.StartItemNo].Length;
@@ -1314,6 +1179,8 @@ namespace HC.View
                                 SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
                             }
                         }
+                    }
+                }
             }
 
             return true;
@@ -1333,15 +1200,16 @@ namespace HC.View
                 int vDelCount = 0;
                 this.InitializeField();  // 删除后原鼠标处可能已经没有了
 
-                int vFormatFirstItemNo = -1, vFormatLastItemNo = -1,
+                int vFormatFirstDrawItemNo = -1, vFormatFirstItemNo = -1, vFormatLastItemNo = -1,
                     vParaFirstItemNo = -1, vParaLastItemNo = -1;
 
                 if ((SelectInfo.EndItemNo < 0)
                     && (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null))
                 {
                     // 如果变动会引起RectItem的宽度变化，则需要格式化到段最后一个Item
-                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    vFormatFirstItemNo = DrawItems[vFormatFirstDrawItemNo].ItemNo;
 
                     Undo_New();
 
@@ -1356,10 +1224,11 @@ namespace HC.View
                             UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
                         else
                             UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
                         Result = (Items[SelectInfo.StartItemNo] as HCCustomRectItem).DeleteSelected();
                     }
 
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
                 }
                 else  // 选中不是发生在RectItem内部
                 {
@@ -1368,8 +1237,9 @@ namespace HC.View
                     {
                         Undo_New();
 
-                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        vFormatFirstItemNo = DrawItems[vFormatFirstDrawItemNo].ItemNo;
 
                         if (vEndItem.IsSelectComplate)
                         {
@@ -1397,14 +1267,15 @@ namespace HC.View
                             }
                         }
 
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
                     }
                     else  // 选中发生在不同Item，起始(可能是段首)全选中结尾没全选，起始没全选结尾全选，起始结尾都没全选
                     {
                         vFormatFirstItemNo = GetParaFirstItemNo(SelectInfo.StartItemNo);  // 取段第一个为起始
+                        vFormatFirstDrawItemNo = Items[vFormatFirstItemNo].FirstDItemNo;
                         vFormatLastItemNo = GetParaLastItemNo(SelectInfo.EndItemNo);  // 取段最后一个为结束，如果变更注意下面
 
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                         bool vSelStartParaFirst = Items[SelectInfo.StartItemNo].ParaFirst;
                         bool vSelStartComplate = Items[SelectInfo.StartItemNo].IsSelectComplate;  // 起始是否全选
@@ -1420,13 +1291,16 @@ namespace HC.View
                                 if (CanDeleteItem(SelectInfo.EndItemNo))
                                 {
                                     UndoAction_DeleteItem(SelectInfo.EndItemNo, HC.OffsetAfter);
-                                    Items.RemoveAt(SelectInfo.EndItemNo);
+                                    Items.Delete(SelectInfo.EndItemNo);
+
                                     vDelCount++;
                                 }
                             }
                             else
-                                if (SelectInfo.EndItemOffset == HC.OffsetInner)
+                            {
+                                if (SelectInfo.EndItemOffset == HC.OffsetInner)  // 在其上
                                     (vEndItem as HCCustomRectItem).DeleteSelected();
+                            }
                         }
                         else  // TextItem
                         {
@@ -1443,7 +1317,7 @@ namespace HC.View
                             {
                                 UndoAction_DeleteBackText(SelectInfo.EndItemNo, 1, vEndItem.Text.Substring(1 - 1, SelectInfo.EndItemOffset));
                                 // 结束Item留下的内容
-                                string vText = (vEndItem as HCTextItem).GetTextPart(SelectInfo.EndItemOffset + 1,
+                                string vText = (vEndItem as HCTextItem).SubString(SelectInfo.EndItemOffset + 1,
                                     vEndItem.Length - SelectInfo.EndItemOffset);
                                 vEndItem.Text = vText;
                             }
@@ -1455,7 +1329,8 @@ namespace HC.View
                             if (CanDeleteItem(i))
                             {
                                 UndoAction_DeleteItem(i, 0);
-                                Items.RemoveAt(i);
+                                Items.Delete(i);
+
                                 vDelCount++;
                             }
                         }
@@ -1463,20 +1338,23 @@ namespace HC.View
                         HCCustomItem vStartItem = Items[SelectInfo.StartItemNo];  // 选中起始Item
                         if (vStartItem.StyleNo < HCStyle.Null)
                         {
-                            if (SelectInfo.StartItemOffset == HC.OffsetBefor)
+                            if (SelectInfo.StartItemOffset == HC.OffsetBefor)  // 在其前
                             {
-                                if (CanDeleteItem(SelectInfo.StartItemNo))
+                                if (CanDeleteItem(SelectInfo.StartItemNo))  // 允许删除
                                 {
                                     UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
-                                    Items.RemoveAt(SelectInfo.StartItemNo);
+                                    Items.Delete(SelectInfo.StartItemNo);
                                     vDelCount++;
                                 }
+
                                 if (SelectInfo.StartItemNo > vFormatFirstItemNo)
                                     SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
                             }
                             else
+                            {
                                 if (SelectInfo.StartItemOffset == HC.OffsetInner)
                                     (vStartItem as HCCustomRectItem).DeleteSelected();
+                            }
                         }
                         else  // 选中起始是TextItem
                         {
@@ -1494,12 +1372,12 @@ namespace HC.View
                             {
                                 UndoAction_DeleteBackText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1,
                                     vStartItem.Text.Substring(SelectInfo.StartItemOffset + 1 - 1, vStartItem.Length - SelectInfo.StartItemOffset));
-                                string vText = (vStartItem as HCTextItem).GetTextPart(1, SelectInfo.StartItemOffset);
+                                string vText = (vStartItem as HCTextItem).SubString(1, SelectInfo.StartItemOffset);
                                 vStartItem.Text = vText;  // 起始留下的内容
                             }
                         }
 
-                        if (vSelStartComplate && vSelEndComplate)
+                        if (vSelStartComplate && vSelEndComplate)  // 选中的Item都删除完
                         {
                             if (SelectInfo.StartItemNo == vFormatFirstItemNo)
                             {
@@ -1516,10 +1394,11 @@ namespace HC.View
                                     Items[SelectInfo.EndItemNo - vDelCount + 1].ParaFirst = true;  // 选中结束位置后面的成为段首
                             }
                             else
-                                if (SelectInfo.EndItemNo == vFormatLastItemNo)
+                            {
+                                if (SelectInfo.EndItemNo == vFormatLastItemNo)  // 结束在段最后
                                 {
                                     SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                                    SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
+                                    SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
                                 }
                                 else  // 选中起始在起始段中间，选中结束在结束段中间
                                 {
@@ -1529,7 +1408,7 @@ namespace HC.View
                                         UndoAction_InsertText(SelectInfo.StartItemNo - 1,
                                             Items[SelectInfo.StartItemNo - 1].Length - Items[SelectInfo.EndItemNo - vDelCount + 1].Length + 1,
                                             Items[SelectInfo.EndItemNo - vDelCount + 1].Text);
-                                        
+
                                         SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
                                         SelectInfo.StartItemOffset = vLen;
 
@@ -1546,10 +1425,11 @@ namespace HC.View
                                         }
                                     }
                                 }
+                            }
                         }
                         else  // 选中范围内的Item没有删除完
                         {
-                            if (vSelStartComplate)
+                            if (vSelStartComplate)  // 起始删除完了
                             {
                                 if (Items[SelectInfo.EndItemNo - vDelCount].ParaFirst != vSelStartParaFirst)
                                 {
@@ -1558,7 +1438,8 @@ namespace HC.View
                                 }
                             }
                             else
-                                if (!vSelEndComplate)
+                            {
+                                if (!vSelEndComplate)  // 起始和结束都没有删除完
                                 {
                                     if (MergeItemText(Items[SelectInfo.StartItemNo], Items[SelectInfo.EndItemNo - vDelCount]))
                                     {
@@ -1582,9 +1463,10 @@ namespace HC.View
                                         }
                                     }
                                 }
+                            }
                         }
 
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
                     }
 
                     for (int i = SelectInfo.StartItemNo; i <= SelectInfo.EndItemNo - vDelCount; i++)  // 不允许删除的取消选中状态
@@ -1606,6 +1488,291 @@ namespace HC.View
             return Result;
         }
 
+        /// <summary> 初始化相关字段和变量 </summary>
+        public override void InitializeField()
+        {
+            InitializeMouseField();
+            base.InitializeField();
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            if (!CanEdit())
+                return;
+
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+
+            this.BeginFormat();
+            try
+            {
+                InsertStream(aStream, aStyle, aFileVersion);
+                // 加载完成后，初始化(有一部分在LoadFromStream中初始化了)
+                ReSetSelectAndCaret(0, 0);
+            }
+            finally
+            {
+                this.EndFormat();
+            }
+        }
+
+        public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            if (!CanEdit())
+                return false;
+
+            bool Result = false;
+            HCCustomItem vAfterItem = null;
+            bool vInsertBefor = false;
+            int vInsPos = 0, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+
+            Undo_GroupBegin(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+            try
+            {
+                if (Items.Count == 0)
+                    vInsPos = 0;
+                else  // 有数据
+                {
+                    DeleteSelected();
+                    // 确定插入位置
+                    vInsPos = SelectInfo.StartItemNo;
+                    if (Items[vInsPos].StyleNo < HCStyle.Null)
+                    {
+                        if (SelectInfo.StartItemOffset == HC.OffsetInner)  // 其上
+                        {
+                            GetFormatRange(SelectInfo.StartItemNo, HC.OffsetInner, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                            Undo_New();
+                            if ((Items[vInsPos] as HCCustomRectItem).MangerUndo)
+                                UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                            else
+                                UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                            Result = (Items[vInsPos] as HCCustomRectItem).InsertStream(aStream, aStyle, aFileVersion);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                            return Result;
+                        }
+                        else
+                        {
+                            if (SelectInfo.StartItemOffset == HC.OffsetBefor)  // 其前
+                                vInsertBefor = true;
+                            else  // 其后
+                                vInsPos = vInsPos + 1;
+                        }
+                    }
+                    else  // TextItem
+                    {
+                        // 先判断光标是否在最后，防止空Item时SelectInfo.StartItemOffset = 0按其前处理
+                        if (SelectInfo.StartItemOffset == Items[vInsPos].Length)
+                            vInsPos = vInsPos + 1;
+                        else
+                        {
+                            if (SelectInfo.StartItemOffset == 0)
+                                vInsertBefor = Items[vInsPos].Length != 0;
+                            else  // TextItem中间
+                            {
+                                Undo_New();
+                                UndoAction_DeleteBackText(vInsPos, SelectInfo.StartItemOffset + 1,
+                                    Items[vInsPos].Text.Substring(SelectInfo.StartItemOffset + 1 - 1, Items[vInsPos].Length - SelectInfo.StartItemOffset));
+
+                                vAfterItem = Items[vInsPos].BreakByOffset(SelectInfo.StartItemOffset);  // 后半部分对应的Item
+                                vInsPos = vInsPos + 1;
+                            }
+                        }
+                    }
+                }
+
+                Int64 vDataSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vDataSize);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vDataSize = BitConverter.ToInt64(vBuffer, 0);
+                if (vDataSize == 0)
+                    return Result;
+
+                int vItemCount = 0;
+                vBuffer = BitConverter.GetBytes(vItemCount);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vItemCount = BitConverter.ToInt32(vBuffer, 0);
+
+                if (vItemCount == 0)
+                    return Result;
+
+                // 因为插入的第一个可能和插入位置前一个合并，插入位置可能是行首，所以要从插入位置
+                // 行上一个开始格式化，为简单处理，直接使用段首，可优化为上一行首
+                //GetParaItemRang(SelectInfo.StartItemNo, vFormatFirstItemNo, vFormatLastItemNo);
+
+                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+
+                // 计算格式化起始、结束ItemNo
+                if (Items.Count > 0)
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                else
+                {
+                    vFormatFirstDrawItemNo = 0;
+                    vFormatLastItemNo = -1;
+                }
+
+                Undo_New();
+
+                int vStyleNo = HCStyle.Null;
+                HCCustomItem vItem = null;
+                for (int i = 0; i <= vItemCount - 1; i++)
+                {
+                    aStream.Read(vBuffer, 0, vBuffer.Length);  // besure vBuffer.Length = 4
+                    vStyleNo = BitConverter.ToInt32(vBuffer, 0);
+                    vItem = CreateItemByStyle(vStyleNo);
+                    if (vStyleNo < HCStyle.Null)
+                    {
+                        if ((vItem as HCCustomRectItem).MangerUndo)
+                            UndoAction_ItemSelf(i, 0);
+                        else
+                            UndoAction_ItemMirror(i, HC.OffsetInner);
+                    }
+
+                    vItem.LoadFromStream(aStream, aStyle, aFileVersion);
+                    if (aStyle != null)  // 有样式表
+                    {
+                        if (vItem.StyleNo > HCStyle.Null)
+                            vItem.StyleNo = Style.GetStyleNo(aStyle.TextStyles[vItem.StyleNo], true);
+
+                        vItem.ParaNo = Style.GetParaNo(aStyle.ParaStyles[vItem.ParaNo], true);
+                    }
+                    else  // 无样式表
+                    {
+                        if (vItem.StyleNo > HCStyle.Null)
+                            vItem.StyleNo = CurStyleNo;
+
+                        vItem.ParaNo = CurParaNo;
+                    }
+                    if (i == 0)  // 插入的第一个Item
+                    {
+                        if (vInsertBefor)
+                        {
+                            vItem.ParaFirst = Items[vInsPos].ParaFirst;
+
+                            if (Items[vInsPos].ParaFirst)
+                            {
+                                UndoAction_ItemParaFirst(vInsPos, 0, false);
+                                Items[vInsPos].ParaFirst = false;
+                            }
+                        }
+                        else
+                            vItem.ParaFirst = false;
+                    }
+
+                    Items.Insert(vInsPos + i, vItem);
+                    UndoAction_InsertItem(vInsPos + i, 0);
+                }
+
+                vItemCount = CheckInsertItemCount(vInsPos, vInsPos + vItemCount - 1);  // 检查插入的Item是否合格并删除不合格
+
+                int vInsetLastNo = vInsPos + vItemCount - 1;  // 光标在最后一个Item
+                int vCaretOffse = GetItemOffsetAfter(vInsetLastNo);  // 最后一个Item后面
+
+                if (vAfterItem != null)
+                {
+                    if (MergeItemText(Items[vInsetLastNo], vAfterItem))
+                    {
+                        UndoAction_InsertText(vInsetLastNo, Items[vInsetLastNo].Length - vAfterItem.Length + 1, vAfterItem.Text);
+                        vAfterItem.Dispose();
+                    }
+                    else  // 插入最后一个和后半部分不能合并
+                    {
+                        Items.Insert(vInsetLastNo + 1, vAfterItem);
+                        UndoAction_InsertItem(vInsetLastNo + 1, 0);
+
+                        vItemCount++;
+                    }
+                }
+
+                if (vInsPos > 0)
+                {
+                    if (Items[vInsPos - 1].Length == 0)
+                    {
+                        UndoAction_ItemParaFirst(vInsPos, 0, Items[vInsPos - 1].ParaFirst);
+                        Items[vInsPos].ParaFirst = Items[vInsPos - 1].ParaFirst;
+
+                        UndoAction_DeleteItem(vInsPos - 1, 0);
+                        Items.RemoveAt(vInsPos - 1);  // 删除空行
+
+                        vItemCount--;
+                        vInsetLastNo--;
+                    }
+                    else  // 插入位置前面不是空行Item
+                    {
+                        int vOffsetStart = Items[vInsPos - 1].Length;
+                        if ((!Items[vInsPos].ParaFirst)
+                            && MergeItemText(Items[vInsPos - 1], Items[vInsPos]))
+                        {
+                            UndoAction_InsertText(vInsPos - 1,
+                                Items[vInsPos - 1].Length - Items[vInsPos].Length + 1,
+                                Items[vInsPos].Text);
+                            UndoAction_DeleteItem(vInsPos, 0);
+                            Items.Delete(vInsPos);
+
+                            if (vItemCount == 1)
+                                vCaretOffse = vOffsetStart + vCaretOffse;
+
+                            vItemCount--;
+                            vInsetLastNo--;
+                        }
+                    }
+
+                    if ((vInsetLastNo < Items.Count - 1)  // 插入最后Item和后面的能合并)
+                        && (!Items[vInsetLastNo + 1].ParaFirst)
+                        && MergeItemText(Items[vInsetLastNo], Items[vInsetLastNo + 1]))
+                    {
+                        UndoAction_DeleteItem(vInsetLastNo + 1, 0);
+
+                        Items.Delete(vInsetLastNo + 1);
+                        vItemCount--;
+                    }
+                }
+                else  // 在最开始第0个位置处插入
+                //if (vInsetLastNo < Items.Count - 1) then
+                {
+                    if (MergeItemText(Items[vInsetLastNo], Items[vInsetLastNo + 1]))
+                    {
+                        UndoAction_DeleteItem(vInsPos + vItemCount, 0);
+
+                        Items.Delete(vInsPos + vItemCount);
+                        vItemCount--;
+                    }
+                }
+
+                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vItemCount, vItemCount);
+
+                ReSetSelectAndCaret(vInsetLastNo, vCaretOffse);  // 选中插入内容最后Item位置
+            }
+            finally
+            {
+                Undo_GroupEnd(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+            }
+
+            InitializeMouseField();  // 201807311101
+
+            Style.UpdateInfoRePaint();
+            Style.UpdateInfoReCaret();
+            Style.UpdateInfoReScroll();
+
+            return Result;
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            if (!CanEdit())
+                return;
+
+            base.ParseXml(aNode);
+
+            ReFormat();
+
+            Style.UpdateInfoRePaint();
+            Style.UpdateInfoReCaret();
+            Style.UpdateInfoReScroll();
+        }
+
         /// <summary> 在光标处插入Item </summary>
         /// <param name="aItem"></param>
         /// <returns></returns>
@@ -1617,7 +1784,7 @@ namespace HC.View
 
             DeleteSelected();
 
-            aItem.ParaNo = Style.CurParaNo;
+            aItem.ParaNo = CurParaNo;
 
             if (IsEmptyData())
             {
@@ -1625,21 +1792,21 @@ namespace HC.View
                 Result = EmptyDataInsertItem(aItem);
                 return Result;
             }
-            int vCurItemNo = GetCurItemNo();
 
-            int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            int vCurItemNo = GetActiveItemNo();
             if (Items[vCurItemNo].StyleNo < HCStyle.Null)
             {
-                if (SelectInfo.StartItemOffset == HC.OffsetInner)
+                if (SelectInfo.StartItemOffset == HC.OffsetInner)  // 正在其上
                 {
-                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                     Undo_New();
                     UndoAction_ItemSelf(vCurItemNo, HC.OffsetInner);
                     Result = (Items[vCurItemNo] as HCCustomRectItem).InsertItem(aItem);
                     if (Result)
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
                 }
                 else  // 其前or其后
                 {
@@ -1655,21 +1822,22 @@ namespace HC.View
                 if ((SelectInfo.StartItemOffset == Items[vCurItemNo].Length))
                     Result = InsertItem(SelectInfo.StartItemNo + 1, aItem, false);
                 else
-                    if (SelectInfo.StartItemOffset == 0)
+                {
+                    if (SelectInfo.StartItemOffset == 0)  // 在最前面插入
                         Result = InsertItem(SelectInfo.StartItemNo, aItem);
                     else  // 在Item中间
                     {
-                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                         string vText = Items[vCurItemNo].Text;
                         string vsBefor = vText.Substring(1 - 1, SelectInfo.StartItemOffset);  // 前半部分文本
                         string vsAfter = vText.Substring(SelectInfo.StartItemOffset + 1 - 1, Items[vCurItemNo].Length - SelectInfo.StartItemOffset);  // 后半部分文本
 
                         Undo_New();
-                        if (Items[vCurItemNo].CanConcatItems(aItem))
+                        if (Items[vCurItemNo].CanConcatItems(aItem))  // 能合并
                         {
-                            if (aItem.ParaFirst)
+                            if (aItem.ParaFirst)  // 新段
                             {
                                 UndoAction_DeleteBackText(vCurItemNo, SelectInfo.StartItemOffset + 1, vsAfter);
                                 Items[vCurItemNo].Text = vsBefor;
@@ -1679,7 +1847,7 @@ namespace HC.View
                                 Items.Insert(vCurItemNo, aItem);
                                 UndoAction_InsertItem(vCurItemNo, 0);
 
-                                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+                                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                                 ReSetSelectAndCaret(vCurItemNo);
                             }
                             else  // 同一段中插入
@@ -1688,7 +1856,7 @@ namespace HC.View
                                 vsBefor = vsBefor + aItem.Text;
                                 Items[vCurItemNo].Text = vsBefor + vsAfter;
 
-                                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
+                                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
                                 SelectInfo.StartItemNo = vCurItemNo;
                                 SelectInfo.StartItemOffset = vsBefor.Length;
                                 //CaretDrawItemNo := GetItemLastDrawItemNo(vCurItemNo);
@@ -1708,12 +1876,13 @@ namespace HC.View
                             Items.Insert(vCurItemNo, aItem);
                             UndoAction_InsertItem(vCurItemNo, 0);
 
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 2, 2);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 2, 2);
                             ReSetSelectAndCaret(vCurItemNo);
                         }
 
                         Result = true;
                     }
+                }
             }
 
             return Result;
@@ -1729,7 +1898,7 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            aItem.ParaNo = Style.CurParaNo;
+            aItem.ParaNo = CurParaNo;
 
             if (IsEmptyData())
             {
@@ -1737,35 +1906,35 @@ namespace HC.View
                 return EmptyDataInsertItem(aItem);
             }
 
-            int vIncCount = 0, vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
+            int vIncCount = 0, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
             Undo_New();
-            if (aItem.StyleNo < HCStyle.Null)
+            if (aItem.StyleNo < HCStyle.Null)  // 插入RectItem
             {
                 int vInsPos = aIndex;
                 if (aIndex < Items.Count)
                 {
-                    if (aOffsetBefor)
+                    if (aOffsetBefor)  // 在原位置Item前面插入
                     {
-                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex, 0);
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                        GetFormatRange(aIndex, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                        if ((Items[aIndex].StyleNo > HCStyle.Null) && (Items[aIndex].Text == ""))
+                        if (IsEmptyLine(aIndex))
                         {
                             aItem.ParaFirst = true;
                             UndoAction_DeleteItem(aIndex, 0);
-                            Items.RemoveAt(aIndex);
+                            Items.Delete(aIndex);
                             vIncCount--;
                         }
                         else  // 插入位置不是空行
-                            if (!aItem.ParaFirst)
+                        if (!aItem.ParaFirst)
+                        {
+                            aItem.ParaFirst = Items[aIndex].ParaFirst;
+                            if (Items[aIndex].ParaFirst)
                             {
-                                aItem.ParaFirst = Items[aIndex].ParaFirst;
-                                if (Items[aIndex].ParaFirst)
-                                {
-                                    UndoAction_ItemParaFirst(aIndex, 0, false);
-                                    Items[aIndex].ParaFirst = false;
-                                }
+                                UndoAction_ItemParaFirst(aIndex, 0, false);
+                                Items[aIndex].ParaFirst = false;
                             }
+                        }
                     }
                     else  // 在某Item后面插入
                     {
@@ -1773,8 +1942,8 @@ namespace HC.View
                             && (Items[aIndex - 1].StyleNo > HCStyle.Null)
                             && (Items[aIndex - 1].Text == ""))
                         {
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex - 1, 0);
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                            GetFormatRange(aIndex - 1, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                             aItem.ParaFirst = true;
                             UndoAction_DeleteItem(aIndex - 1, 0);
@@ -1784,16 +1953,15 @@ namespace HC.View
                         }
                         else  // 插入位置前一个不是空行
                         {
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex, 0);
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                            GetFormatRange(aIndex - 1, GetItemLastDrawItemNo(aIndex - 1), ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         }
                     }
                 }
                 else  // 在末尾添加一个新Item
                 {
-                    vFormatFirstItemNo = aIndex - 1;
-                    vFormatLastItemNo = aIndex - 1;
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                    GetFormatRange(aIndex - 1, GetItemLastDrawItemNo(aIndex - 1), ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     if ((!aItem.ParaFirst)  // 插入不是另起一段)
                         && (Items[aIndex - 1].StyleNo > HCStyle.Null)  // 前面是TextItem
                         && (Items[aIndex - 1].Text == "")) // 空行
@@ -1810,29 +1978,12 @@ namespace HC.View
                 UndoAction_InsertItem(vInsPos, HC.OffsetAfter);
                 vIncCount++;
 
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + vIncCount, vIncCount);
+                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vIncCount, vIncCount);
                 ReSetSelectAndCaret(vInsPos);
             }
             else  // 插入文本Item
             {
                 bool vMerged = false;
-                if (aIndex > 0)
-                {
-                    if (aIndex < Items.Count)
-                    {
-                        if (!Items[aIndex].ParaFirst)
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex - 1, 0);
-                        else
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex, 0);
-                    }
-                    else  // 在最后面追加
-                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex - 1, 0);
-                }
-                else
-                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, 0, 0);
-
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
                 if (!aItem.ParaFirst)
                 {
                     // 在2个Item中间插入一个Item，需要同时判断和前后能否合并
@@ -1840,89 +1991,105 @@ namespace HC.View
                     {
                         if ((aIndex < Items.Count) && (Items[aIndex].CanConcatItems(aItem)))
                         {
+                            GetFormatRange(aIndex, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
                             UndoAction_InsertText(aIndex, 1, aItem.Text);  // 201806261644
                             Items[aIndex].Text = aItem.Text + Items[aIndex].Text;
 
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
                             ReSetSelectAndCaret(aIndex);
 
                             vMerged = true;
                         }
                         else
-                            if ((!Items[aIndex].ParaFirst) && (aIndex > 0) && Items[aIndex - 1].CanConcatItems(aItem))
-                            {
-                                UndoAction_InsertText(aIndex - 1, Items[aIndex - 1].Length + 1, aItem.Text);  // 201806261650
-                                Items[aIndex - 1].Text = Items[aIndex - 1].Text + aItem.Text;
+                        if ((!Items[aIndex].ParaFirst) && (aIndex > 0) && Items[aIndex - 1].CanConcatItems(aItem))
+                        {
+                            GetFormatRange(aIndex - 1, GetItemOffsetAfter(aIndex - 1), ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
-                                ReSetSelectAndCaret(aIndex - 1);
+                            UndoAction_InsertText(aIndex - 1, Items[aIndex - 1].Length + 1, aItem.Text);  // 201806261650
+                            Items[aIndex - 1].Text = Items[aIndex - 1].Text + aItem.Text;
 
-                                vMerged = true;
-                            }
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
+                            ReSetSelectAndCaret(aIndex - 1);
+
+                            vMerged = true;
+                        }
                     }
                     else  // 在Item后面插入，未指定另起一段，在Item后面插入AIndex肯定是大于0
                     {
-                        if ((Items[aIndex - 1].StyleNo > HCStyle.Null) && (Items[aIndex - 1].Text == ""))  // 在空行后插入不换行，替换空行
+                        if (IsEmptyLine(aIndex - 1))  // 在空行后插入不换行
                         {
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex - 1, 0);
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                            GetFormatRange(aIndex - 1, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                             aItem.ParaFirst = true;
                             Items.Insert(aIndex, aItem);
                             UndoAction_InsertItem(aIndex, 0);
 
                             UndoAction_DeleteItem(aIndex - 1, 0);
-                            Items.RemoveAt(aIndex - 1);
+                            Items.Delete(aIndex - 1);
 
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
                             ReSetSelectAndCaret(aIndex - 1);
 
                             vMerged = true;
                         }
                         else
-                        if (Items[aIndex - 1].CanConcatItems(aItem))  // 先判断和前一个能否合并
+                        if (Items[aIndex - 1].CanConcatItems(aItem))
                         {
                             // 能合并，重新获取前一个的格式化信息
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, aIndex - 1, 0);
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                            GetFormatRange(aIndex - 1, GetItemOffsetAfter(aIndex - 1), ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                             UndoAction_InsertText(aIndex - 1, Items[aIndex - 1].Length + 1, aItem.Text);  // 201806261650
                             Items[aIndex - 1].Text = Items[aIndex - 1].Text + aItem.Text;
 
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
                             ReSetSelectAndCaret(aIndex - 1);
-
                             vMerged = true;
                         }
                         else
-                            if ((aIndex < Items.Count) && (!Items[aIndex].ParaFirst) && (Items[aIndex].CanConcatItems(aItem)))
-                            {
-                                UndoAction_InsertText(aIndex, 1, aItem.Text);  // 201806261644
-                                Items[aIndex].Text = aItem.Text + Items[aIndex].Text;
+                        if ((aIndex < Items.Count) && (!Items[aIndex].ParaFirst) && (Items[aIndex].CanConcatItems(aItem)))
+                        {
+                            GetFormatRange(aIndex, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo, 0);
-                                ReSetSelectAndCaret(aIndex, aItem.Length);
+                            UndoAction_InsertText(aIndex, 1, aItem.Text);  // 201806261644
+                            Items[aIndex].Text = aItem.Text + Items[aIndex].Text;
 
-                                vMerged = true;
-                            }
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
+                            ReSetSelectAndCaret(aIndex, aItem.Length);
+
+                            vMerged = true;
+                        }
                     }
                 }
 
                 if (!vMerged)
                 {
-                    if (aOffsetBefor && (!aItem.ParaFirst))
+                    if (aOffsetBefor)
                     {
-                        aItem.ParaFirst = Items[aIndex].ParaFirst;
-                        if (Items[aIndex].ParaFirst)
+                        GetFormatRange(aIndex, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        if (!aItem.ParaFirst)
                         {
-                            UndoAction_ItemParaFirst(aIndex, 0, false);
-                            Items[aIndex].ParaFirst = false;
+                            aItem.ParaFirst = Items[aIndex].ParaFirst;
+                            if (Items[aIndex].ParaFirst)
+                            {
+                                UndoAction_ItemParaFirst(aIndex, 0, false);
+                                Items[aIndex].ParaFirst = false;
+                            }
                         }
                     }
+                    else
+                        GetFormatRange(aIndex - 1, GetItemOffsetAfter(aIndex - 1), ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                     Items.Insert(aIndex, aItem);
                     UndoAction_InsertItem(aIndex, 0);
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
 
                     ReSetSelectAndCaret(aIndex);
                 }
@@ -1931,14 +2098,65 @@ namespace HC.View
             return true;
         }
 
+        public void SetActiveItemText(string aText)
+        {
+            if (!CanEdit()) return;
+
+            this.InitializeField();
+            HCCustomItem vActiveItem = GetActiveItem();
+            if (vActiveItem == null) return;
+
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            if ((vActiveItem.StyleNo < HCStyle.Null)  // 当前位置是 RectItem)
+                && (SelectInfo.StartItemOffset == HC.OffsetInner))  // 在其上输入内容
+            {
+                Undo_New();
+
+                HCCustomRectItem vRectItem = vActiveItem as HCCustomRectItem;
+                if (vRectItem.MangerUndo)
+                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                else
+                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                vRectItem.SetActiveItemText(aText);
+                if (vRectItem.SizeChanged)
+                {
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                    vRectItem.SizeChanged = false;
+                }
+                else
+                    this.FormatInit();
+            }
+            else
+            {
+                Undo_New();
+                UndoAction_SetItemText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, aText);
+                Items[SelectInfo.StartItemNo].Text = aText;
+
+                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                SelectInfo.StartItemOffset = aText.Length;
+                ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+            }
+
+            Style.UpdateInfoRePaint();
+            Style.UpdateInfoReCaret();
+            //Style.UpdateInfoReScroll;
+        }
+
         public virtual void KillFocus()
         {
-            int vItemNo = GetCurItemNo();
+            int vItemNo = GetActiveItemNo();
             if (vItemNo > 0)
                 Items[vItemNo].KillFocus();
         }
 
-        #region DoItemMouseDown
+        #region MouseDown子方法DoItemMouseDown
         private void DoItemMouseDown(int aItemNo, int aOffset, MouseEventArgs e)
         {
             if (aItemNo < 0)
@@ -1964,7 +2182,7 @@ namespace HC.View
             //FSelectSeekOffset = -1;
 
             FMouseLBDowning = (e.Button == MouseButtons.Left);
-            
+
             FMouseDownX = e.X;
             FMouseDownY = e.Y;
 
@@ -2038,178 +2256,7 @@ namespace HC.View
             }
         }
 
-        #region AdjustSelectRange
-        /// <summary> 给定起始结束位置，判断正确的选中位置并修正输出 </summary>
-        /// <param name="ADrawItemNo">光标处的DrawItem(暂时无意义)</param>
-        /// <param name="AStartItemNo"></param>
-        /// <param name="AStartItemOffset"></param>
-        /// <param name="AEndItemNo"></param>
-        /// <param name="AEndItemNoOffset"></param>
-        private void AdjustSelectRange(ref int aStartItemNo, ref int aStartItemOffset, ref int aEndItemNo, ref int aEndItemNoOffset)
-        {
-            bool vLeftToRight = false;
-            // 记录原来选中范围
-            int vOldStartItemNo = SelectInfo.StartItemNo;
-            int vOldEndItemNo = SelectInfo.EndItemNo;
-
-            if (aStartItemNo < aEndItemNo)
-            {
-                vLeftToRight = true;
-
-                if (aStartItemOffset == GetItemAfterOffset(aStartItemNo))
-                {
-                    if (aStartItemNo < Items.Count - 1)
-                    {
-                        aStartItemNo = aStartItemNo + 1;
-                        aStartItemOffset = 0;
-                    }
-                }
-
-                if ((aStartItemNo != aEndItemNo) && (aEndItemNo >= 0) && (aEndItemNoOffset == 0))
-                {
-                    Items[aEndItemNo].DisSelect();  // 从前往后选，鼠标移动到前一次前面，原鼠标处被移出选中范围
-
-                    aEndItemNo = aEndItemNo - 1;
-                    aEndItemNoOffset = GetItemAfterOffset(aEndItemNo);
-                }
-            }
-            else
-                if (aEndItemNo < aStartItemNo)
-                {
-                    vLeftToRight = false;
-
-                    if ((aStartItemNo > 0) && (aStartItemOffset == 0))
-                    {
-                        aStartItemNo = aStartItemNo - 1;
-                        aStartItemOffset = GetItemAfterOffset(aStartItemNo);
-                    }
-
-                    if ((aStartItemNo != aEndItemNo) && (aEndItemNoOffset == GetItemAfterOffset(aEndItemNo)))
-                    {
-                        Items[aEndItemNo].DisSelect();  // 从后往前选，鼠标移动到前一个后面，原鼠标处被移出选中范围
-
-                        if (aEndItemNo < Items.Count - 1)
-                        {
-                            aEndItemNo = aEndItemNo + 1;
-                            aEndItemNoOffset = 0;
-                        }
-                    }
-                }
-
-            if (aStartItemNo == aEndItemNo)
-            {
-                if (aEndItemNoOffset > aStartItemOffset)
-                {
-                    if (Items[aStartItemNo].StyleNo < HCStyle.Null)
-                    {
-                        SelectInfo.StartItemNo = aStartItemNo;
-                        SelectInfo.StartItemOffset = aStartItemOffset;
-                        if ((aStartItemOffset == HC.OffsetBefor) && (aEndItemNoOffset == HC.OffsetAfter))
-                        {
-                            SelectInfo.EndItemNo = aEndItemNo;
-                            SelectInfo.EndItemOffset = aEndItemNoOffset;
-                        }
-                        else  // 没有全选中
-                        {
-                            SelectInfo.EndItemNo = -1;
-                            SelectInfo.EndItemOffset = -1;
-                            //CaretDrawItemNo = vMoveDrawItemNo;
-                        }
-                    }
-                    else  // TextItem
-                    {
-                        SelectInfo.StartItemNo = aStartItemNo;
-                        SelectInfo.StartItemOffset = aStartItemOffset;
-                        SelectInfo.EndItemNo = aStartItemNo;
-                        SelectInfo.EndItemOffset = aEndItemNoOffset;
-                    }
-                }
-                else
-                    if (aEndItemNoOffset < aStartItemOffset)
-                    {
-                        if (Items[aStartItemNo].StyleNo < HCStyle.Null)
-                        {
-                            if (aEndItemNoOffset == HC.OffsetBefor)
-                            {
-                                SelectInfo.StartItemNo = aStartItemNo;
-                                SelectInfo.StartItemOffset = aEndItemNoOffset;
-                                SelectInfo.EndItemNo = aStartItemNo;
-                                SelectInfo.EndItemOffset = aStartItemOffset;
-                            }
-                            else  // 从后往前选到OffsetInner了
-                            {
-                                SelectInfo.StartItemNo = aStartItemNo;
-                                SelectInfo.StartItemOffset = aStartItemOffset;
-                                SelectInfo.EndItemNo = -1;
-                                SelectInfo.EndItemOffset = -1;
-                            }
-                        }
-                        else  // TextItem
-                        {
-                            SelectInfo.StartItemNo = aEndItemNo;
-                            SelectInfo.StartItemOffset = aEndItemNoOffset;
-                            SelectInfo.EndItemNo = aEndItemNo;
-                            SelectInfo.EndItemOffset = aStartItemOffset;
-                        }
-                    }
-                    else  // 结束位置和起始位置相同(同一个Item)
-                    {
-                        if (SelectInfo.EndItemNo >= 0)
-                            Items[SelectInfo.EndItemNo].DisSelect();
-
-                        SelectInfo.StartItemNo = aStartItemNo;
-                        SelectInfo.StartItemOffset = aStartItemOffset;
-                        SelectInfo.EndItemNo = -1;
-                        SelectInfo.EndItemOffset = -1;
-                    }
-            }
-            else  // 选择操作不在同一个Item
-            {
-                if (vLeftToRight)
-                {
-                    SelectInfo.StartItemNo = aStartItemNo;
-                    SelectInfo.StartItemOffset = aStartItemOffset;
-                    SelectInfo.EndItemNo = aEndItemNo;
-                    SelectInfo.EndItemOffset = aEndItemNoOffset;
-                }
-                else
-                {
-                    SelectInfo.StartItemNo = aEndItemNo;
-                    SelectInfo.StartItemOffset = aEndItemNoOffset;
-                    SelectInfo.EndItemNo = aStartItemNo;
-                    SelectInfo.EndItemOffset = aStartItemOffset;
-                }
-            }
-
-            // 新选中范围外的清除选中
-            if (vOldStartItemNo >= 0)
-            {
-                if (vOldStartItemNo > SelectInfo.StartItemNo)
-                {
-                    for (int i = vOldStartItemNo; i >= SelectInfo.StartItemNo + 1; i--)
-                        Items[i].DisSelect();
-                }
-                else
-                {
-                    for (int i = vOldStartItemNo; i <= SelectInfo.StartItemNo - 1; i++)
-                        Items[i].DisSelect();
-                }
-            }
-
-            if (SelectInfo.EndItemNo < 0)
-            {
-                for (int i = vOldEndItemNo; i >= SelectInfo.StartItemNo + 1; i--)  // 当前后面的取消选中
-                    Items[i].DisSelect();
-            }
-            else  // 有选中结束
-            {
-                for (int i = vOldEndItemNo; i >= SelectInfo.EndItemNo + 1; i--)  // 原结束倒序到现结束下一个的取消选中
-                    Items[i].DisSelect();
-            }
-        }
-        #endregion
-
-        #region
+        #region MouseUp子方法
         private void DoItemMouseMove(int aItemNo, int aOffset, MouseEventArgs e)
         {
             if (aItemNo < 0)
@@ -2236,19 +2283,18 @@ namespace HC.View
                 return;
             }
 
-            //vOldMouseMoveItemOffset := FMouseMoveItemOffset;
-
-            int vMouseMoveItemNo = -1, vMouseMoveItemOffset = -1, vMoveDrawItemNo = -1;
+            int vMouseMoveItemNo = -1, vMouseMoveItemOffset = -1;
             bool vRestrain = false;
-            GetItemAt(e.X, e.Y, ref vMouseMoveItemNo, ref vMouseMoveItemOffset, ref vMoveDrawItemNo, ref vRestrain);
+            GetItemAt(e.X, e.Y, ref vMouseMoveItemNo, ref vMouseMoveItemOffset, ref FMouseMoveDrawItemNo, ref vRestrain);
 
             if (FDraging || Style.UpdateInfo.Draging)
             {
                 HC.GCursor = Cursors.Arrow;  // crDrag
+
                 FMouseMoveItemNo = vMouseMoveItemNo;
                 FMouseMoveItemOffset = vMouseMoveItemOffset;
                 FMouseMoveRestrain = vRestrain;
-                CaretDrawItemNo = vMoveDrawItemNo;
+                CaretDrawItemNo = FMouseMoveDrawItemNo;
 
                 Style.UpdateInfoReCaret();
 
@@ -2256,6 +2302,7 @@ namespace HC.View
                     DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
             }
             else
+            {
                 if (FSelecting)  // 划选
                 {
                     if ((Items[FMouseDownItemNo].StyleNo < HCStyle.Null)
@@ -2278,8 +2325,8 @@ namespace HC.View
 
                     AdjustSelectRange(ref FMouseDownItemNo, ref FMouseDownItemOffset,
                       ref FMouseMoveItemNo, ref FMouseMoveItemOffset);  // 确定SelectRang
-                    FSelectSeekNo = vMouseMoveItemNo;
-                    FSelectSeekOffset = vMouseMoveItemOffset;
+                    FSelectSeekNo = FMouseMoveItemNo;
+                    FSelectSeekOffset = FMouseMoveItemOffset;
 
                     MatchItemSelectState();  // 设置选中范围内的Item选中状态
                     Style.UpdateInfoRePaint();
@@ -2289,6 +2336,7 @@ namespace HC.View
                         DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
                 }
                 else  // 非拖拽，非划选
+                {
                     if (FMouseLBDowning && ((FMouseDownX != e.X) || (FMouseDownY != e.Y)))
                     {
                         FSelecting = true;
@@ -2300,6 +2348,7 @@ namespace HC.View
                         {
                             if (FMouseMoveItemNo >= 0)
                                 DoItemMouseLeave(FMouseMoveItemNo);
+
                             if ((vMouseMoveItemNo >= 0) && (!vRestrain))
                                 DoItemMouseEnter(vMouseMoveItemNo);
 
@@ -2315,11 +2364,13 @@ namespace HC.View
                                         DoItemMouseLeave(FMouseMoveItemNo);
                                 }
                                 else
+                                {
                                     if (FMouseMoveRestrain && (!vRestrain))
                                     {
                                         if (vMouseMoveItemNo >= 0)
                                             DoItemMouseEnter(vMouseMoveItemNo);
                                     }
+                                }
 
                                 Style.UpdateInfoRePaint();
                             }
@@ -2337,9 +2388,11 @@ namespace HC.View
                                 HC.GCursor = Cursors.Hand;
                         }
                     }
+                }
+            }
         }
 
-        #region DoItemMouseUp
+        #region MouseUp子方法DoItemMouseUp
         private void DoItemMouseUp(int aItemNo, int aOffset, MouseEventArgs e)
         {
             if (aItemNo < 0)
@@ -2356,7 +2409,7 @@ namespace HC.View
         }
         #endregion
 
-        #region DoNormalMouseUp
+        #region MouseUp子方法DoNormalMouseUp
         private void DoNormalMouseUp(int vUpItemNo, int vUpItemOffset, int vDrawItemNo, MouseEventArgs e)
         {
             if (FMouseMoveItemNo < 0)
@@ -2384,8 +2437,11 @@ namespace HC.View
         public virtual void MouseUp(MouseEventArgs e)
         {
             FMouseLBDowning = false;
-            
+
             if (FMouseLBDouble)
+                return;
+
+            if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))
                 return;
 
             if (SelectedResizing())
@@ -2396,17 +2452,10 @@ namespace HC.View
                 DoItemMouseUp(FMouseDownItemNo, FMouseDownItemOffset, e);
                 DoItemResized(FMouseDownItemNo);  // 缩放完成事件(可控制缩放不要超过页面)
 
-                int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, FMouseDownItemNo, FMouseDownItemOffset);
-
-                if ((vFormatFirstItemNo > 0) && (!Items[vFormatFirstItemNo].ParaFirst))
-                {
-                    vFormatFirstItemNo--;
-                    vFormatFirstItemNo = GetLineFirstItemNo(vFormatFirstItemNo, 0);
-                }
-
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+                GetFormatRange(FMouseDownItemNo, FMouseDownItemOffset, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                 Style.UpdateInfoRePaint();
 
                 return;
@@ -2431,6 +2480,7 @@ namespace HC.View
                     DoItemMouseUp(vUpItemNo, vUpItemOffset, e);
             }
             else
+            {
                 if (FDraging || Style.UpdateInfo.Draging)
                 {
                     FDraging = false;
@@ -2476,22 +2526,7 @@ namespace HC.View
 
                     DoNormalMouseUp(vUpItemNo, vUpItemOffset, vDrawItemNo, e);
                 }
-        }
-
-        public override void ParseXml(XmlElement aNode)
-        {
-            if (!CanEdit())
-                return;
-
-            base.ParseXml(aNode);
-
-            ReFormat(0);
-            InitializeMouseField();
-            ReSetSelectAndCaret(0, 0);
-
-            Style.UpdateInfoRePaint();
-            Style.UpdateInfoReCaret();
-            Style.UpdateInfoReScroll();
+            }
         }
 
         public virtual void MouseLeave()
@@ -2513,7 +2548,7 @@ namespace HC.View
 
             DeleteSelected();
 
-            HCCustomItem vCarteItem = GetCurItem();
+            HCCustomItem vCarteItem = GetActiveItem();
             if (vCarteItem == null)
                 return;
 
@@ -2533,28 +2568,32 @@ namespace HC.View
                 {
                     vRectItem.SizeChanged = false;
 
-                    int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                    int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     if (key != 0)
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
+                    vRectItem.SizeChanged = false;
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
                     Style.UpdateInfoReScroll();
                 }
+                else
+                    this.FormatInit();
             }
             else
                 InsertText(key.ToString());
         }
 
-        #region CheckSelectEndEff 判断选择结束是否和起始在同一位置，是则取消选中
+        #region KeyDown子方法CheckSelectEndEff 判断选择结束是否和起始在同一位置，是则取消选中
         private void CheckSelectEndEff()
         {
             if ((SelectInfo.StartItemNo == SelectInfo.EndItemNo)
                 && (SelectInfo.StartItemOffset == SelectInfo.EndItemOffset))
             {
                 Items[SelectInfo.EndItemNo].DisSelect();
+
                 SelectInfo.EndItemNo = -1;
                 SelectInfo.EndItemOffset = -1;
             }
@@ -2574,52 +2613,65 @@ namespace HC.View
 
         private void TABKeyDown(HCCustomItem vCurItem, KeyEventArgs e)
         {
-            HCTabItem vTabItem = new HCTabItem(this);
-            if (vCurItem.StyleNo < HCStyle.Null)
+            if ((SelectInfo.StartItemOffset == 0) && (Items[SelectInfo.StartItemNo].ParaFirst))
             {
-                if (SelectInfo.StartItemOffset == HC.OffsetInner)
+                HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
+                ApplyParaFirstIndent(vParaStyle.FirstIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+            }
+            else
+            {
+                if (vCurItem.StyleNo < HCStyle.Null)
                 {
-                    if ((vCurItem as HCCustomRectItem).WantKeyDown(e))
+                    if (SelectInfo.StartItemOffset == HC.OffsetInner)
                     {
-                        int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                        (vCurItem as HCCustomRectItem).KeyDown(e);
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                        if ((vCurItem as HCCustomRectItem).WantKeyDown(e))  // 处理此键
+                        {
+                            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+                            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                            (vCurItem as HCCustomRectItem).KeyDown(e);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        }
+                    }
+                    else
+                    {
+                        HCTabItem vTabItem = new HCTabItem(this);
+                        this.InsertItem(vTabItem);
                     }
                 }
-            }
-            else  // TextItem
-            {
-                if ((SelectInfo.StartItemOffset == 0) && Items[SelectInfo.StartItemNo].ParaFirst)  // 段首
+                else  // TextItem
                 {
-                    HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
-                    ApplyParaFirstIndent(vParaStyle.FirstIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
-                }
-                else
+                    HCTabItem vTabItem = new HCTabItem(this);
                     this.InsertItem(vTabItem);
+                }
             }
         }
 
-        private void SelectPrio(ref int AItemNo, ref int AOffset)
+        // LeftKeyDown子方法
+        private void SelectPrio(ref int aItemNo, ref int aOffset)
         {
-            if (AOffset > 0)
+            if (aOffset > 0)
             {
-                if (Items[AItemNo].StyleNo > HCStyle.Null)
-                    AOffset = AOffset - 1;
+                if (Items[aItemNo].StyleNo > HCStyle.Null)
+                    aOffset = aOffset - 1;
                 else
-                    AOffset = HC.OffsetBefor;
+                    aOffset = HC.OffsetBefor;
             }
             else
-                if (AItemNo > 0)
+                if (aItemNo > 0)
                 {
-                    Items[AItemNo].DisSelect();
-                    AItemNo = AItemNo - 1;
-                    if (Items[AItemNo].StyleNo < HCStyle.Null)
-                        AOffset = HC.OffsetBefor;
+                    Items[aItemNo].DisSelect();
+                    aItemNo = aItemNo - 1;
+                    if (Items[aItemNo].StyleNo < HCStyle.Null)
+                        aOffset = HC.OffsetBefor;
                     else
-                        AOffset = Items[AItemNo].Length - 1;  // 倒数第1个前面
+                        aOffset = Items[aItemNo].Length - 1;  // 倒数第1个前面
                 }
+
+            #if UNPLACEHOLDERCHAR
+            if ((Items[aItemNo].StyleNo > HCStyle.Null) && HC.IsUnPlaceHolderChar(Items[aItemNo].Text[aOffset + 1 - 1]))
+                aOffset = GetItemActualOffset(aItemNo, aOffset) - 1;
+            #endif
         }
 
         private void SelectStartItemPrio()
@@ -2642,11 +2694,11 @@ namespace HC.View
 
         private void LeftKeyDown(bool vSelectExist, KeyEventArgs e)
         {
-            if (e.Shift)
+            if (e.Shift)  // Shift+方向键选择
             {
                 if (SelectInfo.EndItemNo >= 0)
                 {
-                    if (IsSelectSeekStart())
+                    if (IsSelectSeekStart())  // 游标在选中起始
                     {
                         SelectStartItemPrio();
                         SetSelectSeekStart();
@@ -2662,7 +2714,7 @@ namespace HC.View
                     if ((SelectInfo.StartItemNo > 0) && (SelectInfo.StartItemOffset == 0))
                     {
                         SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                        SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
+                        SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
                     }
 
                     SelectInfo.EndItemNo = SelectInfo.StartItemNo;
@@ -2685,14 +2737,20 @@ namespace HC.View
                 }
                 else  // 无选中内容
                 {
-                    if (SelectInfo.StartItemOffset != 0)
+                    if (SelectInfo.StartItemOffset != 0)  // 不在Item最开始
+                    {
                         SelectInfo.StartItemOffset = SelectInfo.StartItemOffset - 1;
+                        #if UNPLACEHOLDERCHAR
+                        if (HC.IsUnPlaceHolderChar(Items[SelectInfo.StartItemNo].Text[SelectInfo.StartItemOffset + 1 - 1]))
+                            SelectInfo.StartItemOffset = GetItemActualOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset) - 1;                   
+                        #endif
+                    }
                     else  // 在Item最开始左方向键
                     {
                         if (SelectInfo.StartItemNo > 0)
                         {
                             SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;  // 上一个
-                            SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
+                            SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
 
                             if (!DrawItems[Items[SelectInfo.StartItemNo + 1].FirstDItemNo].LineFirst)
                             {
@@ -2724,13 +2782,15 @@ namespace HC.View
             }
         }
 
+        // RightKeyDown子方法
         private void SelectNext(ref int AItemNo, ref int AOffset)
         {
-            if (AOffset == GetItemAfterOffset(AItemNo))
+            if (AOffset == GetItemOffsetAfter(AItemNo))
             {
                 if (AItemNo < Items.Count - 1)
                 {
                     AItemNo++;
+
                     if (Items[AItemNo].StyleNo < HCStyle.Null)
                         AOffset = HC.OffsetAfter;
                     else
@@ -2744,6 +2804,10 @@ namespace HC.View
                 else
                     AOffset = AOffset + 1;
             }
+
+            #if UNPLACEHOLDERCHAR
+            AOffset = GetItemActualOffset(AItemNo, AOffset, true);
+            #endif
         }
 
         private void SelectStartItemNext()
@@ -2768,7 +2832,7 @@ namespace HC.View
         {
             if (e.Shift)
             {
-                if (SelectInfo.EndItemNo >= 0)
+                if (SelectInfo.EndItemNo >= 0)  // 有选中内容
                 {
                     if (IsSelectSeekStart())
                     {
@@ -2794,11 +2858,13 @@ namespace HC.View
                             }
                         }
                         else
+                        {
                             if (SelectInfo.StartItemOffset == Items[SelectInfo.StartItemNo].Length)
                             {
                                 SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                                 SelectInfo.StartItemOffset = 0;
                             }
+                        }
                     }
 
                     SelectInfo.EndItemNo = SelectInfo.StartItemNo;
@@ -2824,7 +2890,11 @@ namespace HC.View
                 else  // 无选中内容
                 {
                     if (SelectInfo.StartItemOffset < vCurItem.Length)
+                        #if UNPLACEHOLDERCHAR
+                        SelectInfo.StartItemOffset = GetItemActualOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, true);
+                        #else
                         SelectInfo.StartItemOffset = SelectInfo.StartItemOffset + 1;
+                        #endif
                     else  // 在Item最右边
                     {
                         if (SelectInfo.StartItemNo < Items.Count - 1)
@@ -2876,7 +2946,7 @@ namespace HC.View
 
                 if (SelectInfo.EndItemNo >= 0)
                 {
-                    if (IsSelectSeekStart())
+                    if (IsSelectSeekStart())  // 游标在选中起始
                     {
                         SelectInfo.StartItemNo = DrawItems[vFirstDItemNo].ItemNo;
                         SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
@@ -2891,6 +2961,7 @@ namespace HC.View
                             SetSelectSeekEnd();
                         }
                         else
+                        {
                             if (DrawItems[vFirstDItemNo].ItemNo == SelectInfo.StartItemNo)
                             {
                                 if (DrawItems[vFirstDItemNo].CharOffs - 1 > SelectInfo.StartItemOffset)
@@ -2908,6 +2979,7 @@ namespace HC.View
                                 SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
                                 SetSelectSeekStart();
                             }
+                        }
                     }
                 }
                 else   // 没有选中
@@ -2963,7 +3035,7 @@ namespace HC.View
 
                 if (SelectInfo.EndItemNo >= 0)
                 {
-                    if (IsSelectSeekStart())
+                    if (IsSelectSeekStart())  // 游标在选中起始
                     {
                         if (DrawItems[vLastDItemNo].ItemNo > SelectInfo.EndItemNo)
                         {
@@ -3037,6 +3109,7 @@ namespace HC.View
             }
         }
 
+        // UpKeyDown子方法
         private bool GetUpDrawItemNo(ref int ADrawItemNo, ref int ADrawItemOffset)
         {
             bool Result = false;
@@ -3051,12 +3124,14 @@ namespace HC.View
                 // 获取上一行在X位置对应的DItem和Offset
                 vFirstDItemNo = vFirstDItemNo - 1;
                 GetLineDrawItemRang(ref vFirstDItemNo, ref vLastDItemNo);  // 上一行起始和结束DItem
+
                 for (int i = vFirstDItemNo; i <= vLastDItemNo; i++)
                 {
                     if (DrawItems[i].Rect.Right > vX)
                     {
                         ADrawItemNo = i;
                         ADrawItemOffset = DrawItems[i].CharOffs + GetDrawItemOffsetAt(i, vX) - 1;
+
                         return Result;  // 有合适，则退出
                     }
                 }
@@ -3077,7 +3152,7 @@ namespace HC.View
 
                 if (SelectInfo.EndItemNo >= 0)
                 {
-                    if (IsSelectSeekStart())
+                    if (IsSelectSeekStart())  // 游标在选中起始
                     {
                         vDrawItemNo = GetSelectStartDrawItemNo();
                         vDrawItemOffset = SelectInfo.StartItemOffset - DrawItems[vDrawItemNo].CharOffs + 1;
@@ -3101,29 +3176,29 @@ namespace HC.View
                                 SetSelectSeekEnd();
                             }
                             else
-                                if (DrawItems[vDrawItemNo].ItemNo == SelectInfo.StartItemNo)
+                            if (DrawItems[vDrawItemNo].ItemNo == SelectInfo.StartItemNo)
+                            {
+                                SelectInfo.EndItemNo = SelectInfo.StartItemNo;
+                                if (vDrawItemOffset > SelectInfo.StartItemOffset)
                                 {
-                                    SelectInfo.EndItemNo = SelectInfo.StartItemNo;
-                                    if (vDrawItemOffset > SelectInfo.StartItemOffset)
-                                    {
-                                        SelectInfo.EndItemOffset = vDrawItemOffset;
-                                        SetSelectSeekEnd();
-                                    }
-                                    else  // 移动到起始Offset前面
-                                    {
-                                        SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
-                                        SelectInfo.StartItemOffset = vDrawItemOffset;
-                                        SetSelectSeekStart();
-                                    }
+                                    SelectInfo.EndItemOffset = vDrawItemOffset;
+                                    SetSelectSeekEnd();
                                 }
-                                else  // 移动到起始Item前面了
+                                else  // 移动到起始Offset前面
                                 {
-                                    SelectInfo.EndItemNo = SelectInfo.StartItemNo;
                                     SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
-                                    SelectInfo.StartItemNo = DrawItems[vDrawItemNo].ItemNo;
                                     SelectInfo.StartItemOffset = vDrawItemOffset;
                                     SetSelectSeekStart();
                                 }
+                            }
+                            else  // 移动到起始Item前面了
+                            {
+                                SelectInfo.EndItemNo = SelectInfo.StartItemNo;
+                                SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
+                                SelectInfo.StartItemNo = DrawItems[vDrawItemNo].ItemNo;
+                                SelectInfo.StartItemOffset = vDrawItemOffset;
+                                SetSelectSeekStart();
+                            }
                         }
                     }
                 }
@@ -3168,6 +3243,7 @@ namespace HC.View
             }
         }
 
+        // DownKeyDown子方法
         private bool GetDownDrawItemNo(ref int ADrawItemNo, ref int ADrawItemOffset)
         {
             bool Result = false;
@@ -3190,6 +3266,7 @@ namespace HC.View
                     {
                         ADrawItemNo = i;
                         ADrawItemOffset = DrawItems[i].CharOffs + GetDrawItemOffsetAt(i, vX) - 1;
+
                         return Result;  // 有合适，则退出
                     }
                 }
@@ -3303,9 +3380,9 @@ namespace HC.View
         private void RectItemKeyDown(bool vSelectExist, ref HCCustomItem vCurItem, KeyEventArgs e)
         {
             int Key = e.KeyValue;
-            int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
             HCCustomRectItem vRectItem = vCurItem as HCCustomRectItem;
-            if (SelectInfo.StartItemOffset == HC.OffsetInner)
+            if (SelectInfo.StartItemOffset == HC.OffsetInner)  // 在其上
             {
                 if (vRectItem.WantKeyDown(e))
                 {
@@ -3318,11 +3395,10 @@ namespace HC.View
                     vRectItem.KeyDown(e);
                     if (vRectItem.SizeChanged)
                     {
-                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         vRectItem.SizeChanged = false;
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
                     }
                 }
                 else  // 内部不响应此键
@@ -3382,15 +3458,16 @@ namespace HC.View
                                 break;
 
                             case User.VK_RETURN:
-                                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
                                 if (vCurItem.ParaFirst)  // RectItem在段首，插入空行
                                 {
                                     vCurItem = CreateDefaultTextItem();
                                     vCurItem.ParaFirst = true;
                                     Items.Insert(SelectInfo.StartItemNo, vCurItem);
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
 
                                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                                     ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
@@ -3398,7 +3475,7 @@ namespace HC.View
                                 else  // RectItem不在行首
                                 {
                                     vCurItem.ParaFirst = true;
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                 }
 
                                 break;
@@ -3408,23 +3485,21 @@ namespace HC.View
                                 {
                                     if (SelectInfo.StartItemNo > 0)
                                     {
-                                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         Undo_New();
                                         UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
 
                                         vCurItem.ParaFirst = false;
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                     }
-                                    else
-                                        DrawItems.ClearFormatMark();  // 第一个前回删不处理，停止格式化
                                 }
                                 else  // 不是段首
                                 {
                                     // 选到上一个最后
                                     SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                                    SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
+                                    SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
 
                                     KeyDown(e);  // 执行前一个的删除
                                 }
@@ -3437,8 +3512,8 @@ namespace HC.View
                                     return;
                                 }
 
-                                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                 if (vCurItem.ParaFirst)  // 是段首
                                 {
@@ -3451,44 +3526,44 @@ namespace HC.View
                                         UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                         Items.RemoveAt(SelectInfo.StartItemNo);
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                                     }
                                     else  // 段删除空了
                                     {
                                         Undo_New();
                                         UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
-                                        Items.RemoveAt(SelectInfo.StartItemNo);
+                                        Items.Delete(SelectInfo.StartItemNo);
 
                                         vCurItem = CreateDefaultTextItem();
                                         vCurItem.ParaFirst = true;
                                         Items.Insert(SelectInfo.StartItemNo, vCurItem);
                                         UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                     }
                                 }
                                 else  // 不是段首
                                 {
                                     if (SelectInfo.StartItemNo < vFormatLastItemNo)
                                     {
-                                        int vLen = GetItemAfterOffset(SelectInfo.StartItemNo - 1);
+                                        int vLen = GetItemOffsetAfter(SelectInfo.StartItemNo - 1);
 
                                         Undo_New();
                                         UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                         // 如果RectItem前面(同一行)有高度小于此RectItme的Item(如Tab)，
                                         // 其格式化时以RectItem为高，重新格式化时如果从RectItem所在位置起始格式化，
                                         // 行高度仍会以Tab为行高，也就是RectItem高度，所以需要从行开始格式化
-                                        Items.RemoveAt(SelectInfo.StartItemNo);
+                                        Items.Delete(SelectInfo.StartItemNo);
                                         if (MergeItemText(Items[SelectInfo.StartItemNo - 1], Items[SelectInfo.StartItemNo]))
                                         {
                                             UndoAction_InsertText(SelectInfo.StartItemNo - 1,
                                                 Items[SelectInfo.StartItemNo - 1].Length + 1, Items[SelectInfo.StartItemNo].Text);
 
                                             Items.RemoveAt(SelectInfo.StartItemNo);
-                                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 2, -2);
+                                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 2, -2);
                                         }
                                         else
-                                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
 
                                         SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
                                         SelectInfo.StartItemOffset = vLen;
@@ -3497,17 +3572,16 @@ namespace HC.View
                                     {
                                         Undo_New();
                                         UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
-                                        Items.RemoveAt(SelectInfo.StartItemNo);
+                                        Items.Delete(SelectInfo.StartItemNo);
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
 
                                         SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                                        SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
+                                        SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
                                     }
                                 }
 
                                 ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-
                                 break;
 
                             case User.VK_TAB:
@@ -3528,22 +3602,22 @@ namespace HC.View
                                     return;
                                 }
 
-                                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                 if (vCurItem.ParaFirst)
                                 {
                                     if ((SelectInfo.StartItemNo >= 0)
-                                                && (SelectInfo.StartItemNo < Items.Count - 1)
-                                                && (!Items[SelectInfo.StartItemNo + 1].ParaFirst))
+                                        && (SelectInfo.StartItemNo < Items.Count - 1)
+                                        && (!Items[SelectInfo.StartItemNo + 1].ParaFirst))
                                     {
                                         Undo_New();
                                         UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-                                        Items.RemoveAt(SelectInfo.StartItemNo);
+                                        Items.Delete(SelectInfo.StartItemNo);
 
                                         UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
                                         Items[SelectInfo.StartItemNo].ParaFirst = true;
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
 
                                         ReSetSelectAndCaret(SelectInfo.StartItemNo, 0);
                                     }
@@ -3551,14 +3625,14 @@ namespace HC.View
                                     {
                                         Undo_New();
                                         UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
-                                        Items.RemoveAt(SelectInfo.StartItemNo);
+                                        Items.Delete(SelectInfo.StartItemNo);
 
                                         HCCustomItem vItem = CreateDefaultTextItem();
                                         vItem.ParaFirst = true;
                                         Items.Insert(SelectInfo.StartItemNo, vItem);
                                         UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                         SelectInfo.StartItemOffset = 0;
                                     }
                                 }
@@ -3579,19 +3653,33 @@ namespace HC.View
 
                                     if (Items[SelectInfo.StartItemNo].ParaFirst)
                                     {
-                                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                        vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                                        vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo + 1);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         Undo_New();
-                                        UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, false);
+                                        if (IsEmptyLine(SelectInfo.StartItemNo + 1))
+                                        {
+                                            UndoAction_DeleteItem(SelectInfo.StartItemNo + 1, 0);
+                                            Items.Delete(SelectInfo.StartItemNo + 1);
 
-                                        Items[SelectInfo.StartItemNo].ParaFirst = false;
+                                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
+                                        }
+                                        else
+                                        {
+                                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo + 1, 0, false);
+                                            Items[SelectInfo.StartItemNo + 1].ParaFirst = false;
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
-                                        ReSetSelectAndCaret(SelectInfo.StartItemNo, 0);
+                                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                                            ReSetSelectAndCaret(SelectInfo.StartItemNo + 1, 0);
+                                        }
                                     }
                                     else
+                                    {
+                                        SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                                        SelectInfo.StartItemOffset = 0;
                                         KeyDown(e);
+                                    }
                                 }
                                 break;
 
@@ -3630,14 +3718,14 @@ namespace HC.View
                                 break;
 
                             case User.VK_RETURN:
-                                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                 if ((SelectInfo.StartItemNo < Items.Count - 1)  // 不是最后一个)
                                         && (!Items[SelectInfo.StartItemNo + 1].ParaFirst))  // 下一个不是段首
                                 {
                                     Items[SelectInfo.StartItemNo + 1].ParaFirst = true;
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                                     SelectInfo.StartItemOffset = 0;
                                     CaretDrawItemNo = Items[SelectInfo.StartItemNo].FirstDItemNo;
@@ -3647,7 +3735,7 @@ namespace HC.View
                                     vCurItem = CreateDefaultTextItem();
                                     vCurItem.ParaFirst = true;
                                     Items.Insert(SelectInfo.StartItemNo + 1, vCurItem);
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                                     ReSetSelectAndCaret(SelectInfo.StartItemNo + 1, vCurItem.Length);
                                 }
                                 break;
@@ -3661,16 +3749,19 @@ namespace HC.View
 
         private void EnterKeyDown(ref HCCustomItem vCurItem, KeyEventArgs e)
         {
-            int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
             // 判断光标位置内容如何换行
             if (SelectInfo.StartItemOffset == 0)
             {
                 if (!vCurItem.ParaFirst)
                 {
+                    Undo_New();
+                    UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
+
                     vCurItem.ParaFirst = true;
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                 }
                 else  // 原来就是段首
                 {
@@ -3679,7 +3770,11 @@ namespace HC.View
                     vItem.StyleNo = vCurItem.StyleNo;
                     vItem.ParaFirst = true;
                     Items.Insert(SelectInfo.StartItemNo, vItem);  // 原位置的向下移动
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+
+                    Undo_New();
+                    UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                 }
             }
@@ -3692,8 +3787,11 @@ namespace HC.View
                         vItem = Items[SelectInfo.StartItemNo + 1];  // 下一个Item
                         if (!vItem.ParaFirst)
                         {
+                            Undo_New();
+                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo + 1, 0, true);
+
                             vItem.ParaFirst = true;
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         }
                         else  // 下一个是段起始
                         {
@@ -3702,7 +3800,11 @@ namespace HC.View
                             vItem.StyleNo = vCurItem.StyleNo;
                             vItem.ParaFirst = true;
                             Items.Insert(SelectInfo.StartItemNo + 1, vItem);
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+
+                            Undo_New();
+                            UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                         }
 
                         SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
@@ -3715,7 +3817,11 @@ namespace HC.View
                         vItem.StyleNo = vCurItem.StyleNo;
                         vItem.ParaFirst = true;
                         Items.Insert(SelectInfo.StartItemNo + 1, vItem);
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+
+                        Undo_New();
+                        UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                         SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                         SelectInfo.StartItemOffset = 0;
                     }
@@ -3726,7 +3832,11 @@ namespace HC.View
                     vItem.ParaFirst = true;
 
                     Items.Insert(SelectInfo.StartItemNo + 1, vItem);
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + 1, 1);
+
+                    Undo_New();
+                    UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
 
                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                     SelectInfo.StartItemOffset = 0;
@@ -3738,9 +3848,9 @@ namespace HC.View
 
         private void DeleteKeyDown(HCCustomItem vCurItem, KeyEventArgs e)
         {
-            int vDelCount = 0, vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
+            int vDelCount = 0, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
             int vCurItemNo = SelectInfo.StartItemNo;
-            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
+            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
 
             if (SelectInfo.StartItemOffset == vCurItem.Length)
             {
@@ -3749,29 +3859,34 @@ namespace HC.View
                     if (Items[vCurItemNo + 1].ParaFirst)
                     {
                         vFormatLastItemNo = GetParaLastItemNo(vCurItemNo + 1);  // 获取下一段最后一个
-                        if (vCurItem.Length == 0)
+                        if (vCurItem.Length == 0)  // 当前是空行
                         {
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                            Items.RemoveAt(vCurItemNo);
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                            Undo_New();
+                            UndoAction_DeleteItem(vCurItemNo, 0);
+                            Items.Delete(vCurItemNo);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                         }
                         else  // 当前不是空行
                         {
                             if (Items[vCurItemNo + 1].StyleNo < HCStyle.Null)
                             {
+                                vFormatLastItemNo = GetParaLastItemNo(vCurItemNo + 1);  // 获取下一段最后一个
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                                Items[vCurItemNo + 1].ParaFirst = false;
+                                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
                                 SelectInfo.StartItemNo = vCurItemNo + 1;
                                 SelectInfo.StartItemOffset = HC.OffsetBefor;
-
-                                KeyDown(e);
-                                return;
                             }
                             else  // 下一个段首是TextItem(当前在上一段段尾)
                             {
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                 if (Items[vCurItemNo + 1].Length == 0)
                                 {
-                                    Items.RemoveAt(vCurItemNo + 1);
+                                    Items.Delete(vCurItemNo + 1);
                                     vDelCount++;
                                 }
                                 else  // 下一段的段首不是空行
@@ -3779,7 +3894,7 @@ namespace HC.View
                                     if (vCurItem.CanConcatItems(Items[vCurItemNo + 1]))
                                     {
                                         vCurItem.Text = vCurItem.Text + Items[vCurItemNo + 1].Text;
-                                        Items.RemoveAt(vCurItemNo + 1);
+                                        Items.Delete(vCurItemNo + 1);
                                         vDelCount++;
                                     }
                                     else// 下一段段首不是空行也不能合并
@@ -3791,7 +3906,7 @@ namespace HC.View
                                         Items[i].ParaNo = vParaNo;
                                 }
 
-                                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+                                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
                             }
                         }
                     }
@@ -3799,7 +3914,7 @@ namespace HC.View
                     {
                         SelectInfo.StartItemNo = vCurItemNo + 1;
                         SelectInfo.StartItemOffset = 0;
-                        vCurItem = GetCurItem();
+                        vCurItem = GetActiveItem();
 
                         KeyDown(e);
                         return;
@@ -3816,43 +3931,49 @@ namespace HC.View
                     else  // 可删除
                     {
                         string vText = Items[vCurItemNo].Text;
+                        #if UNPLACEHOLDERCHAR
+                        int vCharCount = HC.GetTextActualOffset(vText, SelectInfo.StartItemOffset + 1, true) - SelectInfo.StartItemOffset;
+                        string vsDelete = vText.Substring(SelectInfo.StartItemOffset + 1 - 1, vCharCount);
+                        vCurItem.Text = vText.Remove(SelectInfo.StartItemOffset + 1 - 1, vCharCount);
+                        #else
                         string vsDelete = vText.Substring(SelectInfo.StartItemOffset + 1 - 1, 1);
                         vCurItem.Text = vText.Remove(SelectInfo.StartItemOffset + 1 - 1, 1);
+                        #endif
                         DoItemAction(vCurItemNo, SelectInfo.StartItemOffset + 1, HCItemAction.hiaDeleteChar);
 
                         if (vText == "")  // 删除后没有内容了
                         {
-                            if (!DrawItems[Items[vCurItemNo].FirstDItemNo].LineFirst)
+                            if (!DrawItems[Items[vCurItemNo].FirstDItemNo].LineFirst)  // 该Item不是行首
                             {
                                 if (vCurItemNo < Items.Count - 1)
                                 {
                                     int vLen = -1;
-                                    if (MergeItemText(Items[vCurItemNo - 1], Items[vCurItemNo + 1]))
+                                    if (MergeItemText(Items[vCurItemNo - 1], Items[vCurItemNo + 1]))  // 下一个可合并到上一个
                                     {
                                         vLen = Items[vCurItemNo + 1].Length;
-                                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, vCurItemNo - 1, vLen);
-                                        _FormatItemPrepare(vCurItemNo - 1, vFormatLastItemNo);
+                                        GetFormatRange(vCurItemNo - 1, vLen, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         Undo_New();
                                         UndoAction_DeleteItem(vCurItemNo, 0);
-                                        Items.RemoveAt(vCurItemNo);  // 删除当前
+                                        Items.Delete(vCurItemNo);  // 删除当前
 
                                         Undo_New();
                                         UndoAction_DeleteItem(vCurItemNo, 0);
-                                        Items.RemoveAt(vCurItemNo);  // 删除下一个
+                                        Items.Delete(vCurItemNo);  // 删除下一个
 
-                                        _ReFormatData(vCurItemNo - 1, vFormatLastItemNo - 2, -2);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 2, -2);
                                     }
                                     else  // 下一个合并不到上一个
                                     {
                                         vLen = 0;
-                                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         Undo_New();
                                         UndoAction_DeleteItem(vCurItemNo, 0);
-                                        Items.RemoveAt(vCurItemNo);
+                                        Items.Delete(vCurItemNo);
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                                     }
 
                                     // 光标左移
@@ -3865,23 +3986,22 @@ namespace HC.View
                                 else  // 是最后一个Item删除空了
                                 {
                                     // 光标左移
-                                    _FormatItemPrepare(vCurItemNo);
+                                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                     Undo_New();
                                     UndoAction_DeleteItem(vCurItemNo, 0);
-                                    Items.RemoveAt(vCurItemNo);
+                                    Items.Delete(vCurItemNo);
 
                                     SelectInfo.StartItemNo = vCurItemNo - 1;
-                                    SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
-
-                                    DrawItems.DeleteFormatMark();
+                                    SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                                 }
                             }
                             else  // 行首Item被删空了
                             {
                                 if (vCurItemNo != vFormatLastItemNo)
                                 {
-                                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                     SelectInfo.StartItemOffset = 0;
 
                                     Undo_New();
@@ -3892,26 +4012,30 @@ namespace HC.View
                                     UndoAction_DeleteItem(vCurItemNo, 0);
                                     Items.RemoveAt(vCurItemNo);
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                                 }
                                 else  // 当前段删除空了
                                 {
+                                    vCurItem.Text = vText;
+
                                     Undo_New();
                                     UndoAction_DeleteText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, vsDelete);
 
-                                    _FormatItemPrepare(vCurItemNo);
+                                    FormatPrepare(vFormatFirstDrawItemNo);
                                     SelectInfo.StartItemOffset = 0;
-                                    _ReFormatData(vCurItemNo);
+                                    ReFormatData(vFormatFirstDrawItemNo);
                                 }
                             }
                         }
                         else  // 删除后还有内容
                         {
+                            vCurItem.Text = vText;
+
                             Undo_New();
                             UndoAction_DeleteText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, vsDelete);
 
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         }
                     }
             }
@@ -3922,7 +4046,7 @@ namespace HC.View
 
         private void BackspaceKeyDown(bool vSelectExist, ref HCCustomItem vCurItem, int vParaFirstItemNo, int vParaLastItemNo, KeyEventArgs e)
         {
-            int vCurItemNo = -1, vLen = -1, vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
+            int vCurItemNo = -1, vLen = -1, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
             int vParaNo = -1, vDelCount = 0;
             bool vParaFirst = false;
             if (SelectInfo.StartItemOffset == 0)
@@ -3930,145 +4054,162 @@ namespace HC.View
                 if ((vCurItem.Text == "") && (Style.ParaStyles[vCurItem.ParaNo].AlignHorz != ParaAlignHorz.pahJustify))
                     ApplyParaAlignHorz(ParaAlignHorz.pahJustify);  // 居中等对齐的空Item，删除时切换到分散对齐
                 else
-                if (vCurItem.ParaFirst && (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0))  // 在段最前面删除
-                {
-                    HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
-                    ApplyParaFirstIndent(vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
-                }
-                else
-                    if (SelectInfo.StartItemNo != 0)
+                    if (vCurItem.ParaFirst && (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0))  // 在段最前面删除
                     {
-                        vCurItemNo = SelectInfo.StartItemNo;
-                        if (vCurItem.ParaFirst)
+                        HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
+                        ApplyParaFirstIndent(vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                    }
+                    else
+                        if (SelectInfo.StartItemNo != 0)  // 不是第1个Item最前面删除
                         {
-                            vLen = Items[SelectInfo.StartItemNo - 1].Length;
-                            if (vCurItem.CanConcatItems(Items[SelectInfo.StartItemNo - 1]))
+                            if (vCurItem.ParaFirst)  // 是段起始Item
                             {
-                                Undo_New();
-                                UndoAction_InsertText(SelectInfo.StartItemNo - 1, Items[SelectInfo.StartItemNo - 1].Length + 1,
-                                    Items[SelectInfo.StartItemNo].Text);
-
-                                Items[SelectInfo.StartItemNo - 1].Text = Items[SelectInfo.StartItemNo - 1].Text
-                                    + Items[SelectInfo.StartItemNo].Text;
-
-                                vFormatFirstItemNo = GetLineFirstItemNo(SelectInfo.StartItemNo - 1, vLen);
-                                vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
-                                UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-                                Items.RemoveAt(SelectInfo.StartItemNo);
-
-                                // 修正下一段合并上来的Item的段样式，对齐样式
-                                vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;
-                                if (vParaNo != vCurItem.ParaNo)
+                                vLen = Items[SelectInfo.StartItemNo - 1].Length;
+                                if (vCurItem.CanConcatItems(Items[SelectInfo.StartItemNo - 1]))
                                 {
-                                    for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo - 1; i++)
-                                    {
-                                        Items[i].ParaNo = vParaNo;
-                                    }
-                                }
-
-                                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
-
-                                ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, vLen);
-                            }
-                            else  // 段起始且不能和上一个合并
-                            {
-                                if (vCurItem.Length == 0)
-                                {
-                                    _FormatItemPrepare(SelectInfo.StartItemNo - 1, SelectInfo.StartItemNo);
+                                    vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
+                                    vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
+                                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                     Undo_New();
+                                    UndoAction_InsertText(SelectInfo.StartItemNo - 1, Items[SelectInfo.StartItemNo - 1].Length + 1,
+                                        Items[SelectInfo.StartItemNo].Text);
+
+                                    Items[SelectInfo.StartItemNo - 1].Text = Items[SelectInfo.StartItemNo - 1].Text
+                                        + Items[SelectInfo.StartItemNo].Text;
+
                                     UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
                                     Items.RemoveAt(SelectInfo.StartItemNo);
 
-                                    _ReFormatData(SelectInfo.StartItemNo - 1, SelectInfo.StartItemNo - 1, -1);
-
-                                    ReSetSelectAndCaret(SelectInfo.StartItemNo - 1);
-                                }
-                                else  // 段前删除且不能和上一段最后合并
-                                {
-                                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
-                                    Undo_New();
-                                    UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
-
-                                    vCurItem.ParaFirst = false;  // 当前段和上一段Item拼接成一段
-
-                                    vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;  // 上一段的ParaNo
+                                    // 修正下一段合并上来的Item的段样式，对齐样式
+                                    vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;
                                     if (vParaNo != vCurItem.ParaNo)
                                     {
-                                        for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo; i++)
+                                        for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo - 1; i++)
                                         {
-                                            //Undo_ItemParaNo(i, 0, vParaNo);
                                             Items[i].ParaNo = vParaNo;
                                         }
                                     }
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
 
-                                    ReSetSelectAndCaret(SelectInfo.StartItemNo, 0);
+                                    ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, vLen);
                                 }
-                            }
-                        }
-                        else  // 在Item开始往前删，但Item不是段起始
-                        {
-                            if (Items[SelectInfo.StartItemNo - 1].StyleNo < HCStyle.Null)
-                            {
-                                vCurItemNo = SelectInfo.StartItemNo - 1;
-                                if (CanDeleteItem(vCurItemNo))
+                                else  // 段起始且不能和上一个合并
                                 {
-                                    Undo_New();
-                                    vParaFirst = Items[vCurItemNo].ParaFirst;  // 记录前面的RectItem段首属性
-
-                                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
-                                    // 删除前面的RectItem
-                                    UndoAction_DeleteItem(vCurItemNo, HC.OffsetAfter);
-                                    Items.RemoveAt(vCurItemNo);
-                                    vDelCount = 1;
-
-                                    if (vParaFirst)
+                                    if (IsEmptyLine(SelectInfo.StartItemNo - 1))
                                     {
-                                        UndoAction_ItemParaFirst(vCurItemNo, 0, vParaFirst);
-                                        vCurItem.ParaFirst = vParaFirst;  // 赋值前面RectItem的段起始属性
-                                        vLen = 0;
+                                        vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
+                                        FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
+
+                                        Undo_New();
+                                        UndoAction_DeleteItem(SelectInfo.StartItemNo - 1, 0);
+                                        Items.Delete(SelectInfo.StartItemNo - 1);
+
+                                        ReFormatData(vFormatFirstDrawItemNo, SelectInfo.StartItemNo - 1, -1);
+
+                                        ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, 0);
                                     }
-                                    else  // 前面删除的RectItem不是段首
+                                    else
                                     {
-                                        vCurItemNo = vCurItemNo - 1;  // 上一个
-                                        vLen = Items[vCurItemNo].Length;  // 上一个最后面
-
-                                        if (MergeItemText(Items[vCurItemNo], vCurItem))
+                                        if (vCurItem.Length == 0)  // 已经没有内容了
                                         {
-                                            UndoAction_InsertText(vCurItemNo, vLen + 1, vCurItem.Text);
-                                            UndoAction_DeleteItem(vCurItemNo + 1, 0);
-                                            Items.RemoveAt(vCurItemNo + 1); // 删除当前的
-                                            vDelCount = 2;
+                                            vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
+                                            FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
+
+                                            Undo_New();
+                                            UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                                            Items.Delete(SelectInfo.StartItemNo);
+
+                                            ReSetSelectAndCaret(SelectInfo.StartItemNo - 1);
+                                        }
+                                        else  // 段前删除且不能和上一段最后合并
+                                        {
+                                            vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, GetItemOffsetAfter(SelectInfo.StartItemNo - 1));
+                                            vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
+                                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                                            Undo_New();
+                                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
+
+                                            vCurItem.ParaFirst = false;  // 当前段和上一段Item拼接成一段
+
+                                            vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;  // 上一段的ParaNo
+                                            if (vParaNo != vCurItem.ParaNo)
+                                            {
+                                                for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo; i++)
+                                                {
+                                                    //Undo_ItemParaNo(i, 0, vParaNo);
+                                                    Items[i].ParaNo = vParaNo;
+                                                }
+                                            }
+
+                                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                                            ReSetSelectAndCaret(SelectInfo.StartItemNo, 0);
                                         }
                                     }
-
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
                                 }
-                                else  // 不能删除，光标放最前
-                                    vLen = HC.OffsetBefor;
-
-                                ReSetSelectAndCaret(vCurItemNo, vLen);
                             }
-                            else  // 前面是文本，赋值为前面的最后，再重新处理删除
+                            else  // 在Item开始往前删，但Item不是段起始
                             {
-                                SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                                SelectInfo.StartItemOffset = GetItemAfterOffset(SelectInfo.StartItemNo);
-                                vCurItem = GetCurItem();
-                                Style.UpdateInfoReStyle();
-                                BackspaceKeyDown(vSelectExist, ref vCurItem, vParaFirstItemNo, vParaLastItemNo, e);  // 重新处理
+                                if (Items[SelectInfo.StartItemNo - 1].StyleNo < HCStyle.Null)
+                                {
+                                    vCurItemNo = SelectInfo.StartItemNo - 1;
+                                    if (CanDeleteItem(vCurItemNo))
+                                    {
+                                        Undo_New();
 
-                                return;
+                                        vParaFirst = Items[vCurItemNo].ParaFirst;  // 记录前面的RectItem段首属性
+
+                                        GetFormatRange(SelectInfo.StartItemNo - 1, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                                        // 删除前面的RectItem
+                                        UndoAction_DeleteItem(vCurItemNo, HC.OffsetAfter);
+                                        Items.Delete(vCurItemNo);
+                                        vDelCount = 1;
+
+                                        if (vParaFirst)
+                                        {
+                                            UndoAction_ItemParaFirst(vCurItemNo, 0, vParaFirst);
+                                            vCurItem.ParaFirst = vParaFirst;  // 赋值前面RectItem的段起始属性
+                                            vLen = 0;
+                                        }
+                                        else  // 前面删除的RectItem不是段首
+                                        {
+                                            vCurItemNo = vCurItemNo - 1;  // 上一个
+                                            vLen = Items[vCurItemNo].Length;  // 上一个最后面
+
+                                            if (MergeItemText(Items[vCurItemNo], vCurItem))
+                                            {
+                                                UndoAction_InsertText(vCurItemNo, vLen + 1, vCurItem.Text);
+                                                UndoAction_DeleteItem(vCurItemNo + 1, 0);
+                                                Items.Delete(vCurItemNo + 1); // 删除当前的
+                                                vDelCount = 2;
+                                            }
+                                        }
+
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+                                    }
+                                    else  // 不能删除，光标放最前
+                                        vLen = HC.OffsetBefor;
+
+                                    ReSetSelectAndCaret(vCurItemNo, vLen);
+                                }
+                                else  // 前面是文本，赋值为前面的最后，再重新处理删除
+                                {
+                                    SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
+                                    SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
+                                    vCurItem = GetActiveItem();
+
+                                    Style.UpdateInfoReStyle();
+                                    BackspaceKeyDown(vSelectExist, ref vCurItem, vParaFirstItemNo, vParaLastItemNo, e);  // 重新处理
+
+                                    return;
+                                }
                             }
                         }
-                    }
             }
             else  // 光标不在Item最开始  文本TextItem
             {
@@ -4081,6 +4222,7 @@ namespace HC.View
                         if (!DrawItems[Items[vCurItemNo].FirstDItemNo].LineFirst)
                         {
                             vLen = Items[vCurItemNo - 1].Length;
+
                             if ((vCurItemNo > 0) && (vCurItemNo < vParaLastItemNo)  // 不是段最后一个)
                                 && MergeItemText(Items[vCurItemNo - 1], Items[vCurItemNo + 1]))
                             {
@@ -4088,16 +4230,16 @@ namespace HC.View
                                 UndoAction_InsertText(vCurItemNo - 1, Items[vCurItemNo - 1].Length - Items[vCurItemNo + 1].Length + 1,
                                     Items[vCurItemNo + 1].Text);
 
-                                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, vCurItemNo - 1, vLen);
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                GetFormatRange(vCurItemNo - 1, vLen, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                 UndoAction_DeleteItem(vCurItemNo, Items[vCurItemNo].Length);
-                                Items.RemoveAt(vCurItemNo);  // 删除当前
+                                Items.Delete(vCurItemNo);  // 删除当前
 
                                 UndoAction_DeleteItem(vCurItemNo, 0);
-                                Items.RemoveAt(vCurItemNo);  // 删除下一个
+                                Items.Delete(vCurItemNo);  // 删除下一个
 
-                                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 2, -2);
+                                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 2, -2);
 
                                 ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, vLen);  // 上一个原光标位置
                             }
@@ -4105,28 +4247,27 @@ namespace HC.View
                             {
                                 if (SelectInfo.StartItemNo == vParaLastItemNo)
                                 {
-                                    vFormatFirstItemNo = GetLineFirstItemNo(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-                                    vFormatLastItemNo = vParaLastItemNo;
-                                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                     Undo_New();
                                     UndoAction_DeleteItem(vCurItemNo, SelectInfo.StartItemOffset);
-                                    Items.RemoveAt(vCurItemNo);
+                                    Items.Delete(vCurItemNo);
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
 
                                     ReSetSelectAndCaret(vCurItemNo - 1);
                                 }
                                 else  // 不是段最后一个
                                 {
-                                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                     Undo_New();
                                     UndoAction_DeleteItem(vCurItemNo, Items[vCurItemNo].Length);
-                                    Items.RemoveAt(vCurItemNo);
+                                    Items.Delete(vCurItemNo);
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
 
                                     ReSetSelectAndCaret(vCurItemNo - 1);
                                 }
@@ -4134,17 +4275,19 @@ namespace HC.View
                         }
                         else  // Item是行第一个、行首Item删除空了，
                         {
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
                             if (Items[vCurItemNo].ParaFirst)
                             {
-                                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
                                 if (vCurItemNo < vFormatLastItemNo)
                                 {
                                     Undo_New();
+
                                     vParaFirst = true;  // Items[vCurItemNo].ParaFirst;  // 记录行首Item的段属性
 
                                     UndoAction_DeleteItem(vCurItemNo, Items[vCurItemNo].Length);
-                                    Items.RemoveAt(vCurItemNo);
+                                    Items.Delete(vCurItemNo);
 
                                     if (vParaFirst)
                                     {
@@ -4152,7 +4295,7 @@ namespace HC.View
                                         Items[vCurItemNo].ParaFirst = vParaFirst;  // 其后继承段首属性
                                     }
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                                     ReSetSelectAndCaret(vCurItemNo, 0);  // 下一个最前面
                                 }
                                 else  // 同段后面没有内容了，保持空行
@@ -4164,14 +4307,14 @@ namespace HC.View
                                     vCurItem.Text = "";  // vText;
                                     SelectInfo.StartItemOffset = SelectInfo.StartItemOffset - 1;
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);  // 保留空行
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);  // 保留空行
                                 }
                             }
                             else  // 不是段首Item，仅是行首Item删除空了
                             {
                                 Undo_New();
 
-                                if (vCurItemNo < vFormatLastItemNo)
+                                if (vCurItemNo < GetParaLastItemNo(vCurItemNo))
                                 {
                                     vLen = Items[vCurItemNo - 1].Length;
                                     if (MergeItemText(Items[vCurItemNo - 1], Items[vCurItemNo + 1]))
@@ -4179,40 +4322,39 @@ namespace HC.View
                                         UndoAction_InsertText(vCurItemNo - 1,
                                             Items[vCurItemNo - 1].Length - Items[vCurItemNo + 1].Length + 1, Items[vCurItemNo + 1].Text);
 
-                                        GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, vCurItemNo - 1, Items[vCurItemNo - 1].Length);  // 取前一个格式化起始位置
-                                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                        GetFormatRange(vCurItemNo - 1, GetItemOffsetAfter(vCurItemNo - 1), ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);  // 取前一个格式化起始位置
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         UndoAction_DeleteItem(vCurItemNo, Items[vCurItemNo].Length);  // 删除空的Item
-                                        Items.RemoveAt(vCurItemNo);
+                                        Items.Delete(vCurItemNo);
 
                                         UndoAction_DeleteItem(vCurItemNo, Items[vCurItemNo].Length);  // 被合并的Item
-                                        Items.RemoveAt(vCurItemNo);
+                                        Items.Delete(vCurItemNo);
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 2, -2);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 2, -2);
                                         ReSetSelectAndCaret(vCurItemNo - 1, vLen);
                                     }
                                     else  // 前后不能合并
                                     {
-                                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         UndoAction_DeleteItem(vCurItemNo, Items[vCurItemNo].Length);
-                                        Items.RemoveAt(vCurItemNo);
+                                        Items.Delete(vCurItemNo);
 
-                                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                                         ReSetSelectAndCaret(vCurItemNo - 1);
                                     }
                                 }
                                 else  // 同段后面没有内容了
                                 {
-                                    if (vFormatFirstItemNo == vCurItemNo)
-                                        vFormatFirstItemNo--;
-
-                                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
+                                    GetFormatRange(ref vFormatFirstDrawItemNo, ref  vFormatLastItemNo);
+                                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                     UndoAction_DeleteItem(vCurItemNo, Items[vCurItemNo].Length);
-                                    Items.RemoveAt(vCurItemNo);
+                                    Items.Delete(vCurItemNo);
 
-                                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo - 1, -1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                                     ReSetSelectAndCaret(vCurItemNo - 1);
                                 }
                             }
@@ -4220,15 +4362,10 @@ namespace HC.View
                     }
                     else  // 删除后还有内容
                     {
-                        if (SelectInfo.StartItemNo > vParaFirstItemNo)
-                            vFormatFirstItemNo = GetLineFirstItemNo(SelectInfo.StartItemNo - 1, 0);
-                        else
-                            vFormatFirstItemNo = SelectInfo.StartItemNo;
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                        vFormatLastItemNo = vParaLastItemNo;
-
-                        _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
+                        DoItemAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCItemAction.hiaBackDeleteChar);
                         string vText = vCurItem.Text;  // 和上面 201806242257 处一样
 
                         Undo_New();
@@ -4236,7 +4373,7 @@ namespace HC.View
 
                         vCurItem.Text = vText.Remove(SelectInfo.StartItemOffset - 1, 1); ;
 
-                        _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                         SelectInfo.StartItemOffset = SelectInfo.StartItemOffset - 1;
                         ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
@@ -4248,7 +4385,7 @@ namespace HC.View
         // Key返回0表示此键按下Data没有做任何事情
         public virtual void KeyDown(KeyEventArgs e)
         {
-            if (!CanEdit())
+            if (HC.IsKeyDownEdit(e.KeyValue) && (!CanEdit()))
                 return;
 
             int Key = e.KeyValue;
@@ -4259,7 +4396,7 @@ namespace HC.View
                 || (Key == User.VK_TAB))
                 this.InitializeMouseField();  // 如果Item删除完了，原MouseMove处ItemNo可能不存在了，再MouseMove时清除旧的出错
 
-            HCCustomItem vCurItem = GetCurItem();
+            HCCustomItem vCurItem = GetActiveItem();
             if (vCurItem == null)
                 return;
 
@@ -4347,6 +4484,7 @@ namespace HC.View
                 case User.VK_END:
                     if (vSelectExist)
                         Style.UpdateInfoRePaint();
+
                     Style.UpdateInfoReCaret();
                     Style.UpdateInfoReScroll();
                     break;
@@ -4360,9 +4498,13 @@ namespace HC.View
                 return;
         }
 
-        public bool BatchInsert()
+        public virtual bool CanEdit()
         {
-            return FBatchInsertCount > 0;
+            bool Result = !FReadOnly;
+            if (!Result)
+                User.MessageBeep(0);
+
+            return Result;
         }
 
         public void BeginBatchInsert()
@@ -4375,269 +4517,11 @@ namespace HC.View
             FBatchInsertCount--;
         }
 
-        /// <summary> 初始化相关字段和变量 </summary>
-        public override void InitializeField()
+        public bool BatchInsert()
         {
-            InitializeMouseField();
-            base.InitializeField();
+            return FBatchInsertCount > 0;
         }
 
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            if (!CanEdit())
-                return;
-
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-            InsertStream(aStream, aStyle, aFileVersion);
-            // 加载完成后，初始化(有一部分在LoadFromStream中初始化了)
-            ReSetSelectAndCaret(0, 0);
-        }
-
-        public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            if (!CanEdit())
-                return false;
-
-            bool Result = false;
-            HCCustomItem vAfterItem = null;
-            bool vInsertBefor = false;
-            int vInsPos = 0, vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-
-            Undo_GroupBegin(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-            try
-            {
-                if (Items.Count == 0)
-                    vInsPos = 0;
-                else  // 有数据
-                {
-                    DeleteSelected();
-                    // 确定插入位置
-                    vInsPos = SelectInfo.StartItemNo;
-                    if (Items[vInsPos].StyleNo < HCStyle.Null)
-                    {
-                        if (SelectInfo.StartItemOffset == HC.OffsetInner)
-                        {
-                            GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo, SelectInfo.StartItemNo, HC.OffsetInner);
-                            _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-
-                            Undo_New();
-                            if ((Items[vInsPos] as HCCustomRectItem).MangerUndo)
-                                UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
-                            else
-                                UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
-
-                            Result = (Items[vInsPos] as HCCustomRectItem).InsertStream(aStream, aStyle, aFileVersion);
-                            _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
-
-                            return Result;
-                        }
-                        else
-                            if (SelectInfo.StartItemOffset == HC.OffsetBefor)
-                                vInsertBefor = true;
-                            else  // 其后
-                                vInsPos = vInsPos + 1;
-                    }
-                    else  // TextItem
-                    {
-                        // 先判断光标是否在最后，防止空Item时SelectInfo.StartItemOffset = 0按其前处理
-                        if (SelectInfo.StartItemOffset == Items[vInsPos].Length)
-                            vInsPos = vInsPos + 1;
-                        else
-                            if (SelectInfo.StartItemOffset == 0)
-                                vInsertBefor = Items[vInsPos].Length != 0;
-                            else  // TextItem中间
-                            {
-                                Undo_New();
-                                UndoAction_DeleteBackText(vInsPos, SelectInfo.StartItemOffset + 1,
-                                    Items[vInsPos].Text.Substring(SelectInfo.StartItemOffset + 1 - 1, Items[vInsPos].Length - SelectInfo.StartItemOffset));
-
-                                vAfterItem = Items[vInsPos].BreakByOffset(SelectInfo.StartItemOffset);  // 后半部分对应的Item
-                                vInsPos = vInsPos + 1;
-                            }
-                    }
-                }
-
-                Int64 vDataSize = 0;
-                byte[] vBuffer = BitConverter.GetBytes(vDataSize);
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                vDataSize = BitConverter.ToInt64(vBuffer, 0);
-                if (vDataSize == 0)
-                    return Result;
-
-                int vItemCount = 0;
-                vBuffer = BitConverter.GetBytes(vItemCount);
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                vItemCount = BitConverter.ToInt32(vBuffer, 0);
-
-                if (vItemCount == 0)
-                    return Result;
-
-                // 因为插入的第一个可能和插入位置前一个合并，插入位置可能是行首，所以要从插入位置
-                // 行上一个开始格式化，为简单处理，直接使用段首，可优化为上一行首
-                //GetParaItemRang(SelectInfo.StartItemNo, vFormatFirstItemNo, vFormatLastItemNo);
-
-                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-
-                // 计算格式化起始、结束ItemNo
-                if (Items.Count > 0)
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                else
-                {
-                    vFormatFirstItemNo = 0;
-                    vFormatLastItemNo = -1;
-                }
-
-                Undo_New();
-
-                int vStyleNo = HCStyle.Null;
-                HCCustomItem vItem = null;
-                for (int i = 0; i <= vItemCount - 1; i++)
-                {
-                    aStream.Read(vBuffer, 0, vBuffer.Length);  // besure vBuffer.Length = 4
-                    vStyleNo = BitConverter.ToInt32(vBuffer, 0);
-                    vItem = CreateItemByStyle(vStyleNo);
-                    if (vStyleNo < HCStyle.Null)
-                    {
-                        if ((vItem as HCCustomRectItem).MangerUndo)
-                            UndoAction_ItemSelf(i, 0);
-                        else
-                            UndoAction_ItemMirror(i, HC.OffsetInner);
-                    }
-
-                    vItem.LoadFromStream(aStream, aStyle, aFileVersion);
-                    if (aStyle != null)
-                    {
-                        if (vItem.StyleNo > HCStyle.Null)
-                            vItem.StyleNo = Style.GetStyleNo(aStyle.TextStyles[vItem.StyleNo], true);
-
-                        vItem.ParaNo = Style.GetParaNo(aStyle.ParaStyles[vItem.ParaNo], true);
-                    }
-                    else  // 无样式表
-                    {
-                        if (vItem.StyleNo > HCStyle.Null)
-                            vItem.StyleNo = Style.CurStyleNo;
-
-                        vItem.ParaNo = Style.CurParaNo;
-                    }
-                    if (i == 0)
-                    {
-                        if (vInsertBefor)
-                        {
-                            vItem.ParaFirst = Items[vInsPos].ParaFirst;
-
-                            if (Items[vInsPos].ParaFirst)
-                            {
-                                UndoAction_ItemParaFirst(vInsPos, 0, false);
-                                Items[vInsPos].ParaFirst = false;
-                            }
-                        }
-                        else
-                            vItem.ParaFirst = false;
-                    }
-
-                    Items.Insert(vInsPos + i, vItem);
-                    UndoAction_InsertItem(vInsPos + i, 0);
-                }
-
-                vItemCount = CheckInsertItemCount(vInsPos, vInsPos + vItemCount - 1);  // 检查插入的Item是否合格并删除不合格
-
-                int vInsetLastNo = vInsPos + vItemCount - 1;  // 光标在最后一个Item
-                int vCaretOffse = GetItemAfterOffset(vInsetLastNo);  // 最后一个Item后面
-
-                if (vAfterItem != null)
-                {
-                    if (MergeItemText(Items[vInsetLastNo], vAfterItem))
-                    {
-                        UndoAction_InsertText(vInsetLastNo, Items[vInsetLastNo].Length - vAfterItem.Length + 1, vAfterItem.Text);
-                        vAfterItem.Dispose();
-                    }
-                    else  // 插入最后一个和后半部分不能合并
-                    {
-                        Items.Insert(vInsetLastNo + 1, vAfterItem);
-                        UndoAction_InsertItem(vInsetLastNo + 1, 0);
-
-                        vItemCount++;
-                    }
-                }
-
-                if (vInsPos > 0)
-                {
-                    if (Items[vInsPos - 1].Length == 0)
-                    {
-                        UndoAction_ItemParaFirst(vInsPos, 0, Items[vInsPos - 1].ParaFirst);
-                        Items[vInsPos].ParaFirst = Items[vInsPos - 1].ParaFirst;
-
-                        UndoAction_DeleteItem(vInsPos - 1, 0);
-                        Items.RemoveAt(vInsPos - 1);  // 删除空行
-
-                        vItemCount--;
-                        vInsetLastNo--;
-                    }
-                    else  // 插入位置前面不是空行Item
-                    {
-                        int vOffsetStart = Items[vInsPos - 1].Length;
-                        if ((!Items[vInsPos].ParaFirst)
-                            && MergeItemText(Items[vInsPos - 1], Items[vInsPos]))
-                        {
-                            UndoAction_InsertText(vInsPos - 1, 
-                                Items[vInsPos - 1].Length - Items[vInsPos].Length + 1, 
-                                Items[vInsPos].Text);
-                            UndoAction_DeleteItem(vInsPos, 0);
-
-                            if (vItemCount == 1)
-                                vCaretOffse = vOffsetStart + vCaretOffse;
-
-                            Items.RemoveAt(vInsPos);
-
-                            if (vItemCount == 1)
-                                vCaretOffse = vOffsetStart + vCaretOffse;
-
-                            vItemCount--;
-                            vInsetLastNo--;
-                        }
-                    }
-
-                    if ((vInsetLastNo < Items.Count - 1)  // 插入最后Item和后面的能合并)
-                        && (!Items[vInsetLastNo + 1].ParaFirst)
-                        && MergeItemText(Items[vInsetLastNo], Items[vInsetLastNo + 1]))
-                    {
-                        UndoAction_DeleteItem(vInsetLastNo + 1, 0);
-
-                        Items.RemoveAt(vInsetLastNo + 1);
-                        vItemCount--;
-                    }
-                }
-                else  // 在最开始第0个位置处插入
-                //if (vInsetLastNo < Items.Count - 1) then
-                {
-                    if (MergeItemText(Items[vInsetLastNo], Items[vInsetLastNo + 1]))
-                    {
-                        UndoAction_DeleteItem(vInsPos + vItemCount, 0);
-
-                        Items.RemoveAt(vInsPos + vItemCount);
-                        vItemCount--;
-                    }
-                }
-
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo + vItemCount, vItemCount);
-
-                ReSetSelectAndCaret(vInsetLastNo, vCaretOffse);  // 选中插入内容最后Item位置
-            }
-            finally
-            {
-                Undo_GroupEnd(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-            }
-
-            InitializeMouseField();  // 201807311101
-
-            Style.UpdateInfoRePaint();
-            Style.UpdateInfoReCaret();
-            Style.UpdateInfoReScroll();
-
-            return Result;
-        }
-
-        //
         public void DblClick(int x, int y)
         {
             FMouseLBDouble = true;
@@ -4702,47 +4586,37 @@ namespace HC.View
             Style.UpdateInfoReCaret(false);
         }
 
-        public virtual bool CanEdit()
+        public void DeleteActiveDataItems(int aStartNo, int aEndNo)
         {
-            bool Result = !FReadOnly;
-            if (!Result)
-                User.MessageBeep(0);
+            if ((aStartNo < 0) || (aStartNo > Items.Count - 1))
+                return;
 
-            return Result;
-        }
-
-        public void DeleteItems(int aStartNo, int aEndNo = -1)
-        {
-            InitializeField();
-            DisSelect();  // 防止删除后原选中ItemNo不存在
-
-            int vEndNo;
-            if (aEndNo < 0)
-                vEndNo = aStartNo;
-            else
-                vEndNo = aEndNo;
-
-            int vDelCount = vEndNo - aStartNo + 1;
-            //FormatItemPrepare(vStartNo, vEndNo);
-            Items.RemoveRange(aStartNo, vDelCount);
-            //_ReFormatData(vStartNo, vEndNo - vDelCount, -vDelCount);
-            if (Items.Count == 0)
+            HCCustomItem vActiveItem = Items[aStartNo];
+            if ((vActiveItem.StyleNo < HCStyle.Null)  // 当前位置是 RectItem)
+                && (SelectInfo.StartItemOffset == HC.OffsetInner))  // 在其上输入内容
             {
-                HCCustomItem vItem = CreateDefaultTextItem();
-                vItem.ParaFirst = true;
-                Items.Add(vItem);  // 不使用InsertText，为避免其触发ReFormat时因为没有格式化过，获取不到对应的DrawItem
-            }
-            else  // 删除完了还有
-            {
-                if ((aStartNo > 0) && (!Items[aStartNo].ParaFirst))
+                Undo_New();
+
+                HCCustomRectItem vRectItem = vActiveItem as HCCustomRectItem;
+                if (vRectItem.MangerUndo)
+                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                else
+                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                vRectItem.DeleteActiveDataItems(aStartNo, aEndNo);
+                if (vRectItem.SizeChanged)
                 {
-                    if (Items[aStartNo - 1].CanConcatItems(Items[aStartNo]))
-                    {
-                        Items[aStartNo - 1].Text = Items[aStartNo - 1].Text + Items[aStartNo].Text;
-                        Items.RemoveAt(aStartNo);
-                    }
+                    int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    vRectItem.SizeChanged = false;
                 }
+                else
+                    this.FormatInit();
             }
+            else
+                DeleteItems(aStartNo, aEndNo);
         }
 
         /// <summary> 添加Data到当前 </summary>
@@ -4762,8 +4636,7 @@ namespace HC.View
 
             for (int i = vAddStartNo; i <= aSrcData.Items.Count - 1; i++)
             {
-                if ((aSrcData.Items[i].StyleNo < HCStyle.Null)
-                    || ((aSrcData.Items[i].StyleNo > HCStyle.Null) && (aSrcData.Items[i].Text != "")))
+                if (!IsEmptyLine(i))
                 {
                     HCCustomItem vItem = CreateItemByStyle(aSrcData.Items[i].StyleNo);
                     vItem.Assign(aSrcData.Items[i]);
@@ -4787,6 +4660,205 @@ namespace HC.View
             return true;
         }
 
+        #region DoTextItemInsert 在文本Item前后或中间插入文
+        private bool DoTextItemInsert(string AText, bool ANewPara, ref int vAddCount)
+        {
+            bool Result = false;
+            HCTextItem vTextItem = Items[SelectInfo.StartItemNo] as HCTextItem;
+
+            if (vTextItem.StyleNo == this.CurStyleNo)
+            {
+                if (vTextItem.CanAccept(SelectInfo.StartItemOffset, HCItemAction.hiaInsertChar))
+                {
+                    int vLen = -1;
+                    if (SelectInfo.StartItemOffset == 0)  // 在TextItem最前面插入
+                    {
+                        UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
+                        vTextItem.Text = AText + vTextItem.Text;
+                        if (ANewPara)
+                            vTextItem.ParaFirst = true;
+
+                        vLen = AText.Length;
+                    }
+                    else
+                    if (SelectInfo.StartItemOffset == vTextItem.Length)  // 在TextItem最后插入
+                    {
+                        if (ANewPara)
+                        {
+                            HCCustomItem vNewItem = CreateDefaultTextItem();
+                            vNewItem.ParaFirst = true;
+                            vNewItem.Text = AText;
+
+                            Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
+                            UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                            vAddCount++;
+
+                            SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                            vLen = vNewItem.Length;
+                        }
+                        else
+                        {
+                            UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
+                            vTextItem.Text = vTextItem.Text + AText;
+                            vLen = vTextItem.Length;
+                        }
+                    }
+                    else  // 在Item中间
+                    {
+                        vLen = SelectInfo.StartItemOffset + AText.Length;
+                        string vS = vTextItem.Text;
+                        vS = vS.Insert(SelectInfo.StartItemOffset, AText);
+                        UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
+                        vTextItem.Text = vS;
+                    }
+
+                    SelectInfo.StartItemOffset = vLen;
+
+                    Result = true;
+                }
+                else  // 此位置不可接受输入
+                {
+                    if ((SelectInfo.StartItemOffset == 0)
+                        || (SelectInfo.StartItemOffset == vTextItem.Length))   // 在首尾不可接受时，插入到前后位置
+                    {
+                        HCCustomItem vNewItem = CreateDefaultTextItem();
+                        vNewItem.ParaFirst = ANewPara;
+                        vNewItem.Text = AText;
+
+                        if (SelectInfo.StartItemOffset == 0)
+                        {
+                            Items.Insert(SelectInfo.StartItemNo, vNewItem);
+                            UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                        }
+                        else
+                        {
+                            Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
+                            UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                            SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                        }
+
+                        vAddCount++;
+                        SelectInfo.StartItemOffset = vNewItem.Length;
+                    }
+                }
+            }
+            else  // 插入位置TextItem样式和当前样式不同，在TextItem头、中、尾没选中，但应用了新样式，以新样式处理
+            {
+                HCCustomItem vNewItem = CreateDefaultTextItem();
+                vNewItem.ParaFirst = ANewPara;
+                vNewItem.Text = AText;
+   
+                if (SelectInfo.StartItemOffset == 0)
+                {
+                    if ((!vNewItem.ParaFirst) && vTextItem.ParaFirst)
+                    {
+                        vNewItem.ParaFirst = true;
+                        UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, false);
+                        vTextItem.ParaFirst = false;
+                    }
+
+                    Items.Insert(SelectInfo.StartItemNo, vNewItem);
+                    UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                    vAddCount++;
+
+                    SelectInfo.StartItemOffset = vNewItem.Length;
+                }
+                else
+                if (SelectInfo.StartItemOffset == vTextItem.Length)
+                {
+                    Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
+                    UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                    vAddCount++;
+
+                    SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                    SelectInfo.StartItemOffset = vNewItem.Length;
+                }
+                else  // 在TextItem中间插入
+                {
+                    // 原TextItem打断
+                    string vS = vTextItem.SubString(SelectInfo.StartItemOffset + 1, vTextItem.Length - SelectInfo.StartItemOffset);
+                    UndoAction_DeleteText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, vS);
+                    // 原位置后半部分
+                    HCCustomItem vAfterItem = vTextItem.BreakByOffset(SelectInfo.StartItemOffset);
+                    vAfterItem.ParaFirst = false;
+                    // 先插入新的
+                    Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
+                    UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                    vAddCount++;
+                    SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                    SelectInfo.StartItemOffset = vNewItem.Length;
+                    // 再插入原TextItem后半部分
+                    Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
+                    UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                    vAddCount++;
+                }
+            }
+
+            return Result;
+        }
+        #endregion
+
+        private void DoInsertText(string aText, bool ANewPara, ref int vAddCount)
+        {
+            HCCustomItem vItem = Items[SelectInfo.StartItemNo];
+
+            if (vItem.StyleNo < HCStyle.Null)
+            {
+                if (SelectInfo.StartItemOffset == HC.OffsetAfter)
+                {
+                    if ((SelectInfo.StartItemNo < Items.Count - 1)
+                        && (Items[SelectInfo.StartItemNo + 1].StyleNo > HCStyle.Null)
+                        && (!Items[SelectInfo.StartItemNo + 1].ParaFirst))
+                    {
+                        SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                        SelectInfo.StartItemOffset = 0;
+                        CurStyleNo = Items[SelectInfo.StartItemNo].StyleNo;
+                        DoInsertText(aText, ANewPara, ref vAddCount);  // 在下一个TextItem前面插入
+                    }
+                    else  // 最后或下一个还是RectItem或当前是段尾
+                    {
+                        vItem = CreateDefaultTextItem();
+                        vItem.Text = aText;
+                        vItem.ParaFirst = ANewPara;
+
+                        Items.Insert(SelectInfo.StartItemNo + 1, vItem);  // 在两个RectItem中间插入
+                        UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                        vAddCount++;
+
+                        SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                        SelectInfo.StartItemOffset = vItem.Length;
+                        CurStyleNo = vItem.StyleNo;
+                    }
+                }
+                else  // 在其前输入内容
+                {
+                    if ((SelectInfo.StartItemNo > 0)
+                        && (Items[SelectInfo.StartItemNo - 1].StyleNo > HCStyle.Null)
+                        && (!Items[SelectInfo.StartItemNo].ParaFirst))
+                    {
+                        SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
+                        SelectInfo.StartItemOffset = Items[SelectInfo.StartItemNo].Length;
+                        CurStyleNo = Items[SelectInfo.StartItemNo].StyleNo;
+                        DoInsertText(aText, ANewPara, ref vAddCount);  // 在前一个后面插入
+                    }
+                    else  // 最前或前一个还是RectItem
+                    {
+                        vItem = CreateDefaultTextItem();
+                        vItem.Text = aText;
+                        vItem.ParaFirst = ANewPara;
+                        Items.Insert(SelectInfo.StartItemNo, vItem);  // 在两个RectItem中间插入
+                        UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                        vAddCount++;
+
+                        SelectInfo.StartItemOffset = vItem.Length;
+                        CurStyleNo = vItem.StyleNo;
+                    }
+                }
+            }
+            else  // 当前位置是TextItem
+                DoTextItemInsert(aText, ANewPara, ref vAddCount);
+        }
+
         /// <summary> 在光标处插入字符串(可带回车换行符) </summary>
         public bool InsertText(string aText)
         {
@@ -4800,23 +4872,47 @@ namespace HC.View
             {
                 DeleteSelected();
 
-                bool vParaFirst = false;
+                Undo_New();
 
-                string[] vStrings = aText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-                for (int i = 0; i < vStrings.Length; i++)
+                int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+                if ((Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)  // 当前位置是 RectItem)
+                    && (SelectInfo.StartItemOffset == HC.OffsetInner))
                 {
-                    string vS = vStrings[i];
-                    if (vParaFirst)
+                    HCCustomRectItem vRectItem = Items[SelectInfo.StartItemNo] as HCCustomRectItem;
+                    if (vRectItem.MangerUndo)
+                        UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                    else
+                        UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                    Result = vRectItem.InsertText(aText);
+                    if (vRectItem.SizeChanged)
                     {
-                        HCCustomItem vTextItem = CreateDefaultTextItem();
-                        vTextItem.ParaFirst = true;
-                        vTextItem.Text = vS;
-                        Result = InsertItem(vTextItem);
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        vRectItem.SizeChanged = false;
                     }
                     else
-                        Result = DoInsertText(vS);
+                        this.FormatInit();
+                }
+                else
+                {
+                    bool vNewPara = false;
+                    int vAddCount = 0;
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                    vParaFirst = true;
+                    string[] vStrings = aText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+
+                    for (int i = 0; i < vStrings.Length; i++)
+                    {
+                        string vS = vStrings[i];
+                        DoInsertText(vS, vNewPara, ref vAddCount);
+                        vNewPara = true;
+                    }
+
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vAddCount, vAddCount);
+                    Result = true;
                 }
             }
             finally
@@ -4824,7 +4920,9 @@ namespace HC.View
                 Undo_GroupEnd(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
 
+            ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             InitializeMouseField();  // 201807311101
+
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
             Style.UpdateInfoReScroll();
@@ -4840,9 +4938,40 @@ namespace HC.View
 
             bool Result = false;
 
-            HCRichData vTopData = GetTopLevelData();
+            HCRichData vTopData = GetTopLevelData() as HCRichData;
             HCTableItem vItem = new HCTableItem(vTopData, aRowCount, aColCount, vTopData.Width);
             Result = InsertItem(vItem);
+            InitializeMouseField();
+
+            return Result;
+        }
+
+        public bool InsertImage(string AFile)
+        {
+            if (!CanEdit())
+                return false;
+
+            bool Result = false;
+            HCRichData vTopData = this.GetTopLevelData() as HCRichData;
+            HCImageItem vImageItem = new HCImageItem(vTopData);
+            vImageItem.LoadFromBmpFile(AFile);
+            vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
+            Result = InsertItem(vImageItem);
+            InitializeMouseField();
+
+            return Result;
+        }
+
+        public bool InsertGifImage(string AFile)
+        {
+            if (!CanEdit())
+                return false;
+
+            bool Result = false;
+            HCRichData vTopData = this.GetTopLevelData() as HCRichData;
+            HCGifItem vGifItem = new HCGifItem(vTopData);
+            vGifItem.LoadFromFile(AFile);
+            Result = InsertItem(vGifItem);
             InitializeMouseField();
 
             return Result;
@@ -4856,8 +4985,7 @@ namespace HC.View
 
             bool Result = false;
 
-            HCRichData vTopData = GetTopLevelData();
-            HCLineItem vItem = new HCLineItem(vTopData, vTopData.Width, aLineHeight);
+            HCLineItem vItem = new HCLineItem(this, this.Width, aLineHeight);
 
             Result = InsertItem(vItem);
             InitializeMouseField();
@@ -4974,135 +5102,96 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            bool Result = false;
-            int vItemNo = GetCurItemNo();
-            if (Items[vItemNo].StyleNo == HCStyle.Table)
+
+            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            {
+                return (AItem as HCTableItem).MergeSelectCells();
+            };
+
+            return TableInsertRC(vEvent);
+        }
+
+        public void ReAdaptActiveItem()
+        {
+            if (!CanEdit())
+                return;
+
+            this.InitializeField();
+            HCCustomItem vActiveItem = GetActiveItem();
+            if (vActiveItem == null)
+                return;
+
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            if ((vActiveItem.StyleNo < HCStyle.Null)  // 当前位置是 RectItem
+                && (SelectInfo.StartItemOffset == HC.OffsetInner))  // 在其上输入内容
             {
                 Undo_New();
-                UndoAction_ItemSelf(vItemNo, HC.OffsetInner);
-                Result = (Items[vItemNo] as HCTableItem).MergeSelectCells();
-                if (Result)  // 合并成功
+
+                HCCustomRectItem vRectItem = vActiveItem as HCCustomRectItem;
+                if (vRectItem.MangerUndo)
+                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                else
+                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                vRectItem.ReAdaptActiveItem();
+                if (vRectItem.SizeChanged)
                 {
-                    int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-                    GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                    _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                    _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
-                    //DisSelect();  // 合并后清空选中，会导致当前ItemNo没有了
-                    InitializeMouseField();  // 201807311101
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                    vRectItem.SizeChanged = false;
+                }
+                else
+                    this.FormatInit();
+            }
+            else
+            {
+                int vExtraCount = 0;
+                GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                Undo_New();
+
+                int vItemNo = SelectInfo.StartItemNo;
+                if (MergeItemToNext(vItemNo))
+                {
+                    UndoAction_InsertText(vItemNo, Items[vItemNo].Length - Items[vItemNo + 1].Length + 1, Items[vItemNo + 1].Text);
+                    UndoAction_DeleteItem(vItemNo + 1, 0);
+                    Items.Delete(vItemNo + 1);
+                    vExtraCount--;
+                }
+                if (vItemNo > 0)  // 向前合并
+                {
+                    int vLen = Items[vItemNo - 1].Length;
+                    if (MergeItemToPrio(vItemNo))
+                    {
+                        UndoAction_InsertText(vItemNo - 1, Items[vItemNo - 1].Length - Items[vItemNo].Length + 1, Items[vItemNo].Text);
+                        UndoAction_DeleteItem(vItemNo, 0);
+                        Items.Delete(vItemNo);
+                        vExtraCount--;
+
+                        ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, vLen + SelectInfo.StartItemOffset);
+                    }
+                }
+
+                if (vExtraCount != 0)
+                {
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vExtraCount, vExtraCount);
                     Style.UpdateInfoRePaint();
+                    Style.UpdateInfoReCaret();
                 }
             }
-
-            return Result;
-        }
-
-        // Format仅负责格式化Item，ReFormat仅负责格式化后对后面Item和DrawItem的关联处理
-        // 目前仅单元格用了，需要放到CellData中吗？
-        public void ReFormat(int aStartItemNo)
-        {
-            if (aStartItemNo > 0)
-            {
-                _FormatItemPrepare(aStartItemNo, Items.Count - 1);
-                FormatData(aStartItemNo, Items.Count - 1);
-                DrawItems.DeleteFormatMark();
-            }
-            else  // 从0开始，适用于处理外部调用提供的方法(非内部操作)引起的Item变化且没处理Item对应的DrawItem的情况
-            {
-                DrawItems.Clear();
-                InitializeField();
-                FormatData(0, Items.Count - 1);
-                if (SelectInfo.StartItemNo < 0)
-                    ReSetSelectAndCaret(0, 0);
-                else
-                    ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);  // 防止清空后格式化完成后没有选中起始访问出错
-            }
-        }
-
-        /// <summary> 重新格式化当前段(用于修改了段缩进等) </summary>
-        public void ReFormatActiveParagraph()
-        {
-            if (SelectInfo.StartItemNo >= 0)
-            {
-                int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-                GetParaItemRang(SelectInfo.StartItemNo, ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
-
-                Style.UpdateInfoRePaint();
-                Style.UpdateInfoReCaret();
-
-                ReSetSelectAndCaret(SelectInfo.StartItemNo);
-            }
-        }
-
-        /// <summary> 重新格式化当前Item(用于仅修改当前Item属性或内容) </summary>
-        public void ReFormatActiveItem()
-        {
-            if (SelectInfo.StartItemNo >= 0)
-            {
-                int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
-                GetReformatItemRange(ref vFormatFirstItemNo, ref vFormatLastItemNo);
-                _FormatItemPrepare(vFormatFirstItemNo, vFormatLastItemNo);
-                _ReFormatData(vFormatFirstItemNo, vFormatLastItemNo);
-
-                Style.UpdateInfoRePaint();
-                Style.UpdateInfoReCaret();
-
-                if (SelectInfo.StartItemOffset > Items[SelectInfo.StartItemNo].Length)
-                    ReSetSelectAndCaret(SelectInfo.StartItemNo);
-            }
-        }
-
-        public HCCustomItem GetTopLevelItem()
-        {
-            HCCustomItem Result = GetCurItem();
-            if ((Result != null) && (Result.StyleNo < HCStyle.Null))
-                Result = (Result as HCCustomRectItem).GetActiveItem();
-
-            return Result;
-        }
-
-        public HCCustomDrawItem GetTopLevelDrawItem()
-        {
-            HCCustomDrawItem Result = null;
-            HCCustomItem vItem = GetCurItem();
-            if (vItem.StyleNo < HCStyle.Null)
-                Result = (vItem as HCCustomRectItem).GetActiveDrawItem();
-
-            if (Result == null)
-                Result = GetCurDrawItem();
-
-            return Result;
-        }
-
-        public POINT GetActiveDrawItemCoord()
-        {
-            POINT Result = new POINT(0, 0);
-            POINT vPt = new POINT(0, 0);
-
-            HCCustomDrawItem vDrawItem = GetCurDrawItem();
-            if (vDrawItem != null)
-            {
-                Result = vDrawItem.Rect.TopLeft();
-
-                HCCustomItem vItem = GetCurItem();
-                if (vItem.StyleNo < HCStyle.Null)
-                    vPt = (vItem as HCCustomRectItem).GetActiveDrawItemCoord();
-
-                Result.X = Result.X + vPt.X;
-                Result.Y = Result.Y + vPt.Y;
-            }
-
-            return Result;
         }
 
         /// <summary> 取消激活(用于页眉、页脚、正文切换时原激活的取消) </summary>
         public void DisActive()
         {
             this.InitializeField();
+
             if (Items.Count > 0)
             {
-                HCCustomItem vItem = GetCurItem();
+                HCCustomItem vItem = GetActiveItem();
                 if (vItem != null)
                     vItem.Active = false;
             }
@@ -5112,48 +5201,8 @@ namespace HC.View
         {
             if ((!FMouseMoveRestrain) && (FMouseMoveItemNo >= 0))
                 return Items[FMouseMoveItemNo].GetHint();
-
-            return "";
-        }
-
-        /// <summary> 返回当前光标处的顶层Data </summary>
-        public HCRichData GetTopLevelData()
-        {
-            HCRichData Result = null;
-            if ((SelectInfo.StartItemNo >= 0) && (SelectInfo.EndItemNo < 0))
-            {
-                if ((Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
-                    && (SelectInfo.StartItemOffset == HC.OffsetInner))
-                    Result = (Items[SelectInfo.StartItemNo] as HCCustomRectItem).GetActiveData() as HCRichData;
-            }
-
-            if (Result == null)
-                Result = this;
-
-            return Result;
-        }
-
-        /// <summary> 返回指定位置处的顶层Data </summary>
-        public HCRichData GetTopLevelDataAt(int x, int y)
-        {
-            HCRichData Result = null;
-            int vItemNo = -1, vOffset = -1, vDrawItemNo = -1;
-            bool vRestrain = false;
-            GetItemAt(x, y, ref vItemNo, ref vOffset, ref vDrawItemNo, ref vRestrain);
-            if ((!vRestrain) && (vItemNo >= 0))
-            {
-                if (Items[vItemNo].StyleNo < HCStyle.Null)
-                {
-                    int vX = -1, vY = -1;
-                    CoordToItemOffset(x, y, vItemNo, vOffset, ref vX, ref vY);
-                    Result = (Items[vItemNo] as HCCustomRectItem).GetTopLevelDataAt(vX, vY) as HCRichData;
-                }
-            }
-
-            if (Result == null)
-                Result = this;
-
-            return Result;
+            else
+                return "";
         }
 
         public int MouseDownItemNo
@@ -5179,12 +5228,6 @@ namespace HC.View
         public bool MouseMoveRestrain
         {
             get { return FMouseMoveRestrain; }
-        }
-
-        public int Width
-        {
-            get { return GetWidth(); }
-            set { SetWidth(value); }
         }
 
         public int Height
@@ -5219,18 +5262,6 @@ namespace HC.View
         {
             get { return FOnItemMouseUp; }
             set { FOnItemMouseUp = value; }
-        }
-
-        public DrawItemPaintEventHandler OnDrawItemPaintBefor
-        {
-            get { return FOnDrawItemPaintBefor; }
-            set { FOnDrawItemPaintBefor = value; }
-        }
-
-        public DrawItemPaintEventHandler OnDrawItemPaintAfter
-        {
-            get { return FOnDrawItemPaintAfter; }
-            set { FOnDrawItemPaintAfter = value; }
         }
 
         public EventHandler OnCreateItem

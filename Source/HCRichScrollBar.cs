@@ -35,7 +35,7 @@ namespace HC.View
         }
     }
 
-    class HCRichScrollBar : HCScrollBar
+    public class HCRichScrollBar : HCScrollBar
     {
         private List<AreaMark> FAreaMarks;
 
@@ -46,12 +46,14 @@ namespace HC.View
                 if (FAreaMarks != null)
                 {
                     aCanvas.Brush.Color = Color.Blue;
+
                     int vDrawTop = 0, vDrawHeight = 0;
 
                     for (int i = 0; i <= FAreaMarks.Count - 1; i++)
                     {
                         vDrawTop = ButtonSize + (int)Math.Round(FAreaMarks[i].Position * Percent);
                         vDrawHeight = (int)Math.Round(FAreaMarks[i].Height * Percent);
+
                         aCanvas.FillRect(HC.Bounds(aThumRect.Left, vDrawTop, aThumRect.Width, vDrawHeight));
                     }
                 }

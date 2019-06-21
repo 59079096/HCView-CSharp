@@ -29,6 +29,7 @@ namespace HC.View
         private bool FMouseLBDowning, FOutSelectInto;
         private ExpressArea FActiveArea, FMouseMoveArea;
 
+        // 类内部方法
         private void ApplySupSubStyle(HCTextStyle aTextStyle, HCCanvas aCanvas, Single aScale = 1)
         {
             if (aTextStyle.BackColor == HC.HCTransparentColor)
@@ -71,10 +72,10 @@ namespace HC.View
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             HCStyle vStyle = aRichData.Style;
-            ApplySupSubStyle(vStyle.TextStyles[TextStyleNo], vStyle.DefCanvas);
-            int vH = vStyle.DefCanvas.TextHeight("H");
-            int vTopW = Math.Max(vStyle.DefCanvas.TextWidth(FSupText), FPadding);
-            int vBottomW = Math.Max(vStyle.DefCanvas.TextWidth(FSubText), FPadding);
+            ApplySupSubStyle(vStyle.TextStyles[TextStyleNo], vStyle.TempCanvas);
+            int vH = vStyle.TempCanvas.TextHeight("H");
+            int vTopW = Math.Max(vStyle.TempCanvas.TextWidth(FSupText), FPadding);
+            int vBottomW = Math.Max(vStyle.TempCanvas.TextWidth(FSubText), FPadding);
             // 计算尺寸
             if (vTopW > vBottomW)
                 Width = vTopW + 4 * FPadding;
@@ -168,6 +169,7 @@ namespace HC.View
             base.MouseDown(e);
             FMouseLBDowning = (e.Button == MouseButtons.Left);
             FOutSelectInto = false;
+
             if (FMouseMoveArea != FActiveArea)
             {
                 FActiveArea = FMouseMoveArea;
@@ -191,8 +193,8 @@ namespace HC.View
             int vOffset = 0;
             if (FActiveArea != ExpressArea.ceaNone)
             {
-                ApplySupSubStyle(OwnerData.Style.TextStyles[TextStyleNo], OwnerData.Style.DefCanvas);
-                vOffset = HC.GetCharOffsetAt(OwnerData.Style.DefCanvas, vS, vX);
+                ApplySupSubStyle(OwnerData.Style.TextStyles[TextStyleNo], OwnerData.Style.TempCanvas);
+                vOffset = HC.GetNorAlignCharOffsetAt(OwnerData.Style.TempCanvas, vS, vX);
             }
             else
                 vOffset = -1;
@@ -231,26 +233,6 @@ namespace HC.View
             base.MouseUp(e);
         }
 
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FSupText = aNode.Attributes["sup"].Value;
-            FSubText = aNode.Attributes["sub"].Value;
-        }
-
-        public override void ToXml(XmlElement aNode)
-        {
-            base.ToXml(aNode);
-            aNode.Attributes["sup"].Value = FSupText;
-            aNode.Attributes["sub"].Value = FSubText;
-        }
-
-        /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>
-        public override bool WantKeyDown(KeyEventArgs e)
-        {
-            return true;
-        }
-
         public override void KeyDown(KeyEventArgs e)
         {
             switch (e.KeyValue)
@@ -265,14 +247,14 @@ namespace HC.View
                         }
                     }
                     else
-                    if (FActiveArea == ExpressArea.ceaBottom)
-                    {
-                        if (FCaretOffset > 0)
+                        if (FActiveArea == ExpressArea.ceaBottom)
                         {
-                            FSubText = FSubText.Remove(FCaretOffset - 1, 1);
-                            FCaretOffset--;
+                            if (FCaretOffset > 0)
+                            {
+                                FSubText = FSubText.Remove(FCaretOffset - 1, 1);
+                                FCaretOffset--;
+                            }
                         }
-                    }
 
                     this.SizeChanged = true;
                     break;
@@ -301,11 +283,11 @@ namespace HC.View
                             FSupText = FSupText.Remove(FCaretOffset, 1);
                     }
                     else
-                    if (FActiveArea == ExpressArea.ceaBottom)
-                    {
-                        if (FCaretOffset < FSubText.Length)
-                            FSubText = FSubText.Remove(FCaretOffset, 1);
-                    }
+                        if (FActiveArea == ExpressArea.ceaBottom)
+                        {
+                            if (FCaretOffset < FSubText.Length)
+                                FSubText = FSubText.Remove(FCaretOffset, 1);
+                        }
 
                     this.SizeChanged = true;
                     break;
@@ -354,37 +336,23 @@ namespace HC.View
         {
             if (FActiveArea != ExpressArea.ceaNone)
             {
-                ApplySupSubStyle(OwnerData.Style.TextStyles[TextStyleNo], OwnerData.Style.DefCanvas);
+                ApplySupSubStyle(OwnerData.Style.TextStyles[TextStyleNo], OwnerData.Style.TempCanvas);
                 if (FActiveArea == ExpressArea.ceaTop)
                 {
                     aCaretInfo.Height = FSupRect.Bottom - FSupRect.Top;
-                    aCaretInfo.X = FSupRect.Left + OwnerData.Style.DefCanvas.TextWidth(FSupText.Substring(0, FCaretOffset));
+                    aCaretInfo.X = FSupRect.Left + OwnerData.Style.TempCanvas.TextWidth(FSupText.Substring(0, FCaretOffset));
                     aCaretInfo.Y = FSupRect.Top;
                 }
                 else
-                if (FActiveArea == ExpressArea.ceaBottom)
-                {
-                    aCaretInfo.Height = FSubRect.Bottom - FSubRect.Top;
-                    aCaretInfo.X = FSubRect.Left + OwnerData.Style.DefCanvas.TextWidth(FSubText.Substring(0, FCaretOffset));
-                    aCaretInfo.Y = FSubRect.Top;
-                }
+                    if (FActiveArea == ExpressArea.ceaBottom)
+                    {
+                        aCaretInfo.Height = FSubRect.Bottom - FSubRect.Top;
+                        aCaretInfo.X = FSubRect.Left + OwnerData.Style.TempCanvas.TextWidth(FSubText.Substring(0, FCaretOffset));
+                        aCaretInfo.Y = FSubRect.Top;
+                    }
             }
             else
                 aCaretInfo.Visible = false;
-        }
-
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
-        {
-            base.SaveToStream(aStream, aStart, aEnd);
-            HC.HCSaveTextToStream(aStream, FSupText);
-            HC.HCSaveTextToStream(aStream, FSubText);
-        }
-
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.HCLoadTextFromStream(aStream, ref FSupText);
-            HC.HCLoadTextFromStream(aStream, ref FSubText);
         }
 
         protected virtual ExpressArea GetExpressArea(int x, int y)
@@ -394,8 +362,8 @@ namespace HC.View
             if (HC.PtInRect(FSupRect, vPt))
                 Result = ExpressArea.ceaTop;
             else
-            if (HC.PtInRect(FSubRect, vPt))
-                Result = ExpressArea.ceaBottom;
+                if (HC.PtInRect(FSubRect, vPt))
+                    Result = ExpressArea.ceaBottom;
 
             return Result;
         }
@@ -428,6 +396,40 @@ namespace HC.View
             base.Assign(source);
             FSupText = (source as HCSupSubScriptItem).SupText;
             FSubText = (source as HCSupSubScriptItem).SubText;
+        }
+
+        /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>
+        public override bool WantKeyDown(KeyEventArgs e)
+        {
+            return true;
+        }
+
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStream(aStream, aStart, aEnd);
+            HC.HCSaveTextToStream(aStream, FSupText);
+            HC.HCSaveTextToStream(aStream, FSubText);
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FSupText);
+            HC.HCLoadTextFromStream(aStream, ref FSubText);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["sup"].Value = FSupText;
+            aNode.Attributes["sub"].Value = FSubText;
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FSupText = aNode.Attributes["sup"].Value;
+            FSubText = aNode.Attributes["sub"].Value;
         }
 
         public string SupText

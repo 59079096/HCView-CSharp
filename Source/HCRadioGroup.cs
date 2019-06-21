@@ -36,12 +36,12 @@ namespace HC.View
         private int GetItemAt(int x, int  y)
         {
             int Result = -1;
-            this.OwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(this.OwnerData.Style.DefCanvas);
+            this.OwnerData.Style.ApplyTempStyle(TextStyleNo);
             
             SIZE vSize = new SIZE();
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
-                vSize = this.OwnerData.Style.DefCanvas.TextExtent(FItems[i].Text);
+                vSize = this.OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
                 if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
                     RadioButtonWidth + vSize.cx, vSize.cy), x, y))
                 
@@ -57,7 +57,9 @@ namespace HC.View
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             Height = FMinHeight;
-            aRichData.Style.TextStyles[TextStyleNo].ApplyStyle(aRichData.Style.DefCanvas);
+
+            aRichData.Style.ApplyTempStyle(TextStyleNo);
+
             int vLeft = FMargin;
             int vTop = FMargin;
             SIZE vSize = new SIZE();
@@ -65,9 +67,9 @@ namespace HC.View
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
                 if (FItems[i].Text != "")
-                    vSize = aRichData.Style.DefCanvas.TextExtent(FItems[i].Text);
+                    vSize = aRichData.Style.TempCanvas.TextExtent(FItems[i].Text);
                 else
-                    vSize = aRichData.Style.DefCanvas.TextExtent("I");
+                    vSize = aRichData.Style.TempCanvas.TextExtent("H");
                 
                 if (vLeft + vSize.cx + RadioButtonWidth > Width)
                 {
@@ -176,6 +178,37 @@ namespace HC.View
                     return HC.OffsetInner;
         }
 
+        public HCRadioGroup(HCCustomData aOwnerData)
+            : base(aOwnerData)
+        {
+            this.StyleNo = HCStyle.RadioGroup;
+            Width = 100;
+            FItems = new List<HCRadioButton>();
+        }
+
+        ~HCRadioGroup()
+        {
+            //FItems
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            HCRadioGroup vSource = source as HCRadioGroup;
+
+            FItems.Clear();
+            for (int i = 0; i < vSource.Items.Count; i++)
+                AddItem(vSource.Items[i].Text, vSource.Items[i].Checked);
+        }
+
+        public void AddItem(string aText, bool AChecked = false)
+        {
+            HCRadioButton vRadioButton = new HCRadioButton();
+            vRadioButton.Checked = AChecked;
+            vRadioButton.Text = aText;
+            FItems.Add(vRadioButton);
+        }
+
         public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
@@ -183,8 +216,16 @@ namespace HC.View
             if (FItems.Count > 0)
             {
                 vS = FItems[0].Text;
+                if (vS == "")
+                    vS = "未命名";
+
                 for (int i = 1; i < FItems.Count; i++)
-                    vS = vS + HC.sLineBreak + FItems[i].Text;
+                {
+                    if (FItems[i].Text != "")
+                        vS = vS + HC.sLineBreak + FItems[i].Text;
+                    else
+                        vS = vS + HC.sLineBreak + "未命名";
+                }
             }
 
             HC.HCSaveTextToStream(aStream, vS);
@@ -201,48 +242,21 @@ namespace HC.View
             base.LoadFromStream(aStream, aStyle, aFileVersion);
             FItems.Clear();
 
-            ushort vSize = 0;
-            byte[] vBuffer = BitConverter.GetBytes(vSize);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            vSize = BitConverter.ToUInt16(vBuffer, 0);
-            if (vSize > 0)
+            string vS = "";
+            HC.HCLoadTextFromStream(aStream, ref vS);
+            if (vS != "")
             {
-                vBuffer = new byte[vSize];
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                string vTexts = System.Text.Encoding.Default.GetString(vBuffer);
-                string[] vStrings = vTexts.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                string[] vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
 
                 for (int i = 0; i < vStrings.Length; i++)
                     AddItem(vStrings[i]);
 
-                vBuffer = BitConverter.GetBytes(false);
+                byte[]  vBuffer = BitConverter.GetBytes(false);
                 for (int i = 0; i < FItems.Count; i++)
                 {
                     aStream.Read(vBuffer, 0, vBuffer.Length);
                     FItems[i].Checked = BitConverter.ToBoolean(vBuffer, 0);
                 }
-            }
-        }
-
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FItems.Clear();
-            string vText = aNode.Attributes["item"].Value;
-            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-
-            for (int i = 0; i < vStrings.Length; i++)
-                AddItem(vStrings[i]);
-
-            vText = aNode.Attributes["check"].Value;
-            vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-
-            for (int i = 0; i < vStrings.Length; i++)
-            {
-                if (vStrings[i] == "1")
-                    FItems[i].Checked = true;
-                else
-                    FItems[i].Checked = false;
             }
         }
 
@@ -271,35 +285,27 @@ namespace HC.View
             }
             aNode.Attributes["check"].Value = vS;
         }
-        
-        public HCRadioGroup(HCCustomData aOwnerData) : base(aOwnerData)
-        {
-            this.StyleNo = HCStyle.RadioGroup;
-            Width = 100;
-            FItems = new List<HCRadioButton>();
-        }
 
-        ~HCRadioGroup()
+        public override void ParseXml(XmlElement aNode)
         {
-            //FItems
-        }
-
-        public override void Assign(HCCustomItem source)
-        {
-            base.Assign(source);
-            HCRadioGroup vSource = source as HCRadioGroup;
-
+            base.ParseXml(aNode);
             FItems.Clear();
-            for (int i = 0; i < vSource.Items.Count; i++)
-                AddItem(vSource.Items[i].Text, vSource.Items[i].Checked);
-        }
+            string vText = aNode.Attributes["item"].Value;
+            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
 
-        public void AddItem(string aText, bool AChecked = false)
-        {
-            HCRadioButton vRadioButton = new HCRadioButton();
-            vRadioButton.Checked = AChecked;
-            vRadioButton.Text = aText;
-            FItems.Add(vRadioButton);
+            for (int i = 0; i < vStrings.Length; i++)
+                AddItem(vStrings[i]);
+
+            vText = aNode.Attributes["check"].Value;
+            vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+
+            for (int i = 0; i < vStrings.Length; i++)
+            {
+                if (vStrings[i] == "1")
+                    FItems[i].Checked = true;
+                else
+                    FItems[i].Checked = false;
+            }
         }
     
         public bool MultSelect

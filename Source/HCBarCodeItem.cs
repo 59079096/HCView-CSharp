@@ -22,6 +22,15 @@ namespace HC.View
     {
         private string FText;
 
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom,
+            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            // 绘制一维码
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
+                aCanvas, aPaintInfo);
+        }
+
+
         protected override string GetText()
         {
             return FText;
@@ -33,14 +42,6 @@ namespace HC.View
             {
                 FText = value;
             }
-        }
-
-        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
-            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            // 绘制一维码
-            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
-                aCanvas, aPaintInfo);
         }
 
         public HCBarCodeItem(HCCustomData aOwnerData, string aText) : base(aOwnerData)
@@ -66,6 +67,18 @@ namespace HC.View
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
             HC.HCLoadTextFromStream(aStream, ref FText);
+        }
+
+        public override void ToXml(System.Xml.XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.InnerText = FText;
+        }
+
+        public override void ParseXml(System.Xml.XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FText = aNode.InnerText;
         }
 
         /// <summary> 约束到指定大小范围内 </summary>

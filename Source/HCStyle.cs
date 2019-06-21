@@ -44,14 +44,9 @@ namespace HC.View
 
     public class HCStyle : HCObject
     {
-        private HCCanvas FDefCanvas;
-
-        private int
-        /// <summary> 外部当前的段样式 </summary>
-        FCurParaNo,
-        /// <summary> 外部当前的文本样式 </summary>
-        FCurStyleNo;
-
+        private HCCanvas FTempCanvas;
+        private int FTempStyleNo;
+        private byte FLineSpaceMin;
         private Color FSelColor, FBackgroudColor;
         private List<HCTextStyle> FTextStyles;
         private List<HCParaStyle> FParaStyles;
@@ -60,7 +55,6 @@ namespace HC.View
         private int FHtmlFileTempName;
 
         private InvalidateRectEventHandler FOnInvalidateRect;
-        private EventHandler FOnCurParaNoChange;
 
         protected void SetShowParaLastMark(bool value)
         {
@@ -68,16 +62,6 @@ namespace HC.View
             {
                 FShowParaLastMark = value;
                 UpdateInfoRePaint();
-            }
-        }
-
-        protected void SetCurParaNo(int value)
-        {
-            if (FCurParaNo != value)
-            {
-                FCurParaNo = value;
-                if (FOnCurParaNoChange != null)
-                    FOnCurParaNoChange(this, null);
             }
         }
 
@@ -106,9 +90,11 @@ namespace HC.View
 
         public HCStyle()
         {
-            FDefCanvas = CreateStyleCanvas();
+            FTempCanvas = CreateStyleCanvas();
+            FTempStyleNo = HCStyle.Null;
             FBackgroudColor = Color.FromArgb(255, 255, 255);
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
+            FLineSpaceMin = 8;
             FShowParaLastMark = true;
             FUpdateInfo = new UpdateInfo();
             FTextStyles = new List<HCTextStyle>();
@@ -132,7 +118,7 @@ namespace HC.View
         public override void Dispose()
         {
             base.Dispose();
-            DestroyStyleCanvas(FDefCanvas);
+            DestroyStyleCanvas(FTempCanvas);
             //FTextStyles.Free;
             //FParaStyles.Free;
             FUpdateInfo.Dispose();
@@ -142,8 +128,6 @@ namespace HC.View
         {
             FTextStyles.RemoveRange(1, FTextStyles.Count - 1);
             FParaStyles.RemoveRange(1, FParaStyles.Count - 1);
-            FCurStyleNo = 0;
-            FCurParaNo = 0;
         }
 
         public void UpdateInfoRePaint()
@@ -166,19 +150,13 @@ namespace HC.View
         public void UpdateInfoReCaret(bool aCaretStyle = true)
         {
             FUpdateInfo.ReCaret = true;
-            if (aCaretStyle)
-                FUpdateInfo.ReStyle = true;
+            FUpdateInfo.ReStyle = aCaretStyle;
         }
 
         public int AddTextStyle(HCTextStyle aTextStyle)
         {
             FTextStyles.Add(aTextStyle);
             return FTextStyles.Count - 1;
-        }
-
-        public static int GetFontHeight(HCCanvas aCanvas)
-        {
-            return aCanvas.TextHeight("H");
         }
 
         public static HCCanvas CreateStyleCanvas()
@@ -258,6 +236,17 @@ namespace HC.View
             return Result;
         }
 
+        public void ApplyTempStyle(int value, Single aScale = 1)
+        {
+            if (FTempStyleNo != value)
+            {
+                FTempStyleNo = value;
+                if (value > HCStyle.Null)
+                    FTextStyles[value].ApplyStyle(FTempCanvas, aScale);
+            }
+        }
+
+        #region SaveToStream子方法
         private void SaveParaStyles(Stream aStream)
         {
             byte[] vBuffer = BitConverter.GetBytes(FParaStyles.Count);
@@ -273,6 +262,7 @@ namespace HC.View
             for (int i = 0; i <= FTextStyles.Count - 1; i++)
                 FTextStyles[i].SaveToStream(aStream);
         }
+        #endregion
 
         public void SaveToStream(Stream aStream)
         {
@@ -291,6 +281,7 @@ namespace HC.View
             aStream.Position = vEndPos;
         }
 
+        #region LoadFromStream
         private void LoadParaStyles(Stream aStream, ushort aFileVersion)
         {
             FParaStyles.Clear();
@@ -314,6 +305,7 @@ namespace HC.View
             for (int i = 0; i <= vStyleCount - 1; i++)
                 FTextStyles[NewDefaultTextStyle()].LoadFromStream(aStream, aFileVersion);
         }
+        #endregion
 
         public void LoadFromStream(Stream aStream, ushort aFileVersion)
         {
@@ -429,21 +421,20 @@ namespace HC.View
             set { FSelColor = value; }
         }
 
-        public int CurParaNo
+        public byte LineSpaceMin
         {
-            get { return FCurParaNo; }
-            set { SetCurParaNo(value); }
+            get { return FLineSpaceMin; }
+            set { FLineSpaceMin = value; }
         }
 
-        public int CurStyleNo
+        public int TempStyleNo
         {
-            get { return FCurStyleNo; }
-            set { FCurStyleNo = value; }
+            get { return FTempStyleNo; }
         }
 
-        public HCCanvas DefCanvas
+        public HCCanvas TempCanvas
         {
-            get { return FDefCanvas; }
+            get { return FTempCanvas; }
         }
 
         public UpdateInfo UpdateInfo
@@ -461,12 +452,6 @@ namespace HC.View
         {
             get { return FOnInvalidateRect; }
             set { FOnInvalidateRect = value; }
-        }
-
-        public EventHandler OnCurParaNoChange
-        {
-            get { return FOnCurParaNoChange; }
-            set { FOnCurParaNoChange = value; }
         }
     }
 

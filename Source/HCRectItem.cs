@@ -54,45 +54,11 @@ namespace HC.View
             FHeight = value;
         }
 
-        // 撤销重做相关方法
-        public override void Undo(HCCustomUndoAction aUndoAction) 
-        {
-            if (aUndoAction is HCItemSelfUndoAction)
-            {
-                HCUndoList vUndoList = (aUndoAction as HCItemSelfUndoAction).Object as HCUndoList;
-                if (vUndoList != null)
-                    vUndoList.Undo();
-                else
-                    base.Undo(aUndoAction);
-            }
-            else
-                base.Undo(aUndoAction);
-        }
-
-        public override void Redo(HCCustomUndoAction aRedoAction)
-        {
-            if (aRedoAction is HCItemSelfUndoAction)
-            {
-                HCUndoList vUndoList = (aRedoAction as HCItemSelfUndoAction).Object as HCUndoList;
-                if (vUndoList != null)
-                {
-                    if (vUndoList.Seek < 0)
-                        SelfUndoListInitializate(vUndoList);
-
-                    vUndoList.Redo();
-                }
-                else
-                    base.Redo(aRedoAction);
-            }
-            else
-                base.Redo(aRedoAction);
-        }
-
         protected void SelfUndoListInitializate(HCUndoList aUndoList)
         {
-          aUndoList.OnUndoNew = DoSelfUndoNew;
-          aUndoList.OnUndo = DoSelfUndo;
-          aUndoList.OnRedo = DoSelfRedo;
+            aUndoList.OnUndoNew = DoSelfUndoNew;
+            aUndoList.OnUndo = DoSelfUndo;
+            aUndoList.OnRedo = DoSelfRedo;
         }
 
         protected void SelfUndo_New()
@@ -104,28 +70,26 @@ namespace HC.View
 
         protected HCUndoList GetSelfUndoList()
         {
+            if (FOnGetMainUndoList == null)
+                return null;
+
             HCUndoList Result = FOnGetMainUndoList();
 
-            if ((Result != null) && Result.Enable)
+            if ((Result != null) && Result.Enable && (Result.Last.Actions.Last is HCItemSelfUndoAction))
             {
-                int vActionCount = Result[Result.Count - 1].Actions.Count;
-                HCCustomUndoAction vLastAction = Result[Result.Count - 1].Actions[vActionCount - 1];
-                if (vLastAction is HCItemSelfUndoAction)
+                HCItemSelfUndoAction vItemAction = Result.Last.Actions.Last as HCItemSelfUndoAction;
+                if (vItemAction.Object == null)
                 {
-                    HCItemSelfUndoAction vItemAction = vLastAction as HCItemSelfUndoAction;
-                    if (vItemAction.Object == null)
-                    {
-                        vItemAction.Object = new HCUndoList();
-                        SelfUndoListInitializate(vItemAction.Object as HCUndoList);
-                    }
-
-                    Result = vItemAction.Object as HCUndoList;
+                    vItemAction.Object = new HCUndoList();
+                    SelfUndoListInitializate(vItemAction.Object as HCUndoList);
                 }
+
+                Result = vItemAction.Object as HCUndoList;
             }
 
             return Result;
-        }        
-        
+        }
+
         protected virtual void DoSelfUndoDestroy(HCUndo aUndo)
         {
             if (aUndo.Data != null)
@@ -141,16 +105,18 @@ namespace HC.View
 
         protected virtual void DoSelfRedo(HCUndo aRedo) { }
 
-        public HCCustomRectItem() : base()
+        public HCCustomRectItem()
+            : base()
         {
 
         }
 
         /// <summary> 适用于工作期间创建 </summary>
-        public HCCustomRectItem(HCCustomData aOwnerData) : this()
+        public HCCustomRectItem(HCCustomData aOwnerData)
+            : this()
         {
             FOwnerData = aOwnerData;
-            this.ParaNo = aOwnerData.Style.CurParaNo;
+            this.ParaNo = aOwnerData.CurParaNo;
             FOnGetMainUndoList = (aOwnerData as HCCustomData).OnGetUndoList;
             FWidth = 100;
             FHeight = 50;
@@ -161,7 +127,8 @@ namespace HC.View
         }
 
         /// <summary> 适用于加载时创建 </summary>
-        public HCCustomRectItem(HCCustomData aOwnerData, int aWidth, int aHeight) : this(aOwnerData)
+        public HCCustomRectItem(HCCustomData aOwnerData, int aWidth, int aHeight)
+            : this(aOwnerData)
         {
             Width = aWidth;
             Height = aHeight;
@@ -169,10 +136,9 @@ namespace HC.View
 
         public virtual void ApplySelectParaStyle(HCStyle aStyle, HCParaMatch aMatchStyle) { }
 
-        public virtual int ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyl)
-        {
-            return HCStyle.Null;
-        }
+        public virtual void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyl) { }
+
+        public virtual void ApplyContentAlign(HCContentAlign aAlign) { }
 
         // 当前RectItem格式化时所属的Data(为松耦合请传入TCustomRichData类型)
         public virtual void FormatToDrawItem(HCCustomData aRichData, int aItemNo) { }
@@ -183,10 +149,27 @@ namespace HC.View
             return 0;
         }
 
+        /// <summary> ActiveItem重新适应其环境(供外部直接修改Item属性后重新和其前后Item连接组合) </summary>
+        public virtual void ReFormatActiveItem() { }
+
+        public virtual void ReAdaptActiveItem() { }
+
         public virtual bool DeleteSelected()
         {
             return false;
         }
+
+        /// <summary> 删除当前域 </summary>
+        public virtual bool DeleteActiveDomain() 
+        {
+            return false;
+        }
+
+        /// <summary> 删除当前Data指定范围内的Item </summary>
+        public virtual void DeleteActiveDataItems(int aStartNo, int aEndNo) { }
+
+        /// <summary> 直接设置当前TextItem的Text值 </summary>
+        public virtual void SetActiveItemText(string aText) { }
 
         public virtual void MarkStyleUsed(bool aMark) { }
 
@@ -198,6 +181,11 @@ namespace HC.View
         }
 
         public virtual HCCustomItem GetActiveItem()
+        {
+            return this;
+        }
+
+        public virtual HCCustomItem GetTopLevelItem()
         {
             return this;
         }
@@ -245,11 +233,6 @@ namespace HC.View
         /// <summary> 更新光标位置 </summary>
         public virtual void GetCaretInfo(ref HCCaretInfo aCaretInfo) { }
 
-        /// <summary> 获取在指定高度内的结束位置处最下端(暂时没用到注释了) </summary>
-        /// <param name="AHeight">指定的高度范围</param>
-        /// <param name="ADItemMostBottom">最底端DItem的底部位置</param>
-        //procedure GetPageFmtBottomInfo(const AHeight: Integer; var ADItemMostBottom: Integer); virtual;
-
         public virtual void CheckFormatPageBreakBefor() { }
 
         /// <summary> 计算格式化后的分页位置 </summary>
@@ -281,11 +264,6 @@ namespace HC.View
                 if (aDrawItemRectBottom > aPageDataFmtBottom)
                     aFmtOffset = aPageDataFmtBottom - aDrawItemRectTop;
             }
-        }
-
-        public virtual bool ChangeNearPageBreak()
-        {
-            return false;
         }
 
         public virtual bool InsertItem(HCCustomItem aItem)
@@ -351,6 +329,11 @@ namespace HC.View
             return null;
         }
 
+        public virtual HCCustomData GetTopLevelData()
+        {
+            return null;
+        }
+
         public virtual void TraverseItem(HCItemTraverse ATraverse) { }
 
         public virtual void SaveToBitmap(ref Bitmap aBitmap) 
@@ -405,6 +388,40 @@ namespace HC.View
             base.Assign(source);
             FWidth = (source as HCCustomRectItem).Width;
             FHeight = (source as HCCustomRectItem).Height;
+        }
+
+        // 撤销重做相关方法
+        public override void Undo(HCCustomUndoAction aUndoAction)
+        {
+            if (aUndoAction is HCItemSelfUndoAction)
+            {
+                HCUndoList vUndoList = (aUndoAction as HCItemSelfUndoAction).Object as HCUndoList;
+                if (vUndoList != null)
+                    vUndoList.Undo();
+                else
+                    base.Undo(aUndoAction);
+            }
+            else
+                base.Undo(aUndoAction);
+        }
+
+        public override void Redo(HCCustomUndoAction aRedoAction)
+        {
+            if (aRedoAction is HCItemSelfUndoAction)
+            {
+                HCUndoList vUndoList = (aRedoAction as HCItemSelfUndoAction).Object as HCUndoList;
+                if (vUndoList != null)
+                {
+                    if (vUndoList.Seek < 0)
+                        SelfUndoListInitializate(vUndoList);
+
+                    vUndoList.Redo();
+                }
+                else
+                    base.Redo(aRedoAction);
+            }
+            else
+                base.Redo(aRedoAction);
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
@@ -569,24 +586,13 @@ namespace HC.View
             }
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
-        {
-            base.SaveToStream(aStream, aStart, aEnd);
-            aStream.WriteByte((byte)FMarkType);
-        }
-
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-            FMarkType = (MarkType)aStream.ReadByte();
-        }
-
-        public HCDomainItem(HCCustomData aOwnerData) : base(aOwnerData)
+        public HCDomainItem(HCCustomData aOwnerData)
+            : base(aOwnerData)
         {
             this.StyleNo = HCStyle.Domain;
             FLevel = 0;
             Width = 0;
-            Height = 10;
+            Height = aOwnerData.Style.TextStyles[0].FontHeight;
         }
 
         public static bool IsBeginMark(HCCustomItem aItem)
@@ -597,18 +603,6 @@ namespace HC.View
         public static bool IsEndMark(HCCustomItem aItem)
         {
             return (aItem is HCDomainItem) && ((aItem as HCDomainItem).MarkType == MarkType.cmtEnd);
-        }
-
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FMarkType = (MarkType)byte.Parse(aNode.Attributes["mark"].Value);
-        }
-
-        public override void ToXml(XmlElement aNode)
-        {
-            base.ToXml(aNode);
-            aNode.Attributes["mark"].Value = ((byte)FMarkType).ToString();
         }
 
         public override int GetOffsetAt(int x)
@@ -643,11 +637,8 @@ namespace HC.View
                         && ((vItem as HCDomainItem).MarkType == MarkType.cmtEnd)) // 下一个是结束标识
                         this.Width = 10;  // 增加宽度以便输入时光标可方便点击
                     else
-                    if (vItem.StyleNo > HCStyle.Null)
-                    {
-                        aRichData.Style.TextStyles[vItem.StyleNo].ApplyStyle(aRichData.Style.DefCanvas);
-                        this.Height = aRichData.Style.DefCanvas.TextHeight("H");
-                    }
+                        if (vItem.StyleNo > HCStyle.Null)  // 后面是文本，跟随后面的高度
+                            this.Height = aRichData.Style.TextStyles[vItem.StyleNo].FontHeight;
                 }
                 else
                     this.Width = 10;
@@ -659,12 +650,33 @@ namespace HC.View
                     && ((vItem as HCDomainItem).MarkType == MarkType.cmtBeg))
                     this.Width = 10;
                 else
-                if (vItem.StyleNo > HCStyle.Null)
-                {
-                    aRichData.Style.TextStyles[vItem.StyleNo].ApplyStyle(aRichData.Style.DefCanvas);
-                    this.Height = aRichData.Style.DefCanvas.TextHeight("H");
-                }
+                    if (vItem.StyleNo > HCStyle.Null)  // 前面是文本，距离前面的高度
+                        this.Height = aRichData.Style.TextStyles[vItem.StyleNo].FontHeight;
             }
+        }
+
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStream(aStream, aStart, aEnd);
+            aStream.WriteByte((byte)FMarkType);
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            FMarkType = (MarkType)aStream.ReadByte();
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["mark"].Value = ((byte)FMarkType).ToString();
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FMarkType = (MarkType)byte.Parse(aNode.Attributes["mark"].Value);
         }
 
         public MarkType MarkType
@@ -684,33 +696,6 @@ namespace HC.View
     {
         private int FTextStyleNo;
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
-        {
-            base.SaveToStream(aStream, aStart, aEnd);
-            byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-        }
-
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-            byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FTextStyleNo = BitConverter.ToInt32(vBuffer, 0);
-        }
-
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FTextStyleNo = int.Parse(aNode.Attributes["textsno"].Value);
-        }
-
-        public override void ToXml(XmlElement aNode)
-        {
-            base.ToXml(aNode);
-            aNode.Attributes["textsno"].Value = FTextStyleNo.ToString();
-        }
-
         protected virtual void SetTextStyleNo(int value)
         {
             if (FTextStyleNo != value)
@@ -719,8 +704,8 @@ namespace HC.View
 
         public HCTextRectItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
-            if (aOwnerData.Style.CurStyleNo > HCStyle.Null)
-                FTextStyleNo = aOwnerData.Style.CurStyleNo;
+            if (aOwnerData.CurStyleNo > HCStyle.Null)
+                FTextStyleNo = aOwnerData.CurStyleNo;
             else
                 FTextStyleNo = 0;
         }
@@ -749,10 +734,9 @@ namespace HC.View
             return false;
         }
 
-        public override int ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyle)
+        public override void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyle)
         {
             FTextStyleNo = aMatchStyle.GetMatchStyleNo(aStyle, FTextStyleNo);
-            return FTextStyleNo;
         }
 
         public override void MarkStyleUsed(bool aMark)
@@ -768,12 +752,41 @@ namespace HC.View
             return this.Options.Contains(ItemOption.ioSelectComplate);
         }
 
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStream(aStream, aStart, aEnd);
+            byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
+            FTextStyleNo = BitConverter.ToInt32(vBuffer, 0);
+
+            if (FTextStyleNo > aStyle.TextStyles.Count - 1)  // 兼容历史错误(删除多余样式时没有)
+                FTextStyleNo = 0;
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.Attributes["textsno"].Value = FTextStyleNo.ToString();
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FTextStyleNo = int.Parse(aNode.Attributes["textsno"].Value);
+        }
+
         public int TextStyleNo
         {
             get { return FTextStyleNo; }
             set { SetTextStyleNo(value); }
         }
-
     }
 
     public class HCControlItem : HCTextRectItem
@@ -811,17 +824,16 @@ namespace HC.View
             FAutoSize = BitConverter.ToBoolean(vBuffer, 0);
         }
 
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FAutoSize = bool.Parse(aNode.Attributes["autosize"].Value);
-
-        }
-
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
             aNode.Attributes["autosize"].Value = FAutoSize.ToString();
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FAutoSize = bool.Parse(aNode.Attributes["autosize"].Value);
         }
 
         public bool AutoSize
@@ -937,7 +949,7 @@ namespace HC.View
             if ((vUndoList != null) && vUndoList.Enable)
             {
                 SelfUndo_New();
-                HCUndo vUndo = vUndoList[vUndoList.Count - 1];
+                HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
                     HCSizeUndoData vSizeUndoData = new HCSizeUndoData();

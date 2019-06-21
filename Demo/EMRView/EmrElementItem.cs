@@ -111,12 +111,36 @@ namespace EMRView
         }
     }
 
+    public delegate void DePaintBKGHandler(object sender, HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo);
+
     /// <summary> 电子病历数据元对象 </summary>
     public sealed class DeItem : EmrTextItem  // 不可继承
     {
-        private bool FMouseIn, FDeleteProtect;
+        private bool FMouseIn, FEditProtect;
         private StyleExtra FStyleEx;
         private Dictionary<string, string> FPropertys;
+        private DePaintBKGHandler FOnPaintBKG;
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            if (value.IndexOf("=") >= 0)
+                throw new Exception("属性值中不允许有=号");
+
+            FPropertys[key] = value;
+        }
+
+        private bool GetIsElement()
+        {
+            return FPropertys.Keys.Contains(DeProp.Index);
+        }
 
         protected override void SetText(string value)
         {
@@ -124,7 +148,7 @@ namespace EMRView
                 base.SetText(value);
             else
             {
-                if (IsElement && FDeleteProtect)
+                if (IsElement && FEditProtect)
                     Text = FPropertys[DeProp.Name];
                 else
                     base.SetText("");
@@ -137,25 +161,8 @@ namespace EMRView
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop,
                 aDataScreenBottom, aCanvas, aPaintInfo);
 
-            if ((!aPaintInfo.Print) && (IsElement))
-            {
-                if (FMouseIn || Active)
-                {
-                    if (IsSelectPart || IsSelectComplate)
-                    {
-
-                    }
-                    else
-                    {
-                        if (this[DeProp.Name] != this.Text)
-                            aCanvas.Brush.Color = DeProp.DE_CHECKCOLOR;
-                        else
-                            aCanvas.Brush.Color = DeProp.DE_NOCHECKCOLOR;
-
-                        aCanvas.FillRect(aDrawRect);
-                    }
-                }
-            }
+            if (FOnPaintBKG != null)
+                FOnPaintBKG(this, aCanvas, aDrawRect, aPaintInfo);
 
             if (FStyleEx == StyleExtra.cseDel)
             {
@@ -211,54 +218,35 @@ namespace EMRView
                 aCanvas.LineTo(aDrawRect.Right, vTop + 2);
             }
             else
-                if (FStyleEx == StyleExtra.cseAdd)
+            if (FStyleEx == StyleExtra.cseAdd)
+            {
+                aCanvas.Pen.BeginUpdate();
+                try
                 {
-                    aCanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        aCanvas.Pen.Style = HCPenStyle.psSolid;
-                        aCanvas.Pen.Color = Color.Blue;
-                    }
-                    finally
-                    {
-                        aCanvas.Pen.EndUpdate();
-                    }
-
-                    aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
-                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.Blue;
                 }
-        }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
 
-        //
-        protected string GetValue(string key)
-        {
-            if (FPropertys.Keys.Contains(key))
-                return FPropertys[key];
-            else
-                return "";
-        }
-
-        protected void SetValue(string key, string value)
-        {
-            FPropertys[key] = value;
-        }
-
-        protected bool GetIsElement()
-        {
-            return FPropertys.Keys.Contains(DeProp.Index);
+                aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
+                aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
+            }
         }
 
         public DeItem() : base()
         {
             FPropertys = new Dictionary<string,string>();
-            FDeleteProtect = false;
+            FEditProtect = false;
             FMouseIn = false;
         }
 
         public DeItem(string aText) : base(aText)
         {
             FPropertys = new Dictionary<string, string>();
-            FDeleteProtect = false;
+            FEditProtect = false;
             FMouseIn = false;
         }
 
@@ -303,6 +291,7 @@ namespace EMRView
                 DeItem vDeItem = aItem as DeItem;
                 Result = ((this[DeProp.Index] == vDeItem[DeProp.Index])
                     && (this.FStyleEx == vDeItem.StyleEx)
+                    && (FEditProtect == vDeItem.FEditProtect)
                     && (this[DeProp.Trace] == vDeItem[DeProp.Trace]));
             }
 
@@ -321,12 +310,18 @@ namespace EMRView
         {
             bool Result = base.CanAccept(aOffset, aAction);
 
-            if ((Result) && (this.IsElement))
+            if (Result)
             {
-                if (aAction == HCItemAction.hiaInsertChar)
-                    Result = false;
+                if (this.IsElement)
+                {
+                    if (aAction == HCItemAction.hiaInsertChar)
+                        Result = false;
+                    else
+                        if ((aAction == HCItemAction.hiaBackDeleteChar) || (aAction == HCItemAction.hiaDeleteChar) || (aAction == HCItemAction.hiaRemove))
+                            Result = !FEditProtect;
+                }
                 else
-                    Result = !FDeleteProtect;
+                    Result = !FEditProtect;
             }
 
             if (!Result)
@@ -338,7 +333,13 @@ namespace EMRView
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            byte vByte = (byte)FStyleEx;
+
+            byte vByte = 0;
+            if (FEditProtect)
+                vByte = (byte)(vByte | (1 << 7));
+            aStream.WriteByte(vByte);
+
+            vByte = (byte)FStyleEx;
             aStream.WriteByte(vByte);
             HC.View.HC.HCSaveTextToStream(aStream, DeProp.GetPropertyString(FPropertys));
         }
@@ -346,7 +347,10 @@ namespace EMRView
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            byte vByte = 0;
+
+            byte vByte = (byte)aStream.ReadByte();
+            FEditProtect = (vByte >> 7) == 1;
+            
             vByte = (byte)aStream.ReadByte();
             FStyleEx = (StyleExtra)vByte;
 
@@ -382,16 +386,21 @@ namespace EMRView
             get { return GetIsElement(); }
         }
 
+        public bool MouseIn
+        {
+            get { return FMouseIn; }
+        }
+
         public StyleExtra StyleEx
         {
             get { return FStyleEx; }
             set { FStyleEx = value; }
         }
 
-        public bool DeleteProtect
+        public bool EditProtect
         {
-            get { return FDeleteProtect; }
-            set { FDeleteProtect = value; }
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
         }
 
         public Dictionary<string, string> Propertys
@@ -404,11 +413,17 @@ namespace EMRView
             get { return GetValue(aKey); }
             set { SetValue(aKey, value); }
         }
+
+        public DePaintBKGHandler OnPaintBKG
+        {
+            get { return FOnPaintBKG; }
+            set { FOnPaintBKG = value; }
+        }
     }
 
     public class DeTable : HCTableItem
     {
-        private bool FDeleteProtect;
+        private bool FEditProtect;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -475,10 +490,10 @@ namespace EMRView
 
         }
 
-        public bool DeleteProtect
+        public bool EditProtect
         {
-            get { return FDeleteProtect; }
-            set { FDeleteProtect = value; }
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
         }
 
         public Dictionary<string, string> Propertys
@@ -496,7 +511,7 @@ namespace EMRView
     public class DeCheckBox : HCCheckBoxItem
     {
 
-        private bool FDeleteProtect;
+        private bool FEditProtect;
 
         private Dictionary<string, string> FPropertys;
 
@@ -563,10 +578,10 @@ namespace EMRView
 
         }
 
-        public bool DeleteProtect
+        public bool EditProtect
         {
-            get { return FDeleteProtect; }
-            set { FDeleteProtect = value; }
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
         }
 
         public Dictionary<string, string> Propertys
@@ -583,7 +598,7 @@ namespace EMRView
 
     public class DeEdit : HCEditItem
     {
-        private bool FDeleteProtect;
+        private bool FEditProtect;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -649,10 +664,10 @@ namespace EMRView
 
         }
 
-        public bool DeleteProtect
+        public bool EditProtect
         {
-            get { return FDeleteProtect; }
-            set { FDeleteProtect = value; }
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
         }
 
         public Dictionary<string, string> Propertys
@@ -669,7 +684,7 @@ namespace EMRView
 
     public class DeCombobox : HCComboboxItem
     {
-        private bool FDeleteProtect;
+        private bool FEditProtect;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -736,10 +751,10 @@ namespace EMRView
 
         }
 
-        public bool DeleteProtect
+        public bool EditProtect
         {
-            get { return FDeleteProtect; }
-            set { FDeleteProtect = value; }
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
         }
 
         public Dictionary<string, string> Propertys
@@ -756,7 +771,7 @@ namespace EMRView
 
     public class DeDateTimePicker : HCDateTimePicker
     {
-        private bool FDeleteProtect;
+        private bool FEditProtect;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -822,10 +837,10 @@ namespace EMRView
 
         }
 
-        public bool DeleteProtect
+        public bool EditProtect
         {
-            get { return FDeleteProtect; }
-            set { FDeleteProtect = value; }
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
         }
 
         public Dictionary<string, string> Propertys
@@ -842,7 +857,7 @@ namespace EMRView
 
     public class DeRadioGroup : HCRadioGroup
     {
-        private bool FDeleteProtect;
+        private bool FEditProtect;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -908,10 +923,10 @@ namespace EMRView
 
         }
 
-        public bool DeleteProtect
+        public bool EditProtect
         {
-            get { return FDeleteProtect; }
-            set { FDeleteProtect = value; }
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
         }
 
         public Dictionary<string, string> Propertys

@@ -142,7 +142,8 @@ namespace HC.View
         /// <summary> 向后删除文本 </summary>
         uatDeleteText,
         /// <summary> 插入文本 </summary>
-        uatInsertText, 
+        uatInsertText,
+        uatSetItemText,    // 直接赋值Item的Text
         uatDeleteItem, 
         uatInsertItem, 
         uatItemProperty, 
@@ -155,6 +156,8 @@ namespace HC.View
         private UndoActionTag FTag;
         private int FItemNo;  // 事件发生时的ItemNo
         private int FOffset;  // 事件发生时的Offset
+        private bool FParaFirst;
+
         public HCCustomUndoAction()
         {
             FItemNo = -1;
@@ -173,6 +176,12 @@ namespace HC.View
             set { FOffset = value; }
         }
 
+        public bool ParaFirst
+        {
+            get { return FParaFirst; }
+            set { FParaFirst = value; }
+        }
+
         public UndoActionTag Tag
         {
             get { return FTag; }
@@ -188,6 +197,17 @@ namespace HC.View
         {
             get { return FText; }
             set { FText = value; }
+        }
+    }
+
+    public class HCSetItemTextUndoAction : HCTextUndoAction
+    {
+        private string FNewText;
+
+        public string NewText
+        {
+            get { return FNewText; }
+            set { FNewText = value; }
         }
     }
 
@@ -319,7 +339,15 @@ namespace HC.View
 
     public class HCUndoActions : List<HCCustomUndoAction>
     {
+        public HCCustomUndoAction First
+        {
+            get { return this[0]; }
+        }
 
+        public HCCustomUndoAction Last
+        {
+            get { return this[this.Count - 1]; }
+        }
     }
 
     //Undo部分
@@ -363,7 +391,7 @@ namespace HC.View
             FData = null;
         }
 
-        public HCCustomUndoAction ActionAppend(UndoActionTag aTag, int aItemNo, int aOffset)
+        public HCCustomUndoAction ActionAppend(UndoActionTag aTag, int aItemNo, int aOffset, bool aParaFirst)
         {
             HCCustomUndoAction Result = null;
             switch (aTag)
@@ -374,15 +402,19 @@ namespace HC.View
                     Result = new HCTextUndoAction();
                     break;
 
+                case UndoActionTag.uatSetItemText:
+                    Result = new HCSetItemTextUndoAction();
+                    break;
+
                 case UndoActionTag.uatDeleteItem:
                 case UndoActionTag.uatInsertItem:
                 case UndoActionTag.uatItemMirror:
                     Result = new HCItemUndoAction();
                     break;
 
-                case UndoActionTag.uatItemProperty:
-                    Result = new HCItemParaFirstUndoAction();
-                    break;
+                //case UndoActionTag.uatItemProperty:
+                //    Result = new HCItemParaFirstUndoAction();
+                //    break;
 
                 case UndoActionTag.uatItemSelf:
                     Result = new HCItemSelfUndoAction();
@@ -396,6 +428,7 @@ namespace HC.View
             Result.Tag = aTag;
             Result.ItemNo = aItemNo;
             Result.Offset = aOffset;
+            Result.ParaFirst = aParaFirst;
 
             this.Actions.Add(Result);
 
@@ -518,7 +551,21 @@ namespace HC.View
         }
     }
 
-    public class HCUndoGroupEnd : HCUndoGroupBegin {}
+    public class HCUndoGroupEnd : HCDataUndo
+    {
+        private int FItemNo, FOffset;
+        public int ItemNo
+        {
+            get { return FItemNo; }
+            set { FItemNo = value; }
+        }
+
+        public int Offset
+        {
+            get { return FOffset; }
+            set { FOffset = value; }
+        }
+    }
 
     public class HCUndoEditGroupEnd : HCUndoGroupEnd
     {
@@ -565,9 +612,9 @@ namespace HC.View
     {
         private int FSeek;
         private bool FEnable;  // 是否可以执行撤销恢复
+        private Stack FEnableStateStack;
         private bool FGroupWorking;  // 组操作锁
         private uint FMaxUndoCount;  // 撤销恢复链的最大长度
-        private Stack FEnableStateStack;
 
         // 当前组撤销恢复时的组起始和组结束
         private int FGroupBeginIndex, FGroupEndIndex;
@@ -577,7 +624,7 @@ namespace HC.View
         private UndoGroupEndEventHandler FOnUndoGroupEnd;
         private UndoEventHandler FOnUndo, FOnRedo, FOnUndoDestroy;
 
-        private  void DoNewUndo(HCUndo aUndo)
+        private void DoNewUndo(HCUndo aUndo)
         {
             if (FSeek < this.Count - 1)
             {
@@ -629,6 +676,7 @@ namespace HC.View
             FSeek = this.Count - 1;
         }
 
+        // List相关的Notify事件
         private ItemNotifyEventHandler FOnItemDelete;
 
         private void _OnDeleteItem(object sender, NListEventArgs<HCUndo> e)
@@ -701,6 +749,7 @@ namespace HC.View
             return Result;
         }
 
+        // Undo 子方法
         private void DoSeekUndoEx(ref int ASeek)
         {
             if (FOnUndo != null)
@@ -764,6 +813,7 @@ namespace HC.View
             }
         }
 
+        // Redo子方法
         private void DoSeekRedoEx(ref int ASeek)
         {
             ASeek++;

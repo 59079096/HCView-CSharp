@@ -47,8 +47,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeGroup.cs" />
+    <Compile Include="emrCommon.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="emrDB.cs" />
-    <Compile Include="EmrElementItem.cs" />
+    <Compile Include="emrEdit.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="emrElementItem.cs" />
+    <Compile Include="emrFangJiaoItem.cs" />
     <Compile Include="EmrView.cs">
       <SubType>UserControl</SubType>
     </Compile>

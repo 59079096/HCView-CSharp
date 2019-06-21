@@ -113,7 +113,7 @@
             this.mniLSFix = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.tssPage = new System.Windows.Forms.ToolStripStatusLabel();
-            this.pmRichEdit = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.pmHCView = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mniCut = new System.Windows.Forms.ToolStripMenuItem();
             this.mniCopy = new System.Windows.Forms.ToolStripMenuItem();
             this.mniPaste = new System.Windows.Forms.ToolStripMenuItem();
@@ -137,10 +137,12 @@
             this.mniTableProperty = new System.Windows.Forms.ToolStripMenuItem();
             this.mniPara = new System.Windows.Forms.ToolStripMenuItem();
             this.mniControlItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniModAnnotate = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniDelAnnotate = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
-            this.pmRichEdit.SuspendLayout();
+            this.pmHCView.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -640,6 +642,7 @@
             // cbbFont
             // 
             this.cbbFont.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbbFont.DropDownWidth = 200;
             this.cbbFont.Name = "cbbFont";
             this.cbbFont.Size = new System.Drawing.Size(75, 25);
             this.cbbFont.DropDownClosed += new System.EventHandler(this.cbbFont_DropDownClosed);
@@ -931,18 +934,20 @@
             this.tssPage.Size = new System.Drawing.Size(131, 17);
             this.tssPage.Text = "toolStripStatusLabel1";
             // 
-            // pmRichEdit
+            // pmHCView
             // 
-            this.pmRichEdit.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.pmHCView.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mniCut,
             this.mniCopy,
             this.mniPaste,
             this.mniTable,
             this.mniPara,
-            this.mniControlItem});
-            this.pmRichEdit.Name = "pmRichEdit";
-            this.pmRichEdit.Size = new System.Drawing.Size(146, 136);
-            this.pmRichEdit.Opening += new System.ComponentModel.CancelEventHandler(this.pmRichEdit_Opening);
+            this.mniControlItem,
+            this.mniModAnnotate,
+            this.mniDelAnnotate});
+            this.pmHCView.Name = "pmRichEdit";
+            this.pmHCView.Size = new System.Drawing.Size(146, 180);
+            this.pmHCView.Opening += new System.ComponentModel.CancelEventHandler(this.pmHCView_Opening);
             // 
             // mniCut
             // 
@@ -1111,10 +1116,23 @@
             this.mniControlItem.Size = new System.Drawing.Size(145, 22);
             this.mniControlItem.Text = "属性";
             // 
+            // mniModAnnotate
+            // 
+            this.mniModAnnotate.Name = "mniModAnnotate";
+            this.mniModAnnotate.Size = new System.Drawing.Size(145, 22);
+            this.mniModAnnotate.Text = "修改";
+            // 
+            // mniDelAnnotate
+            // 
+            this.mniDelAnnotate.Name = "mniDelAnnotate";
+            this.mniDelAnnotate.Size = new System.Drawing.Size(145, 22);
+            this.mniDelAnnotate.Text = "删除";
+            // 
             // frmHCViewDemo
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(877, 627);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
@@ -1130,7 +1148,7 @@
             this.toolStrip1.PerformLayout();
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
-            this.pmRichEdit.ResumeLayout(false);
+            this.pmHCView.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1219,7 +1237,7 @@
         private System.Windows.Forms.ToolStripMenuItem mniLSFix;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel tssPage;
-        private System.Windows.Forms.ContextMenuStrip pmRichEdit;
+        private System.Windows.Forms.ContextMenuStrip pmHCView;
         private System.Windows.Forms.ToolStripMenuItem mniCut;
         private System.Windows.Forms.ToolStripMenuItem mniCopy;
         private System.Windows.Forms.ToolStripMenuItem mniPaste;
@@ -1245,6 +1263,8 @@
         private System.Windows.Forms.ToolStripMenuItem mniControlItem;
         private System.Windows.Forms.ToolStripButton btnRightIndent;
         private System.Windows.Forms.ToolStripButton btnLeftIndent;
+        private System.Windows.Forms.ToolStripMenuItem mniModAnnotate;
+        private System.Windows.Forms.ToolStripMenuItem mniDelAnnotate;
     }
 }
 

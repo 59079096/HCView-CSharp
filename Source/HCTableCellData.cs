@@ -64,11 +64,6 @@ namespace HC.View
             return Result;
         }
 
-        protected override void _FormatReadyParam(int aStartItemNo, ref int aPrioDrawItemNo, ref POINT aPos)
-        {
-            base._FormatReadyParam(aStartItemNo, ref aPrioDrawItemNo, ref aPos);
-        }
-
         protected void SetActive(bool value)
         {
             if (FActive != value)
@@ -86,6 +81,22 @@ namespace HC.View
             : base(aStyle)
         {
 
+        }
+
+        public override void ApplySelectTextStyle(HCStyleMatch aMatchStyle)
+        {
+            if (FCellSelectedAll)
+                CurStyleNo = Items[0].StyleNo;
+            
+            base.ApplySelectTextStyle(aMatchStyle);
+        }
+
+        public override void ApplySelectParaStyle(HCParaMatch aMatchStyle)
+        {
+            if (FCellSelectedAll)
+                CurParaNo = Items[0].ParaNo;
+
+            base.ApplySelectParaStyle(aMatchStyle);
         }
 
         //constructor Create; override;
@@ -121,24 +132,35 @@ namespace HC.View
                 return base.GetRootData();
         }
 
+        public override void LoadFromStream(System.IO.Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            this.BeginFormat();
+            try
+            {
+                base.LoadFromStream(aStream, aStyle, aFileVersion);
+            }
+            finally
+            {
+                this.EndFormat(false);
+            }
+        }
+
         /// <summary> 选在第一个Item最前面 </summary>
         public bool SelectFirstItemOffsetBefor()
         {
-            bool  Result = false;
             if ((!SelectExists()) && (SelectInfo.StartItemNo == 0))
-                Result = (SelectInfo.StartItemOffset == 0);
-
-            return Result;
+                return SelectInfo.StartItemOffset == 0;
+            else
+                return false;
         }
 
         /// <summary> 选在最后一个Item最后面 </summary>
         public bool SelectLastItemOffsetAfter()
         {
-            bool Result = false;
             if ((!SelectExists()) && (SelectInfo.StartItemNo == this.Items.Count - 1))
-                Result = (SelectInfo.StartItemOffset == this.GetItemAfterOffset(SelectInfo.StartItemNo));
-
-            return Result;
+                return SelectInfo.StartItemOffset == this.GetItemOffsetAfter(SelectInfo.StartItemNo);
+            else
+                return false;
         }
 
         /// <summary> 选在第一行 </summary>
@@ -171,6 +193,7 @@ namespace HC.View
                 }
 
                 HC.OffsetRect(ref DrawItems[i].Rect, 0, -vFmtOffset);
+
                 if (Items[DrawItems[i].ItemNo].StyleNo < HCStyle.Null)
                 {
                     int vFormatIncHight = (Items[DrawItems[i].ItemNo] as HCCustomRectItem).ClearFormatExtraHeight();
@@ -181,7 +204,7 @@ namespace HC.View
             return Result;
         }
 
-        /// <summary> 单元格全先状态 </summary>
+        /// <summary> 单元格全选状态 </summary>
         public bool CellSelectedAll
         {
             get { return FCellSelectedAll; }

@@ -145,29 +145,80 @@ namespace HC.Win32
 		public SIZE szlMillimeters;
 	}
 
-	public struct TEXTMETRICW 
-	{
-		public int tmHeight;
-		public int tmAscent;
-		public int tmDescent;
-		public int tmInternalLeading;
-		public int tmExternalLeading;
-		public int tmAveCharWidth;
-		public int tmMaxCharWidth;
-		public int tmWeight;
-		public int tmOverhang;
-		public int tmDigitizedAspectX;
-		public int tmDigitizedAspectY;
-		public Char tmFirstChar;
-        public Char tmLastChar;
-        public Char tmDefaultChar;
-        public Char tmBreakChar;
-		public byte tmItalic;
-		public byte tmUnderlined;
-		public byte tmStruckOut;
-		public byte tmPitchAndFamily;
-		public byte tmCharSet;
-	}
+    [Serializable, StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public struct TEXTMETRIC
+    {
+        public int tmHeight;
+        public int tmAscent;
+        public int tmDescent;
+        public int tmInternalLeading;
+        public int tmExternalLeading;
+        public int tmAveCharWidth;
+        public int tmMaxCharWidth;
+        public int tmWeight;
+        public int tmOverhang;
+        public int tmDigitizedAspectX;
+        public int tmDigitizedAspectY;
+        public byte tmFirstChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmLastChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmDefaultChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmBreakChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmItalic;
+        public byte tmUnderlined;
+        public byte tmStruckOut;
+        public byte tmPitchAndFamily;
+        public byte tmCharSet;
+    }
+
+    [Serializable, StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct TEXTMETRICW
+    {
+        public int tmHeight;
+        public int tmAscent;
+        public int tmDescent;
+        public int tmInternalLeading;
+        public int tmExternalLeading;
+        public int tmAveCharWidth;
+        public int tmMaxCharWidth;
+        public int tmWeight;
+        public int tmOverhang;
+        public int tmDigitizedAspectX;
+        public int tmDigitizedAspectY;
+        public ushort tmFirstChar;
+        public ushort tmLastChar;
+        public ushort tmDefaultChar;
+        public ushort tmBreakChar;
+        public byte tmItalic;
+        public byte tmUnderlined;
+        public byte tmStruckOut;
+        public byte tmPitchAndFamily;
+        public byte tmCharSet;
+    }
+
+    [Serializable, StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public struct TEXTMETRICA
+    {
+        public int tmHeight;
+        public int tmAscent;
+        public int tmDescent;
+        public int tmInternalLeading;
+        public int tmExternalLeading;
+        public int tmAveCharWidth;
+        public int tmMaxCharWidth;
+        public int tmWeight;
+        public int tmOverhang;
+        public int tmDigitizedAspectX;
+        public int tmDigitizedAspectY;
+        public byte tmFirstChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmLastChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmDefaultChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmBreakChar;    // for compatibility issues it must be byte instead of char (see the comment for further details above)
+        public byte tmItalic;
+        public byte tmUnderlined;
+        public byte tmStruckOut;
+        public byte tmPitchAndFamily;
+        public byte tmCharSet;
+    }
 
 	public struct NEWTEXTMETRIC 
 	{
@@ -436,41 +487,42 @@ namespace HC.Win32
 		public double abcfC;
 	}
 
-	public struct OUTLINETEXTMETRICW 
-	{
-		public int otmSize;
-		public TEXTMETRICW otmTextMetrics;
-		public byte otmFiller;
-		public PANOSE otmPanoseNumber;
-		public uint otmfsSelection;
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct OUTLINETEXTMETRICW
+    {
+        public uint otmSize;
+        public TEXTMETRICW otmTextMetrics;
+        public byte otmFiller;
+        public PANOSE otmPanoseNumber;
+        public uint otmfsSelection;
         public uint otmfsType;
-		public int otmsCharSlopeRise;
-		public int otmsCharSlopeRun;
-		public int otmItalicAngle;
+        public int otmsCharSlopeRise;
+        public int otmsCharSlopeRun;
+        public int otmItalicAngle;
         public uint otmEMSquare;
-		public int otmAscent;
-		public int otmDescent;
+        public int otmAscent;
+        public int otmDescent;
         public uint otmLineGap;
         public uint otmsCapEmHeight;
         public uint otmsXHeight;
-		public RECT otmrcFontBox;
-		public int otmMacAscent;
-		public int otmMacDescent;
+        public RECT otmrcFontBox;
+        public int otmMacAscent;
+        public int otmMacDescent;
         public uint otmMacLineGap;
         public uint otmusMinimumPPEM;
-		public POINT otmptSubscriptSize;
-		public POINT otmptSubscriptOffset;
-		public POINT otmptSuperscriptSize;
-		public POINT otmptSuperscriptOffset;
+        public POINT otmptSubscriptSize;
+        public POINT otmptSubscriptOffset;
+        public POINT otmptSuperscriptSize;
+        public POINT otmptSuperscriptOffset;
         public uint otmsStrikeoutSize;
-		public int otmsStrikeoutPosition;
+        public int otmsStrikeoutPosition;
         public int otmsUnderscoreSize;
-		public int otmsUnderscorePosition;
-		public string otmpFamilyName;
-		public string otmpFaceName;
-		public string otmpStyleName;
-		public string otmpFullName;
-	}
+        public int otmsUnderscorePosition;
+        public IntPtr otmpFamilyName;
+        public IntPtr otmpFaceName;
+        public IntPtr otmpStyleName;
+        public IntPtr otmpFullName;
+    }
 
 	public struct POLYTEXT 
 	{
@@ -779,6 +831,7 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int Escape(HDC hdc, int nEscape, int nCount, string lpInData, IntPtr lpOutData);
 		[DllImport("gdi32")] public static extern int ExcludeClipRect(HDC hdc, int X1, int Y1, int X2, int Y2);
 		[DllImport("gdi32")] public static extern int ExtCreatePen(int dwPenStyle, int dwWidth, ref LOGBRUSH lplb, int dwStyleCount, ref int lpStyle);
+        [DllImport("gdi32")] public static extern int ExtCreatePen(int dwPenStyle, int dwWidth, ref LOGBRUSH lplb, int dwStyleCount, IntPtr lpStyle);
 		[DllImport("gdi32")] public static extern int ExtCreateRegion(ref XFORM lpXform, int nCount, ref RGNDATA lpRgnData);
 		[DllImport("gdi32")] public static extern int ExtEscape(HDC hdc, int nEscape, int cbInput, string lpszInData, int cbOutput, string lpszOutData);
 		[DllImport("gdi32")] public static extern int ExtFloodFill(HDC hdc, int x, int y, int crColor, int wFillType);
@@ -844,8 +897,10 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int GetObject(HANDLE hObject, int nCount, IntPtr lpObject);
         [DllImport("gdi32")] public static extern int GetObject(HANDLE hObject, int nCount, ref LOGFONT logfont);
 		[DllImport("gdi32")] public static extern int GetObjectType(HANDLE hgdiobj);
-        [DllImport("gdi32")] public static extern int GetOutlineTextMetrics(HDC hdc, int cbData, IntPtr lpotm);
-		[DllImport("gdi32")] public static extern int GetOutlineTextMetrics(HDC hdc, int cbData, ref OUTLINETEXTMETRICW lpotm);
+        [DllImport("gdi32", EntryPoint = "GetOutlineTextMetricsW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)] 
+        public static extern uint GetOutlineTextMetrics(HDC hdc, uint cbData, IntPtr lpotm);
+        //[DllImport("gdi32", EntryPoint = "GetOutlineTextMetricsW", CharSet = CharSet.Unicode, ExactSpelling = true)] 
+        //public static extern int GetOutlineTextMetrics(HDC hdc, int cbData, ref OUTLINETEXTMETRICW lpotm);
 		[DllImport("gdi32")] public static extern int GetPaletteEntries(HANDLE hPalette, int wStartIndex, int wNumEntries, ref PALETTEENTRY lpPaletteEntries);
 		[DllImport("gdi32")] public static extern int GetPath(HDC hdc, ref POINT lpPoint, Byte lpTypes, int nSize);
 		[DllImport("gdi32")] public static extern int GetPixel(HDC hdc, int x, int y);

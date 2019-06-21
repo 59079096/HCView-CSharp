@@ -239,15 +239,6 @@ namespace HC.View
             FEndPt.X = BitConverter.ToInt32(vBuffer, 0);
         }
 
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FStartPt.X = int.Parse(aNode.Attributes["sx"].Value);
-            FStartPt.Y = int.Parse(aNode.Attributes["sy"].Value);
-            FEndPt.X = int.Parse(aNode.Attributes["ex"].Value);
-            FEndPt.Y = int.Parse(aNode.Attributes["ex"].Value);
-        }
-
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
@@ -255,6 +246,15 @@ namespace HC.View
             aNode.Attributes["sy"].Value = FStartPt.Y.ToString();
             aNode.Attributes["ex"].Value = FEndPt.X.ToString();
             aNode.Attributes["ey"].Value = FEndPt.Y.ToString();
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FStartPt.X = int.Parse(aNode.Attributes["sx"].Value);
+            FStartPt.Y = int.Parse(aNode.Attributes["sy"].Value);
+            FEndPt.X = int.Parse(aNode.Attributes["ex"].Value);
+            FEndPt.Y = int.Parse(aNode.Attributes["ex"].Value);
         }
     }
 }

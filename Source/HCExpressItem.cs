@@ -28,12 +28,12 @@ namespace HC.View
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             HCStyle vStyle = aRichData.Style;
-            vStyle.TextStyles[TextStyleNo].ApplyStyle(vStyle.DefCanvas);
-            int vH = vStyle.DefCanvas.TextHeight("H");
-            int vLeftW = Math.Max(vStyle.DefCanvas.TextWidth(FLeftText), Padding);
-            int vTopW = Math.Max(vStyle.DefCanvas.TextWidth(TopText), Padding);
-            int vRightW = Math.Max(vStyle.DefCanvas.TextWidth(FRightText), Padding);
-            int vBottomW = Math.Max(vStyle.DefCanvas.TextWidth(BottomText), Padding);
+            vStyle.ApplyTempStyle(TextStyleNo);
+            int vH = vStyle.TempCanvas.TextHeight("H");
+            int vLeftW = Math.Max(vStyle.TempCanvas.TextWidth(FLeftText), Padding);
+            int vTopW = Math.Max(vStyle.TempCanvas.TextWidth(TopText), Padding);
+            int vRightW = Math.Max(vStyle.TempCanvas.TextWidth(FRightText), Padding);
+            int vBottomW = Math.Max(vStyle.TempCanvas.TextWidth(BottomText), Padding);
             // 计算尺寸
             if (vTopW > vBottomW)
                 Width = vLeftW + vTopW + vRightW + 6 * Padding;
@@ -170,8 +170,8 @@ namespace HC.View
             int vOffset = 0;
             if (FActiveArea != ExpressArea.ceaNone)
             {
-                OwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(OwnerData.Style.DefCanvas);
-                vOffset = HC.GetCharOffsetAt(OwnerData.Style.DefCanvas, vS, vX);
+                OwnerData.Style.ApplyTempStyle(TextStyleNo);
+                vOffset = HC.GetNorAlignCharOffsetAt(OwnerData.Style.TempCanvas, vS, vX);
             }
             else
                 vOffset = -1;
@@ -265,10 +265,10 @@ namespace HC.View
                 if (HC.PtInRect(FLeftRect, vPt))
                     return ExpressArea.ceaLeft;
                 else
-                    if (HC.PtInRect(FRightRect, vPt))
-                        return ExpressArea.ceaRight;
-                    else
-                        return Result;
+                if (HC.PtInRect(FRightRect, vPt))
+                    return ExpressArea.ceaRight;
+                else
+                    return Result;
             }
             else
                 return Result;
@@ -304,7 +304,7 @@ namespace HC.View
         {
             if (FActiveArea != ExpressArea.ceaNone)
             {
-                OwnerData.Style.TextStyles[TextStyleNo].ApplyStyle(OwnerData.Style.DefCanvas);
+                OwnerData.Style.ApplyTempStyle(TextStyleNo);
                 
                 switch (FActiveArea)
                 {
@@ -313,7 +313,7 @@ namespace HC.View
                             FCaretOffset = 0;
 
                         aCaretInfo.Height = FLeftRect.Bottom - FLeftRect.Top;
-                        aCaretInfo.X = FLeftRect.Left + OwnerData.Style.DefCanvas.TextWidth(FLeftText.Substring(0, FCaretOffset));
+                        aCaretInfo.X = FLeftRect.Left + OwnerData.Style.TempCanvas.TextWidth(FLeftText.Substring(0, FCaretOffset));
                         aCaretInfo.Y = FLeftRect.Top;
                         break;
                 
@@ -322,7 +322,7 @@ namespace HC.View
                             FCaretOffset = 0;
 
                         aCaretInfo.Height = TopRect.Bottom - TopRect.Top;
-                        aCaretInfo.X = TopRect.Left + OwnerData.Style.DefCanvas.TextWidth(TopText.Substring(0, FCaretOffset));
+                        aCaretInfo.X = TopRect.Left + OwnerData.Style.TempCanvas.TextWidth(TopText.Substring(0, FCaretOffset));
                         aCaretInfo.Y = TopRect.Top;
                         break;
                 
@@ -331,7 +331,7 @@ namespace HC.View
                             FCaretOffset = 0;
 
                         aCaretInfo.Height = FRightRect.Bottom - FRightRect.Top;
-                        aCaretInfo.X = FRightRect.Left + OwnerData.Style.DefCanvas.TextWidth(FRightText.Substring(0, FCaretOffset));
+                        aCaretInfo.X = FRightRect.Left + OwnerData.Style.TempCanvas.TextWidth(FRightText.Substring(0, FCaretOffset));
                         aCaretInfo.Y = FRightRect.Top;
                         break;
 
@@ -340,13 +340,28 @@ namespace HC.View
                             FCaretOffset = 0;
 
                         aCaretInfo.Height = BottomRect.Bottom - BottomRect.Top;
-                        aCaretInfo.X = BottomRect.Left + OwnerData.Style.DefCanvas.TextWidth(BottomText.Substring(0, FCaretOffset));
+                        aCaretInfo.X = BottomRect.Left + OwnerData.Style.TempCanvas.TextWidth(BottomText.Substring(0, FCaretOffset));
                         aCaretInfo.Y = BottomRect.Top;
                         break;
                 }
             }
             else
                 aCaretInfo.Visible = false;
+        }
+
+        public HCExpressItem(HCCustomData aOwnerData, string aLeftText, string aTopText, string aRightText, string aBottomText)
+            : base(aOwnerData, aTopText, aBottomText)
+        {
+            this.StyleNo = HCStyle.Express;
+            FLeftText = aLeftText;
+            FRightText = aRightText;
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FLeftText = (source as HCExpressItem).LeftText;
+            FRightText = (source as HCExpressItem).RightText;
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
@@ -363,13 +378,6 @@ namespace HC.View
             HC.HCLoadTextFromStream(aStream, ref FRightText);
         }
 
-        public override void ParseXml(System.Xml.XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FLeftText = aNode.Attributes["lefttext"].Value;
-            FRightText = aNode.Attributes["righttext"].Value;
-        }
-
         public override void ToXml(System.Xml.XmlElement aNode)
         {
             base.ToXml(aNode);
@@ -377,19 +385,11 @@ namespace HC.View
             aNode.Attributes["righttext"].Value = FRightText;
         }
 
-        public HCExpressItem(HCCustomData aOwnerData, string aLeftText, string aTopText, string aRightText, string aBottomText)
-            : base(aOwnerData, aTopText, aBottomText)
+        public override void ParseXml(System.Xml.XmlElement aNode)
         {
-            this.StyleNo = HCStyle.Express;
-            FLeftText = aLeftText;
-            FRightText = aRightText;
-        }
-
-        public override void Assign(HCCustomItem source)
-        {
-            base.Assign(source);
-            FLeftText = (source as HCExpressItem).LeftText;
-            FRightText = (source as HCExpressItem).RightText;
+            base.ParseXml(aNode);
+            FLeftText = aNode.Attributes["lefttext"].Value;
+            FRightText = aNode.Attributes["righttext"].Value;
         }
 
         public RECT LeftRect

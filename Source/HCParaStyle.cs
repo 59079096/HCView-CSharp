@@ -45,10 +45,13 @@ namespace HC.View
     public class HCParaStyle : HCObject
     {
         private ParaLineSpaceMode FLineSpaceMode;
+
+        // 单位像素
         private int FFirstIndentPix,// 首行缩进
                     FLeftIndentPix,  // 左缩进
                     FRightIndentPix;  // 右缩进
 
+        // 单位毫米
         private Single FFirstIndent,// 首行缩进
                        FLeftIndent,  // 左缩进
                        FRightIndent;  // 右缩进
@@ -56,6 +59,33 @@ namespace HC.View
         private Color FBackColor;
         private ParaAlignHorz FAlignHorz;
         private ParaAlignVert FAlignVert;
+
+protected void SetFirstIndent(Single value)
+        {
+            if (FFirstIndent != value)
+            {
+                FFirstIndent = value;
+                FFirstIndentPix = HCUnitConversion.MillimeterToPixX(FFirstIndent);
+            }
+        }
+
+        protected void SetLeftIndent(Single value)
+        {
+            if (FLeftIndent != value)
+            {
+                FLeftIndent = value;
+                FLeftIndentPix = HCUnitConversion.MillimeterToPixX(FLeftIndent);
+            }
+        }
+
+        protected void SetRightIndent(Single value)
+        {
+            if (FRightIndent != value)
+            {
+                FRightIndent = value;
+                FRightIndentPix = HCUnitConversion.MillimeterToPixX(FRightIndent);
+            }
+        }
 
         public bool CheckSaveUsed;
         public int TempNo;
@@ -282,33 +312,6 @@ namespace HC.View
 
                 default:
                     return "bottom";
-            }
-        }
-
-        protected void SetFirstIndent(Single value)
-        {
-            if (FFirstIndent != value)
-            {
-                FFirstIndent = value;
-                FFirstIndentPix = HCUnitConversion.MillimeterToPixX(FFirstIndent);
-            }
-        }
-
-        protected void SetLeftIndent(Single value)
-        {
-            if (FLeftIndent != value)
-            {
-                FLeftIndent = value;
-                FLeftIndentPix = HCUnitConversion.MillimeterToPixX(FLeftIndent);
-            }
-        }
-
-        protected void SetRightIndent(Single value)
-        {
-            if (FRightIndent != value)
-            {
-                FRightIndent = value;
-                FRightIndentPix = HCUnitConversion.MillimeterToPixX(FRightIndent);
             }
         }
 

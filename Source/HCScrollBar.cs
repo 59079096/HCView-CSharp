@@ -36,7 +36,7 @@ namespace HC.View
 
     public delegate void ScrollEventHandler(object Sender, ScrollCode ScrollCode, int ScrollPos);
 
-    public class HCScrollBar : UserControl
+    public class HCScrollBar : Control
     {
         public const int ButtonSize = 20;
         private static Color LineColor = HC.clMedGray;
@@ -143,14 +143,10 @@ namespace HC.View
             {
                 FOrientation = Value;
                 if (Value == View.Orientation.oriHorizontal)
-                {
                     Height = 20;  // 赋值水平滚动条的高度为 20
-                }
                 else
                 if (Value == View.Orientation.oriVertical)
-                {
                     Width = 20;
-                }
 
                 ReCalcButtonRect();
                 ReCalcThumRect();
@@ -170,6 +166,7 @@ namespace HC.View
                     FMin = FMax;
                 else
                     FMin = Value;
+
                 if (FPosition < FMin)
                     FPosition = FMin;
                 
@@ -223,6 +220,7 @@ namespace HC.View
                 ReCalcThumRect();  // 滑块区域
                 //Repaint;
                 UpdateRangRect();  // 重绘
+
                 if (FOnScroll != null)
                     FOnScroll(this, ScrollCode.scPosition, FPosition);
             }
@@ -257,9 +255,12 @@ namespace HC.View
         {
             if (IsHandleCreated)
             {
+                //this.Invalidate(this.ClientRectangle);
+                //this.Update();
+
                 RECT vRect = new RECT(0, 0, Width, Height);
                 User.InvalidateRect(this.Handle, ref vRect, 0);
-                User.UpdateWindow(Handle);
+                //User.UpdateWindow(Handle);
             }
         }
 
@@ -293,6 +294,7 @@ namespace HC.View
                     vPos = FPosition - FBtnStep;
                     if (vPos < FMin)
                         vPos = FMin;
+
                     if (FPosition != vPos)
                         Position = vPos;
                     break;
@@ -301,6 +303,7 @@ namespace HC.View
                     vPos = FPosition + FBtnStep;
                     if (vPos > FRange - FPageSize)
                         vPos = FRange - FPageSize;
+
                     if (FPosition != vPos)
                         Position = vPos;
                     break;
@@ -309,6 +312,7 @@ namespace HC.View
                     vPos = FPosition - FPageSize;
                     if (vPos < FMin)
                         vPos = FMin;
+
                     if (FPosition != vPos)
                         Position = vPos;
                     break;
@@ -317,6 +321,7 @@ namespace HC.View
                     vPos = FPosition + FPageSize;
                     if (vPos > FRange - FPageSize)
                         vPos = FRange - FPageSize;
+
                     if (FPosition != vPos)
                         Position = vPos;
                     break;
@@ -337,9 +342,10 @@ namespace HC.View
             //
             Width = 20;
             Height = 20;
-
+            
             FOrientation = Orientation.oriHorizontal;
             this.Cursor = Cursors.Default;
+            this.DoubleBuffered = true;
         }
 
         ~HCScrollBar()
@@ -443,10 +449,7 @@ namespace HC.View
             }
         }
 
-        protected virtual void DoDrawThumBefor(HCCanvas ACanvas, RECT AThumRect)
-        {
-
-        }
+        protected virtual void DoDrawThumBefor(HCCanvas ACanvas, RECT AThumRect) { }
 
         protected Single Percent
         {

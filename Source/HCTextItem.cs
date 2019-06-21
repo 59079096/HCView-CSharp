@@ -55,23 +55,11 @@ namespace HC.View
 
         }
 
-        public HCTextItem(string aText) : this()
+        public HCTextItem(string aText)
+            : this()  // =CreateByText
         {
             FText = aText;
             FHyperLink = "";
-        }
-
-        //public virtual HCTextItem CreateByText(string AText)
-        //{
-        //    HCTextItem vItem = new HCTextItem();
-        //    vItem.FText = AText;
-        //    return vItem;
-        //}
-
-        /// <summaryy 可接受输入 </summary>
-        public virtual bool CanAccept(int aOffset)
-        {
-            return true;
         }
 
         public override void Assign(HCCustomItem source)
@@ -90,7 +78,7 @@ namespace HC.View
             else
             {
                 Result = base.BreakByOffset(aOffset);
-                Result.Text = this.GetTextPart(aOffset + 1, Length - aOffset);
+                Result.Text = this.SubString(aOffset + 1, Length - aOffset);
                 FText = FText.Substring(0, aOffset);  // 当前Item减去光标后的字符串
             }
 
@@ -101,9 +89,9 @@ namespace HC.View
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            string vS = GetTextPart(aStart + 1, aEnd - aStart);
+            string vS = SubString(aStart + 1, aEnd - aStart);
             
-            byte[] vBuffer = System.Text.Encoding.Default.GetBytes(vS);
+            byte[] vBuffer = System.Text.Encoding.Unicode.GetBytes(vS);
             uint vDSize = (uint)vBuffer.Length;
 
             if (vDSize > HC.HC_TEXTMAXSIZE)
@@ -139,7 +127,10 @@ namespace HC.View
             {
                 byte[] vBuffer = new byte[vDSize];
                 aStream.Read(vBuffer, 0, vBuffer.Length);
-                FText = System.Text.Encoding.Default.GetString(vBuffer);
+                if (aFileVersion > 24)
+                    FText = System.Text.Encoding.Unicode.GetString(vBuffer);
+                else
+                    FText = System.Text.Encoding.Default.GetString(vBuffer);
             }
         }
 
@@ -166,7 +157,7 @@ namespace HC.View
         /// <param name="AStartOffs">复制的起始位置(大于0)</param>
         /// <param name="ALength">众起始位置起复制的长度</param>
         /// <returns>文本内容</returns>
-        public string GetTextPart(int aStartOffs, int aLength)
+        public string SubString(int aStartOffs, int aLength)
         {
             return FText.Substring(aStartOffs - 1, aLength);
         }

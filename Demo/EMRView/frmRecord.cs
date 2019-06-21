@@ -172,8 +172,8 @@ namespace EMRView
         {
             GetPagesAndActive();
 
-            CurTextStyleChange(emrView.Style.CurStyleNo);
-            CurParaStyleChange(emrView.Style.CurParaNo);
+            CurTextStyleChange(emrView.CurStyleNo);
+            CurParaStyleChange(emrView.CurParaNo);
         }
 
         private void DoVerScroll(object sender, EventArgs e)
@@ -439,9 +439,9 @@ namespace EMRView
 
         private void mniDisBorder_Click(object sender, EventArgs e)
         {
-            if (emrView.ActiveSection.ActiveData.GetCurItem() is HCTableItem)
+            if (emrView.ActiveSection.ActiveData.GetActiveItem() is HCTableItem)
             {
-                HCTableItem vTable = emrView.ActiveSection.ActiveData.GetCurItem() as HCTableItem;
+                HCTableItem vTable = emrView.ActiveSection.ActiveData.GetActiveItem() as HCTableItem;
                 vTable.BorderVisible = !vTable.BorderVisible;
                 emrView.UpdateView();
             }
@@ -458,7 +458,7 @@ namespace EMRView
         {
             HCViewData vTopData = emrView.ActiveSectionTopLevelData() as HCViewData;
             HCDomainInfo vDomain = vTopData.ActiveDomain;
-            HCViewData vPageData = emrView.ActiveSection.PageData;
+            HCViewData vPageData = emrView.ActiveSection.Page;
 
             string vText = "";
             if (vTopData == vPageData)

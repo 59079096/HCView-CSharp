@@ -37,6 +37,58 @@ namespace HC.View
                 FChecked = value;
         }
 
+        protected override string GetText()
+        {
+            return FText;
+        }
+
+        protected override void SetText(string value)
+        {
+            FText = value;
+        }
+
+        public override void MouseEnter()
+        {
+            base.MouseEnter();
+            FMouseIn = true;
+        }
+
+        public override void MouseLeave()
+        {
+            base.MouseLeave();
+            FMouseIn = false;
+        }
+
+        public override void MouseMove(MouseEventArgs e)
+        {
+            base.MouseMove(e);
+            HC.GCursor = Cursors.Arrow;
+        }
+
+        public override void MouseUp(MouseEventArgs e)
+        {
+            base.MouseUp(e);
+            if (HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
+                Checked = !FChecked;
+        }
+
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
+        {
+            if (this.AutoSize)
+            {
+                aRichData.Style.ApplyTempStyle(TextStyleNo);
+                SIZE vSize = aRichData.Style.TempCanvas.TextExtent(FText);
+                Width = FMargin + CheckBoxSize + FMargin + vSize.cx;
+                Height = Math.Max(vSize.cy, CheckBoxSize);
+            }
+
+            if (Width < FMinWidth)
+                Width = FMinWidth;
+
+            if (Height < FMinHeight)
+                Height = FMinHeight;
+        }
+
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom,
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
@@ -58,10 +110,11 @@ namespace HC.View
                 aCanvas.FillRect(aDrawRect);
             }
 
+            aCanvas.Brush.Style = HCBrushStyle.bsClear;
+
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
             aCanvas.TextOut(aDrawRect.Left + FMargin + CheckBoxSize + FMargin, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
 
-            aCanvas.Brush.Style = HCBrushStyle.bsClear;
             if (FChecked)  // 勾选
                 User.DrawFrameControl(aCanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
 
@@ -79,48 +132,6 @@ namespace HC.View
                 aCanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
             }
         }
-        //
-        public override void MouseEnter()
-        {
-            base.MouseEnter();
-            FMouseIn = true;
-        }
-
-        public override void MouseLeave()
-        {
-            base.MouseLeave();
-            FMouseIn = false;
-        }
-
-        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
-        {
-            if (this.AutoSize)
-            {
-                aRichData.Style.TextStyles[TextStyleNo].ApplyStyle(aRichData.Style.DefCanvas);
-                SIZE vSize = aRichData.Style.DefCanvas.TextExtent(FText);
-                Width = FMargin + CheckBoxSize + FMargin + vSize.cx;
-                Height = Math.Max(vSize.cy, CheckBoxSize);
-            }
-
-            if (Width < FMinWidth)
-                Width = FMinWidth;
-
-            if (Height < FMinHeight)
-                Height = FMinHeight;
-        }
-
-        public override void MouseMove(MouseEventArgs e)
-        {
-            base.MouseMove(e);
-            HC.GCursor = Cursors.Arrow;
-        }
-
-        public override void MouseUp(MouseEventArgs e)
-        {
-            base.MouseUp(e);
-            if (HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
-                Checked = !FChecked;
-        }
 
         public byte CheckBoxSize = 14;
 
@@ -132,6 +143,13 @@ namespace HC.View
             FText = aText;
             FMouseIn = false;
             FMargin = 2;
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FChecked = (source as HCCheckBoxItem).Checked;  // 勾选状态
+            FText = (source as HCCheckBoxItem).Text;
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
@@ -153,13 +171,6 @@ namespace HC.View
             HC.HCLoadTextFromStream(aStream, ref FText);
         }
 
-        public override void ParseXml(XmlElement aNode)
-        {
-            base.ParseXml(aNode);
-            FChecked = bool.Parse(aNode.Attributes["check"].Value);
-            FText = aNode.InnerText;
-        }
-
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
@@ -167,22 +178,17 @@ namespace HC.View
             aNode.InnerText = FText;
         }
 
-        public override void Assign(HCCustomItem source)
+        public override void ParseXml(XmlElement aNode)
         {
-            base.Assign(source);
-            FChecked = (source as HCCheckBoxItem).Checked;  // 勾选状态
-            FText = (source as HCCheckBoxItem).Text;
+            base.ParseXml(aNode);
+            FChecked = bool.Parse(aNode.Attributes["check"].Value);
+            FText = aNode.InnerText;
         }
 
         public bool Checked
         {
             get { return FChecked; }
             set { SetChecked(value); }
-        }
-        public string Text
-        {
-            get { return FText; }
-            set { FText = value; }
         }
     }
 }
