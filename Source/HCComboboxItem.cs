@@ -430,12 +430,12 @@ namespace HC.View
             }
         }
 
-        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort AFileVersion)
+        public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort aFileVersion)
         {
-            base.LoadFromStream(AStream, AStyle, AFileVersion);
+            base.LoadFromStream(AStream, AStyle, aFileVersion);
             FItems.Clear();
             string vText = "";
-            HC.HCLoadTextFromStream(AStream, ref vText);
+            HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
             string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
             for (int i = 0; i < vStrings.Length; i++)
                 FItems.Add(vStrings[i]);

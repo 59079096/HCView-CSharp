@@ -347,8 +347,8 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["fscount"].Value = FTextStyles.Count.ToString();
-            aNode.Attributes["pscount"].Value = FParaStyles.Count.ToString();
+            aNode.SetAttribute("fscount", FTextStyles.Count.ToString());
+            aNode.SetAttribute("pscount", FParaStyles.Count.ToString());
 
             XmlElement vNode = aNode.OwnerDocument.CreateElement("textstyles");
             for (int i = 0; i <= FTextStyles.Count - 1; i++)

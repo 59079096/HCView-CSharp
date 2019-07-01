@@ -107,8 +107,8 @@ namespace HC.View
         private HCTableRows FRows;  // 行
         private List<int> FColWidths;  // 记录各列宽度(除边框、含FCellHPadding * 2)，方便有合并的单元格获取自己水平开始处的位置
         private List<PageBreak> FPageBreaks;  // 记录各行分页时的信息
-        private HCCellPaintEventHandle FOnCellPaintBK;
-        private HCCellPaintDataEventHandle FOnCellPaintData;
+        private HCCellPaintEventHandle FOnCellPaintBK = null;
+        private HCCellPaintDataEventHandle FOnCellPaintData = null;
 
         private void InitializeMouseInfo()
         {
@@ -3384,6 +3384,11 @@ namespace HC.View
             
             vBuffer = BitConverter.GetBytes(FColWidths.Count);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 列数
+
+            aStream.WriteByte((byte)FFixCol);
+            aStream.WriteByte(FFixRowCount);
+            aStream.WriteByte((byte)FFixRow);
+            aStream.WriteByte(FFixColCount);
             
             for (int i = 0; i <= FColWidths.Count - 1; i++)  // 各列标准宽
             {
@@ -3437,6 +3442,14 @@ namespace HC.View
             vBuffer = BitConverter.GetBytes(vColCount);
             aStream.Read(vBuffer, 0, vBuffer.Length);
             vColCount = BitConverter.ToInt32(vBuffer, 0);  // 列数
+
+            if (aFileVersion > 24)
+            {
+                FFixRow = (sbyte)aStream.ReadByte();
+                FFixRowCount = (byte)aStream.ReadByte();
+                FFixCol = (sbyte)aStream.ReadByte();
+                FFixColCount = (byte)aStream.ReadByte();
+            }
 
             // 创建行、列
             for (int i = 0; i <= vRowCount - 1; i++)

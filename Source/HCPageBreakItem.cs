@@ -28,6 +28,7 @@ namespace HC.View
         {
             StyleNo = HCStyle.PageBreak;
 
+            Width = 0;
             if (aOwnerData.CurStyleNo > HCStyle.Null)
             {
                 aOwnerData.Style.ApplyTempStyle(aOwnerData.CurStyleNo);

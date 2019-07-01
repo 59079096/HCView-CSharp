@@ -457,7 +457,7 @@ namespace HC.View
         }
 
         private void DoFormatRectItemToDrawItem(HCCustomRectItem vRectItem, int aItemNo, int aFmtLeft, int aContentWidth, int aFmtRight, int aOffset,
-            bool vParaFirst, ref POINT aPos, ref bool vLineFirst, ref int aLastDrawItemNo, ref int vRemainderWidth)
+            bool vParaFirst, ref POINT aPos, ref RECT vRect, ref bool vLineFirst, ref int aLastDrawItemNo, ref int vRemainderWidth)
         {
             vRectItem.FormatToDrawItem(this, aItemNo);
             int vWidth = aFmtRight - aPos.X;
@@ -471,7 +471,6 @@ namespace HC.View
             }
 
             // 当前行空余宽度能放下或放不下但已经是行首了
-            RECT vRect = new RECT();
             vRect.Left = aPos.X;
             vRect.Top = aPos.Y;
             vRect.Right = vRect.Left + vRectItem.Width;
@@ -704,7 +703,7 @@ namespace HC.View
             {
                 vRectItem = vItem as HCCustomRectItem;
                 DoFormatRectItemToDrawItem(vRectItem, aItemNo, aFmtLeft, aContentWidth, aFmtRight, aOffset, 
-                    vParaFirst, ref aPos, ref vLineFirst, ref aLastDrawItemNo, ref vRemainderWidth);
+                    vParaFirst, ref aPos, ref vRect, ref vLineFirst, ref aLastDrawItemNo, ref vRemainderWidth);
             }
             else  // 文本
             {
@@ -782,7 +781,6 @@ namespace HC.View
                 else  // 下一个不是段起始
                     aPos.X = vRect.Right;  // 下一个的起始坐标
             }
-
         }
 
         protected void FormatInit()

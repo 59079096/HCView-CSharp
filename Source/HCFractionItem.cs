@@ -394,8 +394,8 @@ namespace HC.View
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.HCLoadTextFromStream(aStream, ref FTopText);
-            HC.HCLoadTextFromStream(aStream, ref FBottomText);
+            HC.HCLoadTextFromStream(aStream, ref FTopText, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FBottomText, aFileVersion);
         }
 
         public override void ToXml(System.Xml.XmlElement aNode)

@@ -134,7 +134,7 @@ namespace HC.View
     /// <summary> 垂直对齐方式：上、居中、下) </summary>
     public enum HCAlignVert : byte
     {
-        cavTop, cavCenter, cavBottom
+        cavTop = 0, cavCenter = 1, cavBottom = 2
     }
 
     public class HCTableCell : HCObject

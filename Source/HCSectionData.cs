@@ -26,6 +26,7 @@ namespace HC.View
     {
         private EventHandler FOnReadOnlySwitch;
         private GetScreenCoordEventHandler FOnGetScreenCoord;
+
         private List<HCCustomFloatItem> FFloatItems;  // THCItems支持Add时控制暂时不用
         int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex, FMouseX, FMouseY;
 
@@ -312,6 +313,7 @@ namespace HC.View
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
+
             if (aFileVersion > 12)
             {
                 int vFloatCount = 0;
@@ -620,13 +622,6 @@ namespace HC.View
         {
             HCPageBreakItem vPageBreak = new HCPageBreakItem(this);
             vPageBreak.ParaFirst = true;
-            // 第一个Item分到下一页后，前一页没有任何Item，对编辑有诸多不利，所以在前一页补充一个空Item
-            if ((SelectInfo.StartItemNo == 0) && (SelectInfo.StartItemOffset == 0))
-            {
-                KeyEventArgs vKeyArgs = new KeyEventArgs(Keys.Return);
-                KeyDown(vKeyArgs);
-            }
-
             return this.InsertItem(vPageBreak);
         }
 

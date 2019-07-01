@@ -303,7 +303,7 @@ namespace HC.View
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.HCLoadTextFromStream(aStream, ref FText);
+            HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
             
             byte[] vBuffer = BitConverter.GetBytes(FReadOnly);
             aStream.Read(vBuffer, 0, vBuffer.Length);

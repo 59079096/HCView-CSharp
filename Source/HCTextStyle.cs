@@ -189,7 +189,6 @@ namespace HC.View
         public void LoadFromStream(Stream aStream, ushort aFileVersion)
         {
             int vOldSize = 10;
-            ushort vSize = 10;
             if (aFileVersion < 12)
             {
                 byte[] vBuffer1 = BitConverter.GetBytes(vOldSize);
@@ -204,7 +203,7 @@ namespace HC.View
                 FSize = BitConverter.ToSingle(vBuffer1, 0);  // 字号
             }
 
-            HC.HCLoadTextFromStream(aStream, ref FFamily); // 字体
+            HC.HCLoadTextFromStream(aStream, ref FFamily, aFileVersion); // 字体
 
             FFontStyles.Value = (byte)aStream.ReadByte();  // load FFontStyles
 

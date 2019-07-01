@@ -540,6 +540,10 @@ namespace HC.View
 
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
             GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+
+            if (Items[aStartNo].ParaFirst && (vFormatFirstDrawItemNo > 0))
+                vFormatFirstDrawItemNo--;
+
             FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
             int vDelCount = aEndNo - aStartNo + 1;
@@ -550,6 +554,14 @@ namespace HC.View
                 Items.Delete(i);
             }
 
+            if (Items.Count == 0)  // 删除没有了，不用SetEmptyData，因为其无Undo
+            {
+                HCCustomItem vItem = CreateDefaultTextItem();
+                vItem.ParaFirst = true;
+                Items.Add(vItem);
+                UndoAction_InsertItem(0, 0);
+            }
+
             ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
@@ -557,17 +569,7 @@ namespace HC.View
             if (aStartNo > 0)
                 ReSetSelectAndCaret(aStartNo - 1);
             else  // 从第一个开始删除
-            {
-                if (Items.Count == 0)
-                {
-                    HCCustomItem vItem = CreateDefaultTextItem();
-                    vItem.ParaFirst = true;
-                    Items.Add(vItem);
-                    UndoAction_InsertItem(0, 0);
-                }
-
                 ReSetSelectAndCaret(0);
-            }
         }
 
         protected int MouseMoveDrawItemNo
@@ -1786,7 +1788,7 @@ namespace HC.View
 
             aItem.ParaNo = CurParaNo;
 
-            if (IsEmptyData())
+            if (IsEmptyData() && (!aItem.ParaFirst))
             {
                 Undo_New();
                 Result = EmptyDataInsertItem(aItem);
@@ -1900,7 +1902,7 @@ namespace HC.View
 
             aItem.ParaNo = CurParaNo;
 
-            if (IsEmptyData())
+            if (IsEmptyData() && (!aItem.ParaFirst))
             {
                 Undo_New();
                 return EmptyDataInsertItem(aItem);
@@ -3639,9 +3641,14 @@ namespace HC.View
                                 else  // 不是段首
                                 {
                                     SelectInfo.StartItemOffset = HC.OffsetBefor;
-                                    Key = User.VK_DELETE;  // 临时替换
-                                    RectItemKeyDown(vSelectExist, ref vCurItem, e);
-                                    Key = User.VK_BACK;  // 还原
+                                    Keys vKeys = Keys.Delete;
+                                    if (e.Shift)
+                                        vKeys |= Keys.Shift;
+
+                                    if (e.Alt)
+                                        vKeys |= Keys.Alt;
+                                    KeyEventArgs vArgs = new KeyEventArgs(vKeys);
+                                    RectItemKeyDown(vSelectExist, ref vCurItem, vArgs);
                                 }
                                 break;
 

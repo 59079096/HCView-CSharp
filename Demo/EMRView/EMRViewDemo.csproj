@@ -46,18 +46,88 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DeGroup.cs" />
     <Compile Include="emrCommon.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="emrDB.cs" />
-    <Compile Include="emrEdit.cs">
+    <Compile Include="frmItemContent.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmItemContent.Designer.cs">
+      <DependentUpon>frmItemContent.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmTemplateInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmTemplateInfo.Designer.cs">
+      <DependentUpon>frmTemplateInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="HCEmrEdit.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="emrElementItem.cs" />
-    <Compile Include="emrFangJiaoItem.cs" />
-    <Compile Include="EmrView.cs">
+    <Compile Include="HCEmrElementItem.cs" />
+    <Compile Include="HCEmrFangJiaoItem.cs" />
+    <Compile Include="HCEmrGroupItem.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="HCEmrToothItem.cs" />
+    <Compile Include="frmTableBorderBackColor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmTableBorderBackColor.Designer.cs">
+      <DependentUpon>frmTableBorderBackColor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmTemplateList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmTemplateList.Designer.cs">
+      <DependentUpon>frmTemplateList.cs</DependentUpon>
+    </Compile>
+    <Compile Include="HCEmrView.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="HCEmrYueJingItem.cs" />
+    <Compile Include="frmDataElement.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDataElement.Designer.cs">
+      <DependentUpon>frmDataElement.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmDeControlProperty.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDeControlProperty.Designer.cs">
+      <DependentUpon>frmDeControlProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmDeProperty.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDeProperty.Designer.cs">
+      <DependentUpon>frmDeProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmDeTableProperty.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDeTableProperty.Designer.cs">
+      <DependentUpon>frmDeTableProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmInsertTable.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmInsertTable.Designer.cs">
+      <DependentUpon>frmInsertTable.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmPageSet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmPageSet.Designer.cs">
+      <DependentUpon>frmPageSet.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmParagraph.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmParagraph.Designer.cs">
+      <DependentUpon>frmParagraph.cs</DependentUpon>
     </Compile>
     <Compile Include="frmPatientRecord.cs">
       <SubType>Form</SubType>
@@ -65,11 +135,11 @@
     <Compile Include="frmPatientRecord.Designer.cs">
       <DependentUpon>frmPatientRecord.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmMain.cs">
+    <Compile Include="frmDoctorStation.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmMain.Designer.cs">
-      <DependentUpon>frmMain.cs</DependentUpon>
+    <Compile Include="frmDoctorStation.Designer.cs">
+      <DependentUpon>frmDoctorStation.cs</DependentUpon>
     </Compile>
     <Compile Include="frmRecord.cs">
       <SubType>Form</SubType>
@@ -91,8 +161,32 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="frmMain.resx">
-      <DependentUpon>frmMain.cs</DependentUpon>
+    <EmbeddedResource Include="frmDataElement.resx">
+      <DependentUpon>frmDataElement.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDeControlProperty.resx">
+      <DependentUpon>frmDeControlProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDeProperty.resx">
+      <DependentUpon>frmDeProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDeTableProperty.resx">
+      <DependentUpon>frmDeTableProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmInsertTable.resx">
+      <DependentUpon>frmInsertTable.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDoctorStation.resx">
+      <DependentUpon>frmDoctorStation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmItemContent.resx">
+      <DependentUpon>frmItemContent.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmPageSet.resx">
+      <DependentUpon>frmPageSet.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmParagraph.resx">
+      <DependentUpon>frmParagraph.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmPatientRecord.resx">
       <DependentUpon>frmPatientRecord.cs</DependentUpon>
@@ -100,8 +194,20 @@
     <EmbeddedResource Include="frmRecord.resx">
       <DependentUpon>frmRecord.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="frmRecordPop.resx">
+      <DependentUpon>frmRecordPop.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmTableBorderBackColor.resx">
+      <DependentUpon>frmTableBorderBackColor.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmTemplate.resx">
       <DependentUpon>frmTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmTemplateInfo.resx">
+      <DependentUpon>frmTemplateInfo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmTemplateList.resx">
+      <DependentUpon>frmTemplateList.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -191,6 +297,24 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\00014.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\单元格上边框.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\单元格下边框.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\单元格斜线1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\单元格斜线2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\单元格右边框.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\单元格左边框.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

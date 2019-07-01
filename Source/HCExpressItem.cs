@@ -374,8 +374,8 @@ namespace HC.View
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.HCLoadTextFromStream(aStream, ref FLeftText);
-            HC.HCLoadTextFromStream(aStream, ref FRightText);
+            HC.HCLoadTextFromStream(aStream, ref FLeftText, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FRightText, aFileVersion);
         }
 
         public override void ToXml(System.Xml.XmlElement aNode)
@@ -395,11 +395,13 @@ namespace HC.View
         public RECT LeftRect
         {
             get { return FLeftRect; }
+            set { FLeftRect = value; }
         }
 
         public RECT RightRect
         {
             get { return FRightRect; }
+            set { FRightRect = value; }
         }
 
         public string LeftText

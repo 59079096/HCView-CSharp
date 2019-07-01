@@ -30,6 +30,11 @@ namespace HC.View
         public int Tag;
         public bool Stop;
         public TraverseItemEventHandle Process;
+
+        public HCItemTraverse()
+        {
+            Areas = new HashSet<SectionArea>();
+        }
     }
 
     public class SelectInfo : object
@@ -687,10 +692,12 @@ namespace HC.View
 
         public virtual HCCustomItem CreateDefaultDomainItem()
         {
+            Type[] vTypes = new Type[1];
+            vTypes[0] = this.GetType();
             object[] vobj = new object[1];
             vobj[0] = this;
             Type t = HCDomainItem.HCDefaultDomainItemClass;
-            HCCustomItem Result = t.GetConstructor(null).Invoke(vobj) as HCCustomItem;
+            HCCustomItem Result = t.GetConstructor(vTypes).Invoke(vobj) as HCCustomItem;
             Result.ParaNo = FCurParaNo;
             return Result;
         }
@@ -2018,7 +2025,7 @@ namespace HC.View
                     vDrawRect.Offset(aDataDrawLeft, vVOffset);  // 偏移到指定的画布绘制位置(SectionData时为页数据在格式化中可显示起始位置)
 
                     if (FDrawItems[i].LineFirst)
-                        vLineSpace = 20;// GetLineBlankSpace(i);
+                        vLineSpace = GetLineBlankSpace(i);
 
                     // 绘制内容前
                     DrawItemPaintBefor(this, i, vDrawRect, aDataDrawLeft, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
@@ -2269,7 +2276,6 @@ namespace HC.View
             if (GetDrawItemStyle(aDrawNo) >= HCStyle.Null)
             {
                 HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
-
                 try
                 {
                     Result = (int)CalculateLineHeight(vCanvas, 

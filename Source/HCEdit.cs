@@ -24,10 +24,9 @@ namespace HC.View
         private uint FUpdateCount;
         private bool FChanged;
         private EventHandler FOnChange;
-        private EventHandler FOnCaretChange;
-        private MouseEventHandler FOnMouseDown;
-        private StyleItemEventHandler FOnCreateStyleItem;
-        private DataItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
+        private EventHandler FOnCaretChange = null;
+        private StyleItemEventHandler FOnCreateStyleItem = null;
+        private DataItemNotifyEventHandler FOnInsertItem = null, FOnRemoveItem = null;
 
         private int GetViewWidth()
         {
@@ -449,6 +448,7 @@ namespace HC.View
                     return;
 
                 case User.WM_SETFOCUS:
+                case User.WM_NCPAINT:
                     base.WndProc(ref Message);
                     FStyle.UpdateInfoReCaret(false);
                     FStyle.UpdateInfoRePaint();

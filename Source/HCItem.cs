@@ -253,7 +253,7 @@ namespace HC.View
         {
             this.FStyleNo = source.StyleNo;
             this.FParaNo = source.ParaNo;
-            this.FOptions = source.Options;
+            this.FOptions = new HashSet<ItemOption>(source.Options);
         }
 
         /// <summary>

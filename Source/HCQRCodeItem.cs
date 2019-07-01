@@ -10,11 +10,9 @@
 {*******************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using HC.Win32;
 using System.IO;
+using System.Drawing;
 
 namespace HC.View
 {
@@ -36,6 +34,12 @@ namespace HC.View
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom,
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
+
+            using (Image vBitmap = SharpZXingQRCode.Create(FText, Width, Height))
+            {
+                if (vBitmap != null)
+                    aCanvas.StretchDraw(aDrawRect, vBitmap);
+            }
             // 绘制二维码
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
                 aCanvas, aPaintInfo);
@@ -63,7 +67,7 @@ namespace HC.View
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.HCLoadTextFromStream(aStream, ref FText);
+            HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
         }
 
         public override void ToXml(System.Xml.XmlElement aNode)

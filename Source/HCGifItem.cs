@@ -20,7 +20,7 @@ using System.IO;
 
 namespace HC.View
 {
-    class HCGifItem : HCAnimateRectItem
+    public class HCGifItem : HCAnimateRectItem
     {
         private RECT FDrawRect;
         private Image FGifImage;

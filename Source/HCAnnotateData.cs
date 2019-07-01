@@ -88,8 +88,8 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FID = BitConverter.ToInt32(vBuffer, 0);
 
-            HC.HCLoadTextFromStream(aStream, ref FTitle);
-            HC.HCLoadTextFromStream(aStream, ref FText);
+            HC.HCLoadTextFromStream(aStream, ref FTitle, aFileVersion);
+            HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
         }
 
         public int ID

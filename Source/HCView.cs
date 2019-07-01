@@ -70,7 +70,7 @@ namespace HC.View
 
             if (PageSettings.PaperSize.Kind == PaperKind.Custom)  // 自定义纸张
             {
-                if (FSections[ASectionIndex].PageOrientation == PageOrientation.cpoPortrait)
+                if (FSections[ASectionIndex].PaperOrientation == PaperOrientation.cpoPortrait)
                 {
                     PageSettings.Landscape = false;
                     PageSettings.PaperSize.Height = (int)Math.Round(FSections[ASectionIndex].PaperHeight * 10); //纸长
@@ -370,8 +370,19 @@ namespace HC.View
         private void DoSectionPaintPaperAfter(object sender, int aPageIndex,
             RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            if (FAnnotatePre.Count > 0)  // 当前页有批注，绘制批注
+            if (FAnnotatePre.Visible)  // 当前页有批注，绘制批注
                 FAnnotatePre.PaintDrawAnnotate(sender, aRect, aCanvas, aPaintInfo);
+
+            // HCView广告信息，如介意可以删掉
+            if ((FViewModel == HCViewModel.hvmFilm) && ((sender as HCSection).PagePadding > 10))
+            {
+                aCanvas.Brush.Style = HCBrushStyle.bsClear;
+                aCanvas.Font.Size = 10;
+                aCanvas.Font.Family = "宋体";
+                aCanvas.Font.Color = Color.Black;
+
+                aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供 QQ群：649023932");
+            }
 
             if (FOnSectionPaintPaperAfter != null)
                 FOnSectionPaintPaperAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
@@ -818,13 +829,13 @@ namespace HC.View
                 FOnChange(this, null);
         }
 
-        protected void DoSectionCreateItem(Object sender, EventArgs e)
+        protected virtual void DoSectionCreateItem(Object sender, EventArgs e)
         {
             if (FOnSectionCreateItem != null)
                 FOnSectionCreateItem(this, null);
         }
 
-        protected HCCustomItem DoSectionCreateStyleItem(HCCustomData AData, int AStyleNo)
+        protected virtual HCCustomItem DoSectionCreateStyleItem(HCCustomData AData, int AStyleNo)
         {
             if (FOnSectionCreateStyleItem != null)
                 return FOnSectionCreateStyleItem(AData, AStyleNo);
@@ -832,19 +843,19 @@ namespace HC.View
                 return null;
         }
 
-        protected void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        protected virtual void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnSectionInsertItem != null)
                 FOnSectionInsertItem(sender, aData, aItem);
         }
 
-        protected void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        protected virtual void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnSectionRemoveItem != null)
                 FOnSectionRemoveItem(sender, aData, aItem);
         }
 
-        protected bool DoSectionCanEdit(object sender)
+        protected virtual bool DoSectionCanEdit(object sender)
         {
             if (FOnSectionCanEdit != null)
                 return FOnSectionCanEdit(sender);
@@ -899,6 +910,7 @@ namespace HC.View
             GetSectionByCrood(ZoomOut(FHScrollBar.Position + e.X), ZoomOut(FVScrollBar.Position + e.Y), ref vSectionIndex);
             if (vSectionIndex != FActiveSectionIndex)
                 SetActiveSectionIndex(vSectionIndex);
+
             if (FActiveSectionIndex < 0)
                 return;
 
@@ -1049,11 +1061,12 @@ namespace HC.View
                     return;
 
                 case User.WM_SETFOCUS:
-                    base.WndProc(ref Message);
+                case User.WM_NCPAINT:
                     FStyle.UpdateInfoReCaret(false);
                     FStyle.UpdateInfoRePaint();
                     //FStyle.UpdateInfoReScroll();
                     CheckUpdateInfo();
+                    base.WndProc(ref Message);
                     return;
 
                 case User.WM_KILLFOCUS:
@@ -1159,7 +1172,7 @@ namespace HC.View
                 }
             }
 
-            if (FAnnotatePre.Count > 0)
+            if (FAnnotatePre.Visible)
                 vHMax = vHMax + HC.AnnotationWidth;
 
             vVMax = ZoomIn(vVMax + FPagePadding);  // 补充最后一页后面的PagePadding
@@ -1847,10 +1860,10 @@ namespace HC.View
                 {
                     string vFileFormat = "";
                     ushort vFileVersion = 0;
-                    byte vLan = 0;
+                    byte vLang = 0;
 
                     vStream.Position = 0;
-                    HC._LoadFileFormatAndVersion(vStream, ref vFileFormat, ref vFileVersion, ref vLan);  // 文件格式和版本
+                    HC._LoadFileFormatAndVersion(vStream, ref vFileFormat, ref vFileVersion, ref vLang);  // 文件格式和版本
                     DoPasteDataBefor(vStream, vFileVersion);
                     HCStyle vStyle = new HCStyle();
                     try
@@ -2376,13 +2389,22 @@ namespace HC.View
         }
 
         /// <summary> 文档保存到流 </summary>
-        public virtual void SaveToStream(Stream aStream, bool aQuick, HashSet<SectionArea> aAreas)
+        public virtual void SaveToStream(Stream aStream, bool aQuick = false, HashSet<SectionArea> aAreas = null)
         {
             HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
             DoSaveStreamBefor(aStream);
 
+            HashSet<SectionArea> vArea = aAreas;
+            if (vArea == null)
+            {
+                vArea = new HashSet<SectionArea>();
+                vArea.Add(SectionArea.saHeader);
+                vArea.Add(SectionArea.saFooter);
+                vArea.Add(SectionArea.saPage);
+            }
+
             if (!aQuick)
-                DeleteUnUsedStyle(FStyle, FSections, aAreas);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
+                DeleteUnUsedStyle(FStyle, FSections, vArea);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
 
             FStyle.SaveToStream(aStream);
             // 节数量
@@ -2390,7 +2412,7 @@ namespace HC.View
             aStream.WriteByte(vByte);
             // 各节数据
             for (int i = 0; i <= Sections.Count - 1; i++)
-                FSections[i].SaveToStream(aStream, aAreas);
+                FSections[i].SaveToStream(aStream, vArea);
             
             DoSaveStreamAfter(aStream);
         }
@@ -2572,7 +2594,7 @@ namespace HC.View
                 if (vPageCount + FSections[i].PageCount > APageIndex)
                 {
                     Result = i;  // 找到节序号
-                    ASectionPageIndex = APageIndex - vPageCount;  // FSections[i].PageCount;
+                    ASectionPageIndex = APageIndex - vPageCount;
                     break;
                 }
                 else
@@ -2615,15 +2637,15 @@ namespace HC.View
         }
 
         /// <summary> 使用指定的打印机打印指定页 </summary>
-        /// <param name="APrinter">指定打印机</param>
-        /// <param name="ACopies">打印份数</param>
-        /// <param name="APages">要打印的页序号数组</param>
+        /// <param name="aPrinter">指定打印机</param>
+        /// <param name="aCopies">打印份数</param>
+        /// <param name="aPages">要打印的页序号数组</param>
         /// <returns>打印结果</returns>
-        public PrintResult Print(string APrinter, short ACopies, int[] APages)
+        public PrintResult Print(string aPrinter, short aCopies, int[] aPages)
         {          
             PrintDocument vPrinter = new PrintDocument();
-            if (APrinter != "")
-                vPrinter.PrinterSettings.PrinterName = APrinter;
+            if (aPrinter != "")
+                vPrinter.PrinterSettings.PrinterName = aPrinter;
             
             if (!vPrinter.PrinterSettings.IsValid)
                 return PrintResult.prError;
@@ -2633,7 +2655,7 @@ namespace HC.View
             int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
             int vPrintOffsetY = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginY;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);  // 37
             
-            vPrinter.PrinterSettings.Copies = ACopies;
+            vPrinter.PrinterSettings.Copies = aCopies;
 
             SectionPaintInfo vPaintInfo = new SectionPaintInfo();
             try
@@ -2643,7 +2665,7 @@ namespace HC.View
                 HCCanvas vPrintCanvas = new HCCanvas();
                 int vFirstPageIndex = 0, vSectionIndex = 0, vPrintWidth = 0, vPrintHeight = 0, vPrintPageIndex = 0, i = 0;
 
-                vPrintPageIndex = APages[i];
+                vPrintPageIndex = aPages[i];
 
                 vPrinter.PrintPage += (sender, e) =>
                 {
@@ -2651,7 +2673,7 @@ namespace HC.View
                         vPrintCanvas.Graphics = e.Graphics;
             
                     // 根据页码获取起始节和结束节
-                    vSectionIndex = GetSectionPageIndexByPageIndex(APages[vPrintPageIndex], ref vFirstPageIndex);
+                    vSectionIndex = GetSectionPageIndexByPageIndex(aPages[vPrintPageIndex], ref vFirstPageIndex);
                     if (vPaintInfo.SectionIndex != vSectionIndex)
                     {
                         vPaintInfo.SectionIndex = vSectionIndex;
@@ -2684,9 +2706,9 @@ namespace HC.View
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
                     {
-                        vPaintInfo.PageIndex = APages[i];
+                        vPaintInfo.PageIndex = aPages[i];
 
-                        FSections[vSectionIndex].PaintPaper(APages[i] - vFirstPageIndex, 
+                        FSections[vSectionIndex].PaintPaper(vFirstPageIndex, 
                             vPrintOffsetX, vPrintOffsetY, vPrintCanvas, vPaintInfo);
                     }
                     finally
@@ -2694,10 +2716,10 @@ namespace HC.View
                         vPaintInfo.RestoreCanvasScale(vPrintCanvas, vScaleInfo);
                     }
 
-                    if (i < APages.Length - 1)
+                    if (i < aPages.Length - 1)
                     {
                         i++;
-                        vPrintPageIndex = APages[i];
+                        vPrintPageIndex = aPages[i];
                         e.HasMorePages = true;
                     }
                     else
@@ -2730,38 +2752,39 @@ namespace HC.View
             try
             {
                 vPaintInfo.Print = true;
-                vPaintInfo.SectionIndex = this.ActiveSectionIndex;
-                vPaintInfo.PageIndex = this.ActiveSection.ActivePageIndex;
-
-                SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, FActiveSectionIndex);
-
-                int vPrintWidth = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Width;  //  GetDeviceCaps(Printer.Handle, PHYSICALWIDTH);
-                int vPrintHeight = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Height;  // GetDeviceCaps(Printer.Handle, PHYSICALHEIGHT);
-
-                if (this.ActiveSection.Page.DataAnnotates.Count > 0)
-                {
-                    vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
-                    vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
-                    vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
-                }
-                else
-                {
-                    vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                    vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                    vPaintInfo.Zoom = 1;
-                }
-                    
-                vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
-                vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
-
-                vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
-                vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
 
                 HCCanvas vPrintCanvas = new HCCanvas();
 
                 vPrinter.PrintPage += (sender, e) =>
                 {
                     vPrintCanvas.Graphics = e.Graphics;
+
+                    vPaintInfo.SectionIndex = this.ActiveSectionIndex;
+                    vPaintInfo.PageIndex = this.ActiveSection.ActivePageIndex;
+
+                    SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, FActiveSectionIndex);
+
+                    int vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);
+                    int vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);
+
+                    if (this.ActiveSection.Page.DataAnnotates.Count > 0)
+                    {
+                        vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                        vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                        vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                    }
+                    else
+                    {
+                        vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                        vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                        vPaintInfo.Zoom = 1;
+                    }
+
+                    vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
+                    vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
+
+                    vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
+                    vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
 
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
@@ -2842,38 +2865,39 @@ namespace HC.View
             try
             {
                 vPaintInfo.Print = true;
-                vPaintInfo.SectionIndex = this.ActiveSectionIndex;
-                vPaintInfo.PageIndex = this.ActiveSection.ActivePageIndex;
-
-                SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, FActiveSectionIndex);
-
-                int vPrintWidth = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Width;  //  GetDeviceCaps(Printer.Handle, PHYSICALWIDTH);
-                int vPrintHeight = vPrinter.PrinterSettings.DefaultPageSettings.Bounds.Height;  // GetDeviceCaps(Printer.Handle, PHYSICALHEIGHT);
-
-                if (this.ActiveSection.Page.DataAnnotates.Count > 0)
-                {
-                    vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
-                    vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
-                    vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
-                }
-                else
-                {
-                    vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                    vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                    vPaintInfo.Zoom = 1;
-                }
-                
-                vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
-                vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
-
-                vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
-                vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
 
                 HCCanvas vPrintCanvas = new HCCanvas();
 
                 vPrinter.PrintPage += (sender, e) =>
                 {
                     vPrintCanvas.Graphics = e.Graphics;
+
+                    vPaintInfo.SectionIndex = this.ActiveSectionIndex;
+                    vPaintInfo.PageIndex = this.ActiveSection.ActivePageIndex;
+
+                    SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, FActiveSectionIndex);
+
+                    int vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);
+                    int vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);
+
+                    if (this.ActiveSection.Page.DataAnnotates.Count > 0)
+                    {
+                        vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                        vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                        vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
+                    }
+                    else
+                    {
+                        vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                        vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                        vPaintInfo.Zoom = 1;
+                    }
+
+                    vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
+                    vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
+
+                    vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
+                    vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
 
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
@@ -3583,9 +3607,9 @@ namespace HC.View
                             vText = vDrawAnnotate.DataAnnotate.Title + ":" + vDrawAnnotate.DataAnnotate.Text;
 
                         vDrawAnnotate.Rect = new RECT(0, 0, HC.AnnotationWidth - 30, 0);
-                        DRAWTEXTPARAMS lpDrawTextParams = new DRAWTEXTPARAMS();
+
                         User.DrawTextEx(aCanvas.Handle, vText, -1, ref vDrawAnnotate.Rect,
-                            User.DT_TOP | User.DT_LEFT | User.DT_WORDBREAK | User.DT_CALCRECT, ref lpDrawTextParams);  // 计算区域
+                            User.DT_TOP | User.DT_LEFT | User.DT_WORDBREAK | User.DT_CALCRECT, IntPtr.Zero);  // 计算区域
                         if (vDrawAnnotate.Rect.Right < HC.AnnotationWidth - 30)
                             vDrawAnnotate.Rect.Right = HC.AnnotationWidth - 30;
 
@@ -3642,10 +3666,10 @@ namespace HC.View
                         vDrawAnnotate = FDrawAnnotates[i];
                         if (vDrawAnnotate is HCDrawAnnotateDynamic)
                         {
-                            vText = (vDrawAnnotate as HCDrawAnnotateDynamic).Text + ":" + (vDrawAnnotate as HCDrawAnnotateDynamic).Text;
-                            aCanvas.Pen.Style = HCPenStyle.psSolid;
+                            vText = (vDrawAnnotate as HCDrawAnnotateDynamic).Title + ":" + (vDrawAnnotate as HCDrawAnnotateDynamic).Text;
+                            aCanvas.Pen.Style = HCPenStyle.psDot;
                             aCanvas.Pen.Width = 1;
-                            aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
+                            aCanvas.Brush.Color = HC.AnnotateBKColor;
                         }
                         else
                         {
@@ -3679,9 +3703,9 @@ namespace HC.View
                         aCanvas.RoundRect(vDrawAnnotate.Rect, 5, 5);  // 填充批注区域
                         RECT vTextRect = vDrawAnnotate.Rect;
                         vTextRect.Inflate(-5, -5);
-                        DRAWTEXTPARAMS lpDrawTextParams = new DRAWTEXTPARAMS();
+
                         User.DrawTextEx(aCanvas.Handle, i.ToString() + vText, -1, ref vTextRect,
-                            User.DT_VCENTER | User.DT_LEFT | User.DT_WORDBREAK, ref lpDrawTextParams);
+                            User.DT_VCENTER | User.DT_LEFT | User.DT_WORDBREAK, IntPtr.Zero);
 
                         // 绘制指向线
                         aCanvas.Brush.Style = HCBrushStyle.bsClear;

@@ -76,7 +76,7 @@ namespace HC.View
         private HCStyle FStyle;
         private HCPages FPages;  // 所有页面
         private HCPaper FPaper;
-        private PageOrientation FPageOrientation;
+        private PaperOrientation FPaperOrientation;
         private HCHeaderData FHeader;
         private HCFooterData FFooter;
         private HCPageData FPage;
@@ -662,17 +662,6 @@ namespace HC.View
             get { return FStyle; }
         }
 
-        protected void SetPageOrientation(PageOrientation value)
-        {
-            if (FPageOrientation != value)
-            {
-                FPageOrientation = value;
-                Single vfW = FPaper.Width;
-                FPaper.Width = FPaper.Height;
-                FPaper.Height = vfW;
-            }
-        }
-
         // HCCustomSection子方法
         protected void SetDataProperty(int vWidth, HCSectionData aData)
         {
@@ -710,7 +699,7 @@ namespace HC.View
             FDisplayLastPageIndex = -1;
 
             FPaper = new HCPaper();
-            FPageOrientation = PageOrientation.cpoPortrait;
+            FPaperOrientation = PaperOrientation.cpoPortrait;
             int vWidth = GetPageWidth();
 
             FPage = new HCPageData(aStyle);
@@ -1685,7 +1674,7 @@ namespace HC.View
                 if (vPageDrawTop > 0)
                 {
                     vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
-                        Math.Max(aPaintInfo.GetScaleY(vPageDrawTop + FHeaderOffset), 0),
+                        Math.Max(aPaintInfo.GetScaleY(vPaperDrawTop + FHeaderOffset), 0),
                         aPaintInfo.GetScaleX(vPageDrawRight),
                         Math.Min(aPaintInfo.GetScaleY(vPageDrawTop), aPaintInfo.WindowHeight));
 
@@ -2100,9 +2089,9 @@ namespace HC.View
             vPageIndex++;
         }
 
-        private void _RectItemCheckPage(int ADrawItemNo, int vPageDataFmtBottom, int AStartSeat,
+        private void _RectItemCheckPage(int ADrawItemNo, int AStartSeat,
             int vPageHeight, HCCustomRectItem vRectItem, ref int vPageIndex,
-            ref int vBreakSeat, ref int vSuplus, ref int vPageDataFmtTop)
+            ref int vBreakSeat, ref int vSuplus, ref int vPageDataFmtTop, ref int vPageDataFmtBottom)
         {
             int vFmtHeightInc = -1, vFmtOffset = -1;
 
@@ -2167,8 +2156,8 @@ namespace HC.View
                             vPageDataFmtTop = vPageDataFmtBottom;
                             vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
                             _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
-                            _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, AStartSeat, vPageHeight,
-                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);
+                            _RectItemCheckPage(ADrawItemNo, AStartSeat, vPageHeight,
+                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop, ref vPageDataFmtBottom);
                         }
                         else  // 跨页，但未整体下移
                         {
@@ -2181,14 +2170,14 @@ namespace HC.View
                             vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
                             _FormatNewPage(ref vPageIndex, ADrawItemNo, ADrawItemNo);  // 新建页
 
-                            _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, AStartSeat, vPageHeight,
-                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);  // 从分页位置后面继续检查是否分页
+                            _RectItemCheckPage(ADrawItemNo, AStartSeat, vPageHeight,
+                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop, ref vPageDataFmtBottom);  // 从分页位置后面继续检查是否分页
                         }
                 }
         }
 
-        private void _FormatRectItemCheckPageBreak(int vPageDataFmtBottom, int vPageHeight,
-            ref int vPageIndex, ref int vPageDataFmtTop, int ADrawItemNo)
+        private void _FormatRectItemCheckPageBreak(int ADrawItemNo, int vPageHeight,
+            ref int vPageIndex, ref int vPageDataFmtTop, ref int vPageDataFmtBottom)
         {
             int vSuplus = 0;  // 所有因换页向下偏移量的总和
             int vBreakSeat = 0;  // 分页位置，不同RectItem的含义不同，表格表示 vBreakRow
@@ -2196,8 +2185,8 @@ namespace HC.View
             HCCustomRectItem vRectItem = FPage.Items[FPage.DrawItems[ADrawItemNo].ItemNo] as HCCustomRectItem;
 
             vRectItem.CheckFormatPageBreakBefor();
-            _RectItemCheckPage(ADrawItemNo, vPageDataFmtBottom, 0, vPageHeight, vRectItem,
-                ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop);  // 从最开始位置，检测表格各行内容是否能显示在当前页
+            _RectItemCheckPage(ADrawItemNo, 0, vPageHeight, vRectItem,
+                ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop, ref vPageDataFmtBottom);  // 从最开始位置，检测表格各行内容是否能显示在当前页
 
             if (vSuplus != 0)
             {
@@ -2274,7 +2263,7 @@ namespace HC.View
                 if (FPage.DrawItems[i].LineFirst)
                 {
                     if (FPage.GetDrawItemStyle(i) < HCStyle.Null)
-                        _FormatRectItemCheckPageBreak(vPageDataFmtBottom, vPageHeight, ref vPageIndex, ref vPageDataFmtTop, i);
+                        _FormatRectItemCheckPageBreak(i, vPageHeight, ref vPageIndex, ref vPageDataFmtTop, ref vPageDataFmtBottom);
                     else
                         _FormatTextItemCheckPageBreak(vPageHeight, i, ref vPageDataFmtTop, ref vPageDataFmtBottom, ref vPageIndex);
                 }
@@ -2418,7 +2407,7 @@ namespace HC.View
                 vBuffer = BitConverter.GetBytes(FSymmetryMargin);
                 aStream.Write(vBuffer, 0, vBuffer.Length);  // 是否对称页边距
 
-                aStream.WriteByte((byte)FPageOrientation);  // 纸张方向
+                aStream.WriteByte((byte)FPaperOrientation);  // 纸张方向
 
                 vBuffer = BitConverter.GetBytes(FPageNoVisible);
                 aStream.Write(vBuffer, 0, vBuffer.Length);  // 是否显示页码
@@ -2486,7 +2475,7 @@ namespace HC.View
             {
                 vBuffer = new byte[1];
                 aStream.Read(vBuffer, 0, 1);
-                FPageOrientation = (View.PageOrientation)vBuffer[0];  // 纸张方向
+                FPaperOrientation = (View.PaperOrientation)vBuffer[0];  // 纸张方向
 
                 vBuffer = BitConverter.GetBytes(FPageNoVisible);
                 aStream.Read(vBuffer, 0, vBuffer.Length);  // 是否显示页码
@@ -2652,10 +2641,10 @@ namespace HC.View
             set { SetPaperMarginBottom(value); }
         }
 
-        public PageOrientation PageOrientation
+        public PaperOrientation PaperOrientation
         {
-            get { return FPageOrientation; }
-            set { SetPageOrientation(value); }
+            get { return FPaperOrientation; }
+            set { FPaperOrientation = value; }
         }
 
         //
@@ -3010,7 +2999,7 @@ namespace HC.View
         public void ToXml(XmlElement aNode)
         {
             aNode.Attributes["symmargin"].Value = SymmetryMargin.ToString(); // 是否对称页边距
-            aNode.Attributes["ori"].Value = ((byte)PageOrientation).ToString();  // 纸张方向
+            aNode.Attributes["ori"].Value = ((byte)PaperOrientation).ToString();  // 纸张方向
             aNode.Attributes["pagenovisible"].Value = PageNoVisible.ToString();  // 是否显示页码
 
             aNode.Attributes["pagesize"].Value =  // 纸张大小
@@ -3044,7 +3033,7 @@ namespace HC.View
         public void ParseXml(XmlElement aNode)
         {
             SymmetryMargin = bool.Parse(aNode.Attributes["symmargin"].Value);  // 是否对称页边距
-            PageOrientation = (PageOrientation)(byte.Parse(aNode.Attributes["ori"].Value));  // 纸张方向
+            this.PaperOrientation = (PaperOrientation)(byte.Parse(aNode.Attributes["ori"].Value));  // 纸张方向
 
             PageNoVisible = bool.Parse(aNode.Attributes["pagenovisible"].Value);  // 是否对称页边距
 

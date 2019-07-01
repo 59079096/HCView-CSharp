@@ -168,7 +168,7 @@ namespace HC.View
             byte[] vBuffer = BitConverter.GetBytes(FChecked);
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FChecked = BitConverter.ToBoolean(vBuffer, 0);
-            HC.HCLoadTextFromStream(aStream, ref FText);
+            HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
         }
 
         public override void ToXml(XmlElement aNode)

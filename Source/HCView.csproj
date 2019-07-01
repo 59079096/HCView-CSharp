@@ -104,6 +104,7 @@
     <Compile Include="HCViewDevData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HCTabItem.cs" />
+    <Compile Include="SharpZXingQRCode.cs" />
     <Compile Include="Win32.cs" />
     <Compile Include="Win32.ErrorCodes.cs" />
     <Compile Include="Win32.GDI.cs" />

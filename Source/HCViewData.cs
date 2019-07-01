@@ -340,10 +340,10 @@ namespace HC.View
         }
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, 
-            RECT arawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
+            RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintBefor(aData, aDrawItemNo, arawRect, aDataDrawLeft,
+            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
 
             if (!APaintInfo.Print)  // 拼接域范围
@@ -360,11 +360,12 @@ namespace HC.View
 
                 if (vDrawHotDomainBorde || vDrawActiveDomainBorde)  // 在Hot域或激活域中
                 {
-                    IntPtr vDliRGN = (IntPtr)GDI.CreateRectRgn(arawRect.Left, arawRect.Top, arawRect.Right, arawRect.Bottom);
+                    IntPtr vDliRGN = (IntPtr)GDI.CreateRectRgn(aDrawRect.Left, aDrawRect.Top, aDrawRect.Right, aDrawRect.Bottom);
                     try
                     {
                         if ((FHotDomain.BeginNo >= 0) && vDrawHotDomainBorde)
                             GDI.CombineRgn(FHotDomainRGN, FHotDomainRGN, vDliRGN, GDI.RGN_OR);
+
                         if ((FActiveDomain.BeginNo >= 0) && vDrawActiveDomainBorde)
                             GDI.CombineRgn(FActiveDomainRGN, FActiveDomainRGN, vDliRGN, GDI.RGN_OR);
                     }
@@ -459,7 +460,8 @@ namespace HC.View
         }
 
         public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom, 
-            int aDataScreenTop, int aDataScreenBottom, int aVOffset, HCCanvas aCanvas, PaintInfo aPaintInfo)
+            int aDataScreenTop, int aDataScreenBottom, int aVOffset, int aFristDItemNo, int aLastDItemNo,
+            HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (!aPaintInfo.Print)
             {
@@ -470,8 +472,8 @@ namespace HC.View
                     FActiveDomainRGN = (IntPtr)GDI.CreateRectRgn(0, 0, 0, 0);
             }
             
-            base.PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawBottom,
-                aDataScreenTop, aDataScreenBottom, aVOffset, aCanvas, aPaintInfo);
+            base.PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, 
+                aVOffset, aFristDItemNo, aLastDItemNo, aCanvas, aPaintInfo);
             
             if (!aPaintInfo.Print)
             {

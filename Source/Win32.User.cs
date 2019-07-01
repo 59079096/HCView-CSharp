@@ -681,6 +681,8 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern int DrawState(HWND hdc, HANDLE hBrush, ref int lpDrawStateProc, int lParam, int wParam, int n1, int n2, int n3, int n4, int un);
 		[DllImport("user32")] public static extern int DrawText(HDC hdc, string lpStr, int nCount, ref RECT lpRect, int wFormat);
 		[DllImport("user32")] public static extern int DrawTextEx(HWND hdc, string lpsz, int n, ref RECT lpRect, int un, ref DRAWTEXTPARAMS lpDrawTextParams);
+        [DllImport("user32")]
+        public static extern int DrawTextEx(HWND hdc, string lpsz, int n, ref RECT lpRect, int un, IntPtr lpDrawTextParams);
 		[DllImport("user32")] public static extern int EmptyClipboard();
 		[DllImport("user32")] public static extern int EnableMenuItem(HANDLE hMenu, int wIDEnableItem, int wEnable);
 		[DllImport("user32")] public static extern int EnableScrollBar(HWND hwnd, int wSBflags, int wArrows);

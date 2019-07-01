@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*******************************************************}
+{                                                       }
+{         基于HCView的电子病历程序  作者：荆通          }
+{                                                       }
+{ 此代码仅做学习交流使用，不可用于商业目的，由此引发的  }
+{ 后果请使用者承担，加入QQ群 649023932 来获取更多的技术 }
+{ 交流。                                                }
+{                                                       }
+{*******************************************************/
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -7,27 +16,301 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using HC.Win32;
+using System.IO;
 
 namespace EMRView
 {
+    public delegate void TextEventHandle(string aText);
+    public delegate void StreamEventHandle(Stream aStream);
+
     public partial class frmRecordPop : Form
     {
-        private EventHandler FOnActiveItemChange;
+        string FSnum1, FSnum2, FSmark, FOldUnit;
+        decimal FNum1, FNum2;
+        bool FFlag, FSign, FTemp, FTemplate, FConCalcValue;
+        string FFrmtp;
+        DeItem FDeItem;
+        DataTable FDBDomain = new DataTable();
+
+        private TextEventHandle FOnSetActiveItemText;
+        private StreamEventHandle FOnSetActiveItemExtra;
+
+        private void SetDeItemValue(string value)
+        {
+            if (FOnSetActiveItemText != null)
+                FOnSetActiveItemText(value);
+        }
+
+        private void SetDeItemExtraValue(string aCVVID)
+        {
+            if (FOnSetActiveItemExtra != null)
+            {
+                DataRow[] vRows = FDBDomain.Select("id=" + aCVVID);
+                if (vRows.Length > 0)
+                {
+                    using(MemoryStream vSM = new MemoryStream((byte[])vRows[0]["content"]))
+                    {
+                        vSM.Position = 0;
+                        FOnSetActiveItemExtra(vSM);
+                    }
+                }
+            }
+        }
+
+        private void SetValueFocus()
+        {
+            tbxValue.Focus();
+            tbxValue.SelectionStart = tbxValue.Text.Length - 1;
+            tbxValue.SelectionLength = 0;
+        }
+
+        private void SetConCalcValue()
+        {
+            if (!FConCalcValue)
+            {
+                tbxValue.Clear();
+                FConCalcValue = true;
+            }
+        }
+
+        private void PutCalcNumber(int aNum)
+        {
+            if (FTemplate)
+            {
+                if (aNum != 0)
+                    tbxValue.Text += "." + aNum.ToString();
+            }
+            else
+            {
+                SetConCalcValue();
+                if (FTemp || FFlag)
+                {
+                    tbxValue.Text = aNum.ToString();
+                    FTemp = false;
+                }
+                else
+                    tbxValue.Text += aNum.ToString();
+            }
+
+            SetValueFocus();
+        }
 
         public frmRecordPop()
         {
             InitializeComponent();
         }
 
+        #region 子方法
+        private void IniDomainUI()
+        {
+            dgvDomain.RowCount = FDBDomain.Rows.Count;
+
+            for (int i = 0; i < FDBDomain.Rows.Count; i++)
+            {
+                dgvDomain.Rows[i].Cells[0].Value = FDBDomain.Rows[i]["devalue"];
+                dgvDomain.Rows[i].Cells[1].Value = FDBDomain.Rows[i]["code"];
+                dgvDomain.Rows[i].Cells[2].Value = FDBDomain.Rows[i]["id"];
+                dgvDomain.Rows[i].Cells[3].Value = FDBDomain.Rows[i]["py"];
+                dgvDomain.Rows[i].Cells[4].Value = "";
+
+                if (FDBDomain.Rows[i]["content"].GetType() != typeof(System.DBNull))
+                {
+                    byte[] vbuffer = (byte[])FDBDomain.Rows[i]["content"];
+                    if (vbuffer.Length > 0)
+                        dgvDomain.Rows[i].Cells[4].Value = "...";
+                }
+            }
+        }
+        #endregion
+
         public void PopupDeItem(DeItem aDeItem, POINT aPopupPt)
         {
+            FFrmtp = "";
+            FDeItem = aDeItem;
+            string vDeUnit = "";
+            int vCMV = -1;
 
+            DataTable dt = emrMSDB.DB.GetData(string.Format("SELECT DeCode, PY, frmtp, deunit, domainid FROM Comm_DataElement WHERE DeID ={0}", FDeItem[DeProp.Index]));
+            if (dt.Rows.Count > 0)
+            {
+                FFrmtp = dt.Rows[0]["frmtp"].ToString();
+                vDeUnit = dt.Rows[0]["deunit"].ToString();
+                vCMV = int.Parse(dt.Rows[0]["domainid"].ToString());
+            }
+
+            if (FFrmtp == DeFrmtp.Number)  // 数值
+            {
+                tbxValue.Clear();
+                tabPop.SelectedIndex = 1;
+                this.Width = 185;
+
+                if (aDeItem[DeProp.Index] == "979")  // 体温
+                {
+                    tabQk.SelectedIndex = 0;
+                    this.Height = 285;
+                }
+                else
+                {
+                    tabQk.SelectedIndex = -1;
+                    this.Height = 215;
+                }
+            }
+            else
+            if ((FFrmtp == DeFrmtp.Date) || (FFrmtp == DeFrmtp.Time) || (FFrmtp == DeFrmtp.DateTime))  // 日期时间
+            {
+                tabPop.SelectedIndex = 3;
+                this.Width = 260;
+                this.Height = 170;
+
+                pnlDate.Visible = FFrmtp != DeFrmtp.Time;
+                pnlTime.Visible = FFrmtp != DeFrmtp.Date;
+            }
+            else
+            if ((FFrmtp == DeFrmtp.Radio) || (FFrmtp == DeFrmtp.Multiselect))  // 单、多选
+            {
+                tbxSpliter.Clear();
+
+                if (FDBDomain.Rows.Count > 0)
+                    FDBDomain.Reset();
+
+                dgvDomain.RowCount = 0;
+                tabPop.SelectedIndex = 0;
+                this.Width = 290;
+                this.Height = 300;
+
+                if (vCMV > 0)  // 有值域
+                {
+                    FDBDomain = emrMSDB.DB.GetData(string.Format("SELECT DE.ID, DE.Code, DE.devalue, DE.PY, DC.Content FROM Comm_DataElementDomain DE LEFT JOIN Comm_DomainContent DC ON DE.ID = DC.DItemID WHERE DE.domainid = {0}", vCMV));
+                }
+
+                if (FDBDomain.Rows.Count > 0)
+                    IniDomainUI();
+            }
+            else
+            if (FFrmtp == DeFrmtp.String)
+            {
+                tbxMemo.Clear();
+                tabPop.SelectedIndex = 2;
+                this.Width = 260;
+                this.Height = 200;
+            }
+
+            this.StartPosition = FormStartPosition.Manual;
+            this.Location = new Point(aPopupPt.X, aPopupPt.Y);
+
+            this.Show();
         }
 
-        public EventHandler OnActiveItemChange
+        public TextEventHandle OnSetActiveItemText
         {
-            get { return FOnActiveItemChange; }
-            set { FOnActiveItemChange = value; }
+            get { return FOnSetActiveItemText; }
+            set { FOnSetActiveItemText = value; }
+        }
+
+        public StreamEventHandle OnSetActiveItemExtra
+        {
+            get { return FOnSetActiveItemExtra; }
+            set { FOnSetActiveItemExtra = value; }
+        }
+
+        private void frmRecordPop_Load(object sender, EventArgs e)
+        {
+            this.ShowInTaskbar = false;
+            tabPop.SizeMode = TabSizeMode.Fixed;
+            tabPop.ItemSize = new Size(0, 1);
+            cbbDate.SelectedIndex = 3;
+            cbbTime.SelectedIndex = 3;
+        }
+
+        private void btnDomainOk_Click(object sender, EventArgs e)
+        {
+            if (dgvDomain.SelectedRows.Count > 0)
+            {
+                int vSelIndex = dgvDomain.SelectedRows[0].Index;
+                FDeItem[DeProp.CMVVCode] = dgvDomain.Rows[vSelIndex].Cells[1].Value.ToString();
+                if (dgvDomain.Rows[vSelIndex].Cells[4].Value.ToString() != "")
+                    SetDeItemExtraValue(dgvDomain.Rows[vSelIndex].Cells[2].Value.ToString());
+                else
+                    SetDeItemValue(dgvDomain.Rows[vSelIndex].Cells[0].Value.ToString());
+
+                this.Close();
+            }
+        }
+
+        private void btnNumberOk_Click(object sender, EventArgs e)
+        {
+            string vText = tbxValue.Text;
+
+            if (vText == "")
+            {
+                if (!cbxHideUnit.Checked)
+                    vText += cbbUnit.Text;
+
+                FDeItem[DeProp.Unit] = cbbUnit.Text;
+                SetDeItemValue(vText);
+                this.Close();
+            }
+        }
+
+        private void btnMemoOk_Click(object sender, EventArgs e)
+        {
+            if (tbxMemo.Text != "")
+            {
+                SetDeItemValue(tbxMemo.Text);
+                this.Close();
+            }
+        }
+
+        private void btnNow_Click(object sender, EventArgs e)
+        {
+            dtpDate.Value = DateTime.Now;
+            dtpTime.Value = DateTime.Now;
+        }
+
+        private void btnDateTimeOk_Click(object sender, EventArgs e)
+        {
+            string vText = "";
+            if (FFrmtp == DeFrmtp.Date)
+            {
+                vText = string.Format("{0:" + cbbDate.Text + "}", dtpDate.Value);
+            }
+            else
+            if (FFrmtp == DeFrmtp.Time)
+            {
+                vText = string.Format("{0:" + cbbTime.Text + "}", dtpTime.Value);
+            }
+            else
+            if (FFrmtp == DeFrmtp.DateTime)
+            {
+                vText = string.Format("{0:" + cbbDate.Text + "}", dtpDate.Value)
+                    + " " + string.Format("{0:" + cbbTime.Text + "}", dtpTime.Value);
+            }
+
+            if (vText != "")
+            {
+                SetDeItemValue(vText);
+                this.Close();
+            }
+        }
+
+        private void dgvDomain_DoubleClick(object sender, EventArgs e)
+        {
+            btnDomainOk_Click(sender, e);
+        }
+
+        private void frmRecordPop_Deactivate(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void frmRecordPop_Leave(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void frmRecordPop_Shown(object sender, EventArgs e)
+        {
+            this.Focus();
         }
     }
 }

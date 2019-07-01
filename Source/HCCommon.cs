@@ -317,7 +317,7 @@ namespace HC.View
                         i = HC.GetTextActualOffset(aText, i, true);
                         #endif
 
-                        if (x < vCharWArr[i - 1])
+                        if (x == vCharWArr[i - 1])
                         {
                             Result = i;
                             break;
@@ -515,7 +515,11 @@ namespace HC.View
 
         public static void HCSaveTextToStream(Stream aStream, string s)
         {
+            #if UNPLACEHOLDERCHAR
             int vLen = System.Text.Encoding.Unicode.GetByteCount(s);
+            #else
+            int vLen = System.Text.Encoding.Default.GetByteCount(s);
+            #endif
             if (vLen > ushort.MaxValue)
                 throw new Exception(HC.HCS_EXCEPTION_TEXTOVER);
 
@@ -529,7 +533,7 @@ namespace HC.View
             }
         }
 
-        public static void HCLoadTextFromStream(Stream aStream, ref string s)
+        public static void HCLoadTextFromStream(Stream aStream, ref string s, ushort aFileVersion)
         {
             ushort vSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vSize);
@@ -540,11 +544,14 @@ namespace HC.View
             {
                 vBuffer = new byte[vSize];
                 aStream.Read(vBuffer, 0, vSize);
-
-                if (HC.HC_FileVersionInt > 24)
+                #if UNPLACEHOLDERCHAR
+                if (aFileVersion > 24)
                     s = System.Text.Encoding.Unicode.GetString(vBuffer);
                 else
                     s = System.Text.Encoding.Default.GetString(vBuffer);
+                #else
+                s = System.Text.Encoding.Default.GetString(vBuffer);
+                #endif
             }
             else
                 s = "";
@@ -805,24 +812,24 @@ namespace HC.View
     public delegate void HCProcedure();
     public delegate bool HCFunction();
 
-    public enum PageOrientation : byte
+    public enum PaperOrientation : byte
     {
-        cpoPortrait = 1,  // 纸张方向：纵像
-        cpoLandscape = 1 << 1  //2  、横向
+        cpoPortrait = 0,  // 纸张方向：纵像
+        cpoLandscape = 1  //2  、横向
     }
 
     public enum ExpressArea : byte
     {
-        ceaNone = 1, 
-        ceaLeft = 1 << 1, 
-        ceaTop = 1 << 2, 
-        ceaRight = 1 << 3, 
-        ceaBottom = 1 << 4  // 公式的区域，仅适用于上下左右格式的
+        ceaNone = 0, 
+        ceaLeft = 1, 
+        ceaTop = 2, 
+        ceaRight = 3, 
+        ceaBottom = 4  // 公式的区域，仅适用于上下左右格式的
     }
 
     public enum BorderSide : byte
     {
-        cbsLeft = 1, cbsTop = 2, cbsRight = 4, cbsBottom = 8, cbsLTRB = 16, cbsRTLB = 32
+        cbsLeft = 1, cbsTop = 1 << 1, cbsRight = 1 << 2, cbsBottom = 1 << 3, cbsLTRB = 1 << 4, cbsRTLB = 1 << 5
     }
 
     public class HCBorderSides : HCSet
@@ -901,8 +908,8 @@ namespace HC.View
 
     public enum MarkType : byte
     {
-        cmtBeg = 1, 
-        cmtEnd = 1 << 1
+        cmtBeg = 0, 
+        cmtEnd = 1
     }
 
     public class HCObject : IDisposable

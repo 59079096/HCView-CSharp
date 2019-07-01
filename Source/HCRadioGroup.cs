@@ -243,7 +243,7 @@ namespace HC.View
             FItems.Clear();
 
             string vS = "";
-            HC.HCLoadTextFromStream(aStream, ref vS);
+            HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             if (vS != "")
             {
                 string[] vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);

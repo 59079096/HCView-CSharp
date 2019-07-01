@@ -568,7 +568,7 @@ namespace HC.View
             set { SetOrientation(value); }
         }
 
-        public new ScrollEventHandler OnScroll
+        public ScrollEventHandler OnScroll
         {
             get { return FOnScroll; }
             set { FOnScroll = value; }

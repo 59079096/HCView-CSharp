@@ -553,6 +553,7 @@ namespace HC.View
                     aCanvas.Pen.BeginUpdate();
                     try
                     {
+                        aCanvas.Pen.Width = 1;
                         aCanvas.Pen.Style = HCPenStyle.psSolid;
                         aCanvas.Pen.Color = HC.clActiveBorder;
                     }
@@ -570,6 +571,7 @@ namespace HC.View
                     aCanvas.Pen.BeginUpdate();
                     try
                     {
+                        aCanvas.Pen.Width = 1;
                         aCanvas.Pen.Style = HCPenStyle.psSolid;
                         aCanvas.Pen.Color = HC.clActiveBorder;
                     }
@@ -766,7 +768,7 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FTextStyleNo = BitConverter.ToInt32(vBuffer, 0);
 
-            if (FTextStyleNo > aStyle.TextStyles.Count - 1)  // 兼容历史错误(删除多余样式时没有)
+            if ((aStyle != null) && (FTextStyleNo > aStyle.TextStyles.Count - 1))  // 兼容历史错误(删除多余样式时没有)
                 FTextStyleNo = 0;
         }
 
