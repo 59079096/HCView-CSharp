@@ -302,8 +302,8 @@ namespace EMRView
         public emrMSDB()
         {
             FDBConnectstring = @"user=emr;password=emr;database=emrDB;server=(local)";
-            FDataElementDT = this.GetData("SELECT deid, decode, dename, py, frmtp, domainid FROM Comm_DataElement");
             FDataSetDT = this.GetData("SELECT id, pid, Name, Class, Type FROM Comm_DataElementSet WHERE pid = 0 ORDER BY od");
+            GetDataElement();
         }
 
         ~emrMSDB()
@@ -314,6 +314,11 @@ namespace EMRView
         public string ErrMsg
         {
             get { return FErrMsg; }
+        }
+
+        public void GetDataElement()
+        {
+            FDataElementDT = this.GetData("SELECT deid, decode, dename, py, frmtp, domainid FROM Comm_DataElement");
         }
 
         public void GetDataSetElement(int aDesID)

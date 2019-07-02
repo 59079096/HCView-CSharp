@@ -15,6 +15,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using HC.View;
 
 namespace EMRView
 {
@@ -23,6 +24,45 @@ namespace EMRView
         public frmParagraph()
         {
             InitializeComponent();
+        }
+
+        private void btnSelectColor_Click(object sender, EventArgs e)
+        {
+            ColorDialog vDlg = new ColorDialog();
+            //vDlg.SolidColorOnly = true;
+            vDlg.Color = pnlBackColor.BackColor;
+            vDlg.ShowDialog();
+            pnlBackColor.BackColor = vDlg.Color;
+        }
+
+        public void SetView(HCView aHCView)
+        {
+            cbbSpaceMode.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].LineSpaceMode;
+            cbbAlignHorz.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignHorz;
+            cbbAlignVert.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignVert;
+            pnlBackColor.BackColor = aHCView.Style.ParaStyles[aHCView.CurParaNo].BackColor;
+
+            this.ShowDialog();
+            if (this.DialogResult == System.Windows.Forms.DialogResult.OK)
+            {
+                aHCView.BeginUpdate();
+                try
+                {
+                    aHCView.ApplyParaLineSpace((ParaLineSpaceMode)cbbSpaceMode.SelectedIndex);
+                    aHCView.ApplyParaAlignHorz((ParaAlignHorz)cbbAlignHorz.SelectedIndex);
+                    aHCView.ApplyParaAlignVert((ParaAlignVert)cbbAlignVert.SelectedIndex);
+                    aHCView.ApplyParaBackColor(pnlBackColor.BackColor);
+                }
+                finally
+                {
+                    aHCView.EndUpdate();
+                }
+            }
+        }
+
+        private void btnOK_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = System.Windows.Forms.DialogResult.OK;
         }
     }
 }

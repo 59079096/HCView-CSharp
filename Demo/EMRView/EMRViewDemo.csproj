@@ -50,6 +50,30 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="emrDB.cs" />
+    <Compile Include="frmDeInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDeInfo.Designer.cs">
+      <DependentUpon>frmDeInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmDomain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDomain.Designer.cs">
+      <DependentUpon>frmDomain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmDomainItem.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDomainItem.Designer.cs">
+      <DependentUpon>frmDomainItem.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmDomainOper.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDomainOper.Designer.cs">
+      <DependentUpon>frmDomainOper.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmItemContent.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -167,11 +191,23 @@
     <EmbeddedResource Include="frmDeControlProperty.resx">
       <DependentUpon>frmDeControlProperty.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="frmDeInfo.resx">
+      <DependentUpon>frmDeInfo.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmDeProperty.resx">
       <DependentUpon>frmDeProperty.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmDeTableProperty.resx">
       <DependentUpon>frmDeTableProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDomain.resx">
+      <DependentUpon>frmDomain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDomainItem.resx">
+      <DependentUpon>frmDomainItem.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDomainOper.resx">
+      <DependentUpon>frmDomainOper.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmInsertTable.resx">
       <DependentUpon>frmInsertTable.cs</DependentUpon>

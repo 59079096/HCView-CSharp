@@ -122,6 +122,7 @@ namespace EMRView
             tbxPY.Clear();
             dgvDE.RowCount = 1;
             dgvCV.RowCount = 1;
+            emrMSDB.DB.GetDataElement();
             ShowDataElement();
         }
 
@@ -596,6 +597,137 @@ namespace EMRView
         private void 关闭ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CloseTemplatePage(tabTemplate.SelectedIndex);
+        }
+
+        private bool DeleteDomainItemContent(int aDominItemID)
+        {
+            return emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DomainContent WHERE DItemID = {0}", aDominItemID));
+        }
+
+        private void mniDeleteItemLink_Click(object sender, EventArgs e)
+        {
+            if (dgvCV.SelectedRows.Count > 0)
+            {
+                int vRow = dgvCV.SelectedRows[0].Index;
+
+                MessageBoxButtons messButton = MessageBoxButtons.OKCancel;
+                DialogResult dr = MessageBox.Show("确定要删除选项【 " + dgvCV.Rows[vRow].Cells[0].Value.ToString() + "】的扩展内容吗？", "确认操作", messButton);
+                if (dr == DialogResult.OK)
+                {
+                    int vDomainItemID = int.Parse(dgvCV.Rows[vRow].Cells[3].Value.ToString());
+
+                    if (DeleteDomainItemContent(vDomainItemID))
+                        MessageBox.Show("删除值域选项扩展内容成功！");
+                    else
+                        MessageBox.Show("删除失败:" + emrMSDB.DB.ErrMsg);
+                }
+            }
+        }
+
+        private void mniNewItem_Click(object sender, EventArgs e)
+        {
+            frmDomainItem vFrmDomainItem = new frmDomainItem();
+            vFrmDomainItem.SetInfo(FDomainID, 0);
+            if (vFrmDomainItem.DialogResult == System.Windows.Forms.DialogResult.OK)
+                GetDomainItem(FDomainID);
+        }
+
+        private void mniEditItem_Click(object sender, EventArgs e)
+        {
+            if ((dgvCV.SelectedRows.Count > 0) && (FDomainID > 0))
+            {
+                frmDomainItem vFrmDomainItem = new frmDomainItem();
+                vFrmDomainItem.SetInfo(FDomainID, int.Parse(dgvCV.Rows[dgvCV.SelectedRows[0].Index].Cells[3].Value.ToString()));
+                if (vFrmDomainItem.DialogResult == System.Windows.Forms.DialogResult.OK)
+                    GetDomainItem(FDomainID);
+            }
+        }
+
+        private bool DeleteDomainItem(int aDItemID)
+        {
+            return emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DataElementDomain WHERE ID = {0}", aDItemID));
+        }
+
+        private void mniDeleteItem_Click(object sender, EventArgs e)
+        {
+            if (dgvCV.SelectedRows.Count > 0)
+            {
+                int vRow = dgvCV.SelectedRows[0].Index;
+
+                MessageBoxButtons messButton = MessageBoxButtons.OKCancel;
+                DialogResult dr = MessageBox.Show("确定要删除选项【 " + dgvCV.Rows[vRow].Cells[0].Value.ToString() + "】和该选项对应的扩展内容吗？", "确认操作", messButton);
+                if (dr == DialogResult.OK)
+                {
+                    // 删除扩展内容
+                    if (DeleteDomainItemContent(int.Parse(dgvCV.Rows[vRow].Cells[3].Value.ToString())))
+                    {
+                        MessageBox.Show("删除选项扩展内容成功！");
+
+                        // 删除选项
+                        if (DeleteDomainItem(int.Parse(dgvCV.Rows[vRow].Cells[3].Value.ToString())))
+                            MessageBox.Show("删除选项成功！");
+                        else
+                            MessageBox.Show("删除选项失败！" + emrMSDB.DB.ErrMsg);
+                    }
+                    else
+                        MessageBox.Show("删除选项扩展内容失败！" + emrMSDB.DB.ErrMsg);
+                }
+            }
+        }
+
+        private void mniNew_Click(object sender, EventArgs e)
+        {
+            frmDeInfo vFrmDeInfo = new frmDeInfo();
+            vFrmDeInfo.SetDeID(0);
+            if (vFrmDeInfo.DialogResult == System.Windows.Forms.DialogResult.OK)
+                mniRefresh_Click(sender, e);
+        }
+
+        private void mniEdit_Click(object sender, EventArgs e)
+        {
+            if (dgvDE.SelectedRows.Count > 0)
+            {
+                frmDeInfo vFrmDeInfo = new frmDeInfo();
+                vFrmDeInfo.SetDeID(int.Parse(dgvDE.Rows[dgvDE.SelectedRows[0].Index].Cells[0].Value.ToString()));
+                if (vFrmDeInfo.DialogResult == System.Windows.Forms.DialogResult.OK)
+                    mniRefresh_Click(sender, e);
+            }
+        }
+
+        private void mniDelete_Click(object sender, EventArgs e)
+        {
+            if (dgvDE.SelectedRows.Count > 0)
+            {
+                int vRow = dgvDE.SelectedRows[0].Index;
+
+                MessageBoxButtons messButton = MessageBoxButtons.OKCancel;
+                DialogResult dr = MessageBox.Show("确定要删除数据元【 " + dgvDE.Rows[vRow].Cells[1].Value.ToString() + "】吗？", "确认操作", messButton);
+                if (dr == DialogResult.OK)
+                {
+                    if (int.Parse(dgvDE.Rows[vRow].Cells[5].Value.ToString()) != 0)
+                    {
+                        MessageBoxButtons messButton2 = MessageBoxButtons.OKCancel;
+                        DialogResult dr2 = MessageBox.Show("如果【 " + dgvDE.Rows[vRow].Cells[1].Value.ToString() + "】对应的值域 "
+                            + dgvDE.Rows[vRow].Cells[5].Value.ToString() + "不再使用，请注意及时删除，继续删除数据元？", "确认操作", messButton2);
+                        if (dr2 != DialogResult.OK)
+                            return;
+                    }
+
+                    if (emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DataElement WHERE DeID = {0}", dgvDE.Rows[vRow].Cells[0].Value.ToString())))
+                    {
+                        MessageBox.Show("删除成功！");
+                        mniRefresh_Click(sender, e);
+                    }
+                    else
+                        MessageBox.Show("删除失败！" + emrMSDB.DB.ErrMsg);
+                }
+            }
+        }
+
+        private void mniDomain_Click(object sender, EventArgs e)
+        {
+            frmDomain vFrmDomain = new frmDomain();
+            vFrmDomain.ShowDialog();
         }
     }
 }

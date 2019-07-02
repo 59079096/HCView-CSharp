@@ -227,13 +227,13 @@ namespace HC.View
 
             FData.MarkStyleUsed(false);
 
-            for (int i = FStyle.TextStyles.Count; i >= 0; i--)
+            for (int i = FStyle.TextStyles.Count - 1; i >= 0; i--)
             {
                 if (!FStyle.TextStyles[i].CheckSaveUsed)
                     FStyle.TextStyles.RemoveAt(i);
             }
 
-            for (int i = FStyle.ParaStyles.Count; i >= 0; i--)
+            for (int i = FStyle.ParaStyles.Count - 1; i >= 0; i--)
             {
                 if (!FStyle.ParaStyles[i].CheckSaveUsed)
                     FStyle.ParaStyles.RemoveAt(i);
@@ -672,7 +672,7 @@ namespace HC.View
 
         protected HCUndo DoUndoNew()
         {
-            HCUndo Result = new HCUndo();
+            HCUndo Result = new HCEditUndo();
             (Result as HCEditUndo).HScrollPos = FHScrollBar.Position;
             (Result as HCEditUndo).VScrollPos = FVScrollBar.Position;
             Result.Data = FData;

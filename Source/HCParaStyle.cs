@@ -19,16 +19,16 @@ using System.Xml;
 
 namespace HC.View
 {
-    /// <summary> 段水平对齐方式：左、右、居中、两端、分散) </summary>
+    /// <summary> 段水平对齐方式：左、居中、右、两端、分散) </summary>
     public enum ParaAlignHorz : byte 
     {
-        pahLeft, pahRight, pahCenter, pahJustify, pahScatter
+        pahLeft = 0, pahCenter = 1, pahRight = 2, pahJustify = 3, pahScatter = 4
     }
 
     /// <summary> 段垂直对齐方式：上、居中、下) </summary>
     public enum ParaAlignVert : byte 
     {
-        pavTop, pavCenter, pavBottom
+        pavTop = 0, pavCenter = 1, pavBottom = 2
     }
 
     /// <summary> 首行缩进方式 </summary>
@@ -39,7 +39,7 @@ namespace HC.View
 
     public enum ParaLineSpaceMode : byte
     {
-        pls100, pls115, pls150, pls200, plsFix
+        pls100 = 0, pls115 = 1, pls150 = 2, pls200 = 3, plsFix = 4
     }
 
     public class HCParaStyle : HCObject

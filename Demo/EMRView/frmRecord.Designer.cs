@@ -890,6 +890,7 @@
             this.mniPara.Name = "mniPara";
             this.mniPara.Size = new System.Drawing.Size(152, 22);
             this.mniPara.Text = "段落";
+            this.mniPara.Click += new System.EventHandler(this.mniPara_Click);
             // 
             // mniSplit
             // 

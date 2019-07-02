@@ -32,9 +32,9 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmItemContent));
             this.panel1 = new System.Windows.Forms.Panel();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.label1 = new System.Windows.Forms.Label();
             this.tbxPY = new System.Windows.Forms.TextBox();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.dgvDE = new System.Windows.Forms.DataGridView();
             this.Key = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -42,6 +42,7 @@
             this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.pnlEdit = new System.Windows.Forms.Panel();
             this.tlbTool = new System.Windows.Forms.ToolStrip();
             this.btnSave = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -66,7 +67,6 @@
             this.btnAlignRight = new System.Windows.Forms.ToolStripButton();
             this.btnAlignJustify = new System.Windows.Forms.ToolStripButton();
             this.btnAlignScatter = new System.Windows.Forms.ToolStripButton();
-            this.pnlEdit = new System.Windows.Forms.Panel();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -86,6 +86,24 @@
             this.panel1.Size = new System.Drawing.Size(925, 36);
             this.panel1.TabIndex = 0;
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.label1.Location = new System.Drawing.Point(146, 13);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(155, 12);
+            this.label1.TabIndex = 3;
+            this.label1.Text = "<- 输入名称或简拼回车检索";
+            // 
+            // tbxPY
+            // 
+            this.tbxPY.Location = new System.Drawing.Point(14, 8);
+            this.tbxPY.Name = "tbxPY";
+            this.tbxPY.Size = new System.Drawing.Size(123, 21);
+            this.tbxPY.TabIndex = 2;
+            this.tbxPY.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tbxPY_KeyDown);
+            // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -103,23 +121,6 @@
             this.splitContainer1.Size = new System.Drawing.Size(925, 397);
             this.splitContainer1.SplitterDistance = 311;
             this.splitContainer1.TabIndex = 1;
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.label1.Location = new System.Drawing.Point(146, 13);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(155, 12);
-            this.label1.TabIndex = 3;
-            this.label1.Text = "<- 输入名称或简拼回车检索";
-            // 
-            // tbxPY
-            // 
-            this.tbxPY.Location = new System.Drawing.Point(14, 8);
-            this.tbxPY.Name = "tbxPY";
-            this.tbxPY.Size = new System.Drawing.Size(123, 21);
-            this.tbxPY.TabIndex = 2;
             // 
             // dgvDE
             // 
@@ -203,6 +204,14 @@
             this.Column4.Name = "Column4";
             this.Column4.ReadOnly = true;
             this.Column4.Width = 20;
+            // 
+            // pnlEdit
+            // 
+            this.pnlEdit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlEdit.Location = new System.Drawing.Point(0, 25);
+            this.pnlEdit.Name = "pnlEdit";
+            this.pnlEdit.Size = new System.Drawing.Size(610, 372);
+            this.pnlEdit.TabIndex = 6;
             // 
             // tlbTool
             // 
@@ -462,14 +471,6 @@
             this.btnAlignScatter.Tag = "4";
             this.btnAlignScatter.Text = "两端对齐";
             this.btnAlignScatter.Click += new System.EventHandler(this.btnRightIndent_Click);
-            // 
-            // pnlEdit
-            // 
-            this.pnlEdit.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlEdit.Location = new System.Drawing.Point(0, 25);
-            this.pnlEdit.Name = "pnlEdit";
-            this.pnlEdit.Size = new System.Drawing.Size(610, 372);
-            this.pnlEdit.TabIndex = 6;
             // 
             // frmItemContent
             // 

@@ -47,7 +47,7 @@
             this.mniDelete = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.mniViewItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniDomain = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.mniInsertAsDE = new System.Windows.Forms.ToolStripMenuItem();
             this.mniInsertAsDG = new System.Windows.Forms.ToolStripMenuItem();
@@ -82,9 +82,9 @@
             this.mniInsertTemplate = new System.Windows.Forms.ToolStripMenuItem();
             this.mniTemplateProperty = new System.Windows.Forms.ToolStripMenuItem();
             this.tabTemplate = new System.Windows.Forms.TabControl();
-            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.pmpg = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.关闭ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).BeginInit();
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
@@ -216,7 +216,7 @@
             this.mniDelete,
             this.toolStripMenuItem1,
             this.mniViewItem,
-            this.toolStripMenuItem2,
+            this.mniDomain,
             this.toolStripSeparator1,
             this.mniInsertAsDE,
             this.mniInsertAsDG,
@@ -225,25 +225,28 @@
             this.toolStripSeparator2,
             this.mniRefresh});
             this.pmde.Name = "pmde";
-            this.pmde.Size = new System.Drawing.Size(190, 242);
+            this.pmde.Size = new System.Drawing.Size(190, 264);
             // 
             // mniNew
             // 
             this.mniNew.Name = "mniNew";
             this.mniNew.Size = new System.Drawing.Size(189, 22);
             this.mniNew.Text = "添加";
+            this.mniNew.Click += new System.EventHandler(this.mniNew_Click);
             // 
             // mniEdit
             // 
             this.mniEdit.Name = "mniEdit";
             this.mniEdit.Size = new System.Drawing.Size(189, 22);
             this.mniEdit.Text = "修改";
+            this.mniEdit.Click += new System.EventHandler(this.mniEdit_Click);
             // 
             // mniDelete
             // 
             this.mniDelete.Name = "mniDelete";
             this.mniDelete.Size = new System.Drawing.Size(189, 22);
             this.mniDelete.Text = "删除";
+            this.mniDelete.Click += new System.EventHandler(this.mniDelete_Click);
             // 
             // toolStripMenuItem1
             // 
@@ -257,11 +260,12 @@
             this.mniViewItem.Text = "查看值域选项";
             this.mniViewItem.Click += new System.EventHandler(this.mniViewItem_Click);
             // 
-            // toolStripMenuItem2
+            // mniDomain
             // 
-            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(189, 22);
-            this.toolStripMenuItem2.Text = "值域管理";
+            this.mniDomain.Name = "mniDomain";
+            this.mniDomain.Size = new System.Drawing.Size(189, 22);
+            this.mniDomain.Text = "值域管理";
+            this.mniDomain.Click += new System.EventHandler(this.mniDomain_Click);
             // 
             // toolStripSeparator1
             // 
@@ -429,18 +433,21 @@
             this.mniNewItem.Name = "mniNewItem";
             this.mniNewItem.Size = new System.Drawing.Size(148, 22);
             this.mniNewItem.Text = "添加";
+            this.mniNewItem.Click += new System.EventHandler(this.mniNewItem_Click);
             // 
             // mniEditItem
             // 
             this.mniEditItem.Name = "mniEditItem";
             this.mniEditItem.Size = new System.Drawing.Size(148, 22);
             this.mniEditItem.Text = "修改";
+            this.mniEditItem.Click += new System.EventHandler(this.mniEditItem_Click);
             // 
             // mniDeleteItem
             // 
             this.mniDeleteItem.Name = "mniDeleteItem";
             this.mniDeleteItem.Size = new System.Drawing.Size(148, 22);
             this.mniDeleteItem.Text = "删除";
+            this.mniDeleteItem.Click += new System.EventHandler(this.mniDeleteItem_Click);
             // 
             // toolStripSeparator3
             // 
@@ -459,6 +466,7 @@
             this.mniDeleteItemLink.Name = "mniDeleteItemLink";
             this.mniDeleteItemLink.Size = new System.Drawing.Size(148, 22);
             this.mniDeleteItemLink.Text = "删除扩展内容";
+            this.mniDeleteItemLink.Click += new System.EventHandler(this.mniDeleteItemLink_Click);
             // 
             // panel3
             // 
@@ -569,12 +577,12 @@
             this.pmpg.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.关闭ToolStripMenuItem});
             this.pmpg.Name = "pmpg";
-            this.pmpg.Size = new System.Drawing.Size(153, 48);
+            this.pmpg.Size = new System.Drawing.Size(101, 26);
             // 
             // 关闭ToolStripMenuItem
             // 
             this.关闭ToolStripMenuItem.Name = "关闭ToolStripMenuItem";
-            this.关闭ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.关闭ToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
             this.关闭ToolStripMenuItem.Text = "关闭";
             this.关闭ToolStripMenuItem.Click += new System.EventHandler(this.关闭ToolStripMenuItem_Click);
             // 
@@ -638,7 +646,7 @@
         private System.Windows.Forms.ToolStripMenuItem mniEdit;
         private System.Windows.Forms.ToolStripMenuItem mniDelete;
         private System.Windows.Forms.ToolStripMenuItem mniViewItem;
-        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem2;
+        private System.Windows.Forms.ToolStripMenuItem mniDomain;
         private System.Windows.Forms.ToolStripMenuItem mniInsertAsDE;
         private System.Windows.Forms.ToolStripMenuItem mniInsertAsDG;
         private System.Windows.Forms.ToolStripMenuItem mniInsertAsEdit;

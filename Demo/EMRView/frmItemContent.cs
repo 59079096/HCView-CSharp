@@ -62,17 +62,27 @@ namespace EMRView
             }
         }
 
-        private void ShowDataElement()
+        private void ShowDataElement(DataRow[] aRows = null)
         {
-            dgvDE.RowCount = emrMSDB.DB.DataElementDT.Rows.Count;
-            for (int i = 0; i < emrMSDB.DB.DataElementDT.Rows.Count; i++)
+            DataRow[] vRows = null;
+            if (aRows == null)
             {
-                dgvDE.Rows[i].Cells[0].Value = emrMSDB.DB.DataElementDT.Rows[i]["deid"];
-                dgvDE.Rows[i].Cells[1].Value = emrMSDB.DB.DataElementDT.Rows[i]["dename"];
-                dgvDE.Rows[i].Cells[2].Value = emrMSDB.DB.DataElementDT.Rows[i]["decode"];
-                dgvDE.Rows[i].Cells[3].Value = emrMSDB.DB.DataElementDT.Rows[i]["py"];
-                dgvDE.Rows[i].Cells[4].Value = emrMSDB.DB.DataElementDT.Rows[i]["frmtp"];
-                dgvDE.Rows[i].Cells[5].Value = emrMSDB.DB.DataElementDT.Rows[i]["domainid"];
+                vRows = new DataRow[emrMSDB.DB.DataElementDT.Rows.Count];
+                emrMSDB.DB.DataElementDT.Rows.CopyTo(vRows, 0);
+            }
+            else
+                vRows = aRows;
+
+            dgvDE.RowCount = vRows.Length;
+            for (int i = 0; i < vRows.Length; i++)
+            {
+                TemplateInfo vTempInfo = new TemplateInfo();
+                dgvDE.Rows[i].Cells[0].Value = vRows[i]["deid"];
+                dgvDE.Rows[i].Cells[1].Value = vRows[i]["dename"];
+                dgvDE.Rows[i].Cells[2].Value = vRows[i]["decode"];
+                dgvDE.Rows[i].Cells[3].Value = vRows[i]["py"];
+                dgvDE.Rows[i].Cells[4].Value = vRows[i]["frmtp"];
+                dgvDE.Rows[i].Cells[5].Value = vRows[i]["domainid"];
             }
         }
 
@@ -193,6 +203,28 @@ namespace EMRView
             vDeItem[DeProp.Index] = dgvDE.Rows[vRow].Cells[0].Value.ToString();
 
             FEmrEdit.InsertItem(vDeItem);
+        }
+
+        private void tbxPY_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Return)
+            {
+
+                if (tbxPY.Text == "")
+                {
+                    ShowDataElement();
+                }
+                else
+                {
+                    DataRow[] vRows = null;
+                    if (EMR.IsPY(tbxPY.Text[0]))
+                        vRows = emrMSDB.DB.DataElementDT.Select("py like '%" + tbxPY.Text + "%'");
+                    else
+                        vRows = emrMSDB.DB.DataElementDT.Select("dename like '%" + tbxPY.Text + "%'");
+
+                    ShowDataElement(vRows);
+                }
+            }
         }
     }
 }

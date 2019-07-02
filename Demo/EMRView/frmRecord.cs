@@ -904,5 +904,11 @@ namespace EMRView
             frmTableBorderBackColor vFrmBorderBackColor = new frmTableBorderBackColor();
             vFrmBorderBackColor.SetView(FEmrView);
         }
+
+        private void mniPara_Click(object sender, EventArgs e)
+        {
+            frmParagraph vFrmParagraph = new frmParagraph();
+            vFrmParagraph.SetView(FEmrView);
+        }
     }
 }

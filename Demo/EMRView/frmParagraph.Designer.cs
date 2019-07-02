@@ -28,8 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.cbxSpaceMode = new System.Windows.Forms.ComboBox();
-            this.cbxAlignHorz = new System.Windows.Forms.ComboBox();
+            this.cbbSpaceMode = new System.Windows.Forms.ComboBox();
+            this.cbbAlignHorz = new System.Windows.Forms.ComboBox();
             this.cbbAlignVert = new System.Windows.Forms.ComboBox();
             this.tbxFirstIndent = new System.Windows.Forms.TextBox();
             this.tbxLeftIndent = new System.Windows.Forms.TextBox();
@@ -45,38 +45,38 @@
             this.label10 = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.btnOK = new System.Windows.Forms.Button();
-            this.panel1 = new System.Windows.Forms.Panel();
+            this.pnlBackColor = new System.Windows.Forms.Panel();
             this.btnSelectColor = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
-            // cbxSpaceMode
+            // cbbSpaceMode
             // 
-            this.cbxSpaceMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbxSpaceMode.FormattingEnabled = true;
-            this.cbxSpaceMode.Items.AddRange(new object[] {
+            this.cbbSpaceMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbbSpaceMode.FormattingEnabled = true;
+            this.cbbSpaceMode.Items.AddRange(new object[] {
             "单倍",
             "1.5倍",
             "2倍",
             "固定值"});
-            this.cbxSpaceMode.Location = new System.Drawing.Point(84, 11);
-            this.cbxSpaceMode.Name = "cbxSpaceMode";
-            this.cbxSpaceMode.Size = new System.Drawing.Size(77, 20);
-            this.cbxSpaceMode.TabIndex = 0;
+            this.cbbSpaceMode.Location = new System.Drawing.Point(84, 11);
+            this.cbbSpaceMode.Name = "cbbSpaceMode";
+            this.cbbSpaceMode.Size = new System.Drawing.Size(77, 20);
+            this.cbbSpaceMode.TabIndex = 0;
             // 
-            // cbxAlignHorz
+            // cbbAlignHorz
             // 
-            this.cbxAlignHorz.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbxAlignHorz.FormattingEnabled = true;
-            this.cbxAlignHorz.Items.AddRange(new object[] {
+            this.cbbAlignHorz.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbbAlignHorz.FormattingEnabled = true;
+            this.cbbAlignHorz.Items.AddRange(new object[] {
             "左",
             "居中",
             "右",
             "两端",
             "分散"});
-            this.cbxAlignHorz.Location = new System.Drawing.Point(84, 41);
-            this.cbxAlignHorz.Name = "cbxAlignHorz";
-            this.cbxAlignHorz.Size = new System.Drawing.Size(77, 20);
-            this.cbxAlignHorz.TabIndex = 1;
+            this.cbbAlignHorz.Location = new System.Drawing.Point(84, 41);
+            this.cbbAlignHorz.Name = "cbbAlignHorz";
+            this.cbbAlignHorz.Size = new System.Drawing.Size(77, 20);
+            this.cbbAlignHorz.TabIndex = 1;
             // 
             // cbbAlignVert
             // 
@@ -207,19 +207,20 @@
             // 
             // btnOK
             // 
-            this.btnOK.Location = new System.Drawing.Point(142, 142);
+            this.btnOK.Location = new System.Drawing.Point(132, 146);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
             this.btnOK.TabIndex = 17;
             this.btnOK.Text = "确定";
             this.btnOK.UseVisualStyleBackColor = true;
+            this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
             // 
-            // panel1
+            // pnlBackColor
             // 
-            this.panel1.Location = new System.Drawing.Point(232, 12);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(35, 18);
-            this.panel1.TabIndex = 18;
+            this.pnlBackColor.Location = new System.Drawing.Point(232, 12);
+            this.pnlBackColor.Name = "pnlBackColor";
+            this.pnlBackColor.Size = new System.Drawing.Size(35, 18);
+            this.pnlBackColor.TabIndex = 18;
             // 
             // btnSelectColor
             // 
@@ -229,6 +230,7 @@
             this.btnSelectColor.TabIndex = 19;
             this.btnSelectColor.Text = "...";
             this.btnSelectColor.UseVisualStyleBackColor = true;
+            this.btnSelectColor.Click += new System.EventHandler(this.btnSelectColor_Click);
             // 
             // frmParagraph
             // 
@@ -236,7 +238,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(334, 181);
             this.Controls.Add(this.btnSelectColor);
-            this.Controls.Add(this.panel1);
+            this.Controls.Add(this.pnlBackColor);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.label11);
             this.Controls.Add(this.label10);
@@ -252,8 +254,8 @@
             this.Controls.Add(this.tbxLeftIndent);
             this.Controls.Add(this.tbxFirstIndent);
             this.Controls.Add(this.cbbAlignVert);
-            this.Controls.Add(this.cbxAlignHorz);
-            this.Controls.Add(this.cbxSpaceMode);
+            this.Controls.Add(this.cbbAlignHorz);
+            this.Controls.Add(this.cbbSpaceMode);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmParagraph";
@@ -265,8 +267,8 @@
 
         #endregion
 
-        private System.Windows.Forms.ComboBox cbxSpaceMode;
-        private System.Windows.Forms.ComboBox cbxAlignHorz;
+        private System.Windows.Forms.ComboBox cbbSpaceMode;
+        private System.Windows.Forms.ComboBox cbbAlignHorz;
         private System.Windows.Forms.ComboBox cbbAlignVert;
         private System.Windows.Forms.TextBox tbxFirstIndent;
         private System.Windows.Forms.TextBox tbxLeftIndent;
@@ -282,7 +284,7 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Button btnOK;
-        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel pnlBackColor;
         private System.Windows.Forms.Button btnSelectColor;
     }
 }
