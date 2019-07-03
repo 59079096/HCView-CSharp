@@ -213,7 +213,7 @@ namespace HC.View
 
     public enum ItemProperty : byte
     {
-        uipStyleNo, uipParaNo, uipParaFirst
+        uipStyleNo, uipParaNo, uipParaFirst, uipPageBreak
     }
 
     public class HCItemPropertyUndoAction : HCCustomUndoAction
@@ -291,6 +291,28 @@ namespace HC.View
         {
             get { return FNewParaFirst; }
             set { FNewParaFirst = value; }
+        }
+    }
+
+    public class HCItemPageBreakUndoAction : HCItemPropertyUndoAction
+    {
+        private bool FOldPageBreak, FNewPageBreak;
+        public HCItemPageBreakUndoAction()
+            : base()
+        {
+            ItemProperty = ItemProperty.uipPageBreak;
+        }
+
+        public bool OldPageBreak
+        {
+            get { return FOldPageBreak; }
+            set { FOldPageBreak = value; }
+        }
+
+        public bool NewPageBreak
+        {
+            get { return FNewPageBreak; }
+            set { FNewPageBreak = value; }
         }
     }
 

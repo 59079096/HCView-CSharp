@@ -1675,7 +1675,7 @@ namespace HC.View
                 {
                     vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
                         Math.Max(aPaintInfo.GetScaleY(vPaperDrawTop + FHeaderOffset), 0),
-                        aPaintInfo.GetScaleX(vPageDrawRight),
+                        aPaintInfo.GetScaleX(vPaperDrawRight),  // 表格有时候会拖宽到页面外面vPageDrawRight
                         Math.Min(aPaintInfo.GetScaleY(vPageDrawTop), aPaintInfo.WindowHeight));
 
                     try
@@ -1696,7 +1696,7 @@ namespace HC.View
                 {
                     vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
                         Math.Max(aPaintInfo.GetScaleY(vPageDrawBottom), 0),
-                        aPaintInfo.GetScaleX(vPageDrawRight),
+                        aPaintInfo.GetScaleX(vPaperDrawRight),  // 表格有时候会拖宽到页面外面vPageDrawRight
                         Math.Min(aPaintInfo.GetScaleY(vPaperDrawBottom), aPaintInfo.WindowHeight));
 
                     try
@@ -1718,7 +1718,7 @@ namespace HC.View
             {
                 vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
                         aPaintInfo.GetScaleY(Math.Max(vPageDrawTop, vPageDataScreenTop)),
-                        aPaintInfo.GetScaleX(vPageDrawRight),
+                        aPaintInfo.GetScaleX(vPaperDrawRight),  // 表格有时候会拖宽到页面外面vPageDrawRight
                         aPaintInfo.GetScaleY(Math.Min(vPageDrawBottom, vPageDataScreenBottom)) + 1);
 
                 try
@@ -2095,20 +2095,20 @@ namespace HC.View
         {
             int vFmtHeightInc = -1, vFmtOffset = -1;
 
-            if (FPage.GetDrawItemStyle(ADrawItemNo) == HCStyle.PageBreak)
-            {
-                vFmtOffset = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Top;
+            //if (FPage.GetDrawItemStyle(ADrawItemNo) == HCStyle.PageBreak)
+            //{
+            //    vFmtOffset = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Top;
 
-                vSuplus = vSuplus + vFmtOffset;
-                if (vFmtOffset > 0)
-                    HC.OffsetRect(ref FPage.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
+            //    vSuplus = vSuplus + vFmtOffset;
+            //    if (vFmtOffset > 0)
+            //        HC.OffsetRect(ref FPage.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
 
-                vPageDataFmtTop = vPageDataFmtBottom;
-                vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+            //    vPageDataFmtTop = vPageDataFmtBottom;
+            //    vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
 
-                _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
-            }
-            else
+            //    _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
+            //}
+            //else
                 if (FPage.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
                 {
                     if ((FPages[vPageIndex].StartDrawItemNo == ADrawItemNo)
@@ -2257,9 +2257,21 @@ namespace HC.View
             int vPageDataFmtTop = GetPageDataFmtTop(vPageIndex);
             int vPageHeight = GetPageHeight();
             int vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
-
+            int vFmtPageOffset = 0;
             for (int i = vPrioDrawItemNo + 1; i <= FPage.DrawItems.Count - 1; i++)
             {
+                if (FPage.Items[FPage.DrawItems[i].ItemNo].PageBreak)
+                {
+                    vFmtPageOffset = vPageDataFmtBottom - FPage.DrawItems[i].Rect.Top;
+                    if (vFmtPageOffset > 0)
+                        FPage.DrawItems[i].Rect.Offset(0, vFmtPageOffset);
+
+                    vPageDataFmtTop = vPageDataFmtBottom;
+                    vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+
+                    _FormatNewPage(ref vPageIndex, i - 1, i);
+                }
+
                 if (FPage.DrawItems[i].LineFirst)
                 {
                     if (FPage.GetDrawItemStyle(i) < HCStyle.Null)

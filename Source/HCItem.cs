@@ -40,8 +40,8 @@ namespace HC.View
     }
 
     public enum ItemOption : byte 
-    { 
-        ioParaFirst, ioSelectPart, ioSelectComplate 
+    {
+        ioParaFirst = 1, ioSelectPart = 1 << 1, ioSelectComplate = 1 << 2, ioPageBreak = 1 << 3 
     }
 
     public enum HCItemAction : byte
@@ -186,29 +186,42 @@ namespace HC.View
     {
         private int FParaNo, FStyleNo, FFirstDItemNo;
         private bool FActive, FVisible;
-        private HashSet<ItemOption> FOptions;
+        private HCSet FOptions;
 
         protected bool GetParaFirst()
         {
-            return FOptions.Contains(ItemOption.ioParaFirst);
+            return FOptions.Contains((byte)ItemOption.ioParaFirst);
         }
 
         protected void SetParaFirst(bool Value)
         {
             if (Value)
-                FOptions.Add(ItemOption.ioParaFirst);
+                FOptions.InClude((byte)ItemOption.ioParaFirst);
             else
-                FOptions.Remove(ItemOption.ioParaFirst);
+                FOptions.ExClude((byte)ItemOption.ioParaFirst);
+        }
+
+        protected bool GetPageBreak()
+        {
+            return FOptions.Contains((byte)ItemOption.ioPageBreak);
+        }
+
+        protected void SetPageBreak(bool Value)
+        {
+            if (Value)
+                FOptions.InClude((byte)ItemOption.ioPageBreak);
+            else
+                FOptions.ExClude((byte)ItemOption.ioPageBreak);
         }
 
         protected virtual bool GetSelectComplate()
         {
-            return FOptions.Contains(ItemOption.ioSelectComplate);
+            return FOptions.Contains((byte)ItemOption.ioSelectComplate);
         }
 
         protected bool GetSelectPart()
         {
-            return FOptions.Contains(ItemOption.ioSelectPart);
+            return FOptions.Contains((byte)ItemOption.ioSelectPart);
         }
 
         protected virtual string GetText()
@@ -243,7 +256,7 @@ namespace HC.View
         {
             FStyleNo = HCStyle.Null;
             FParaNo = HCStyle.Null;
-            FOptions = new HashSet<ItemOption>();
+            FOptions = new HCSet();
             FFirstDItemNo = -1;
             FVisible = true;
             FActive = false;
@@ -253,7 +266,8 @@ namespace HC.View
         {
             this.FStyleNo = source.StyleNo;
             this.FParaNo = source.ParaNo;
-            this.FOptions = new HashSet<ItemOption>(source.Options);
+            //this.FOptions = new HashSet<ItemOption>(source.Options);
+            this.FOptions.Value = source.Options.Value;
         }
 
         /// <summary>
@@ -296,8 +310,8 @@ namespace HC.View
 
         public virtual void DisSelect()
         {
-            FOptions.Remove(ItemOption.ioSelectPart);
-            FOptions.Remove(ItemOption.ioSelectComplate);
+            FOptions.ExClude((byte)ItemOption.ioSelectPart);
+            FOptions.ExClude((byte)ItemOption.ioSelectComplate);
         }
 
         public virtual bool CanDrag()
@@ -329,14 +343,14 @@ namespace HC.View
 
         public virtual void SelectComplate()
         {
-            FOptions.Remove(ItemOption.ioSelectPart);
-            FOptions.Add(ItemOption.ioSelectComplate);
+            FOptions.ExClude((byte)ItemOption.ioSelectPart);
+            FOptions.InClude((byte)ItemOption.ioSelectComplate);
         }
 
         public void SelectPart()
         {
-            FOptions.Remove(ItemOption.ioSelectComplate);
-            FOptions.Add(ItemOption.ioSelectPart);
+            FOptions.ExClude((byte)ItemOption.ioSelectComplate);
+            FOptions.InClude((byte)ItemOption.ioSelectPart);
         }
 
         public virtual bool CanAccept(int aOffset, HCItemAction aAction)
@@ -369,9 +383,7 @@ namespace HC.View
             buffer = System.BitConverter.GetBytes(FParaNo);
             aStream.Write(buffer, 0, buffer.Length);
 
-            bool vParFirst = ParaFirst;
-            buffer = System.BitConverter.GetBytes(vParFirst);
-            aStream.Write(buffer, 0, buffer.Length);
+            aStream.WriteByte(FOptions.Value);
         }
 
         public virtual void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -380,9 +392,14 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FParaNo = System.BitConverter.ToInt32(vBuffer, 0);
 
-            vBuffer = BitConverter.GetBytes(ParaFirst);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            ParaFirst = BitConverter.ToBoolean(vBuffer, 0);
+            if (aFileVersion > 25)
+                FOptions.Value = (byte)aStream.ReadByte();
+            else
+            {
+                vBuffer = BitConverter.GetBytes(ParaFirst);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                ParaFirst = BitConverter.ToBoolean(vBuffer, 0);
+            }
         }
 
         public virtual string ToHtml(string aPath)
@@ -409,7 +426,7 @@ namespace HC.View
 
         public virtual void Redo(HCCustomUndoAction aRedoAction) { }
 
-        public HashSet<ItemOption> Options
+        public HCSet Options
         {
             get { return FOptions; }
         }
@@ -429,6 +446,12 @@ namespace HC.View
         {
             get { return GetParaFirst(); }
             set { SetParaFirst(value); }
+        }
+
+        public bool PageBreak
+        {
+            get { return GetPageBreak(); }
+            set { SetPageBreak(value); }
         }
 
         public string HyperLink

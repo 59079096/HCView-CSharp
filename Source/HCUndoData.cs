@@ -202,6 +202,15 @@ namespace HC.View
                             vItem.ParaFirst = (vAction as HCItemParaFirstUndoAction).NewParaFirst;
                     }
                     break;
+
+                case ItemProperty.uipPageBreak:
+                    {
+                        if (aIsUndo)
+                            vItem.PageBreak = (vAction as HCItemPageBreakUndoAction).OldPageBreak;
+                        else
+                            vItem.PageBreak = (vAction as HCItemPageBreakUndoAction).NewPageBreak;
+                    }
+                    break;
             }
         }
 
@@ -299,14 +308,12 @@ namespace HC.View
                     break;
 
                 case UndoActionTag.uatItemProperty:
-                    if (aAction.Tag == UndoActionTag.uatItemProperty)
+                    HCItemPropertyUndoAction vPropAction = aAction as HCItemPropertyUndoAction;
+                    if ((vPropAction.ItemProperty == ItemProperty.uipParaFirst)
+                        && (vPropAction.ItemProperty == ItemProperty.uipPageBreak))
                     {
-                        HCItemPropertyUndoAction vPropAction = aAction as HCItemPropertyUndoAction;
-                        if (vPropAction.ItemProperty == ItemProperty.uipParaFirst)
-                        {
-                            if (Result > 0)
-                                Result--;
-                        }
+                        if (Result > 0)
+                            Result--;
                     }
                     break;
 
@@ -728,6 +735,26 @@ namespace HC.View
                     vItemAction.Offset = aOffset;
                     vItemAction.OldParaFirst = Items[aItemNo].ParaFirst;
                     vItemAction.NewParaFirst = aNewParaFirst;
+
+                    vUndo.Actions.Add(vItemAction);
+                }
+            }
+        }
+
+        /// <summary> 修改Item的分页属性(修改前调用) </summary>
+        protected void UndoAction_ItemPageBreak(int aItemNo, int aOffset, bool aNewPageBreak)
+        {
+            HCUndoList vUndoList = GetUndoList();
+            if ((vUndoList != null) && vUndoList.Enable)
+            {
+                HCUndo vUndo = vUndoList.Last;
+                if (vUndo != null)
+                {
+                    HCItemPageBreakUndoAction vItemAction = new HCItemPageBreakUndoAction();
+                    vItemAction.ItemNo = aItemNo;
+                    vItemAction.Offset = aOffset;
+                    vItemAction.OldPageBreak = Items[aItemNo].PageBreak;
+                    vItemAction.NewPageBreak = aNewPageBreak;
 
                     vUndo.Actions.Add(vItemAction);
                 }

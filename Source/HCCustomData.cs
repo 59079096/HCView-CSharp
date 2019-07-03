@@ -2275,17 +2275,17 @@ namespace HC.View
 
             if (GetDrawItemStyle(aDrawNo) >= HCStyle.Null)
             {
-                HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
-                try
-                {
-                    Result = (int)CalculateLineHeight(vCanvas, 
-                        FStyle.TextStyles[GetDrawItemStyle(aDrawNo)],
-                        FStyle.ParaStyles[GetDrawItemParaStyle(aDrawNo)].LineSpaceMode);
-                }
-                finally
-                {
-                    HCStyle.DestroyStyleCanvas(vCanvas);
-                }
+                //HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
+                //try
+                //{
+                Result = (int)CalculateLineHeight(FStyle.LineHeightCanvas,
+                    FStyle.TextStyles[GetDrawItemStyle(aDrawNo)],
+                    FStyle.ParaStyles[GetDrawItemParaStyle(aDrawNo)].LineSpaceMode);
+                //}
+                //finally
+                //{
+                //    HCStyle.DestroyStyleCanvas(vCanvas);
+                //}
             }
 
             return Result;

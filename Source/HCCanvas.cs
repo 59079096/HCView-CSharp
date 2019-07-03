@@ -357,10 +357,7 @@ namespace HC.View
         }
     }
 
-    public class HCFontStyles : HCSet
-    {
-        
-    }
+    public class HCFontStyles : HCSet { }
 
     public class HCFont : HCObject
     {

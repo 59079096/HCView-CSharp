@@ -751,7 +751,7 @@ namespace HC.View
 
         public override bool SelectExists()
         {
-            return this.Options.Contains(ItemOption.ioSelectComplate);
+            return this.Options.Contains((byte)ItemOption.ioSelectComplate);
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)

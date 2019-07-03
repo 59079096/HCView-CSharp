@@ -44,7 +44,7 @@ namespace HC.View
 
     public class HCStyle : HCObject
     {
-        private HCCanvas FTempCanvas;
+        private HCCanvas FTempCanvas, FLineHeightCanvas;
         private int FTempStyleNo;
         private byte FLineSpaceMin;
         private Color FSelColor, FBackgroudColor;
@@ -91,6 +91,7 @@ namespace HC.View
         public HCStyle()
         {
             FTempCanvas = CreateStyleCanvas();
+            FLineHeightCanvas = CreateStyleCanvas();
             FTempStyleNo = HCStyle.Null;
             FBackgroudColor = Color.FromArgb(255, 255, 255);
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
@@ -119,6 +120,7 @@ namespace HC.View
         {
             base.Dispose();
             DestroyStyleCanvas(FTempCanvas);
+            DestroyStyleCanvas(FLineHeightCanvas);
             //FTextStyles.Free;
             //FParaStyles.Free;
             FUpdateInfo.Dispose();
@@ -435,6 +437,11 @@ namespace HC.View
         public HCCanvas TempCanvas
         {
             get { return FTempCanvas; }
+        }
+
+        public HCCanvas LineHeightCanvas
+        {
+            get { return FLineHeightCanvas; }
         }
 
         public UpdateInfo UpdateInfo

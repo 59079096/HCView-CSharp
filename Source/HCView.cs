@@ -377,9 +377,18 @@ namespace HC.View
             if ((FViewModel == HCViewModel.hvmFilm) && ((sender as HCSection).PagePadding > 10))
             {
                 aCanvas.Brush.Style = HCBrushStyle.bsClear;
-                aCanvas.Font.Size = 10;
-                aCanvas.Font.Family = "宋体";
-                aCanvas.Font.Color = Color.Black;
+
+                aCanvas.Font.BeginUpdate();
+                try
+                {
+                    aCanvas.Font.Size = 10;
+                    aCanvas.Font.Family = "宋体";
+                    aCanvas.Font.Color = Color.Black;
+                }
+                finally
+                {
+                    aCanvas.Font.EndUpdate();
+                }
 
                 aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供 QQ群：649023932");
             }

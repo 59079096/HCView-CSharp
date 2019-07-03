@@ -174,11 +174,11 @@ namespace HC.View
         /// <returns></returns>
         private int GetFormatHeight()
         {
-            int Result = FBorderWidth;
+            FFormatHeight = FBorderWidth;
             for (int i = 0; i <= RowCount - 1; i++)
-                Result = Result + FRows[i].Height + FBorderWidth;
+                FFormatHeight = FFormatHeight + FRows[i].Height + FBorderWidth;
 
-            return Result;
+            return FFormatHeight;
         }
 
         // 获取行中最高单元格高度
@@ -229,7 +229,7 @@ namespace HC.View
                             FRows[vDestRow][vC].Height = vExtraHeight;  // 目标单元格除上下边框后的高度
                             vExtraHeight = vExtraHeight - FRows[vDestRow].Height - FBorderWidth;  // “消减”自己所在行
 
-                            for (int i = vDestRow; i <= vR - 1; i++)  // 从目标下一行到此，经过各行后“消减”掉多
+                            for (int i = vDestRow + 1; i <= vR - 1; i++)  // 从目标下一行到此，经过各行后“消减”掉多
                                 vExtraHeight = vExtraHeight - FRows[i].FmtOffset - FRows[i].Height - FBorderWidth;
                             
                             if (vExtraHeight > FRows[vR].FmtOffset + FRows[vR].Height)
@@ -266,7 +266,7 @@ namespace HC.View
             while (vR > aDestRow)
             {
                 Result += FRows[vR].Height + FBorderWidth + FRows[vR].FmtOffset;
-                vR++;
+                vR--;
             }
 
             return Result + FRows[aDestRow].Height;
@@ -2230,6 +2230,7 @@ namespace HC.View
             FFixRowCount = 0;
             FCellHPadding = 2;
             FCellVPadding = 2;
+            FFormatHeight = 0;
             FDraging = false;
             FBorderWidth = 1;
             FBorderColor = Color.Black;

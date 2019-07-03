@@ -620,9 +620,17 @@ namespace HC.View
         /// <summary> 从当前位置后分页 </summary>
         public bool InsertPageBreak()
         {
-            HCPageBreakItem vPageBreak = new HCPageBreakItem(this);
-            vPageBreak.ParaFirst = true;
-            return this.InsertItem(vPageBreak);
+            if (this.SelectExists())
+                return false;
+
+            if ((Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+                && (SelectInfo.StartItemOffset == HC.OffsetInner))
+                return false;
+
+            KeyEventArgs e = new KeyEventArgs(Keys.Return);
+            this.KeyDown(e, true);
+
+            return true;
         }
 
         public bool ShowLineActiveMark

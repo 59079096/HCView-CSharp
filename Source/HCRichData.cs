@@ -433,10 +433,6 @@ namespace HC.View
                         Result = CreateDefaultDomainItem();
                         break;
 
-                    case HCStyle.PageBreak:
-                        Result = new HCPageBreakItem(this, 0, 1);
-                        break;
-
                     case HCStyle.CheckBox:
                         Result = new HCCheckBoxItem(this, "勾选框", false);
                         break;
@@ -3379,7 +3375,7 @@ namespace HC.View
             }
         }
 
-        private void RectItemKeyDown(bool vSelectExist, ref HCCustomItem vCurItem, KeyEventArgs e)
+        private void RectItemKeyDown(bool vSelectExist, ref HCCustomItem vCurItem, KeyEventArgs e, bool aPageBreak)
         {
             int Key = e.KeyValue;
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
@@ -3409,12 +3405,12 @@ namespace HC.View
                     {
                         case User.VK_BACK:
                             SelectInfo.StartItemOffset = HC.OffsetAfter;
-                            RectItemKeyDown(vSelectExist, ref vCurItem, e);
+                            RectItemKeyDown(vSelectExist, ref vCurItem, e, aPageBreak);
                             break;
 
                         case User.VK_DELETE:
                             SelectInfo.StartItemOffset = HC.OffsetBefor;
-                            RectItemKeyDown(vSelectExist, ref vCurItem, e);
+                            RectItemKeyDown(vSelectExist, ref vCurItem, e, aPageBreak);
                             break;
                     }
                 }
@@ -3469,6 +3465,15 @@ namespace HC.View
                                     vCurItem.ParaFirst = true;
                                     Items.Insert(SelectInfo.StartItemNo, vCurItem);
 
+                                    Undo_New();
+                                    UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+
+                                    if (aPageBreak)
+                                    {
+                                        UndoAction_ItemPageBreak(SelectInfo.StartItemNo + 1, 0, true);  // 我变成下一个了
+                                        Items[SelectInfo.StartItemNo + 1].PageBreak = true;
+                                    }
+
                                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
 
                                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
@@ -3476,7 +3481,17 @@ namespace HC.View
                                 }
                                 else  // RectItem不在行首
                                 {
+                                    Undo_New();
+
+                                    UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
                                     vCurItem.ParaFirst = true;
+
+                                    if (aPageBreak)
+                                    {
+                                        UndoAction_ItemPageBreak(SelectInfo.StartItemNo, 0, true);
+                                        vCurItem.PageBreak = true;
+                                    }
+
                                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                 }
 
@@ -3485,15 +3500,31 @@ namespace HC.View
                             case User.VK_BACK:  // 在RectItem前
                                 if (vCurItem.ParaFirst)
                                 {
-                                    if (SelectInfo.StartItemNo > 0)
+                                    if (SelectInfo.StartItemNo > 0)  // 第一个前回删不处理，停止格式化
                                     {
-                                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                        if (vCurItem.ParaFirst && (SelectInfo.StartItemNo > 0))
+                                        {
+                                            vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1,
+                                                GetItemOffsetAfter(SelectInfo.StartItemNo - 1));
+
+                                            vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
+                                        }
+                                        else
+                                            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                        
                                         FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         Undo_New();
+                                        
                                         UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
-
                                         vCurItem.ParaFirst = false;
+
+                                        if (vCurItem.PageBreak)
+                                        {
+                                            UndoAction_ItemPageBreak(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
+                                            vCurItem.PageBreak = false;
+                                        }
+
                                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                                     }
                                 }
@@ -3648,7 +3679,7 @@ namespace HC.View
                                     if (e.Alt)
                                         vKeys |= Keys.Alt;
                                     KeyEventArgs vArgs = new KeyEventArgs(vKeys);
-                                    RectItemKeyDown(vSelectExist, ref vCurItem, vArgs);
+                                    RectItemKeyDown(vSelectExist, ref vCurItem, vArgs, aPageBreak);
                                 }
                                 break;
 
@@ -3754,20 +3785,27 @@ namespace HC.View
                     }
         }
 
-        private void EnterKeyDown(ref HCCustomItem vCurItem, KeyEventArgs e)
+        private void EnterKeyDown(ref HCCustomItem vCurItem, KeyEventArgs e, bool aPageBreak)
         {
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
             GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
             FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
             // 判断光标位置内容如何换行
-            if (SelectInfo.StartItemOffset == 0)
+            if (SelectInfo.StartItemOffset == 0)  // 光标在Item最前面
             {
-                if (!vCurItem.ParaFirst)
+                if (!vCurItem.ParaFirst)  // 原来不是段首
                 {
                     Undo_New();
-                    UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
 
+                    UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
                     vCurItem.ParaFirst = true;
+
+                    if (aPageBreak)
+                    {
+                        UndoAction_ItemPageBreak(SelectInfo.StartItemNo, 0, true);
+                        vCurItem.PageBreak = true;
+                    }
+
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                 }
                 else  // 原来就是段首
@@ -3776,10 +3814,14 @@ namespace HC.View
                     vItem.ParaNo = vCurItem.ParaNo;
                     vItem.StyleNo = vCurItem.StyleNo;
                     vItem.ParaFirst = true;
-                    Items.Insert(SelectInfo.StartItemNo, vItem);  // 原位置的向下移动
+
+                    if (aPageBreak)
+                        vItem.PageBreak = true;
+
+                    Items.Insert(SelectInfo.StartItemNo + 1, vItem);  // 插入到下面
 
                     Undo_New();
-                    UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                    UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
 
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
@@ -3792,12 +3834,19 @@ namespace HC.View
                     if (SelectInfo.StartItemNo < Items.Count - 1)
                     {
                         vItem = Items[SelectInfo.StartItemNo + 1];  // 下一个Item
-                        if (!vItem.ParaFirst)
+                        if (!vItem.ParaFirst)  // 下一个不是段起始
                         {
                             Undo_New();
-                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo + 1, 0, true);
 
+                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo + 1, 0, true);
                             vItem.ParaFirst = true;
+
+                            if (aPageBreak)
+                            {
+                                UndoAction_ItemPageBreak(SelectInfo.StartItemNo + 1, 0, true);
+                                vItem.PageBreak = true;
+                            }
+
                             ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         }
                         else  // 下一个是段起始
@@ -3806,6 +3855,10 @@ namespace HC.View
                             vItem.ParaNo = vCurItem.ParaNo;
                             vItem.StyleNo = vCurItem.StyleNo;
                             vItem.ParaFirst = true;
+
+                            if (aPageBreak)
+                                vItem.PageBreak = true;
+
                             Items.Insert(SelectInfo.StartItemNo + 1, vItem);
 
                             Undo_New();
@@ -3823,6 +3876,10 @@ namespace HC.View
                         vItem.ParaNo = vCurItem.ParaNo;
                         vItem.StyleNo = vCurItem.StyleNo;
                         vItem.ParaFirst = true;
+
+                        if (aPageBreak)
+                            vItem.PageBreak = true;
+
                         Items.Insert(SelectInfo.StartItemNo + 1, vItem);
 
                         Undo_New();
@@ -3837,6 +3894,9 @@ namespace HC.View
                 {
                     HCCustomItem vItem = vCurItem.BreakByOffset(SelectInfo.StartItemOffset);  // 截断当前Item
                     vItem.ParaFirst = true;
+
+                    if (aPageBreak)
+                        vItem.PageBreak = true;
 
                     Items.Insert(SelectInfo.StartItemNo + 1, vItem);
 
@@ -3873,6 +3933,7 @@ namespace HC.View
                             Undo_New();
                             UndoAction_DeleteItem(vCurItemNo, 0);
                             Items.Delete(vCurItemNo);
+
                             ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
                         }
                         else  // 当前不是空行
@@ -3881,7 +3942,18 @@ namespace HC.View
                             {
                                 vFormatLastItemNo = GetParaLastItemNo(vCurItemNo + 1);  // 获取下一段最后一个
                                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                                Undo_New();
+
+                                UndoAction_ItemParaFirst(vCurItemNo + 1, 0, false);
                                 Items[vCurItemNo + 1].ParaFirst = false;
+
+                                if (Items[vCurItemNo + 1].PageBreak)
+                                {
+                                    UndoAction_ItemPageBreak(vCurItemNo + 1, 0, false);
+                                    Items[vCurItemNo + 1].PageBreak = false;
+                                }
+
                                 ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                 SelectInfo.StartItemNo = vCurItemNo + 1;
@@ -3891,8 +3963,10 @@ namespace HC.View
                             {
                                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                                if (Items[vCurItemNo + 1].Length == 0)
+                                if (Items[vCurItemNo + 1].Length == 0)  // 下一段的段首是是空行
                                 {
+                                    Undo_New();
+                                    UndoAction_DeleteItem(vCurItemNo + 1, 0);
                                     Items.Delete(vCurItemNo + 1);
                                     vDelCount++;
                                 }
@@ -3900,8 +3974,14 @@ namespace HC.View
                                 {
                                     if (vCurItem.CanConcatItems(Items[vCurItemNo + 1]))
                                     {
+                                        Undo_New();
+
+                                        UndoAction_InsertText(vCurItemNo, vCurItem.Length + 1, Items[vCurItemNo + 1].Text);
                                         vCurItem.Text = vCurItem.Text + Items[vCurItemNo + 1].Text;
+
+                                        UndoAction_DeleteItem(vCurItemNo + 1, 0);
                                         Items.Delete(vCurItemNo + 1);
+
                                         vDelCount++;
                                     }
                                     else// 下一段段首不是空行也不能合并
@@ -3965,7 +4045,6 @@ namespace HC.View
                                         UndoAction_DeleteItem(vCurItemNo, 0);
                                         Items.Delete(vCurItemNo);  // 删除当前
 
-                                        Undo_New();
                                         UndoAction_DeleteItem(vCurItemNo, 0);
                                         Items.Delete(vCurItemNo);  // 删除下一个
 
@@ -4390,7 +4469,7 @@ namespace HC.View
         #endregion
 
         // Key返回0表示此键按下Data没有做任何事情
-        public virtual void KeyDown(KeyEventArgs e)
+        public virtual void KeyDown(KeyEventArgs e, bool aPageBreak = false)
         {
             if (HC.IsKeyDownEdit(e.KeyValue) && (!CanEdit()))
                 return;
@@ -4425,7 +4504,7 @@ namespace HC.View
             GetParaItemRang(SelectInfo.StartItemNo, ref vParaFirstItemNo, ref vParaLastItemNo);
 
             if (vCurItem.StyleNo < HCStyle.Null)
-                RectItemKeyDown(vSelectExist, ref vCurItem, e);
+                RectItemKeyDown(vSelectExist, ref vCurItem, e, aPageBreak);
             else
             {
                 switch (Key)
@@ -4435,7 +4514,7 @@ namespace HC.View
                         break;
 
                     case User.VK_RETURN:
-                        EnterKeyDown(ref vCurItem, e);  // 回车
+                        EnterKeyDown(ref vCurItem, e, aPageBreak);  // 回车
                         break;
 
                     case User.VK_LEFT:
@@ -5108,7 +5187,6 @@ namespace HC.View
         {
             if (!CanEdit())
                 return false;
-
 
             InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
             {

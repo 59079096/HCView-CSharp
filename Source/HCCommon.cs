@@ -108,10 +108,11 @@ namespace HC.View
             // 2.3 增加批注的保存和读取
             // 2.4 兼容EmrView保存保护元素属性
             // 2.5 使用unicode字符集保存文档以便支持藏文等
-            HC_FileVersion = "2.5";
+            // 2.6 文件保存时直接使用TItemOptions集合变量的值，不再单独判断成员存储
+            HC_FileVersion = "2.6";
 
         public const ushort
-            HC_FileVersionInt = 25;
+            HC_FileVersionInt = 26;
 
         public static ushort SwapBytes(ushort aValue)
         {
@@ -832,10 +833,7 @@ namespace HC.View
         cbsLeft = 1, cbsTop = 1 << 1, cbsRight = 1 << 2, cbsBottom = 1 << 3, cbsLTRB = 1 << 4, cbsRTLB = 1 << 5
     }
 
-    public class HCBorderSides : HCSet
-    {
-
-    }
+    public class HCBorderSides : HCSet { }
 
     public enum SectionArea : byte  // 当前激活的是文档哪一部分
     {
