@@ -331,6 +331,48 @@ namespace EMRView
             }
         }
 
+        /// <summary> 遍历处理痕迹隐藏或显示 </summary>
+        private void DoHideTraceTraverse(HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
+        {
+            if (!(aData.Items[aItemNo] is DeItem))  // 只对元素生效
+                return;
+
+            DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+            if (vDeItem.StyleEx == StyleExtra.cseDel)
+                vDeItem.Visible = !(aTags == TTravTag.HideTrace);  // 隐藏/显示痕迹
+        }
+
+        /// <summary> 设置当前是否隐藏痕迹 </summary>
+        private void SetHideTrace(bool value)
+        {
+            if (FEmrView.HideTrace != value)
+            {
+                FEmrView.HideTrace = value;
+
+                if (value)
+                {
+                    FEmrView.AnnotatePre.Visible = false;
+                    
+                    HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
+                    vAreas.Add(SectionArea.saPage);
+                    TraverseElement(DoHideTraceTraverse, vAreas, TTravTag.HideTrace);
+                }
+                else
+                {
+                    if ((FEmrView.TraceCount > 0) && (!FEmrView.AnnotatePre.Visible))
+                        FEmrView.AnnotatePre.Visible = true;
+
+                    HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
+                    vAreas.Add(SectionArea.saPage);
+                    TraverseElement(DoHideTraceTraverse, vAreas, 0);
+                }
+
+                if (value && (!FEmrView.ReadOnly))
+                    FEmrView.ReadOnly = true;
+            }
+        }
+
+        /// <summary> 获取文档当前光标处的信息 </summary>
         private void GetPagesAndActive()
         {
             tssPage.Text = "预览" + (FEmrView.PagePreviewFirst + 1).ToString()
@@ -338,6 +380,7 @@ namespace EMRView
                 + "页 共" + FEmrView.PageCount.ToString() + "页";
         }
 
+        /// <summary> 文档光标位置发生变化时触发 </summary>
         private void DoCaretChange(object sender, EventArgs e)
         {
             GetPagesAndActive();
@@ -346,28 +389,33 @@ namespace EMRView
             CurParaStyleChange(FEmrView.CurParaNo);
         }
 
+        /// <summary> 文档变动状态发生变化时触发 </summary>
         private void DoChangedSwitch(object sender, EventArgs e)
         {
             if (FOnChangedSwitch != null)
                 FOnChangedSwitch(this, e);
         }
 
+        /// <summary> 文档编辑时只读或当前位置不可编辑时触发 </summary>
         private void DoCanNotEdit(object sender, EventArgs e)
         {
             MessageBox.Show("当前位置只读、不可编辑！");
         }
 
+        /// <summary> 文档只读状态发生变化时触发 </summary>
         private void DoReadOnlySwitch(object sender, EventArgs e)
         {
             if (FOnReadOnlySwitch != null)
                 FOnReadOnlySwitch(sender, e);
         }
 
+        /// <summary> 文档垂直滚动条滚动时触发 </summary>
         private void DoVerScroll(object sender, EventArgs e)
         {
             GetPagesAndActive();
         }
 
+        /// <summary> 节整页绘制前事件 </summary>
         private void DoPaintPaperBefor(object sender, int aPageIndex, RECT aRect,
             HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
@@ -389,16 +437,19 @@ namespace EMRView
             }
         }
 
+        /// <summary> 设置当前数据元的文本内容 </summary>
         private void DoSetActiveDeItemText(string aText)
         {
             FEmrView.SetActiveItemText(aText);
         }
 
+        /// <summary> 设置当前数据元的内容为扩展内容 </summary>
         private void DoSetActiveDeItemExtra(Stream aStream)
         {
             FEmrView.SetActiveItemExtra(aStream);
         }
 
+        /// <summary> 当前位置文本样式和上一位置不一样时事件 </summary>
         private void CurTextStyleChange(int aNewStyleNo)
         {
             if (aNewStyleNo >= 0)
@@ -423,6 +474,7 @@ namespace EMRView
             }
         }
 
+        /// <summary> 当前位置段样式和上一位置不一样时事件 </summary>
         private void CurParaStyleChange(int aNewParaNo)
         {
             if (aNewParaNo >= 0)
@@ -437,6 +489,7 @@ namespace EMRView
             }
         }
 
+        /// <summary> 获取数据元值处理窗体 </summary>
         private frmRecordPop PopupForm()
         {
             frmRecordPop = new frmRecordPop();
@@ -446,6 +499,7 @@ namespace EMRView
             return frmRecordPop;
         }
 
+        /// <summary> 据元值处理窗体关闭事件 </summary>
         private void PopupFormClose(object sender, EventArgs e)
         {
             if ((frmRecordPop != null) && frmRecordPop.Visible)
@@ -565,6 +619,32 @@ namespace EMRView
             vDeItem[DeProp.Index] = aIndex;
             vDeItem[DeProp.Name] = aName;
             FEmrView.InsertDeItem(vDeItem);
+        }
+
+        public void TraverseElement(TraverseItemEventHandle aTravEvent, HashSet<SectionArea> aAreas = null, int aTag = 0)
+        {
+            if (aTravEvent == null)
+                return;
+
+            HashSet<SectionArea> vArea = aAreas;
+            if (vArea == null)
+            {
+                vArea = new HashSet<SectionArea>();
+                vArea.Add(SectionArea.saHeader);
+                vArea.Add(SectionArea.saFooter);
+                vArea.Add(SectionArea.saPage);
+            }
+            else
+                if (vArea.Count == 0)
+                    return;
+
+            HCItemTraverse vItemTraverse = new HCItemTraverse();
+            vItemTraverse.Tag = aTag;
+            vItemTraverse.Areas = vArea;
+            vItemTraverse.Process = aTravEvent;
+            FEmrView.TraverseItem(vItemTraverse);
+
+            FEmrView.FormatData();
         }
 
         // 属性
@@ -909,6 +989,39 @@ namespace EMRView
         {
             frmParagraph vFrmParagraph = new frmParagraph();
             vFrmParagraph.SetView(FEmrView);
+        }
+
+        private void mniHideTrace_Click(object sender, EventArgs e)
+        {
+            if (FEmrView.HideTrace)
+                SetHideTrace(false);
+            else
+                SetHideTrace(true);
+        }
+
+        private void btnFile_DropDownOpened(object sender, EventArgs e)
+        {
+            mniHideTrace.Visible = FEmrView.TraceCount > 0;
+
+            if (mniHideTrace.Visible)
+            {
+                if (FEmrView.HideTrace)
+                    mniHideTrace.Text = "显示痕迹";
+                else
+                    mniHideTrace.Text = "不显示痕迹";
+            }
+        }
+    }
+
+    public static class TTravTag
+    {
+        public const byte WriteTraceInfo = 1;  // 遍历内容，为新痕迹增加痕迹信息
+        public const byte HideTrace = 1 << 1;  // 隐藏痕迹内容
+        //public const byte DataSetElement 1 << 2;  // 检查数据集需要的数据元
+
+        public static bool Contains(int aTags, int aTag)
+        {
+            return (aTags & aTag) == aTag;
         }
     }
 }

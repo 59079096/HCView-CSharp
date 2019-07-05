@@ -24,6 +24,7 @@ namespace EMRView
     {
         private bool FLoading;
         private bool FDesignMode;
+        private bool FHideTrace;  // 隐藏痕迹
         private bool FTrace;  // 是否处于留痕迹状态
         private int FTraceCount;  // 当前文档痕迹数量
         private Color FDeDoneColor, FDeUnDoneColor;
@@ -66,6 +67,80 @@ namespace EMRView
                     aCanvas.Brush.Color = HC.View.HC.clBtnFace;
                     aCanvas.FillRect(aDrawRect);
                 }
+
+                if (!FHideTrace)  // 显示痕迹
+                {
+                    if (vDeItem.StyleEx == StyleExtra.cseDel)  // 痕迹
+                    {
+                        int vTextHeight = Style.TextStyles[vDeItem.StyleNo].FontHeight;
+                        int vAlignVert = User.DT_BOTTOM;
+                        switch (Style.ParaStyles[vDeItem.ParaNo].AlignVert)
+                        {
+                            case ParaAlignVert.pavCenter:
+                                vAlignVert = User.DT_CENTER;
+                                break;
+
+                            case ParaAlignVert.pavTop:
+                                vAlignVert = User.DT_TOP;
+                                break;
+
+                            default:
+                                vAlignVert = User.DT_BOTTOM;
+                                break;
+                        }
+
+                        int vTop = aDrawRect.Top;
+                        switch (vAlignVert)
+                        {
+                            case User.DT_TOP:
+                                vTop = aDrawRect.Top;
+                                break;
+
+                            case User.DT_CENTER:
+                                vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - vTextHeight) / 2;
+                                break;
+
+                            default:
+                                vTop = aDrawRect.Bottom - vTextHeight;
+                                break;
+                        }
+
+                        // 绘制删除线
+                        aCanvas.Pen.BeginUpdate();
+                        try
+                        {
+                            aCanvas.Pen.Style = HCPenStyle.psSolid;
+                            aCanvas.Pen.Color = Color.Red;
+                        }
+                        finally
+                        {
+                            aCanvas.Pen.EndUpdate();
+                        }
+
+                        vTop = vTop + (aDrawRect.Bottom - vTop) / 2;
+                        aCanvas.MoveTo(aDrawRect.Left, vTop - 1);
+                        aCanvas.LineTo(aDrawRect.Right, vTop - 1);
+                        aCanvas.MoveTo(aDrawRect.Left, vTop + 2);
+                        aCanvas.LineTo(aDrawRect.Right, vTop + 2);
+                    }
+                    else
+                        if (vDeItem.StyleEx == StyleExtra.cseAdd)
+                        {
+                            aCanvas.Pen.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Pen.Style = HCPenStyle.psSolid;
+                                aCanvas.Pen.Color = Color.Blue;
+                            }
+                            finally
+                            {
+                                aCanvas.Pen.EndUpdate();
+                            }
+
+                            aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
+                            aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
+                        }
+                }
             }
         }
 
@@ -95,6 +170,9 @@ namespace EMRView
             return Result;
         }
 
+        /// <summary> 当有新Item创建完成后触发的事件 </summary>
+        /// <param name="sender">Item所属的文档节</param>
+        /// <param name="e"></param>
         protected override void DoSectionCreateItem(object sender, EventArgs e)
         {
             if ((!FLoading) && FTrace)
@@ -103,11 +181,19 @@ namespace EMRView
             base.DoSectionCreateItem(sender, e);
         }
 
+        /// <summary> 当有新Item创建时触发 </summary>
+        /// <param name="aData">创建Item的Data</param>
+        /// <param name="aStyleNo">要创建的Item样式</param>
+        /// <returns>创建好的Item</returns>
         protected override HCCustomItem DoSectionCreateStyleItem(HCCustomData aData, int aStyleNo)
         {
             return HCEmrView.CreateEmrStyleItem(aData, aStyleNo);
         }
 
+        /// <summary> 当节某Data有Item插入后触发 </summary>
+        /// <param name="sender">在哪个文档节插入</param>
+        /// <param name="aData">在哪个Data插入</param>
+        /// <param name="aItem">已插入的Item</param>
         protected override void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (aItem is DeItem)
@@ -129,6 +215,10 @@ namespace EMRView
             base.DoSectionInsertItem(sender, aData, aItem);
         }
 
+        /// <summary> 当节中某Data有Item删除后触发 </summary>
+        /// <param name="sender">在哪个文档节删除</param>
+        /// <param name="aData">在哪个Data删除</param>
+        /// <param name="aItem">已删除的Item</param>
         protected override void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (aItem is DeItem)
@@ -148,6 +238,9 @@ namespace EMRView
             base.DoSectionRemoveItem(sender, aData, aItem);
         }
 
+        /// <summary> 指定的节当前是否可编辑 </summary>
+        /// <param name="sender">文档节</param>
+        /// <returns>True：可编辑，False：不可编辑</returns>
         protected override bool DoSectionCanEdit(Object sender)
         {
             HCViewData vViewData = sender as HCViewData;
@@ -157,7 +250,8 @@ namespace EMRView
                 return true;
         }
 
-        /// <summary> 鼠标按下 </summary>
+        /// <summary> 按键按下 </summary>
+        /// <param name="e">按键信息</param>
         protected override void OnKeyDown(KeyEventArgs e)
         {
             if (FTrace)
@@ -327,7 +421,8 @@ namespace EMRView
                 base.OnKeyDown(e);
         }
 
-        /// <summary> 鼠标按压 </summary>
+        /// <summary> 按键按压 </summary>
+        /// <param name="e">按键信息</param>
         protected override void OnKeyPress(KeyPressEventArgs e)
         {
             if (HC.View.HC.IsKeyPressWant(e))
@@ -353,9 +448,9 @@ namespace EMRView
             }
         }
 
-        /// <summary> 插入文本 </summary>
+        /// <summary> 在当前位置插入文本 </summary>
         /// <param name="AText">要插入的字符串(支持带#13#10的回车换行)</param>
-        /// <returns>True：插入成功</returns>
+        /// <returns>True：插入成功，False：插入失败</returns>
         protected override bool DoInsertText(string aText)
         {
             if (CanNotEdit())
@@ -383,7 +478,7 @@ namespace EMRView
         protected override void DoSectionDrawItemPaintAfter(Object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
             int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            if (FTraceCount > 0)  // 显示批注
+            if ((!FHideTrace) && (FTraceCount > 0))  // 显示痕迹且有痕迹
             {
                 HCCustomItem vItem = aData.Items[aData.DrawItems[aDrawItemNo].ItemNo];
                 if (vItem.StyleNo > HCStyle.Null)
@@ -414,6 +509,7 @@ namespace EMRView
         {
             base.Create();
             FLoading = false;
+            FHideTrace = false;
             FTrace = false;
             FTraceCount = 0;
             FDesignMode = false;
@@ -434,6 +530,10 @@ namespace EMRView
 
         }
 
+        /// <summary> 创建指定样式的Item </summary>
+        /// <param name="aData">要创建Item的Data</param>
+        /// <param name="aStyleNo">要创建的Item样式</param>
+        /// <returns>创建好的Item</returns>
         public static HCCustomItem CreateEmrStyleItem(HCCustomData aData, int aStyleNo)
         {
             switch (aStyleNo)
@@ -470,13 +570,8 @@ namespace EMRView
             }
         }
 
-        /// <summary> 文档保存到流 </summary>
-        public override void SaveToStream(Stream aStream, bool aQuick = false, HashSet<SectionArea> aAreas = null)
-        {
-            base.SaveToStream(aStream, aQuick, aAreas);
-        }
-
-        /// <summary> 读取文件流 </summary>
+        /// <summary> 从二进制流读取文件 </summary>
+        /// <param name="aStream">文件流</param>
         public override void LoadFromStream(Stream aStream)
         {
             FLoading = true;
@@ -515,7 +610,7 @@ namespace EMRView
 
         /// <summary> 插入数据组 </summary>
         /// <param name="ADeGroup">数据组信息</param>
-        /// <returns>True：插入成功</returns>
+        /// <returns>True：成功，False：失败</returns>
         public bool InsertDeGroup(DeGroup aDeGroup)
         {
             return InsertDomain(aDeGroup);
@@ -523,7 +618,7 @@ namespace EMRView
 
         /// <summary> 插入数据元 </summary>
         /// <param name="ADeItem">数据元信息</param>
-        /// <returns>True：插入成功</returns>
+        /// <returns>True：成功，False：失败</returns>
         public bool InsertDeItem(DeItem aDeItem)
         {
             return this.InsertItem(aDeItem);
@@ -588,7 +683,7 @@ namespace EMRView
         /// <param name="AData">指定从哪个Data里获取</param>
         /// <param name="ADeGroupStartNo">指定数据组的起始ItemNo</param>
         /// <param name="ADeGroupEndNo">指定数据组的结束ItemNo</param>
-        /// <returns>数据组内容</returns>
+        /// <returns>数据组文本内容</returns>
         public string GetDataDeGroupText(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo)
         {
             string Result = "";
@@ -598,10 +693,10 @@ namespace EMRView
             return Result;
         }
 
-        /// <summary> 从当前数据组起始位置往前找相同Index域内容 </summary>
+        /// <summary> 从当前数据组起始位置往前找相同数据组的内容Index域内容 </summary>
         /// <param name="AData">指定从哪个Data里获取</param>
         /// <param name="ADeGroupStartNo">指定从哪个位置开始往前找</param>
-        /// <returns>相同Index的数据组内容</returns>
+        /// <returns>相同数据组文本形式的内容</returns>
         public string GetDataForwardDeGroupText(HCViewData aData, int aDeGroupStartNo)
         {
             string Result = "";
@@ -652,6 +747,10 @@ namespace EMRView
             return Result;
         }
 
+        /// <summary> 设置数据组的内容为指定的文本 </summary>
+        /// <param name="aData">数据组所在的Data</param>
+        /// <param name="aDeGroupNo">数据组的ItemNo</param>
+        /// <param name="aText">文本内容</param>
         public void SetDeGroupText(HCViewData aData, int aDeGroupNo, string aText)
         {
             int vGroupBeg = -1;
@@ -670,10 +769,18 @@ namespace EMRView
             aData.InsertText(aText);
         }
 
+        /// <summary> 是否是文档设计模式 </summary>
         public bool DesignModeEx
         {
             get { return FDesignMode; }
             set { FDesignMode = value; }
+        }
+
+        /// <summary> 是否隐藏痕迹 </summary>
+        public bool HideTrace
+        {
+            get { return FHideTrace; }
+            set { FHideTrace = value; }
         }
 
         /// <summary> 是否处于留痕状态 </summary>
@@ -683,12 +790,20 @@ namespace EMRView
             set { FTrace = value; }
         }
 
+        /// <summary> 文档中有几处痕迹 </summary>
+        public int TraceCount
+        {
+            get { return FTraceCount; }
+        }
+
+        /// <summary> 当编辑只读状态的Data时触发 </summary>
         public EventHandler OnCanNotEdit
         {
             get { return FOnCanNotEdit; }
             set { FOnCanNotEdit = value; }
         }
 
+        /// <summary> 数据元需要同步内容时触发 </summary>
         public SyncDeItemEventHandle OnSyncDeItem
         {
             get { return FOnSyncDeItem; }

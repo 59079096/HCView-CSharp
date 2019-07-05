@@ -22,13 +22,6 @@ using System.Data.SqlClient;
 
 namespace EMRView
 {
-    public enum TraverseTag : byte
-    {
-        ttDataSetElement,  // 检查数据集需要的数据元
-        ttWriteTraceInfo,  // 遍历内容，为新痕迹增加痕迹信息
-        ttShowTrace  // 显示痕迹内容
-    }
-
     public partial class frmPatientRecord : Form
     {
         private void frmPatientRecord_Load(object sender, EventArgs e)
@@ -96,7 +89,6 @@ namespace EMRView
         private ServerInfo FServerInfo = new ServerInfo();
         private DataTable FDataElementSetMacro;
         private List<StructDoc> FStructDocs = new List<StructDoc>();
-        private HashSet<TraverseTag> FTraverseTags = new HashSet<TraverseTag>();
                     
         private void DoInsertDeItem(HCEmrView aEmrView, HCSection aSection, HCCustomData aData, HCCustomItem aItem)
         {
@@ -104,26 +96,14 @@ namespace EMRView
                 (aItem as DeCombobox).OnPopupItem = DoRecordDeComboboxGetItem;
         }
 
-        private void TraverseElement(frmRecord aFrmRecord)
-        {
-            HCItemTraverse vItemTraverse = new HCItemTraverse();
-            vItemTraverse.Tag = 0;
-            vItemTraverse.Areas.Add(SectionArea.saHeader);
-            vItemTraverse.Areas.Add(SectionArea.saPage);
-            vItemTraverse.Areas.Add(SectionArea.saFooter);
-            vItemTraverse.Process = DoTraverseItem;
-
-            aFrmRecord.EmrView.FormatData();
-        }
-
-        private void DoTraverseItem(HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+        private void DoTraverseItem(HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
         {
             if (!(aData.Items[aItemNo] is DeItem))
                 return;
 
             DeItem vDeItem = aData.Items[aItemNo] as DeItem;
 
-            if (FTraverseTags.Contains(TraverseTag.ttWriteTraceInfo))
+            if (TTravTag.Contains(aTags, TTravTag.WriteTraceInfo))
             {
                 switch (vDeItem.StyleEx)
                 {
@@ -134,21 +114,15 @@ namespace EMRView
                     case StyleExtra.cseDel:
                         if (vDeItem[DeProp.Trace] == "")
                             vDeItem[DeProp.Trace] = UserInfo.Name + "(" + UserInfo.ID + ") 删除 "
-                            + string.Format("{0:yyyy-MM-dd}", DateTime.Now);
+                            + string.Format("{0:yyyy-MM-dd}", FServerInfo.DateTime);
                         break;
 
                     case StyleExtra.cseAdd:
                         if (vDeItem[DeProp.Trace] == "")
                             vDeItem[DeProp.Trace] = UserInfo.Name + "(" + UserInfo.ID + ") 添加 "
-                            + string.Format("{0:yyyy-MM-dd}", DateTime.Now);
+                            + string.Format("{0:yyyy-MM-dd}", FServerInfo.DateTime);
                         break;
                 }
-            }
-
-            if (FTraverseTags.Contains(TraverseTag.ttShowTrace))
-            {
-                if (vDeItem.StyleEx == StyleExtra.cseDel)
-                    vDeItem.Visible = !vDeItem.Visible;
             }
         }
 
@@ -367,14 +341,13 @@ namespace EMRView
 
             RecordInfo vRecordInfo = vFrmRecord.Tag as RecordInfo;
 
-            FTraverseTags.Clear();
             if (vFrmRecord.EmrView.Trace)
             {
-                FTraverseTags.Add(TraverseTag.ttWriteTraceInfo);
-                FTraverseTags.Add(TraverseTag.ttDataSetElement);
-            }
+                FServerInfo.DateTime = DateTime.Now;
 
-            CheckRecordContent(vFrmRecord);  // 检查文档质控、痕迹等问题
+                HashSet<SectionArea> vAreas = new HashSet<SectionArea> { SectionArea.saPage };
+                vFrmRecord.TraverseElement(DoTraverseItem, vAreas, TTravTag.WriteTraceInfo | TTravTag.HideTrace);
+            }
 
             using (MemoryStream vSM = new MemoryStream())
             {
@@ -733,17 +706,6 @@ namespace EMRView
             }
 
             return null;
-        }
-
-        private void CheckRecordContent(frmRecord aFrmRecord)
-        {
-            HCItemTraverse vItemTraverse = new HCItemTraverse();
-            vItemTraverse.Tag = 0;
-            vItemTraverse.Areas.Add(SectionArea.saPage);
-            vItemTraverse.Process = DoTraverseItem;
-            aFrmRecord.EmrView.TraverseItem(vItemTraverse);
-
-            aFrmRecord.EmrView.FormatData();
         }
 
         private void SaveStructureToXml(frmRecord aFrmRecord, string aFileName)

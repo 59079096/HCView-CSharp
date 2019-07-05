@@ -699,6 +699,15 @@ namespace HC.View
                 vLineFirst = aPos.X == aFmtLeft;
             }
 
+            if (!vItem.Visible)  // 不显示的Item
+            {
+                vRect.Left = aPos.X;
+                vRect.Top = aPos.Y;
+                vRect.Right = vRect.Left;
+                vRect.Bottom = vRect.Top + 5;
+                NewDrawItem(aItemNo, aOffset, vItem.Length, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
+            }
+            else
             if (vItem.StyleNo < HCStyle.Null)
             {
                 vRectItem = vItem as HCCustomRectItem;

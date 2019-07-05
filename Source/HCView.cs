@@ -1348,6 +1348,7 @@ namespace HC.View
             DoViewResize();
         }
 
+        /// <summary> ActiveItem重新适应其环境(供外部直接修改Item属性后重新和其前后Item连接组合) </summary>
         public void ReAdaptActiveItem()
         {
             ActiveSection.ReAdaptActiveItem();
@@ -1528,6 +1529,7 @@ namespace HC.View
             }
         }
 
+        /// <summary> 插入图片 </summary>
         public bool InsertImage(string aFile)
         {
             this.BeginUpdate();
@@ -1541,6 +1543,7 @@ namespace HC.View
             }
         }
 
+        /// <summary> 插入GIF图片 </summary>
         public bool InsertGifImage(string aFile)
         {
             this.BeginUpdate();
@@ -1611,6 +1614,7 @@ namespace HC.View
             return Result;
         }
 
+        /// <summary> 插入域 </summary>
         public bool InsertDomain(HCDomainItem aMouldDomain)
         {
             return ActiveSection.InsertDomain(aMouldDomain);
@@ -1634,11 +1638,13 @@ namespace HC.View
             return ActiveSection.ActiveTableDeleteCurRow();
         }
 
+        /// <summary> 当前表格选中的单元格拆分行 </summary>
         public bool ActiveTableSplitCurRow()
         {
             return ActiveSection.ActiveTableSplitCurRow();
         }
 
+        /// <summary> 当前表格选中的单元格拆分列 </summary>
         public bool ActiveTableSplitCurCol()
         {
             return ActiveSection.ActiveTableSplitCurCol();
@@ -2135,6 +2141,7 @@ namespace HC.View
             DoMapChanged();
         }
 
+        /// <summary> 开始一组撤销操作 </summary>
         public void UndoGroupBegin()
         {
             if (FUndoList.Enable)
@@ -2144,6 +2151,7 @@ namespace HC.View
             }
         }
 
+        /// <summary> 结束一组撤销操作 </summary>
         public void UndoGroupEnd()
         {
             if (FUndoList.Enable)
@@ -2257,6 +2265,7 @@ namespace HC.View
             return Result;
         }
 
+        /// <summary> 设置当前TextItem的文本内容 </summary>
         public void SetActiveItemText(string aText)
         {
             ActiveSection.SetActiveItemText(aText);
@@ -2320,11 +2329,13 @@ namespace HC.View
             }
         }
 
+        /// <summary> 读取其他格式的文件 </summary>
         public void LoadFromDocumentFile(string aFileName, string aExt)
         {
 
         }
 
+        /// <summary> 另存为其他格式的文件 </summary>
         public void SaveToDocumentFile(string aFileName, string aExt)
         {
 
@@ -2469,6 +2480,7 @@ namespace HC.View
             }
         }
 
+        /// <summary> 文档保存为xml格式 </summary>
         public void SaveToXml(string aFileName, System.Text.Encoding aEncoding)
         {
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
@@ -2501,6 +2513,7 @@ namespace HC.View
             vXml.Save(aFileName);
         }
 
+        /// <summary> 读取xml格式 </summary>
         public void LoadFromXml(string aFileName)
         {
             this.BeginUpdate();
@@ -3053,7 +3066,7 @@ namespace HC.View
             }
         }
 
-        /// <summary> 重做 </summary>
+        /// <summary> 恢复/重做 </summary>
         public void Redo()
         {
             if (FUndoList.Enable)
@@ -3141,6 +3154,9 @@ namespace HC.View
             return Result;
         }
 
+        /// <summary> 替换已经通过查找选中的内容 </summary>
+        /// <param name="AText">要替换为的内容</param>
+        /// <returns>是否替换成功</returns>
         public bool Replace(string aText)
         {
             return this.ActiveSection.Replace(aText);
@@ -3192,6 +3208,7 @@ namespace HC.View
             set { SetActiveSectionIndex(value); }
         }
 
+        /// <summary> 当前光标所在的节 </summary>
         public HCSection ActiveSection
         {
             get { return GetActiveSection(); }
@@ -3262,22 +3279,26 @@ namespace HC.View
             set { SetIsChanged(value); }
         }
 
+        /// <summary> 当前文档胶卷视图时页之间的间距 </summary>
         public byte PagePadding
         {
             get { return FPagePadding; }
             set { SetPagePadding(value); }
         }
 
+        /// <summary> 当前文档显示出来的批注 </summary>
         public HCAnnotatePre AnnotatePre
         {
             get { return FAnnotatePre; }
         }
 
+        /// <summary> 当前文档可显示的宽度 </summary>
         public int ViewWidth
         {
             get { return FViewWidth; }
         }
 
+        /// <summary> 当前文档可显示的高度 </summary>
         public int ViewHeight
         {
             get { return FViewHeight; }
@@ -3297,6 +3318,7 @@ namespace HC.View
             set { FOnSectionInsertItem = value; }
         }
 
+        /// <summary> 节有新的Item删除时触发 </summary>
         public SectionDataItemNotifyEventHandler OnSectionRemoveItem
         {
             get { return FOnSectionRemoveItem; }
@@ -3345,6 +3367,7 @@ namespace HC.View
             set { FOnSectionPaintPaperBefor = value; }
         }
 
+        /// <summary> 节整页绘制后触发 </summary>
         public SectionPaintEventHandler OnSectionPaintPaperAfter
         {
             get { return FOnSectionPaintPaperAfter; }
@@ -3358,7 +3381,7 @@ namespace HC.View
             set { FOnSectionReadOnlySwitch = value; }
         }
 
-        /// <summary> 界面显示模式：页面、Web </summary>
+        /// <summary> 界面显示模式：胶卷、页面 </summary>
         public HCViewModel ViewModel
         {
             get { return FViewModel; }
@@ -3442,30 +3465,35 @@ namespace HC.View
             set { FOnPaintViewAfter = value; }
         }
 
+        /// <summary> 创建指定样式的Item时触发 </summary>
         public StyleItemEventHandler OnSectionCreateStyleItem
         {
             get { return FOnSectionCreateStyleItem; }
             set { FOnSectionCreateStyleItem = value; }
         }
 
+        /// <summary> 当编辑只读状态的Data时触发 </summary>
         public OnCanEditEventHandler OnSectionCanEdit
         {
             get { return FOnSectionCanEdit; }
             set { FOnSectionCanEdit = value; }
         }
 
+        /// <summary> 节当前位置段样式和上一次不一样时触发 </summary>
         public EventHandler OnSectionCurParaNoChange
         {
             get { return FOnSectionCurParaNoChange; }
             set { FOnSectionCurParaNoChange = value; }
         }
 
+        /// <summary> 节当前位置文本样式和上一次不一样时触发 </summary>
         public EventHandler OnSectionActivePageChange
         {
             get { return FOnSectionActivePageChange; }
             set { FOnSectionActivePageChange = value; }
         }
 
+        /// <summary> 文档视图有变动时触发 </summary>
         public EventHandler OnViewResize
         {
             get { return FOnViewResize; }
