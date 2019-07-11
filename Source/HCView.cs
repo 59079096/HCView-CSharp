@@ -1298,6 +1298,7 @@ namespace HC.View
                 aStyle.TextStyles[i].CheckSaveUsed = false;
                 aStyle.TextStyles[i].TempNo = HCStyle.Null;
             }
+
             for (int i = 0; i <= aStyle.ParaStyles.Count - 1; i++)
             {
                 aStyle.ParaStyles[i].CheckSaveUsed = false;
@@ -1325,8 +1326,15 @@ namespace HC.View
                     vUnCount++;
             }
 
+            HCCustomData vData = null;
             for (int i = 0; i <= aSections.Count - 1; i++)
+            {
                 aSections[i].MarkStyleUsed(false, AParts);
+
+                vData = aSections[i].ActiveData.GetTopLevelData();
+                vData.CurStyleNo = aStyle.TextStyles[vData.CurStyleNo].TempNo;
+                vData.CurParaNo = aStyle.ParaStyles[vData.CurParaNo].TempNo;
+            }
 
             for (int i = aStyle.TextStyles.Count - 1; i >= 0; i--)
             {

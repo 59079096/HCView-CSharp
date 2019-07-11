@@ -152,7 +152,7 @@ namespace EMRView
         {
             using (MemoryStream vSM = new MemoryStream())
             {
-                (sender as frmRecord).EmrView.SaveToStream(vSM);
+                (sender as frmRecord).EmrView.SaveToStream(vSM);  // 得到文档数据流
 
                 int vTempID = ((sender as frmRecord).ObjectData as TemplateInfo).ID;
 
@@ -163,7 +163,10 @@ namespace EMRView
                 };
 
                 if (emrMSDB.DB.ExecSql(emrMSDB.Sql_SaveTemplateConent, vEvent))
+                {
+                    (sender as frmRecord).EmrView.IsChanged = false;  // 保存后文档标识为非修改
                     MessageBox.Show("保存成功！");
+                }
                 else
                     MessageBox.Show(emrMSDB.DB.ErrMsg);
             }

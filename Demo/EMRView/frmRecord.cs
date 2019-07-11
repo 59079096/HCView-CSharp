@@ -314,8 +314,8 @@ namespace EMRView
             {
                 FEmrView = new HCEmrView();
                 FEmrView.OnSectionItemInsert = DoItemInsert;
-                FEmrView.MouseDown += DoMouseDown;
-                FEmrView.MouseUp += DoMouseUp;
+                FEmrView.MouseDown += DoEmrViewMouseDown;
+                FEmrView.MouseUp += DoEmrViewMouseUp;
                 FEmrView.OnCaretChange = DoCaretChange;
                 FEmrView.OnVerScroll = DoVerScroll;
                 FEmrView.OnChangedSwitch = DoChangedSwitch;
@@ -506,13 +506,13 @@ namespace EMRView
                 frmRecordPop.Close();
         }
 
-        protected void DoMouseDown(object sender, MouseEventArgs e)
+        protected void DoEmrViewMouseDown(object sender, MouseEventArgs e)
         {
             PopupFormClose(this, null);
             FMouseDownTick = Environment.TickCount;
         }
 
-        protected void DoMouseUp(object sender, MouseEventArgs e)
+        protected void DoEmrViewMouseUp(object sender, MouseEventArgs e)
         {
             string vInfo = "";
 
@@ -551,7 +551,7 @@ namespace EMRView
                             return;
                         }
 
-                        POINT vPt = FEmrView.GetActiveDrawItemClientCoord();
+                        POINT vPt = FEmrView.GetActiveDrawItemClientCoord();  // 得到相对EmrView的坐标
                         HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
                         RECT vDrawItemRect = vActiveDrawItem.Rect;
                         vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
@@ -586,18 +586,21 @@ namespace EMRView
             tssDeInfo.Text = vInfo;
         }
 
+        /// <summary> 病历有新的Item插入时触发 </summary>
         protected void DoItemInsert(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnInsertDeItem != null)
                 FOnInsertDeItem(FEmrView, sender as HCSection, aData, aItem);
         }
 
+        /// <summary> 调用保存病历方法 </summary>
         protected void DoSave()
         {
             if (FOnSave != null)
                 FOnSave(this, null);
         }
 
+        /// <summary> 调用保存病历结构方法 </summary>
         protected void DoSaveStructure()
         {
             if (FOnSaveStructure != null)
@@ -608,19 +611,32 @@ namespace EMRView
 
         public frmDataElement FfrmDataElement;
 
+        /// <summary> 隐藏工具栏 </summary>
         public void HideToolbar()
         {
             tlbTool.Visible = false;
         }
 
+        /// <summary> 插入一个数据元 </summary>
+        /// <param name="aIndex">数据元唯一标识</param>
+        /// <param name="aName">数据元名称</param>
         public void InsertDeItem(string aIndex, string aName)
         {
+            if ((aIndex == "") || (aName == ""))
+            {
+                MessageBox.Show("要插入的数据元索引和名称不能为空！");
+                return;
+            }
             DeItem vDeItem = FEmrView.NewDeItem(aName);
             vDeItem[DeProp.Index] = aIndex;
             vDeItem[DeProp.Name] = aName;
             FEmrView.InsertDeItem(vDeItem);
         }
 
+        /// <summary> 遍历文档指定Data的Item </summary>
+        /// <param name="aTravEvent">每遍历到一个Item时触发的事件</param>
+        /// <param name="aAreas">要遍历的Data</param>
+        /// <param name="aTag">遍历标识</param>
         public void TraverseElement(TraverseItemEventHandle aTravEvent, HashSet<SectionArea> aAreas = null, int aTag = 0)
         {
             if (aTravEvent == null)
@@ -647,36 +663,41 @@ namespace EMRView
             FEmrView.FormatData();
         }
 
-        // 属性
+        /// <summary> 病历编辑器 </summary>
         public HCEmrView EmrView
         {
             get { return FEmrView; }
         }
 
+        /// <summary> 保存病历时调用的方法 </summary>
         public EventHandler OnSave
         {
             get { return FOnSave; }
             set { FOnSave = value; }
         }
 
+        /// <summary> 保存病历结构时调用的方法 </summary>
         public EventHandler OnSaveStructure
         {
             get { return FOnSaveStructure; }
             set { FOnSaveStructure = value; }
         }
 
+        /// <summary> 文档Change状态切换时调用的方法 </summary>
         public EventHandler OnChangedSwitch
         {
             get { return FOnChangedSwitch; }
             set { FOnChangedSwitch = value; }
         }
 
+        /// <summary> 节只读属性有变化时调用的方法 </summary>
         public EventHandler OnReadOnlySwitch
         {
             get { return FOnReadOnlySwitch; }
             set { FOnReadOnlySwitch = value; }
         }
 
+        /// <summary> 节有新的Item插入时调用的方法 </summary>
         public DeItemInsertEventHandler OnInsertDeItem
         {
             get { return FOnInsertDeItem; }
@@ -1009,6 +1030,46 @@ namespace EMRView
                     mniHideTrace.Text = "显示痕迹";
                 else
                     mniHideTrace.Text = "不显示痕迹";
+            }
+        }
+
+        private void mniSaveAs_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog vDlg = new SaveFileDialog();
+            vDlg.Filter = "文件|*" + HC.View.HC.HC_EXT + "|HCView xml|*.xml";
+            if (vDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (vDlg.FileName != "")
+                {
+                    string vExt = "";
+                    switch (vDlg.FilterIndex)
+                    {
+                        case 1:
+                            vExt = HC.View.HC.HC_EXT;
+                            break;
+
+                        case 2:
+                            vExt = ".xml";
+                            break;
+
+                        default:
+                            return;
+                    }
+
+                    if (System.IO.Path.GetExtension(vDlg.FileName) != vExt)
+                        vDlg.FileName = vDlg.FileName + vExt;
+
+                    switch (vDlg.FilterIndex)
+                    {
+                        case 1:
+                            FEmrView.SaveToFile(vDlg.FileName);
+                            break;
+
+                        case 2:
+                            FEmrView.SaveToXml(vDlg.FileName, Encoding.UTF8);
+                            break;
+                    }
+                }
             }
         }
     }

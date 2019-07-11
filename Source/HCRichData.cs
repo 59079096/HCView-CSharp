@@ -542,6 +542,7 @@ namespace HC.View
 
             FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
+            bool vStartParaFirst = Items[aStartNo].ParaFirst;
             int vDelCount = aEndNo - aStartNo + 1;
             Undo_New();
             for (int i = aEndNo; i >= aStartNo; i--)
@@ -557,6 +558,12 @@ namespace HC.View
                 Items.Add(vItem);
                 UndoAction_InsertItem(0, 0);
             }
+            else
+                if (vStartParaFirst && (!Items[aStartNo].ParaFirst))
+                {
+                    UndoAction_ItemParaFirst(aStartNo, 0, true);
+                    Items[aStartNo].ParaFirst = true;
+                }
 
             ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
             Style.UpdateInfoRePaint();
@@ -565,7 +572,7 @@ namespace HC.View
             if (aStartNo > 0)
                 ReSetSelectAndCaret(aStartNo - 1);
             else  // 从第一个开始删除
-                ReSetSelectAndCaret(0);
+                ReSetSelectAndCaret(0, 0);
         }
 
         protected int MouseMoveDrawItemNo
@@ -1732,6 +1739,8 @@ namespace HC.View
                 {
                     if (MergeItemText(Items[vInsetLastNo], Items[vInsetLastNo + 1]))
                     {
+                        vItem = Items[vInsetLastNo + 1];
+                        UndoAction_InsertText(vInsetLastNo, Items[vInsetLastNo].Length - vItem.Length + 1, vItem.Text);
                         UndoAction_DeleteItem(vInsPos + vItemCount, 0);
 
                         Items.Delete(vInsPos + vItemCount);
@@ -3816,15 +3825,23 @@ namespace HC.View
                     vItem.ParaFirst = true;
 
                     if (aPageBreak)
+                    {
                         vItem.PageBreak = true;
+                        Items.Insert(SelectInfo.StartItemNo + 1, vItem);  // 插入到下面
 
-                    Items.Insert(SelectInfo.StartItemNo + 1, vItem);  // 插入到下面
+                        Undo_New();
+                        UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                    }
+                    else
+                    {
+                        Items.Insert(SelectInfo.StartItemNo, vItem);  // 插入到当前
 
-                    Undo_New();
-                    UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                        Undo_New();
+                        UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                    }
 
-                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
                 }
             }
             else
@@ -4186,13 +4203,14 @@ namespace HC.View
                                     if (IsEmptyLine(SelectInfo.StartItemNo - 1))
                                     {
                                         vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
-                                        FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
+                                        vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         Undo_New();
                                         UndoAction_DeleteItem(SelectInfo.StartItemNo - 1, 0);
                                         Items.Delete(SelectInfo.StartItemNo - 1);
 
-                                        ReFormatData(vFormatFirstDrawItemNo, SelectInfo.StartItemNo - 1, -1);
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
 
                                         ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, 0);
                                     }
@@ -4206,6 +4224,8 @@ namespace HC.View
                                             Undo_New();
                                             UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
                                             Items.Delete(SelectInfo.StartItemNo);
+
+                                            ReFormatData(vFormatFirstDrawItemNo, SelectInfo.StartItemNo - 1, -1);
 
                                             ReSetSelectAndCaret(SelectInfo.StartItemNo - 1);
                                         }

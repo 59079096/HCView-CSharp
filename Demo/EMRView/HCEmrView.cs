@@ -60,6 +60,12 @@ namespace EMRView
                             aCanvas.FillRect(aDrawRect);
                         }
                     }
+                    else  // 不是数据元
+                        if (FDesignMode)
+                        {
+                            aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                            aCanvas.FillRect(aDrawRect);
+                        }
                 }
                 else  // 不是数据元
                 if (FDesignMode && vDeItem.EditProtect)
@@ -570,7 +576,7 @@ namespace EMRView
             }
         }
 
-        /// <summary> 从二进制流读取文件 </summary>
+        /// <summary> 从二进制流加载文件 </summary>
         /// <param name="aStream">文件流</param>
         public override void LoadFromStream(Stream aStream)
         {
@@ -625,7 +631,7 @@ namespace EMRView
         }
 
         /// <summary> 新建数据元 </summary>
-        /// <param name="AText">数据元文本</param>
+        /// <param name="aText">数据元文本</param>
         /// <returns>新建好的数据元</returns>
         public DeItem NewDeItem(string aText)
         {
@@ -643,6 +649,7 @@ namespace EMRView
         }
 
         /// <summary> 直接设置当前数据元的值为扩展内容 </summary>
+		/// <param name="aStream">扩展内容流</param>
         public void SetActiveItemExtra(Stream aStream)
         {
             string vFileFormat = "";
@@ -769,7 +776,7 @@ namespace EMRView
             aData.InsertText(aText);
         }
 
-        /// <summary> 是否是文档设计模式 </summary>
+        /// <summary> 文档是否处于设计模式 </summary>
         public bool DesignModeEx
         {
             get { return FDesignMode; }

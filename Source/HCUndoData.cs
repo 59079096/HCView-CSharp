@@ -443,15 +443,53 @@ namespace HC.View
                 }
                 else  // 组恢复(无Action)
                 {
-                    if (FUndoGroupCount == 0)
+                    if (FUndoGroupCount == 0)  // 组恢复开始
                     {
-                        FFormatFirstItemNo = (aUndo as HCUndoGroupBegin).ItemNo;
+                        HCUndoList vUndoList = GetUndoList();
+                        FFormatFirstItemNo = -1;
+                        FFormatLastItemNo = -1;
+                        int vItemNo = -1;
+
+                        for (int i = vUndoList.CurGroupBeginIndex; i <= vUndoList.CurGroupEndIndex; i++)
+                        {
+                            if (vUndoList[i] is HCUndoGroupBegin)
+                            {
+                                if (FFormatFirstItemNo > ((vUndoList[i] as HCUndoGroupBegin).ItemNo))
+                                    FFormatFirstItemNo = (vUndoList[i] as HCUndoGroupBegin).ItemNo;
+                            }
+                            else
+                            if (vUndoList[i] is HCUndoGroupEnd)
+                            {
+                                if (FFormatLastItemNo < ((vUndoList[i] as HCUndoGroupEnd).ItemNo))
+                                    FFormatLastItemNo = (vUndoList[i] as HCUndoGroupEnd).ItemNo;
+                            }
+                            else
+                            {
+                                vItemNo = GetParaFirstItemNo(GetActionAffectFirst(vUndoList[i].Actions.First, vUndoList[i].IsUndo));
+                                if (FFormatFirstItemNo > vItemNo)
+                                    FFormatFirstItemNo = vItemNo;
+
+                                vItemNo = GetParaLastItemNo(GetActionAffectLast(vUndoList[i].Actions.Last, vUndoList[i].IsUndo));
+                                if (FFormatLastItemNo < vItemNo)
+                                    FFormatLastItemNo = vItemNo;
+                            }
+                        }
+
+                        if (FFormatFirstItemNo < 0)
+                            FFormatFirstItemNo = 0;
+
+                        if (FFormatLastItemNo > Items.Count - 1)
+                            FFormatLastItemNo--;
+
+                        FFormatFirstDrawItemNo = GetFormatFirstDrawItem(Items[FFormatFirstItemNo].FirstDItemNo);
+
+                        /*FFormatFirstItemNo = (aUndo as HCUndoGroupBegin).ItemNo;
                         FFormatFirstDrawItemNo = GetFormatFirstDrawItem(Items[FFormatFirstItemNo].FirstDItemNo);
 
                         HCUndoList vUndoList = GetUndoList();
                         FFormatLastItemNo = (vUndoList[vUndoList.CurGroupEndIndex] as HCUndoGroupEnd).ItemNo;
                         if (FFormatLastItemNo > Items.Count - 1)  // 防止在最后插入Item的撤销后恢复访问越界
-                            FFormatLastItemNo--;
+                            FFormatLastItemNo--; */
 
                         FormatPrepare(FFormatFirstDrawItemNo, FFormatLastItemNo);
 
@@ -665,6 +703,7 @@ namespace HC.View
                 {
                     HCSetItemTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatSetItemText, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCSetItemTextUndoAction;
+                    vTextAction.Text = Items[aItemNo].Text;
                     vTextAction.NewText = aNewText;
                 }
             }

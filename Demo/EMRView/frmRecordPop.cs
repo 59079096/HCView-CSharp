@@ -26,7 +26,7 @@ namespace EMRView
     public partial class frmRecordPop : Form
     {
         string FSnum1, FSnum2, FSmark, FOldUnit;
-        decimal FNum1, FNum2;
+        double FNum1, FNum2;
         bool FFlag, FSign, FTemp, FTemplate, FConCalcValue;
         string FFrmtp;
         DeItem FDeItem;
@@ -60,7 +60,7 @@ namespace EMRView
         private void SetValueFocus()
         {
             tbxValue.Focus();
-            tbxValue.SelectionStart = tbxValue.Text.Length - 1;
+            tbxValue.SelectionStart = tbxValue.Text.Length;
             tbxValue.SelectionLength = 0;
         }
 
@@ -140,14 +140,36 @@ namespace EMRView
 
             if (FFrmtp == DeFrmtp.Number)  // 数值
             {
-                tbxValue.Clear();
+                if (aDeItem[DeProp.Unit] != "")
+                    tbxValue.Text = aDeItem.Text.Replace(aDeItem[DeProp.Unit], "");
+                else
+                    tbxValue.Text = aDeItem.Text;
+
+                if (tbxValue.Text != "")
+                    tbxValue.SelectAll();
+
+                cbbUnit.Items.Clear();
+                string[] vStrings = vDeUnit.Split(new string[] { "," }, StringSplitOptions.None);
+                for (int i = 0; i < vStrings.Length; i++)
+                {
+                    cbbUnit.Items.Add(vStrings[i]);
+                }
+                if (cbbUnit.Items.Count > 0)
+                {
+                    cbbUnit.SelectedIndex = cbbUnit.Items.IndexOf(aDeItem[DeProp.Unit]);
+                    if (cbbUnit.SelectedIndex < 0)
+                        cbbUnit.SelectedIndex = 0;
+                }
+                else
+                    cbbUnit.Text = aDeItem[DeProp.Unit];
+
                 tabPop.SelectedIndex = 1;
                 this.Width = 185;
 
                 if (aDeItem[DeProp.Index] == "979")  // 体温
                 {
                     tabQk.SelectedIndex = 0;
-                    this.Height = 285;
+                    this.Height = 300;
                 }
                 else
                 {
@@ -199,6 +221,9 @@ namespace EMRView
             this.Location = new Point(aPopupPt.X, aPopupPt.Y);
 
             this.Show();
+
+            if (FFrmtp == DeFrmtp.Number)
+                tbxValue.Focus();
         }
 
         public TextEventHandle OnSetActiveItemText
@@ -241,13 +266,14 @@ namespace EMRView
         {
             string vText = tbxValue.Text;
 
-            if (vText == "")
+            if (vText != "")
             {
                 if (!cbxHideUnit.Checked)
                     vText += cbbUnit.Text;
 
                 FDeItem[DeProp.Unit] = cbbUnit.Text;
                 SetDeItemValue(vText);
+
                 this.Close();
             }
         }
@@ -311,6 +337,137 @@ namespace EMRView
         private void frmRecordPop_Shown(object sender, EventArgs e)
         {
             this.Focus();
+        }
+
+        private void btnCE_Click(object sender, EventArgs e)
+        {
+            tbxValue.Text = "";
+            FNum1 = 0;
+            FSmark = "";
+            FNum2 = 0;
+            FTemplate = false;
+            SetValueFocus();
+        }
+
+        private void btnC_Click(object sender, EventArgs e)
+        {
+            string vS = tbxValue.Text;
+            if (FFlag)
+                tbxValue.Text = "";
+            else
+            {
+                vS = vS.Substring(0, vS.Length - 1);
+                tbxValue.Text = vS;
+            }
+            SetValueFocus();
+        }
+
+        private void btn1_Click(object sender, EventArgs e)
+        {
+            PutCalcNumber(int.Parse((sender as Button).Tag.ToString()));
+        }
+
+        private void btnDot_Click(object sender, EventArgs e)
+        {
+            tbxValue.Text = tbxValue.Text + ".";
+            SetValueFocus();
+        }
+
+        private double Equal(double a, string m, double b)
+        {
+            double r = 0;
+
+            if (m == "+")
+                r = a + b;
+            else
+                if (m == "-")
+                    r = a - b;
+                else
+                    if (m == "*")
+                        r = a * b;
+                    else
+                        if (m == "/")
+                            r = a / b;
+
+            return r;
+        }
+
+        private void btnResult_Click(object sender, EventArgs e)
+        {
+            if (FFlag)
+                tbxValue.Text = Equal(double.Parse(tbxValue.Text), FSmark, FNum2).ToString();
+            else
+            {
+                if (FSmark == "")
+                {
+
+                }
+                else
+                {
+                    FSnum2 = tbxValue.Text;
+                    if (FSnum2 != "")
+                        FNum2 = double.Parse(tbxValue.Text);
+                    else
+                        FNum2 = FNum1;
+
+                    if ((FSmark == "/") && (FNum2 == 0))
+                    {
+                        FNum1 = 0;
+                        FSmark = "";
+                        FNum2 = 0;
+                    }
+                    else
+                        tbxValue.Text = Equal(FNum1, FSmark, FNum2).ToString();
+
+                    FFlag = true;
+                    FSign = false;
+                    FTemp = true;
+                }
+            }
+
+            SetValueFocus();
+        }
+
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            if (FSign)
+            {
+                FSnum2 = tbxValue.Text;
+                if (FSnum2 != "")
+                    FNum2 = double.Parse(tbxValue.Text);
+
+                if ((FSmark == "/") && (FNum2 == 0))
+                {
+                    FNum1 = 0;
+                    FSmark = "";
+                    FNum2 = 0;
+                }
+                else
+                    tbxValue.Text = Equal(FNum1, FSmark, FNum2).ToString();
+
+                FFlag = true;
+            }
+
+            FSnum1 = tbxValue.Text;
+            if (FSnum1 != "")
+                FNum1 = double.Parse(FSnum1);
+            else
+                FNum1 = 0;
+
+            FSmark = (sender as Button).Text;
+            FFlag = false;
+            FSign = true;
+            FTemp = FSign;
+            SetValueFocus();
+        }
+
+        private void btn35_Click(object sender, EventArgs e)
+        {
+            tbxValue.Text = (sender as Button).Tag.ToString();
+            FTemp = false;
+            FTemplate = true;
+            FConCalcValue = true;
+            SetValueFocus();
         }
     }
 }

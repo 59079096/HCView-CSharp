@@ -73,7 +73,7 @@ namespace EMRView
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            string vS = DeProp.GetPropertyString((source as DeItem).Propertys);
+            string vS = DeProp.GetPropertyString((source as DeGroup).Propertys);
             DeProp.SetPropertyString(vS, FPropertys);
             FReadOnly = (source as DeGroup).ReadOnly;
         }
