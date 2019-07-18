@@ -1114,7 +1114,8 @@ namespace HC.View
         /// <returns>True:有选中且删除成功</returns>
 
         #region DeleteSelected子方法DeleteItemSelectComplate删除全选中的单个Item
-        private bool DeleteItemSelectComplate(ref int vDelCount, int vParaFirstItemNo, int vParaLastItemNo)
+        private bool DeleteItemSelectComplate(ref int vDelCount, int vParaFirstItemNo, int vParaLastItemNo,
+            int vFormatFirstItemNo, int vFormatLastItemNo)
         {
             if (CanDeleteItem(SelectInfo.StartItemNo))
             {
@@ -1123,13 +1124,14 @@ namespace HC.View
 
                 vDelCount++;
 
-                int vFormatFirstItemNo = -1, vFormatLastItemNo = -1;
                 if ((SelectInfo.StartItemNo > vFormatFirstItemNo)
                     && (SelectInfo.StartItemNo < vFormatLastItemNo))
                 {
                     int vLen = Items[SelectInfo.StartItemNo - 1].Length;
                     if (MergeItemText(Items[SelectInfo.StartItemNo - 1], Items[SelectInfo.StartItemNo]))
                     {
+                        UndoAction_InsertText(SelectInfo.StartItemNo - 1, vLen + 1, Items[SelectInfo.StartItemNo].Text);
+                        UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                         Items.RemoveAt(SelectInfo.StartItemNo);
                         vDelCount++;
 
@@ -1159,6 +1161,8 @@ namespace HC.View
                         else
                         {
                             SelectInfo.StartItemOffset = 0;
+
+                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
                             Items[SelectInfo.StartItemNo].ParaFirst = true;
                         }
                     }
@@ -1170,12 +1174,14 @@ namespace HC.View
                             SelectInfo.StartItemOffset = Items[SelectInfo.StartItemNo].Length;
                         }
                         else  // 全选中的Item是起始格式化或结束格式化或在段内
-                        {
+                        {     // 这里的代码会触发吗？
                             if (SelectInfo.StartItemNo > 0)
                             {
                                 int vLen = Items[SelectInfo.StartItemNo - 1].Length;
                                 if (MergeItemText(Items[SelectInfo.StartItemNo - 1], Items[SelectInfo.StartItemNo]))
                                 {
+                                    UndoAction_InsertText(SelectInfo.StartItemNo - 1, vLen + 1, Items[SelectInfo.StartItemNo].Text);
+                                    UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                     Items.RemoveAt(SelectInfo.StartItemNo);
                                     vDelCount++;
                                     SelectInfo.StartItemOffset = vLen;
@@ -1221,7 +1227,8 @@ namespace HC.View
                     if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsSelectComplateTheory())
                     {
                         GetParaItemRang(SelectInfo.StartItemNo, ref vParaFirstItemNo, ref vParaLastItemNo);
-                        Result = DeleteItemSelectComplate(ref vDelCount, vParaFirstItemNo, vParaLastItemNo);
+                        Result = DeleteItemSelectComplate(ref vDelCount, vParaFirstItemNo, vParaLastItemNo,
+                            vFormatFirstItemNo, vFormatLastItemNo);
                     }
                     else
                     {
@@ -1249,7 +1256,8 @@ namespace HC.View
                         if (vEndItem.IsSelectComplate)
                         {
                             GetParaItemRang(SelectInfo.StartItemNo, ref vParaFirstItemNo, ref vParaLastItemNo);
-                            Result = DeleteItemSelectComplate(ref vDelCount, vParaFirstItemNo, vParaLastItemNo);
+                            Result = DeleteItemSelectComplate(ref vDelCount, vParaFirstItemNo, vParaLastItemNo,
+                                vFormatFirstItemNo, vFormatLastItemNo);
                         }
                         else  // Item部分选中
                         {
@@ -1728,6 +1736,8 @@ namespace HC.View
                         && (!Items[vInsetLastNo + 1].ParaFirst)
                         && MergeItemText(Items[vInsetLastNo], Items[vInsetLastNo + 1]))
                     {
+                        UndoAction_InsertText(vInsetLastNo, Items[vInsetLastNo].Length - Items[vInsetLastNo + 1].Length + 1, 
+                            Items[vInsetLastNo + 1].Text);
                         UndoAction_DeleteItem(vInsetLastNo + 1, 0);
 
                         Items.Delete(vInsetLastNo + 1);
@@ -3693,12 +3703,9 @@ namespace HC.View
                                 break;
 
                             case User.VK_DELETE:
-                                if (SelectInfo.StartItemNo < Items.Count - 1)
+                                if (SelectInfo.StartItemNo < Items.Count - 1)  // 不是最后一个
                                 {
-                                    SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
-                                    SelectInfo.StartItemOffset = 0;
-
-                                    if (Items[SelectInfo.StartItemNo].ParaFirst)
+                                    if (Items[SelectInfo.StartItemNo + 1].ParaFirst)  // 下一个是段首（当前是在段最后面delete删除）
                                     {
                                         vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
                                         vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo + 1);
@@ -4038,7 +4045,7 @@ namespace HC.View
                         #if UNPLACEHOLDERCHAR
                         int vCharCount = HC.GetTextActualOffset(vText, SelectInfo.StartItemOffset + 1, true) - SelectInfo.StartItemOffset;
                         string vsDelete = vText.Substring(SelectInfo.StartItemOffset + 1 - 1, vCharCount);
-                        vCurItem.Text = vText.Remove(SelectInfo.StartItemOffset + 1 - 1, vCharCount);
+                        vText = vText.Remove(SelectInfo.StartItemOffset + 1 - 1, vCharCount);
                         #else
                         string vsDelete = vText.Substring(SelectInfo.StartItemOffset + 1 - 1, 1);
                         vCurItem.Text = vText.Remove(SelectInfo.StartItemOffset + 1 - 1, 1);
@@ -4055,10 +4062,13 @@ namespace HC.View
                                     if (MergeItemText(Items[vCurItemNo - 1], Items[vCurItemNo + 1]))  // 下一个可合并到上一个
                                     {
                                         vLen = Items[vCurItemNo + 1].Length;
-                                        GetFormatRange(vCurItemNo - 1, vLen, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
-                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                         Undo_New();
+                                        UndoAction_InsertText(vCurItemNo - 1, Items[vCurItemNo - 1].Length - vLen + 1, Items[vCurItemNo + 1].Text);
+
+                                        GetFormatRange(vCurItemNo - 1, vLen, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                                        
                                         UndoAction_DeleteItem(vCurItemNo, 0);
                                         Items.Delete(vCurItemNo);  // 删除当前
 

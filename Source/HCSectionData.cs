@@ -525,13 +525,14 @@ namespace HC.View
                                 {
                                     vFont.Size = 10;
                                     vFont.Family = "Courier New";
+                                    vFont.Color = Color.FromArgb(180, 180, 180);
                                 }
                                 finally
                                 {
                                     vFont.EndUpdate();
                                 }
 
-                                ACanvas.Brush.Color = Color.FromArgb(180, 180, 180);
+                                ACanvas.Brush.Style = HCBrushStyle.bsClear;
                                 GDI.SelectObject(ACanvas.Handle, vFont.Handle);
                                 int vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - 16) / 2;
                                 ACanvas.TextOut(aDataDrawLeft - 50, vTop, vLineNo.ToString());

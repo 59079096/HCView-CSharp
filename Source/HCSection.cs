@@ -1716,7 +1716,7 @@ namespace HC.View
             #region 绘制页面
             if (vPageDataScreenBottom > vPageDataScreenTop)  // 能露出数据则绘制当前页，绘制正文
             {
-                vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
+                vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPaperDrawLeft),  // 有行号或行指示符所以从纸张左边
                         aPaintInfo.GetScaleY(Math.Max(vPageDrawTop, vPageDataScreenTop)),
                         aPaintInfo.GetScaleX(vPaperDrawRight),  // 表格有时候会拖宽到页面外面vPageDrawRight
                         aPaintInfo.GetScaleY(Math.Min(vPageDrawBottom, vPageDataScreenBottom)) + 1);

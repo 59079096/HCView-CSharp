@@ -92,7 +92,7 @@ namespace EMRView
                     tbxFormat.Text = dt.Rows[0]["deformat"].ToString();
                     tbxUnit.Text = dt.Rows[0]["deunit"].ToString();
                     cbbFrmtp.SelectedIndex = cbbFrmtp.Items.IndexOf(GetFrmtpText(dt.Rows[0]["frmtp"].ToString()));
-                    tbxDomainID.Text = dt.Rows[0]["decode"].ToString();
+                    tbxDomainID.Text = dt.Rows[0]["domainid"].ToString();
                 }
             }
             else
