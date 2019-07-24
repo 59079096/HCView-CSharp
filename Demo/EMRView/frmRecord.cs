@@ -516,12 +516,6 @@ namespace EMRView
         {
             string vInfo = "";
 
-            if (FEmrView.ActiveSection.ActiveData.ReadOnly)
-            {
-                tssDeInfo.Text = "";
-                return;
-            }
-
             HCCustomItem vActiveItem = FEmrView.GetTopLevelItem();
             if (vActiveItem != null)
             {
@@ -536,6 +530,9 @@ namespace EMRView
                 if (vActiveItem is DeItem)
                 {
                     DeItem vDeItem = vActiveItem as DeItem;
+                    if (vDeItem.StyleEx != StyleExtra.cseNone)
+                        vInfo += "-" + vDeItem.GetHint();
+                    else
                     if (vDeItem.Active
                             && (vDeItem[DeProp.Index] != "")
                             && (!vDeItem.IsSelectComplate)
@@ -555,7 +552,7 @@ namespace EMRView
                         HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
                         RECT vDrawItemRect = vActiveDrawItem.Rect;
                         vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
-                        
+
                         if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
                         {
                             vPt.Y = vPt.Y + FEmrView.ZoomIn(vActiveDrawItem.Height());

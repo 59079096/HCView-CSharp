@@ -1230,6 +1230,11 @@ namespace HC.View
 
         }
 
+        protected IntPtr hImc
+        {
+            get { return FhImc; }
+        }
+
         protected HCCaret Caret
         {
             get { return FCaret; }

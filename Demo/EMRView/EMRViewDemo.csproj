@@ -183,6 +183,10 @@
     <Compile Include="frmTemplate.Designer.cs">
       <DependentUpon>frmTemplate.cs</DependentUpon>
     </Compile>
+    <Compile Include="HCInputHelper.cs" />
+    <Compile Include="HCViewIH.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="frmDataElement.resx">

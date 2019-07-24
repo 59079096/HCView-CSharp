@@ -16,6 +16,7 @@ namespace HC.View
 
     public class Imm
     {
+        public const int GCS_COMPSTR = 0x0008;
         public const int GCS_RESULTSTR = 0x0800;
         public const int IME_CMODE_SOFTKBD = 0x80;
         [DllImport("imm32.dll", EntryPoint = "ImmGetContext")] public static extern IntPtr ImmGetContext(IntPtr hwnd);
@@ -25,9 +26,10 @@ namespace HC.View
         public static extern bool ImmGetCompositionFont(IntPtr himc, ref LOGFONT lplogfont);
         [DllImport("imm32.dll", EntryPoint = "ImmSetCompositionFont")]
         public static extern bool ImmSetCompositionFont(IntPtr himc, ref LOGFONT lplogfont);
+        [DllImport("imm32.dll", EntryPoint = "ImmGetCompositionWindow")]
+        public static extern bool ImmGetCompositionWindow(IntPtr himc, ref COMPOSITIONFORM lpCompForm);
         [DllImport("imm32.dll", EntryPoint = "ImmSetCompositionWindow")]
         public static extern bool ImmSetCompositionWindow(IntPtr himc, ref COMPOSITIONFORM lpCompForm);
-
         [DllImport("imm32.dll", EntryPoint = "ImmGetConversionStatus")] public static extern bool ImmGetConversionStatus(IntPtr himc, ref int lpdw, ref int lpdw2);
         [DllImport("imm32.dll", EntryPoint = "ImmSetConversionStatus")] public static extern bool ImmSetConversionStatus(IntPtr himc, int dw1, int dw2);
         [DllImport("imm32.dll", EntryPoint = "ImmReleaseContext")] public static extern int ImmReleaseContext(IntPtr hwnd, IntPtr himc);
