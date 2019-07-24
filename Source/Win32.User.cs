@@ -2418,7 +2418,8 @@ namespace HC.Win32
 		public const int WM_SYSKEYUP = 0x105;
 		public const int WM_TIMECHANGE = 0x1E;
 		public const int WM_TIMER = 0x113;
-		public const int WM_UNDO = 0x304;
+        public const int WM_IME_CHAR = 0x0286;
+        public const int WM_UNDO = 0x304;
 		public const int WM_USER = 0x400;
 		public const int WM_VKEYTOITEM = 0x2E;
 		public const int WM_VSCROLL = 0x115;

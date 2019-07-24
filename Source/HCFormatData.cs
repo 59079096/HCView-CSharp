@@ -918,7 +918,7 @@ namespace HC.View
                 FFormatEndBottom = DrawItems[vLastDrawItemNo].Rect.Bottom - vFmtTopOffset;
         }
 
-        protected void ReFormatData(int AFirstDrawItemNo, int ALastItemNo = -1, int AExtraItemCount = 0)
+        protected void ReFormatData(int AFirstDrawItemNo, int ALastItemNo = -1, int AExtraItemCount = 0, bool AForceClearExtra = false)
         {
             if (FFormatCount != 0)
                 return;
@@ -938,7 +938,8 @@ namespace HC.View
             if ((Items[vLastItemNo] is HCCustomRectItem) && (Items[vLastItemNo] as HCCustomRectItem).SizeChanged)
                 FFormatHeightChange = true;
             else
-                FFormatHeightChange = ((DrawItems[AFirstDrawItemNo].Rect.Top != FFormatStartTop)  // 段格式化后，高度的增量
+                FFormatHeightChange = AForceClearExtra
+                    || ((DrawItems[AFirstDrawItemNo].Rect.Top != FFormatStartTop)  // 段格式化后，高度的增量
                     || (DrawItems[vLastDrawItemNo].Rect.Bottom != FFormatEndBottom));
 
             if (FFormatHeightChange || (AExtraItemCount != 0) || FFormatDrawItemCountChange)

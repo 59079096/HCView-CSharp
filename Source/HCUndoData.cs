@@ -21,6 +21,7 @@ namespace HC.View
     {
         private int FFormatFirstItemNo, FFormatFirstDrawItemNo, FFormatLastItemNo, 
             FUndoGroupCount, FItemAddCount;
+        private bool FForceClearExtra;
 
         #region DoUndoRedo 子方法
         private void UndoRedoDeleteBackText(HCCustomUndoAction aAction, bool aIsUndo, ref int aCaretItemNo, ref int aCaretOffset)
@@ -205,6 +206,8 @@ namespace HC.View
 
                 case ItemProperty.uipPageBreak:
                     {
+                        FForceClearExtra = true;
+
                         if (aIsUndo)
                             vItem.PageBreak = (vAction as HCItemPageBreakUndoAction).OldPageBreak;
                         else
@@ -372,6 +375,8 @@ namespace HC.View
 
         private void DoUndoRedo(HCCustomUndo aUndo)
         {
+            FForceClearExtra = false;
+
             if (aUndo is HCUndoGroupEnd)
             {
                 if (aUndo.IsUndo)
@@ -409,7 +414,7 @@ namespace HC.View
 
                     if (FUndoGroupCount == 0)
                     {
-                        ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
+                        ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount, FForceClearExtra);
 
                         SelectInfo.StartItemNo = (aUndo as HCUndoGroupEnd).ItemNo;
                         SelectInfo.StartItemOffset = (aUndo as HCUndoGroupEnd).Offset;
@@ -431,7 +436,7 @@ namespace HC.View
 
                     if (FUndoGroupCount == 0)
                     {
-                        ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
+                        ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount, FForceClearExtra);
 
                         SelectInfo.StartItemNo = (aUndo as HCUndoGroupBegin).ItemNo;
                         SelectInfo.StartItemOffset = (aUndo as HCUndoGroupBegin).Offset;
@@ -544,7 +549,7 @@ namespace HC.View
 
             if (FUndoGroupCount == 0)
             {
-                ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount);
+                ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount, FForceClearExtra);
 
                 if (vCaretDrawItemNo < 0)
                     vCaretDrawItemNo = GetDrawItemNoByOffset(vCaretItemNo, vCaretOffset);

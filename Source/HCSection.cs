@@ -319,8 +319,8 @@ namespace HC.View
         /// <param name="aX"></param>
         /// <param name="aY"></param>
         /// <param name="ARestrain">是否约束到Data的绝对区域中</param>
-        private void PageCoordToData(int aPageIndex, HCViewData aData, ref int aX, ref int aY,
-          bool ARestrain = false)
+        private void PaperCoordToData(int aPageIndex, HCViewData aData, ref int aX, ref int aY,
+          bool ARestrain = true)
         {
             if (FViewModel != HCViewModel.hvmFilm)
                 return;
@@ -1228,7 +1228,7 @@ namespace HC.View
         }
 
         //// <summary>  节坐标转换到指定页坐标 </summary>
-        public void SectionCoordToPage(int aPageIndex, int x, int y, ref int aPageX, ref int aPageY)
+        public void SectionCoordToPaper(int aPageIndex, int x, int y, ref int aPageX, ref int aPageY)
         {
             aPageX = x;// - vMarginLeft;
 
@@ -1737,17 +1737,17 @@ namespace HC.View
 
             // 恢复区域，准备给整页绘制用(各部分浮动Item)
             vPaintRegion = (IntPtr)GDI.CreateRectRgn(
-                aPaintInfo.GetScaleX(vPageDrawLeft),
-                aPaintInfo.GetScaleX(vPageDrawTop),
-                aPaintInfo.GetScaleX(vPageDrawRight),
-                aPaintInfo.GetScaleX(vPageDrawBottom));
+                aPaintInfo.GetScaleX(vPaperDrawLeft),
+                aPaintInfo.GetScaleX(vPaperDrawTop),
+                aPaintInfo.GetScaleX(vPaperDrawRight),
+                aPaintInfo.GetScaleX(vPaperDrawBottom));
 
             try
             {
                 GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
 
                 FHeader.PaintFloatItems(aPageIndex, vPageDrawLeft,
-                    vPageDrawTop + GetHeaderPageDrawTop(), 0, aCanvas, aPaintInfo);
+                    vPaperDrawTop + GetHeaderPageDrawTop(), 0, aCanvas, aPaintInfo);
 
                 FFooter.PaintFloatItems(aPageIndex, vPageDrawLeft,
                     vPageDrawBottom, 0, aCanvas, aPaintInfo);
@@ -1812,22 +1812,7 @@ namespace HC.View
                 FActivePageIndex = vPageIndex;
 
             int vX = -1, vY = -1;
-            SectionCoordToPage(FActivePageIndex, e.X, e.Y, ref vX, ref vY);  // X，Y转换到指定页的坐标vX,vY
-
-            #region 有FloatItem时短路
-            if (FActiveData.FloatItems.Count > 0)
-            {
-                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
-                if (FActiveData == FPage)
-                    vY = vY + GetPageDataFmtTop(FActivePageIndex);
-
-                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-                if (FActiveData.MouseDownFloatItem(vMouseArgs))
-                    return;
-            }
-
-            #endregion
-           
+            SectionCoordToPaper(FActivePageIndex, e.X, e.Y, ref vX, ref vY);  // X，Y转换到指定页的坐标vX,vY
             HCSectionData vNewActiveData = GetSectionDataAt(vX, vY);
 
             if ((vNewActiveData != FActiveData) && (e.Clicks == 2))
@@ -1836,10 +1821,20 @@ namespace HC.View
                 vChangeActiveData = true;
             }
 
-            if ((vNewActiveData != FActiveData) && (FActiveData == FPage))
-                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY, true);  // 约束到Data中，防止点页脚认为是下一页
-            else
-                PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
+            #region 有FloatItem时短路
+            if (FActiveData.FloatItems.Count > 0)
+            {
+                PaperCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY, false);
+                if (FActiveData == FPage)
+                    vY = vY + GetPageDataFmtTop(FActivePageIndex);
+
+                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                if (FActiveData.MouseDownFloatItem(vMouseArgs))
+                    return;
+            }
+            #endregion
+
+            PaperCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
 
             if (FActiveData == FPage)
                 vY = vY + GetPageDataFmtTop(FActivePageIndex);
@@ -1893,14 +1888,14 @@ namespace HC.View
                 {
                     if ((FActiveData.FloatItemIndex >= 0) && (FActiveData.ActiveFloatItem.Resizing))
                     {
-                        SectionCoordToPage(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY);
+                        SectionCoordToPaper(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
+                        PaperCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY, false);
                         vY = vY + GetPageDataFmtTop(FActiveData.ActiveFloatItem.PageIndex);
                     }
                     else
                     {
-                        SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
+                        SectionCoordToPaper(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
+                        PaperCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY, false);
                         vY = vY + GetPageDataFmtTop(FMousePageIndex);
                     }
                 }
@@ -1908,13 +1903,13 @@ namespace HC.View
                 {
                     if ((FActiveData.FloatItemIndex >= 0) && (FActiveData.ActiveFloatItem.Resizing))
                     {
-                        SectionCoordToPage(FActivePageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY);
+                        SectionCoordToPaper(FActivePageIndex, e.X, e.Y, ref vX, ref vY);
+                        PaperCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY, false);
                     }
                     else
                     {
-                        SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
-                        PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
+                        SectionCoordToPaper(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
+                        PaperCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY, false);
                     }
                 }
 
@@ -1924,7 +1919,7 @@ namespace HC.View
             }
             #endregion
 
-            SectionCoordToPage(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
+            SectionCoordToPaper(FMousePageIndex, e.X, e.Y, ref vX, ref vY);
 
             HCSectionData vMoveData = GetSectionDataAt(vX, vY);
             if (vMoveData != FMoveData)
@@ -1935,7 +1930,7 @@ namespace HC.View
                 FMoveData = vMoveData;
             }
 
-            PageCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY, FActiveData.Selecting);  // 划选时约束到Data中
+            PaperCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
 
             if (FActiveData == FPage)
                 vY = vY + GetPageDataFmtTop(FMousePageIndex);
@@ -1956,14 +1951,14 @@ namespace HC.View
             {
                 if (FActiveData == FPage)
                 {
-                    SectionCoordToPage(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
-                    PageCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY);
+                    SectionCoordToPaper(FActiveData.ActiveFloatItem.PageIndex, e.X, e.Y, ref vX, ref vY);
+                    PaperCoordToData(FActiveData.ActiveFloatItem.PageIndex, FActiveData, ref vX, ref vY, false);
                     vY = vY + GetPageDataFmtTop(FActiveData.ActiveFloatItem.PageIndex);
                 }
                 else  // FloatItem在Header或Footer
                 {
-                    SectionCoordToPage(vPageIndex, e.X, e.Y, ref vX, ref vY);
-                    PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY);
+                    SectionCoordToPaper(vPageIndex, e.X, e.Y, ref vX, ref vY);
+                    PaperCoordToData(vPageIndex, FActiveData, ref vX, ref vY, false);
                 }
 
                 vEventArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
@@ -1972,13 +1967,8 @@ namespace HC.View
             }
             #endregion
 
-            SectionCoordToPage(vPageIndex, e.X, e.Y, ref vX, ref vY);
-
-            //if  <> FActiveData then Exit;  // 不在当前激活的Data上
-            if ((GetSectionDataAt(vX, vY) != FActiveData) && (FActiveData == FPage))
-                PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY, true);
-            else
-                PageCoordToData(vPageIndex, FActiveData, ref vX, ref vY);
+            SectionCoordToPaper(vPageIndex, e.X, e.Y, ref vX, ref vY);
+            PaperCoordToData(vPageIndex, FActiveData, ref vX, ref vY);
 
             if (FActiveData == FPage)
                 vY = vY + GetPageDataFmtTop(vPageIndex);
@@ -2258,13 +2248,18 @@ namespace HC.View
             int vPageHeight = GetPageHeight();
             int vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
             int vFmtPageOffset = 0;
+            HCCustomItem vItem = null;
             for (int i = vPrioDrawItemNo + 1; i <= FPage.DrawItems.Count - 1; i++)
             {
-                if (FPage.Items[FPage.DrawItems[i].ItemNo].PageBreak)
+                vItem = FPage.Items[FPage.DrawItems[i].ItemNo];
+                if (vItem.PageBreak && (vItem.FirstDItemNo == i))
                 {
                     vFmtPageOffset = vPageDataFmtBottom - FPage.DrawItems[i].Rect.Top;
                     if (vFmtPageOffset > 0)
-                        FPage.DrawItems[i].Rect.Offset(0, vFmtPageOffset);
+                    {
+                        for (int j = i; j <= FPage.DrawItems.Count - 1; j++)
+                            FPage.DrawItems[j].Rect.Offset(0, vFmtPageOffset);
+                    }
 
                     vPageDataFmtTop = vPageDataFmtBottom;
                     vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;

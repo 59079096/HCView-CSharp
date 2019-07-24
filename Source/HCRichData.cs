@@ -3809,7 +3809,7 @@ namespace HC.View
             // 判断光标位置内容如何换行
             if (SelectInfo.StartItemOffset == 0)  // 光标在Item最前面
             {
-                if (!vCurItem.ParaFirst)  // 原来不是段首
+                if (!vCurItem.ParaFirst)  // 原来不是段首(光标在Item最前面)
                 {
                     Undo_New();
 
@@ -3822,33 +3822,33 @@ namespace HC.View
                         vCurItem.PageBreak = true;
                     }
 
-                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0, aPageBreak);
                 }
-                else  // 原来就是段首
+                else  // 原来就是段首(光标在Item最前面)
                 {
-                    HCCustomItem vItem = CreateDefaultTextItem();
-                    vItem.ParaNo = vCurItem.ParaNo;
-                    vItem.StyleNo = vCurItem.StyleNo;
-                    vItem.ParaFirst = true;
-
                     if (aPageBreak)
                     {
-                        vItem.PageBreak = true;
-                        Items.Insert(SelectInfo.StartItemNo + 1, vItem);  // 插入到下面
-
                         Undo_New();
-                        UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                        UndoAction_ItemPageBreak(SelectInfo.StartItemNo, 0, true);
+                        vCurItem.PageBreak = true;
+
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0, true);
                     }
                     else
                     {
+                        HCCustomItem vItem = CreateDefaultTextItem();
+                        vItem.ParaNo = vCurItem.ParaNo;
+                        vItem.StyleNo = vCurItem.StyleNo;
+                        vItem.ParaFirst = true;
+
                         Items.Insert(SelectInfo.StartItemNo, vItem);  // 插入到当前
 
                         Undo_New();
                         UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
-                    }
 
-                    SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
-                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
+                        SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
+                    }
                 }
             }
             else
@@ -3871,7 +3871,7 @@ namespace HC.View
                                 vItem.PageBreak = true;
                             }
 
-                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0, aPageBreak);
                         }
                         else  // 下一个是段起始
                         {
@@ -3888,7 +3888,7 @@ namespace HC.View
                             Undo_New();
                             UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
 
-                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1, aPageBreak);
                         }
 
                         SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
@@ -3909,7 +3909,7 @@ namespace HC.View
                         Undo_New();
                         UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
 
-                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1, aPageBreak);
                         SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                         SelectInfo.StartItemOffset = 0;
                     }
@@ -3927,7 +3927,7 @@ namespace HC.View
                     Undo_New();
                     UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
 
-                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1, aPageBreak);
 
                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                     SelectInfo.StartItemOffset = 0;
@@ -4167,165 +4167,177 @@ namespace HC.View
                 if ((vCurItem.Text == "") && (Style.ParaStyles[vCurItem.ParaNo].AlignHorz != ParaAlignHorz.pahJustify))
                     ApplyParaAlignHorz(ParaAlignHorz.pahJustify);  // 居中等对齐的空Item，删除时切换到分散对齐
                 else
-                    if (vCurItem.ParaFirst && (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0))  // 在段最前面删除
+                if (vCurItem.ParaFirst && (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0))  // 在段最前面删除
+                {
+                    HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
+                    ApplyParaFirstIndent(vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                }
+                else
+                if (vCurItem.PageBreak)
+                {
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                    Undo_New();
+                    UndoAction_ItemPageBreak(SelectInfo.StartItemNo, 0, false);
+                    vCurItem.PageBreak = false;
+
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0, true);
+                }
+                else
+                if (SelectInfo.StartItemNo != 0)  // 不是第1个Item最前面删除
+                {
+                    if (vCurItem.ParaFirst)  // 是段起始Item
                     {
-                        HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
-                        ApplyParaFirstIndent(vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
-                    }
-                    else
-                        if (SelectInfo.StartItemNo != 0)  // 不是第1个Item最前面删除
+                        vLen = Items[SelectInfo.StartItemNo - 1].Length;
+                        if (vCurItem.CanConcatItems(Items[SelectInfo.StartItemNo - 1]))
                         {
-                            if (vCurItem.ParaFirst)  // 是段起始Item
+                            vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
+                            vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
+                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                            Undo_New();
+                            UndoAction_InsertText(SelectInfo.StartItemNo - 1, Items[SelectInfo.StartItemNo - 1].Length + 1,
+                                Items[SelectInfo.StartItemNo].Text);
+
+                            Items[SelectInfo.StartItemNo - 1].Text = Items[SelectInfo.StartItemNo - 1].Text
+                                + Items[SelectInfo.StartItemNo].Text;
+
+                            UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                            Items.RemoveAt(SelectInfo.StartItemNo);
+
+                            // 修正下一段合并上来的Item的段样式，对齐样式
+                            vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;
+                            if (vParaNo != vCurItem.ParaNo)
                             {
-                                vLen = Items[SelectInfo.StartItemNo - 1].Length;
-                                if (vCurItem.CanConcatItems(Items[SelectInfo.StartItemNo - 1]))
+                                for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo - 1; i++)
+                                {
+                                    Items[i].ParaNo = vParaNo;
+                                }
+                            }
+
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
+
+                            ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, vLen);
+                        }
+                        else  // 段起始且不能和上一个合并
+                        {
+                            if (IsEmptyLine(SelectInfo.StartItemNo - 1))
+                            {
+                                vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
+                                vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                                Undo_New();
+                                UndoAction_DeleteItem(SelectInfo.StartItemNo - 1, 0);
+                                Items.Delete(SelectInfo.StartItemNo - 1);
+
+                                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
+
+                                ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, 0);
+                            }
+                            else
+                            {
+                                if (vCurItem.Length == 0)  // 已经没有内容了
                                 {
                                     vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
+                                    FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
+
+                                    Undo_New();
+                                    UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                                    Items.Delete(SelectInfo.StartItemNo);
+
+                                    ReFormatData(vFormatFirstDrawItemNo, SelectInfo.StartItemNo - 1, -1);
+
+                                    ReSetSelectAndCaret(SelectInfo.StartItemNo - 1);
+                                }
+                                else  // 段前删除且不能和上一段最后合并
+                                {
+                                    vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, GetItemOffsetAfter(SelectInfo.StartItemNo - 1));
                                     vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
                                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                     Undo_New();
-                                    UndoAction_InsertText(SelectInfo.StartItemNo - 1, Items[SelectInfo.StartItemNo - 1].Length + 1,
-                                        Items[SelectInfo.StartItemNo].Text);
+                                    UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
 
-                                    Items[SelectInfo.StartItemNo - 1].Text = Items[SelectInfo.StartItemNo - 1].Text
-                                        + Items[SelectInfo.StartItemNo].Text;
+                                    vCurItem.ParaFirst = false;  // 当前段和上一段Item拼接成一段
 
-                                    UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-                                    Items.RemoveAt(SelectInfo.StartItemNo);
-
-                                    // 修正下一段合并上来的Item的段样式，对齐样式
-                                    vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;
+                                    vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;  // 上一段的ParaNo
                                     if (vParaNo != vCurItem.ParaNo)
                                     {
-                                        for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo - 1; i++)
+                                        for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo; i++)
                                         {
+                                            //Undo_ItemParaNo(i, 0, vParaNo);
                                             Items[i].ParaNo = vParaNo;
                                         }
                                     }
 
-                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
+                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                                    ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, vLen);
-                                }
-                                else  // 段起始且不能和上一个合并
-                                {
-                                    if (IsEmptyLine(SelectInfo.StartItemNo - 1))
-                                    {
-                                        vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
-                                        vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
-                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
-
-                                        Undo_New();
-                                        UndoAction_DeleteItem(SelectInfo.StartItemNo - 1, 0);
-                                        Items.Delete(SelectInfo.StartItemNo - 1);
-
-                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
-
-                                        ReSetSelectAndCaret(SelectInfo.StartItemNo - 1, 0);
-                                    }
-                                    else
-                                    {
-                                        if (vCurItem.Length == 0)  // 已经没有内容了
-                                        {
-                                            vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, vLen);
-                                            FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
-
-                                            Undo_New();
-                                            UndoAction_DeleteItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-                                            Items.Delete(SelectInfo.StartItemNo);
-
-                                            ReFormatData(vFormatFirstDrawItemNo, SelectInfo.StartItemNo - 1, -1);
-
-                                            ReSetSelectAndCaret(SelectInfo.StartItemNo - 1);
-                                        }
-                                        else  // 段前删除且不能和上一段最后合并
-                                        {
-                                            vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1, GetItemOffsetAfter(SelectInfo.StartItemNo - 1));
-                                            vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
-                                            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
-
-                                            Undo_New();
-                                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
-
-                                            vCurItem.ParaFirst = false;  // 当前段和上一段Item拼接成一段
-
-                                            vParaNo = Items[SelectInfo.StartItemNo - 1].ParaNo;  // 上一段的ParaNo
-                                            if (vParaNo != vCurItem.ParaNo)
-                                            {
-                                                for (int i = SelectInfo.StartItemNo; i <= vFormatLastItemNo; i++)
-                                                {
-                                                    //Undo_ItemParaNo(i, 0, vParaNo);
-                                                    Items[i].ParaNo = vParaNo;
-                                                }
-                                            }
-
-                                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-
-                                            ReSetSelectAndCaret(SelectInfo.StartItemNo, 0);
-                                        }
-                                    }
-                                }
-                            }
-                            else  // 在Item开始往前删，但Item不是段起始
-                            {
-                                if (Items[SelectInfo.StartItemNo - 1].StyleNo < HCStyle.Null)
-                                {
-                                    vCurItemNo = SelectInfo.StartItemNo - 1;
-                                    if (CanDeleteItem(vCurItemNo))
-                                    {
-                                        Undo_New();
-
-                                        vParaFirst = Items[vCurItemNo].ParaFirst;  // 记录前面的RectItem段首属性
-
-                                        GetFormatRange(SelectInfo.StartItemNo - 1, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
-                                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
-
-                                        // 删除前面的RectItem
-                                        UndoAction_DeleteItem(vCurItemNo, HC.OffsetAfter);
-                                        Items.Delete(vCurItemNo);
-                                        vDelCount = 1;
-
-                                        if (vParaFirst)
-                                        {
-                                            UndoAction_ItemParaFirst(vCurItemNo, 0, vParaFirst);
-                                            vCurItem.ParaFirst = vParaFirst;  // 赋值前面RectItem的段起始属性
-                                            vLen = 0;
-                                        }
-                                        else  // 前面删除的RectItem不是段首
-                                        {
-                                            vCurItemNo = vCurItemNo - 1;  // 上一个
-                                            vLen = Items[vCurItemNo].Length;  // 上一个最后面
-
-                                            if (MergeItemText(Items[vCurItemNo], vCurItem))
-                                            {
-                                                UndoAction_InsertText(vCurItemNo, vLen + 1, vCurItem.Text);
-                                                UndoAction_DeleteItem(vCurItemNo + 1, 0);
-                                                Items.Delete(vCurItemNo + 1); // 删除当前的
-                                                vDelCount = 2;
-                                            }
-                                        }
-
-                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
-                                    }
-                                    else  // 不能删除，光标放最前
-                                        vLen = HC.OffsetBefor;
-
-                                    ReSetSelectAndCaret(vCurItemNo, vLen);
-                                }
-                                else  // 前面是文本，赋值为前面的最后，再重新处理删除
-                                {
-                                    SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                                    SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
-                                    vCurItem = GetActiveItem();
-
-                                    Style.UpdateInfoReStyle();
-                                    BackspaceKeyDown(vSelectExist, ref vCurItem, vParaFirstItemNo, vParaLastItemNo, e);  // 重新处理
-
-                                    return;
+                                    ReSetSelectAndCaret(SelectInfo.StartItemNo, 0);
                                 }
                             }
                         }
+                    }
+                    else  // 在Item开始往前删，但Item不是段起始
+                    {
+                        if (Items[SelectInfo.StartItemNo - 1].StyleNo < HCStyle.Null)
+                        {
+                            vCurItemNo = SelectInfo.StartItemNo - 1;
+                            if (CanDeleteItem(vCurItemNo))
+                            {
+                                Undo_New();
+
+                                vParaFirst = Items[vCurItemNo].ParaFirst;  // 记录前面的RectItem段首属性
+
+                                GetFormatRange(SelectInfo.StartItemNo - 1, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                                // 删除前面的RectItem
+                                UndoAction_DeleteItem(vCurItemNo, HC.OffsetAfter);
+                                Items.Delete(vCurItemNo);
+                                vDelCount = 1;
+
+                                if (vParaFirst)
+                                {
+                                    UndoAction_ItemParaFirst(vCurItemNo, 0, vParaFirst);
+                                    vCurItem.ParaFirst = vParaFirst;  // 赋值前面RectItem的段起始属性
+                                    vLen = 0;
+                                }
+                                else  // 前面删除的RectItem不是段首
+                                {
+                                    vCurItemNo = vCurItemNo - 1;  // 上一个
+                                    vLen = Items[vCurItemNo].Length;  // 上一个最后面
+
+                                    if (MergeItemText(Items[vCurItemNo], vCurItem))
+                                    {
+                                        UndoAction_InsertText(vCurItemNo, vLen + 1, vCurItem.Text);
+                                        UndoAction_DeleteItem(vCurItemNo + 1, 0);
+                                        Items.Delete(vCurItemNo + 1); // 删除当前的
+                                        vDelCount = 2;
+                                    }
+                                }
+
+                                ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+                            }
+                            else  // 不能删除，光标放最前
+                                vLen = HC.OffsetBefor;
+
+                            ReSetSelectAndCaret(vCurItemNo, vLen);
+                        }
+                        else  // 前面是文本，赋值为前面的最后，再重新处理删除
+                        {
+                            SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
+                            SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
+                            vCurItem = GetActiveItem();
+
+                            Style.UpdateInfoReStyle();
+                            BackspaceKeyDown(vSelectExist, ref vCurItem, vParaFirstItemNo, vParaLastItemNo, e);  // 重新处理
+
+                            return;
+                        }
+                    }
+                }
             }
             else  // 光标不在Item最开始  文本TextItem
             {

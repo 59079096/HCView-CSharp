@@ -100,12 +100,12 @@ namespace HC.View
             else
                 FViewHeight = Height;
         }
-        
+
         private bool GetSymmetryMargin()
         {
             return ActiveSection.SymmetryMargin;
         }
-        
+
         private void SetSymmetryMargin(bool Value)
         {
             if (ActiveSection.SymmetryMargin != Value)
@@ -221,14 +221,14 @@ namespace HC.View
                 FVScrollBar.Position = (sender as HCSectionUndo).VScrollPos;
             }
             else
-                if (sender is HCSectionUndoGroupBegin)
-                {
-                    if (FActiveSectionIndex != (sender as HCSectionUndoGroupBegin).SectionIndex)
-                        SetActiveSectionIndex((sender as HCSectionUndoGroupBegin).SectionIndex);
+            if (sender is HCSectionUndoGroupBegin)
+            {
+                if (FActiveSectionIndex != (sender as HCSectionUndoGroupBegin).SectionIndex)
+                    SetActiveSectionIndex((sender as HCSectionUndoGroupBegin).SectionIndex);
 
-                    FHScrollBar.Position = (sender as HCSectionUndoGroupBegin).HScrollPos;
-                    FVScrollBar.Position = (sender as HCSectionUndoGroupBegin).VScrollPos;
-                }
+                FHScrollBar.Position = (sender as HCSectionUndoGroupBegin).HScrollPos;
+                FVScrollBar.Position = (sender as HCSectionUndoGroupBegin).VScrollPos;
+            }
 
             ActiveSection.Undo(sender);
         }
@@ -244,14 +244,14 @@ namespace HC.View
                 FVScrollBar.Position = (sender as HCSectionUndo).VScrollPos;
             }
             else
-                if (sender is HCSectionUndoGroupEnd)
-                {
-                    if (FActiveSectionIndex != (sender as HCSectionUndoGroupEnd).SectionIndex)
-                        SetActiveSectionIndex((sender as HCSectionUndoGroupEnd).SectionIndex);
+            if (sender is HCSectionUndoGroupEnd)
+            {
+                if (FActiveSectionIndex != (sender as HCSectionUndoGroupEnd).SectionIndex)
+                    SetActiveSectionIndex((sender as HCSectionUndoGroupEnd).SectionIndex);
 
-                    FHScrollBar.Position = (sender as HCSectionUndoGroupEnd).HScrollPos;
-                    FVScrollBar.Position = (sender as HCSectionUndoGroupEnd).VScrollPos;
-                }
+                FHScrollBar.Position = (sender as HCSectionUndoGroupEnd).HScrollPos;
+                FVScrollBar.Position = (sender as HCSectionUndoGroupEnd).VScrollPos;
+            }
 
             ActiveSection.Redo(sender);
         }
@@ -286,8 +286,8 @@ namespace HC.View
 
         private void DoSectionItemMouseUp(object sender, HCCustomData aData, int aItemNo, MouseEventArgs e)
         {
-            if ( ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) && (aData.Items[aItemNo].HyperLink != ""))
-                System.Diagnostics.Process.Start(aData.Items[aItemNo].HyperLink); 
+            if (((Control.ModifierKeys & Keys.Shift) == Keys.Shift) && (aData.Items[aItemNo].HyperLink != ""))
+                System.Diagnostics.Process.Start(aData.Items[aItemNo].HyperLink);
         }
 
         private void DoSectionItemResize(HCCustomData aData, int aItemNo)
@@ -539,13 +539,13 @@ namespace HC.View
                         FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - FPagePadding;
                     else
                         if (FCaret.Y + FCaret.Height + FPagePadding > FViewHeight)
-                            FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + FPagePadding - FViewHeight;
+                        FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + FPagePadding - FViewHeight;
 
                     if (FCaret.X < 0)
                         FHScrollBar.Position = FHScrollBar.Position + FCaret.X - FPagePadding;
                     else
                         if (FCaret.X + FPagePadding > FViewWidth)
-                            FHScrollBar.Position = FHScrollBar.Position + FCaret.X + FPagePadding - FViewWidth;
+                        FHScrollBar.Position = FHScrollBar.Position + FCaret.X + FPagePadding - FViewWidth;
                 }
             }
 
@@ -583,7 +583,7 @@ namespace HC.View
                 vValue = 0.25f;
             else
                 if (vValue > 5)
-                    vValue = 5f;
+                vValue = 5f;
 
             if (FZoom != vValue)
             {
@@ -751,24 +751,6 @@ namespace HC.View
             }
         }
 
-        // Imm
-        private void UpdateImmPosition()
-        {
-            // 全局 FhImc
-            LOGFONT vLogFont = new LOGFONT();
-            Imm.ImmGetCompositionFont(FhImc, ref vLogFont);
-            vLogFont.lfHeight = 22;
-            Imm.ImmSetCompositionFont(FhImc, ref vLogFont);
-            // 告诉输入法当前光标位置信息
-            COMPOSITIONFORM vCF = new COMPOSITIONFORM();
-            vCF.ptCurrentPos = new POINT(FCaret.X, FCaret.Y + 5);  // 输入法弹出窗体位置
-            vCF.dwStyle = 1;
-
-            Rectangle vr = this.ClientRectangle;
-            vCF.rcArea = new RECT(vr.Left, vr.Top, vr.Right, vr.Bottom);
-            Imm.ImmSetCompositionWindow(FhImc, ref vCF);
-        }
-
         protected override void CreateHandle()
         {
             base.CreateHandle();
@@ -878,12 +860,6 @@ namespace HC.View
             if (FOnSectionDrawItemPaintAfter != null)
                 FOnSectionDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-        }
-
-        /// <summary> 是否上屏输入法输入的词条屏词条ID和词条 </summary>
-        protected virtual bool DoProcessIMECandi(string aCandi)
-        {
-            return true;
         }
 
         /// <summary> 实现插入文本 </summary>
@@ -1054,7 +1030,48 @@ namespace HC.View
         protected override void OnKeyPress(KeyPressEventArgs e)
         {
             base.OnKeyPress(e);
+            if (((Control.ModifierKeys & Keys.Control) == Keys.Control)  // 按下ctrl
+                || ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // 按下shift
+                return;
+
             ActiveSection.KeyPress(e);
+        }
+
+        protected virtual void UpdateImeComposition(int aLParam)
+        {
+            if ((aLParam & Imm.GCS_RESULTSTR) != 0)
+            {
+                //if (FhImc != IntPtr.Zero)
+                {
+                    int vSize = Imm.ImmGetCompositionString(FhImc, Imm.GCS_RESULTSTR, null, 0);
+                    if (vSize > 0)
+                    {
+                        byte[] vBuffer = new byte[vSize];
+                        Imm.ImmGetCompositionString(FhImc, Imm.GCS_RESULTSTR, vBuffer, vSize);
+                        string vS = System.Text.Encoding.Default.GetString(vBuffer);
+                        if (vS != "")
+                            InsertText(vS);
+                    }
+                }
+            }
+        }
+
+        protected virtual void UpdateImePosition()
+        {
+            // 全局 FhImc
+            /*LOGFONT vLogFont = new LOGFONT();
+            Imm.ImmGetCompositionFont(FhImc, ref vLogFont);
+            vLogFont.lfHeight = 22;
+            Imm.ImmSetCompositionFont(FhImc, ref vLogFont);*/
+
+            // 告诉输入法当前光标位置信息
+            COMPOSITIONFORM vCF = new COMPOSITIONFORM();
+            vCF.ptCurrentPos = new POINT(FCaret.X, FCaret.Y + FCaret.Height + 4);  // 输入法弹出窗体位置
+            vCF.dwStyle = 0x0020;
+
+            Rectangle vr = this.ClientRectangle;
+            vCF.rcArea = new RECT(vr.Left, vr.Top, vr.Right, vr.Bottom);
+            Imm.ImmSetCompositionWindow(FhImc, ref vCF);
         }
 
         protected override void WndProc(ref Message Message)
@@ -1070,12 +1087,15 @@ namespace HC.View
                     return;
 
                 case User.WM_SETFOCUS:
-                case User.WM_NCPAINT:
-                    FStyle.UpdateInfoReCaret(false);
-                    FStyle.UpdateInfoRePaint();
-                    //FStyle.UpdateInfoReScroll();
-                    CheckUpdateInfo();
+                    //case User.WM_NCPAINT:
                     base.WndProc(ref Message);
+                    if (Message.HWnd != this.Handle)
+                    {
+                        FStyle.UpdateInfoReCaret(false);
+                        FStyle.UpdateInfoRePaint();
+                        //FStyle.UpdateInfoReScroll();
+                        CheckUpdateInfo();
+                    }
                     return;
 
                 case User.WM_KILLFOCUS:
@@ -1092,28 +1112,7 @@ namespace HC.View
                     break;
 
                 case User.WM_IME_COMPOSITION:
-                    if ((Message.LParam.ToInt32() & Imm.GCS_RESULTSTR) != 0)
-                    {
-                        if (FhImc != IntPtr.Zero)
-                        {
-                            int vSize = Imm.ImmGetCompositionString(FhImc, Imm.GCS_RESULTSTR, null, 0);
-                            if (vSize > 0)
-                            {
-                                byte[] vBuffer = new byte[vSize];
-                                Imm.ImmGetCompositionString(FhImc, Imm.GCS_RESULTSTR, vBuffer, vSize);
-                                string vS = System.Text.Encoding.Default.GetString(vBuffer);
-                                if (vS != "")
-                                {
-                                    if (DoProcessIMECandi(vS))
-                                        InsertText(vS);
-
-                                    return;
-                                }
-                            }
-
-                            Message.Result = IntPtr.Zero;
-                        }
-                    }
+                    UpdateImeComposition(Message.LParam.ToInt32());
                     break;
 
                 case User.WM_LBUTTONDOWN:
@@ -1145,6 +1144,10 @@ namespace HC.View
                                 FHScrollBar.Position = FHScrollBar.Position - 60;
                     }
                     break;
+
+                case User.WM_IME_CHAR:
+                    Message.Result = (IntPtr)1;
+                    return;
             }
 
             base.WndProc(ref Message);
@@ -1203,7 +1206,7 @@ namespace HC.View
                 FStyle.UpdateInfo.ReCaret = false;
                 FStyle.UpdateInfo.ReStyle = false;
                 FStyle.UpdateInfo.ReScroll = false;
-                UpdateImmPosition();
+                UpdateImePosition();
             }
 
             if (FStyle.UpdateInfo.RePaint)
@@ -1225,6 +1228,11 @@ namespace HC.View
         protected virtual void Create()
         {
 
+        }
+
+        protected HCCaret Caret
+        {
+            get { return FCaret; }
         }
 
         public HCView()
