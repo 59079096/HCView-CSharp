@@ -136,12 +136,6 @@ namespace HC.View
                 FOnHorScroll(this, null);
         }
 
-        private void DoCaretChange()
-        {
-            if (FOnCaretChange != null)
-                FOnCaretChange(this, null);
-        }
-
         private void DoSectionDataChange(Object Sender, EventArgs e)
         {
             DoChange();
@@ -820,6 +814,12 @@ namespace HC.View
                 FOnChange(this, null);
         }
 
+        protected virtual void DoCaretChange()
+        {
+            if (FOnCaretChange != null)
+                FOnCaretChange(this, null);
+        }
+
         protected virtual void DoSectionCreateItem(Object sender, EventArgs e)
         {
             if (FOnSectionCreateItem != null)
@@ -1345,7 +1345,9 @@ namespace HC.View
                 aSections[i].MarkStyleUsed(false, AParts);
 
                 vData = aSections[i].ActiveData.GetTopLevelData();
-                vData.CurStyleNo = aStyle.TextStyles[vData.CurStyleNo].TempNo;
+                if (vData.CurStyleNo > HCStyle.Null)
+                    vData.CurStyleNo = aStyle.TextStyles[vData.CurStyleNo].TempNo;
+
                 vData.CurParaNo = aStyle.ParaStyles[vData.CurParaNo].TempNo;
             }
 

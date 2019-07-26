@@ -787,13 +787,18 @@ namespace HC.View
             int vlpDx = 0;
             if (FBrush.Style != HCBrushStyle.bsClear)
                 vOptions |= GDI.ETO_OPAQUE;
-            GDI.ExtTextOut(Handle, x, y, vOptions, ref aRect, aText, aText.Length, ref vlpDx);
+            GDI.ExtTextOut(FHandle, x, y, vOptions, ref aRect, aText, aText.Length, ref vlpDx);
+        }
+
+        public void TextRect(ref RECT aRect, string aText, int aTextFlags)
+        {
+            User.DrawTextEx(FHandle, aText, -1, ref aRect, aTextFlags, IntPtr.Zero);
         }
 
         public void TextOut(int x, int y, string text)
         {
             GDI.ExtTextOut(FHandle, x, y, FTextFlags, IntPtr.Zero, text, text.Length, IntPtr.Zero);
-            MoveTo(x + TextWidth(text), y);
+            //MoveTo(x + TextWidth(text), y);
         }
 
         public void Rectangle(RECT aRect)

@@ -457,6 +457,8 @@ namespace HC.Win32
         public uint dwFlags;
     }
 
+    public delegate int FNHookProc(int nCode, int wParam, IntPtr lParam);
+
     public delegate int WNDPROC(IntPtr hWnd, int msg, int wParam, int lParam);
 
     //public struct WNDCLASS 
@@ -548,7 +550,17 @@ namespace HC.Win32
 		public int iImage;
 	}
 
-	public abstract class ComCtl
+    public struct tagKBDLLHOOKSTRUCT
+    {
+        public uint vkCode;
+        public uint scanCode;
+        public uint flags;
+        public uint time;
+        public uint deExtraInfo;
+    }
+
+
+    public abstract class ComCtl
 	{
 		[DllImport("COMCTL32")] public static extern int ImageList_AddIcon(HANDLE himl, HANDLE hIcon);
 		[DllImport("COMCTL32")] public static extern int ImageList_Create(int MinCx, int MinCy, int flags, int cInitial, int cGrow);
@@ -934,7 +946,7 @@ namespace HC.Win32
 		[DllImport("user32")] public static extern int SetWindowText(HWND hwnd, string lpString);
 		[DllImport("user32")] public static extern int SetWindowWord(HWND hwnd, int nIndex, int wNewWord);
 		[DllImport("user32")] public static extern int SetWindowsHook(int nFilterType, ref int pfnFilterProc);
-		[DllImport("user32")] public static extern int SetWindowsHookEx(int idHook, ref int lpfn, HANDLE hmod, int dwThreadId);
+		[DllImport("user32")] public static extern int SetWindowsHookEx(int idHook, IntPtr lpfn, HANDLE hmod, int dwThreadId);
 		[DllImport("user32")] public static extern int ShowCaret(HWND hwnd);
 		[DllImport("user32")] public static extern int ShowCursor(int bShow);
 		[DllImport("user32")] public static extern int ShowOwnedPopups(HWND hwnd, int fShow);
