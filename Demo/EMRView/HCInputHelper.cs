@@ -42,7 +42,7 @@ namespace EMRView
             if (!FActive)
                 aCanvas.Brush.Color = Color.FromArgb(0xFE, 0xFE, 0xFF);
             else
-              aCanvas.Brush.Color = HC.View.HC.clInfoBk;
+              aCanvas.Brush.Color = HC.View.HC.clMedGray;
 
             aCanvas.Rectangle(aRect);
 
@@ -50,7 +50,7 @@ namespace EMRView
 
             string vText = "你好，我可以给你提供相关知识^_^";
             if (FCompStr != "")
-                vText = "[" + FBeforText +"]" + "[" + FAfterText + "]";// "1.第1项 2.第2项 3.第3项 4.第4项 5.第5项";
+                vText = "1.第1项 2.第2项 3.第3项 4.第4项 5.第5项";  // "[" + FBeforText +"]" + "[" + FAfterText + "]"
             else
                 vText = "我现在还没有和知识结合呢^_^";
             
