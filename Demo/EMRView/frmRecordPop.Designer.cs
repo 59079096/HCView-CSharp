@@ -590,6 +590,8 @@
             this.cbbUnit.Name = "cbbUnit";
             this.cbbUnit.Size = new System.Drawing.Size(58, 20);
             this.cbbUnit.TabIndex = 1;
+            this.cbbUnit.DropDown += new System.EventHandler(this.CbbUnit_DropDown);
+            this.cbbUnit.DropDownClosed += new System.EventHandler(this.CbbUnit_DropDownClosed);
             // 
             // tbxValue
             // 

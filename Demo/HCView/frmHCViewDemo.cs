@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using HC.View;
+using System;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using HC.View;
 using System.IO;
+using System.Windows.Forms;
 
 namespace HCViewDemo
 {
@@ -259,7 +254,7 @@ namespace HCViewDemo
         {
             using (OpenFileDialog vOpenDlg = new OpenFileDialog())
             {
-                vOpenDlg.Filter = "图像文件|*.bmp";
+                vOpenDlg.Filter = "图像文件|*.bmp; *.jpg; *.jpeg; *.png|Windows Bitmap|*.bmp|JPEG 文件|*.jpg; *.jpge|可移植网络图形|*.png";
                 if (vOpenDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     if (vOpenDlg.FileName != "")
@@ -521,11 +516,11 @@ namespace HCViewDemo
 
                 case "2":
                     FHCView.ApplyParaLineSpace(ParaLineSpaceMode.pls150);  // 1.5倍
-                break;
+                    break;
 
                 case "3":
                     FHCView.ApplyParaLineSpace(ParaLineSpaceMode.pls200);  // 双倍
-                break;      
+                    break;
             }
         }
 
@@ -608,15 +603,15 @@ namespace HCViewDemo
                 if (vTableItem.BorderVisible)
                     mniDisBorder.Text = "隐藏边框";
                 else
-                    mniDisBorder.Text = "显示边框";                
+                    mniDisBorder.Text = "显示边框";
             }
 
             mniCut.Enabled = (!FHCView.ActiveSection.ReadOnly && vTopData.SelectExists());
             mniCopy.Enabled = mniCut.Enabled;
 
             IDataObject vIData = Clipboard.GetDataObject();
-            mniPaste.Enabled = ( (!FHCView.ActiveSection.ReadOnly)
-                && (    (vIData.GetDataPresent(HC.View.HC.HC_EXT))
+            mniPaste.Enabled = ((!FHCView.ActiveSection.ReadOnly)
+                && ((vIData.GetDataPresent(HC.View.HC.HC_EXT))
                         || (vIData.GetDataPresent(DataFormats.Text))
                         || (vIData.GetDataPresent(DataFormats.Bitmap))
                     ));

@@ -167,6 +167,7 @@ namespace EMRView
         public const string Sql_GetDestRecordContent = "SELECT rec.ID, rec.Name, cnt.content FROM Inch_RecordInfo rec LEFT JOIN Comm_DataElementSet cdes ON rec.desID = cdes.id LEFT JOIN Inch_RecordContent cnt ON rec.ID = cnt.rid WHERE PatID = {0} AND VisitID = {1} AND cdes.pid = {2}";
         public const string Sql_SaveDomainItemContent = "EXEC SaveDomainContent @DItemID, @Content";
         public const string Sql_GetDomainItemContent = "SELECT Content FROM Comm_DomainContent WHERE DItemID = {0}";
+        public const string Sql_GetDataSetRecord = "SELECT rec.ID, rec.Name, cnt.content FROM Inch_RecordInfo rec LEFT JOIN Comm_DataElementSet cdes ON rec.desID = cdes.id LEFT JOIN Inch_RecordContent cnt ON rec.ID = cnt.rid WHERE PatID = {0} AND VisitID = {1} AND cdes.pid = {2}";
 
         #region 数据库操作
         /// <summary>

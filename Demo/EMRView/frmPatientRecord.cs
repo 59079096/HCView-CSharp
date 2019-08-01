@@ -599,7 +599,7 @@ namespace EMRView
 
         private void LoadPatientDataSetContent(int aDeSetID)
         {
-            DataTable dt = emrMSDB.DB.GetData(string.Format(emrMSDB.Sql_GetDataSet, PatientInfo.PatID, PatientInfo.VisitID, aDeSetID));
+            DataTable dt = emrMSDB.DB.GetData(string.Format(emrMSDB.Sql_GetDataSetRecord, PatientInfo.PatID, PatientInfo.VisitID, aDeSetID));
             if (dt.Rows.Count >= 0)
             {
                 int vIndex = 0;

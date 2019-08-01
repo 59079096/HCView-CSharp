@@ -848,13 +848,15 @@ namespace EMRView
         private void mniInsertImage_Click(object sender, EventArgs e)
         {
             OpenFileDialog vOpenDlg = new OpenFileDialog();
-            vOpenDlg.Filter = "bmp文件|*.bmp";
+            vOpenDlg.Filter = "图像文件|*.bmp; *.jpg; *.jpeg; *.png|Windows Bitmap|*.bmp|JPEG 文件|*.jpg; *.jpge|可移植网络图形|*.png";
             if (vOpenDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 if (vOpenDlg.FileName != "")
                 {
-                    HCImageItem vImageItem = new HCImageItem(FEmrView.ActiveSectionTopLevelData());
+                    HCRichData vTopData = FEmrView.ActiveSectionTopLevelData() as HCRichData;
+                    HCImageItem vImageItem = new HCImageItem(vTopData);
                     vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
+                    vImageItem.RestrainSize(vTopData.Width, vTopData.Height);
                     FEmrView.InsertItem(vImageItem);
                 }
             }

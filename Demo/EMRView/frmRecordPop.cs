@@ -339,6 +339,22 @@ namespace EMRView
             this.Focus();
         }
 
+        private string ConversionValueByUnit(string aValue, string aOldUnit, string aNewUnit)
+        {
+            return aValue;
+        }
+
+        private void CbbUnit_DropDownClosed(object sender, EventArgs e)
+        {
+            if (tbxValue.Text.Trim() != "")
+                tbxValue.Text = ConversionValueByUnit(tbxValue.Text, FOldUnit, cbbUnit.Text);  // 数据单位换算
+        }
+
+        private void CbbUnit_DropDown(object sender, EventArgs e)
+        {
+            FOldUnit = cbbUnit.Text;
+        }
+
         private void btnCE_Click(object sender, EventArgs e)
         {
             tbxValue.Text = "";
