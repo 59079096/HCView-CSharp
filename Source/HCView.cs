@@ -502,11 +502,15 @@ namespace HC.View
             vCaretInfo.Visible = true;
 
             ActiveSection.GetPageCaretInfo(ref vCaretInfo);
+
             if (!vCaretInfo.Visible)
             {
                 FCaret.Hide();
                 return;
             }
+
+            FVScrollBar.SetAreaPos(-1, vCaretInfo.Y, vCaretInfo.Height);
+
             FCaret.X = ZoomIn(GetSectionDrawLeft(FActiveSectionIndex) + vCaretInfo.X) - FHScrollBar.Position;
             FCaret.Y = ZoomIn(GetSectionTopFilm(FActiveSectionIndex) + vCaretInfo.Y) - FVScrollBar.Position;
             FCaret.Height = ZoomIn(vCaretInfo.Height);

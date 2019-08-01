@@ -9,13 +9,11 @@
 {                                                       }
 {*******************************************************/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Drawing;
-using System.IO;
 using HC.Win32;
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 
 namespace HC.View
 {
@@ -80,9 +78,37 @@ namespace HC.View
             FImage = new Bitmap((source as HCImageItem).Image);
         }
 
+        /// <summary>
+        /// 会产生graphics异常的PixelFormat
+        /// </summary>
+        private static PixelFormat[] indexedPixelFormats = { PixelFormat.Undefined, PixelFormat.DontCare,
+            PixelFormat.Format16bppArgb1555, PixelFormat.Format1bppIndexed, PixelFormat.Format4bppIndexed,
+            PixelFormat.Format8bppIndexed
+        };
+
+        /// <summary> 判断图片的PixelFormat 是否在 引发异常的 PixelFormat 之中 </summary>
+        /// <param name="imgPixelFormat">原图片的PixelFormat</param>
+        /// <returns></returns>
+        private static bool IsPixelFormatIndexed(PixelFormat imgPixelFormat)
+        {
+            foreach (PixelFormat pf in indexedPixelFormats)
+            {
+                if (pf.Equals(imgPixelFormat))
+                    return true;
+            }
+
+            return false;
+        }
+
         public override void PaintTop(HCCanvas aCanvas)
         {
-            using (Graphics vGraphicSrc = Graphics.FromImage(FImage))
+            Bitmap vBitmap = FImage;
+
+            //如果原图片是索引像素格式之列的，则需要转换
+            if (IsPixelFormatIndexed(FImage.PixelFormat))
+                vBitmap = new Bitmap(FImage.Width, FImage.Height, PixelFormat.Format32bppArgb);
+
+            using (Graphics vGraphicSrc = Graphics.FromImage(vBitmap))
             {
                 BLENDFUNCTION vBlendFunction = new BLENDFUNCTION();
                 vBlendFunction.BlendOp = GDI.AC_SRC_OVER;
@@ -90,13 +116,12 @@ namespace HC.View
                 vBlendFunction.AlphaFormat = GDI.AC_SRC_OVER;  // 通常为 0，如果源位图为32位真彩色，可为 AC_SRC_ALPHA
                 vBlendFunction.SourceConstantAlpha = 128; // 透明度
 
-
                 IntPtr vImageHDC = vGraphicSrc.GetHdc();
                 try
                 {
                     IntPtr vMemDC = (IntPtr)GDI.CreateCompatibleDC(vImageHDC);
-                    IntPtr vBitmap = FImage.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
-                    GDI.SelectObject(vMemDC, vBitmap);
+                    IntPtr vHbitmap = FImage.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
+                    GDI.SelectObject(vMemDC, vHbitmap);
 
                     GDI.AlphaBlend(
                         aCanvas.Handle,
@@ -112,13 +137,16 @@ namespace HC.View
                         vBlendFunction);
 
                     GDI.DeleteDC(vMemDC);
-                    GDI.DeleteObject(vBitmap);
+                    GDI.DeleteObject(vHbitmap);
                 }
                 finally
                 {
                     vGraphicSrc.ReleaseHdc(vImageHDC);
                 }
             }
+
+            if (!vBitmap.Equals(FImage))
+                vBitmap.Dispose();
 
             base.PaintTop(aCanvas);
         }

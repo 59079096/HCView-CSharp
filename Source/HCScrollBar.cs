@@ -41,17 +41,17 @@ namespace HC.View
         public const int ButtonSize = 20;
         private static Color LineColor = HC.clMedGray;
         private const int IconWidth = 16;
-        private static Color TitleBackColor = Color.FromArgb(0xAA, 0xAB, 0xB3);
+        private Color Color = Color.FromArgb(0xAA, 0xAB, 0xB3);
         private static Color ThumBackColor = Color.FromArgb(0xD0, 0xD1, 0xD5);
 
         private int FMin, FMax, FRange, FPosition, FBtnStep, FPageSize;
         private Single FPercent;
         private Orientation FOrientation;
-        private POINT FMousePt;
         private ScrollEventHandler FOnScroll;
         private BarControl FMouseDownControl;
-        private RECT FThumRect, FLeftBtnRect, FRightBtnRect;
         private EventHandler FOnVisibleChanged;
+        protected POINT FMouseDownPt;
+        protected RECT FThumRect, FLeftBtnRect, FRightBtnRect;
 
         /// <summary>
         /// 得到鼠标上去要实现改变的区域
@@ -363,20 +363,20 @@ namespace HC.View
         {
             base.OnMouseDown(e);
 
-            FMousePt.X = e.X;
-            FMousePt.Y = e.Y;
-            if (HC.PtInRect(FLeftBtnRect, FMousePt))
+            FMouseDownPt.X = e.X;
+            FMouseDownPt.Y = e.Y;
+            if (HC.PtInRect(FLeftBtnRect, FMouseDownPt))
             {
                 FMouseDownControl = BarControl.cbcLeftBtn;  // 鼠标所在区域类型
                 ScrollStep(ScrollCode.scLineUp);  // 数据向上（左）滚动
             }
             else
-                if (HC.PtInRect(FThumRect, FMousePt))
+                if (HC.PtInRect(FThumRect, FMouseDownPt))
                 {
                     FMouseDownControl = BarControl.cbcThum;
                 }
                 else
-                    if (HC.PtInRect(FRightBtnRect, FMousePt))
+                    if (HC.PtInRect(FRightBtnRect, FMouseDownPt))
                     {
                         FMouseDownControl = BarControl.cbcRightBtn;
                         ScrollStep(ScrollCode.scLineDown);  // 数据向下（右）滚动
@@ -408,18 +408,18 @@ namespace HC.View
                 {
                     if (FMouseDownControl == BarControl.cbcThum)
                     {
-                        vOffs = e.X - FMousePt.X;
+                        vOffs = e.X - FMouseDownPt.X;
                         Position = FPosition + (int)Math.Round(vOffs / FPercent); ;
-                        FMousePt.X = e.X;  // 对水平坐标赋值
+                        FMouseDownPt.X = e.X;  // 对水平坐标赋值
                     }
                 }
                 else  // 垂直
                 {
                     if (FMouseDownControl == BarControl.cbcThum)
                     {
-                        vOffs = e.Y - FMousePt.Y;  // 拖块在最下面时，往下快速拖动，还是会触发滚动事件，造成闪烁，如何解决？word是限制拖动块附近的范围
+                        vOffs = e.Y - FMouseDownPt.Y;  // 拖块在最下面时，往下快速拖动，还是会触发滚动事件，造成闪烁，如何解决？word是限制拖动块附近的范围
                         Position = FPosition + (int)Math.Round(vOffs / FPercent);
-                        FMousePt.Y = e.Y;  // 对垂直坐标赋当前Y值
+                        FMouseDownPt.Y = e.Y;  // 对垂直坐标赋当前Y值
                     }
                 }
             }
@@ -460,7 +460,7 @@ namespace HC.View
         public void PaintToEx(HCCanvas ACanvas)
         {
             RECT vRect = new RECT();
-            ACanvas.Brush.Color = TitleBackColor;
+            ACanvas.Brush.Color = this.Color;
             ACanvas.FillRect(HC.Bounds(0, 0, Width, Height));
 
             if (FOrientation == Orientation.oriHorizontal)  // 水平滚动条
