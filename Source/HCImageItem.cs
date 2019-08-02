@@ -48,7 +48,22 @@ namespace HC.View
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop,
             int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            aCanvas.StretchDraw(aDrawRect, FImage);
+            if (aPaintInfo.Print)
+            {
+                SIZE vSize = new SIZE();
+                GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vSize);
+                try
+                {
+                    aCanvas.StretchDraw(aDrawRect, FImage);
+                }
+                finally
+                {
+                    GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.GetScaleX(aPaintInfo.WindowWidth),
+                      aPaintInfo.GetScaleY(aPaintInfo.WindowHeight), ref vSize);
+                }
+            }
+            else
+                aCanvas.StretchDraw(aDrawRect, FImage);
 
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenBottom, aDataScreenBottom,
                 aCanvas, aPaintInfo);

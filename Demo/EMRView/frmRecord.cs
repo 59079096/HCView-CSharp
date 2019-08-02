@@ -856,7 +856,8 @@ namespace EMRView
                     HCRichData vTopData = FEmrView.ActiveSectionTopLevelData() as HCRichData;
                     HCImageItem vImageItem = new HCImageItem(vTopData);
                     vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
-                    vImageItem.RestrainSize(vTopData.Width, vTopData.Height);
+                    vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
+                    Application.DoEvents();
                     FEmrView.InsertItem(vImageItem);
                 }
             }
