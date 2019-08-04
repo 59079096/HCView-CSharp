@@ -1068,7 +1068,7 @@ namespace HC.View
 
         public new void RemoveRange(int index, int count)
         {
-            for (int i = index; i < index + count; i++)
+            for (int i = index + count - 1; i >= index; i--)
             {
                 this.RemoveAt(i);
             }

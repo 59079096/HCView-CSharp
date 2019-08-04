@@ -118,6 +118,7 @@ namespace HC.View
             if (FChecked)  // 勾选
                 User.DrawFrameControl(aCanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
 
+            aCanvas.Pen.Style = HCPenStyle.psSolid;
             if (FMouseIn && (!aPaintInfo.Print))  // 鼠标在其中，且非打印
             {
                 aCanvas.Pen.Color = Color.Blue;

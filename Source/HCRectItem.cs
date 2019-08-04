@@ -635,12 +635,15 @@ namespace HC.View
                 if (aItemNo < aRichData.Items.Count - 1)
                 {
                     HCCustomItem vItem = aRichData.Items[aItemNo + 1];
-                    if ((vItem.StyleNo == this.StyleNo)  // 下一个是组标识)
+                    if ((vItem.StyleNo == this.StyleNo)  // 下一个是组标识
                         && ((vItem as HCDomainItem).MarkType == MarkType.cmtEnd)) // 下一个是结束标识
                         this.Width = 10;  // 增加宽度以便输入时光标可方便点击
                     else
-                        if (vItem.StyleNo > HCStyle.Null)  // 后面是文本，跟随后面的高度
-                            this.Height = aRichData.Style.TextStyles[vItem.StyleNo].FontHeight;
+                    if (vItem.ParaFirst)  // 下一个是段首，我是段尾
+                        this.Width = 10;  // 增加宽度以便输入时光标可方便点击
+                    else
+                    if (vItem.StyleNo > HCStyle.Null)  // 后面是文本，跟随后面的高度
+                        this.Height = aRichData.Style.TextStyles[vItem.StyleNo].FontHeight;
                 }
                 else
                     this.Width = 10;
@@ -648,12 +651,14 @@ namespace HC.View
             else  // 域结束标识
             {
                 HCCustomItem vItem = aRichData.Items[aItemNo - 1];
-                if ((vItem.StyleNo == this.StyleNo)
-                    && ((vItem as HCDomainItem).MarkType == MarkType.cmtBeg))
+                if ((vItem.StyleNo == this.StyleNo) && ((vItem as HCDomainItem).MarkType == MarkType.cmtBeg))
                     this.Width = 10;
                 else
-                    if (vItem.StyleNo > HCStyle.Null)  // 前面是文本，距离前面的高度
-                        this.Height = aRichData.Style.TextStyles[vItem.StyleNo].FontHeight;
+                if (this.ParaFirst)  // 结束标识是段首，增加宽度
+                    this.Width = 10;
+                else
+                if (vItem.StyleNo > HCStyle.Null)  // 前面是文本，距离前面的高度
+                    this.Height = aRichData.Style.TextStyles[vItem.StyleNo].FontHeight;
             }
         }
 

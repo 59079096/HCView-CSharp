@@ -1440,7 +1440,6 @@ namespace HC.View
             {
                 if (FSelectCellRang.EndRow >= 0)
                 {
-                    Result = true;
                     for (int vR = FSelectCellRang.StartRow; vR <= FSelectCellRang.EndRow; vR++)
                     {
                         for (int vC = FSelectCellRang.StartCol; vC <= FSelectCellRang.EndCol; vC++)
@@ -1449,9 +1448,19 @@ namespace HC.View
                                 this[vR, vC].CellData.DeleteSelected();
                         }
                     }
+
+                    FLastChangeFormated = false;
+                    Result = true;
                 }
                 else  // 在同一单元格
-                    Result = GetEditCell().CellData.DeleteSelected();
+                {
+                    HCProcedure vEvent = delegate ()
+                    {
+                        Result = this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].CellData.DeleteSelected();
+                    };
+
+                    CellChangeByAction(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEvent);
+                }
             }
 
             return Result;
@@ -2502,12 +2511,21 @@ namespace HC.View
 
         public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            bool Result = false;
-            HCTableCell vCell = GetEditCell();
-            if (vCell != null)
-                Result = vCell.CellData.InsertStream(aStream, aStyle, aFileVersion);
+            bool vResult = false;
 
-            return Result;
+            if (FSelectCellRang.EditCell())
+            {
+                HCProcedure vEvent = delegate ()
+                {
+                    HCTableCell vEditCell = this[FSelectCellRang.StartRow, FSelectCellRang.StartCol];
+                    vResult = vEditCell.CellData.InsertStream(aStream, aStyle, aFileVersion);
+                };
+
+                CellChangeByAction(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEvent);
+                return vResult;
+            }
+            else
+                return base.InsertStream(aStream, aStyle, aFileVersion);
         }
 
         public override void ReFormatActiveItem()

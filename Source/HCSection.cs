@@ -328,17 +328,6 @@ namespace HC.View
             int viTemp = -1;
             int vMarginLeft = GetPageMarginLeft(aPageIndex);
             aX = aX - vMarginLeft;
-            if (ARestrain)
-            {
-                if (aX < 0)
-                    aX = 0;
-                else
-                {
-                    viTemp = GetPageWidth();
-                    if (aX > viTemp)
-                        aX = viTemp;
-                }
-            }
 
             // 为避免边界(激活正文，在页眉页脚点击时判断仍是在正文位置造成光标错误)约束后都偏移1
             if (aData == FHeader)

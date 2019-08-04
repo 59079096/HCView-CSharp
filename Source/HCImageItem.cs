@@ -117,51 +117,54 @@ namespace HC.View
 
         public override void PaintTop(HCCanvas aCanvas)
         {
-            Bitmap vBitmap = FImage;
-
-            //如果原图片是索引像素格式之列的，则需要转换
-            if (IsPixelFormatIndexed(FImage.PixelFormat))
-                vBitmap = new Bitmap(FImage.Width, FImage.Height, PixelFormat.Format32bppArgb);
-
-            using (Graphics vGraphicSrc = Graphics.FromImage(vBitmap))
+            if (this.Resizing)
             {
-                BLENDFUNCTION vBlendFunction = new BLENDFUNCTION();
-                vBlendFunction.BlendOp = GDI.AC_SRC_OVER;
-                vBlendFunction.BlendFlags = 0;
-                vBlendFunction.AlphaFormat = GDI.AC_SRC_OVER;  // 通常为 0，如果源位图为32位真彩色，可为 AC_SRC_ALPHA
-                vBlendFunction.SourceConstantAlpha = 128; // 透明度
+                Bitmap vBitmap = FImage;
 
-                IntPtr vImageHDC = vGraphicSrc.GetHdc();
-                try
+                //如果原图片是索引像素格式之列的，则需要转换
+                if (IsPixelFormatIndexed(FImage.PixelFormat))
+                    vBitmap = new Bitmap(FImage.Width, FImage.Height, PixelFormat.Format32bppArgb);
+
+                using (Graphics vGraphicSrc = Graphics.FromImage(vBitmap))
                 {
-                    IntPtr vMemDC = (IntPtr)GDI.CreateCompatibleDC(vImageHDC);
-                    IntPtr vHbitmap = FImage.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
-                    GDI.SelectObject(vMemDC, vHbitmap);
+                    BLENDFUNCTION vBlendFunction = new BLENDFUNCTION();
+                    vBlendFunction.BlendOp = GDI.AC_SRC_OVER;
+                    vBlendFunction.BlendFlags = 0;
+                    vBlendFunction.AlphaFormat = GDI.AC_SRC_OVER;  // 通常为 0，如果源位图为32位真彩色，可为 AC_SRC_ALPHA
+                    vBlendFunction.SourceConstantAlpha = 128; // 透明度
 
-                    GDI.AlphaBlend(
-                        aCanvas.Handle,
-                        ResizeRect.Left,
-                        ResizeRect.Top,
-                        ResizeWidth,
-                        ResizeHeight,
-                        vMemDC,
-                        0,
-                        0,
-                        FImage.Width,
-                        FImage.Height,
-                        vBlendFunction);
+                    IntPtr vImageHDC = vGraphicSrc.GetHdc();
+                    try
+                    {
+                        IntPtr vMemDC = (IntPtr)GDI.CreateCompatibleDC(vImageHDC);
+                        IntPtr vHbitmap = FImage.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
+                        GDI.SelectObject(vMemDC, vHbitmap);
 
-                    GDI.DeleteDC(vMemDC);
-                    GDI.DeleteObject(vHbitmap);
+                        GDI.AlphaBlend(
+                            aCanvas.Handle,
+                            ResizeRect.Left,
+                            ResizeRect.Top,
+                            ResizeWidth,
+                            ResizeHeight,
+                            vMemDC,
+                            0,
+                            0,
+                            FImage.Width,
+                            FImage.Height,
+                            vBlendFunction);
+
+                        GDI.DeleteDC(vMemDC);
+                        GDI.DeleteObject(vHbitmap);
+                    }
+                    finally
+                    {
+                        vGraphicSrc.ReleaseHdc(vImageHDC);
+                    }
                 }
-                finally
-                {
-                    vGraphicSrc.ReleaseHdc(vImageHDC);
-                }
+
+                if (!vBitmap.Equals(FImage))
+                    vBitmap.Dispose();
             }
-
-            if (!vBitmap.Equals(FImage))
-                vBitmap.Dispose();
 
             base.PaintTop(aCanvas);
         }

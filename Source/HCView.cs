@@ -875,6 +875,13 @@ namespace HC.View
         /// <summary> 复制前，便于订制特征数据如内容来源 </summary>
         protected virtual void DoCopyDataBefor(Stream AStream) { }
 
+        /// <summary> 视图绘制完成后 </summary>
+        protected virtual void DoPaintViewAfter(HCCanvas aCanvas)
+        {
+            if (FOnPaintViewAfter != null)
+                FOnPaintViewAfter(aCanvas);
+        }
+
         /// <summary> 粘贴前，便于确认订制特征数据如内容来源 </summary>
         protected virtual void DoPasteDataBefor(Stream AStream, ushort AVersion) { }
 
@@ -2126,8 +2133,7 @@ namespace HC.View
                                 for (int i = 0; i <= vPaintInfo.TopItems.Count - 1; i++)  // 绘制顶层Ite
                                     vPaintInfo.TopItems[i].PaintTop(vDataBmpCanvas);
 
-                                if (FOnPaintViewAfter != null)
-                                    FOnPaintViewAfter(vDataBmpCanvas);
+                                DoPaintViewAfter(vDataBmpCanvas);
                             }
                             finally
                             {
@@ -2259,34 +2265,38 @@ namespace HC.View
         /// <returns>坐标</returns>
         public POINT GetActiveDrawItemClientCoord()
         {
-            POINT Result = ActiveSection.GetActiveDrawItemCoord();  // 有选中时，以选中结束位置的DrawItem格式化坐标
-            int vPageIndex = ActiveSection.GetPageIndexByFormat(Result.Y);
-            
+            HCSection vSection = this.ActiveSection;
+            POINT Result = vSection.GetActiveDrawItemCoord();  // 有选中时，以选中结束位置的DrawItem格式化坐标
+
+            int vPageIndex = -1;
+            if (vSection.ActiveData == vSection.Page)
+                vPageIndex = vSection.GetPageIndexByFormat(Result.Y);
+            else
+                vPageIndex = vSection.ActivePageIndex;
+
             // 映射到节页面(白色区域)
             Result.X = ZoomIn(GetSectionDrawLeft(this.ActiveSectionIndex)
-                + (ActiveSection.GetPageMarginLeft(vPageIndex) + Result.X)) - FHScrollBar.Position;
+                + (vSection.GetPageMarginLeft(vPageIndex) + Result.X)) - FHScrollBar.Position;
             
-            if (ActiveSection.ActiveData == ActiveSection.Header)
+            if (vSection.ActiveData == vSection.Header)
                 Result.Y = ZoomIn(GetSectionTopFilm(this.ActiveSectionIndex)
-                    + ActiveSection.GetPageTopFilm(vPageIndex)  // 20
-                    + ActiveSection.GetHeaderPageDrawTop()
-                    + Result.Y
-                    - ActiveSection.GetPageDataFmtTop(vPageIndex))  // 0
+                    + vSection.GetPageTopFilm(vPageIndex)  // 20
+                    + vSection.GetHeaderPageDrawTop()
+                    + Result.Y)
                     - FVScrollBar.Position;
             else
-            if (ActiveSection.ActiveData == ActiveSection.Footer)
+            if (vSection.ActiveData == vSection.Footer)
                 Result.Y = ZoomIn(GetSectionTopFilm(this.ActiveSectionIndex)
-                    + ActiveSection.GetPageTopFilm(vPageIndex)  // 20
-                    + ActiveSection.PaperHeightPix - ActiveSection.PaperMarginBottomPix
-                    + Result.Y
-                    - ActiveSection.GetPageDataFmtTop(vPageIndex))  // 0
+                    + vSection.GetPageTopFilm(vPageIndex)  // 20
+                    + vSection.PaperHeightPix - vSection.PaperMarginBottomPix
+                    + Result.Y)
                     - FVScrollBar.Position;
             else
                 Result.Y = ZoomIn(GetSectionTopFilm(this.ActiveSectionIndex)
-                + ActiveSection.GetPageTopFilm(vPageIndex)  // 20
-                + ActiveSection.GetHeaderAreaHeight() // 94
+                + vSection.GetPageTopFilm(vPageIndex)  // 20
+                + vSection.GetHeaderAreaHeight() // 94
                 + Result.Y
-                - ActiveSection.GetPageDataFmtTop(vPageIndex))  // 0
+                - vSection.GetPageDataFmtTop(vPageIndex))  // 0
                 - FVScrollBar.Position;
 
             return Result;
