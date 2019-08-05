@@ -71,6 +71,34 @@ namespace HC.View
         }
     }
 
+    class HCMulCellUndo : Object
+    {
+        private bool FEnable = false;
+        private void SetEnable(bool value)
+        {
+            if (FEnable != value)
+            {
+                FEnable = value;
+                if (FEnable)
+                    Init(-1, -1);
+            }
+        }
+
+        public int Row, Col;
+
+        public void Init(int aRow, int aCol)
+        {
+            Row = aRow;
+            Col = aCol;
+        }
+
+        public bool Enable
+        {
+            get { return FEnable; }
+            set { SetEnable(value); }
+        }
+    }
+
     public delegate void HCCellPaintEventHandle(object sender, HCTableCell aCell, RECT aRect, HCCanvas aCanvas, PaintInfo aPaintInfo,
         ref bool aDrawDefault);
 
@@ -98,9 +126,11 @@ namespace HC.View
             FFormatHeight;
 
         private ResizeInfo FResizeInfo;
+        private HCMulCellUndo FMulCellUndo;
 
         private bool FBorderVisible, FMouseLBDowning, FSelecting, FDraging,
-            FOutSelectInto, FLastChangeFormated;  // 最后变动已经格式化完了
+            FOutSelectInto, FLastChangeFormated,  // 最后变动已经格式化完了
+            FResizeKeepWidth;  // 拖动改变非最右侧边框宽度时，是否保持当前整体宽度不变
 
         private SelectCellRang FSelectCellRang;
         private Color FBorderColor;  // 边框颜色
@@ -1266,14 +1296,17 @@ namespace HC.View
                                         Undo_ColResize(vUpCol, FColWidths[vUpCol], FColWidths[vUpCol] + vCellPt.X);
                                         
                                         FColWidths[vUpCol] = FColWidths[vUpCol] + vCellPt.X;  // 当前列变化
-                                        //if (vUpCol < FColWidths.Count - 1)
-                                        //    FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] - vCellPt.X;
+                                        if (FResizeKeepWidth && (vUpCol < FColWidths.Count - 1))
+                                            FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] - vCellPt.X;
                                     }
                                 }
                                 else  // 最右侧列拖宽
                                 {
-                                    FColWidths[vUpCol] = FColWidths[vUpCol] + vCellPt.X;  // 当前列变化
+                                    if (FResizeKeepWidth && (FColWidths[vUpCol] + vCellPt.X > (OwnerData as HCRichData).Width))
+                                        vCellPt.X = (OwnerData as HCRichData).Width - FColWidths[vUpCol + 1];
+
                                     Undo_ColResize(vUpCol, FColWidths[vUpCol], FColWidths[vUpCol] + vCellPt.X);
+                                    FColWidths[vUpCol] = FColWidths[vUpCol] + vCellPt.X;  // 当前列变化
                                 }
                             }
                             else  // 拖窄了
@@ -1286,8 +1319,8 @@ namespace HC.View
                                     Undo_ColResize(vUpCol, FColWidths[vUpCol], FColWidths[vUpCol] + vCellPt.X);
                                     
                                     FColWidths[vUpCol] = FColWidths[vUpCol] + vCellPt.X;  // 当前列变化
-                                    //if (vUpCol < FColWidths.Count - 1)
-                                    //    FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] - vCellPt.X;
+                                    if (FResizeKeepWidth && (vUpCol < FColWidths.Count - 1))
+                                        FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] + vCellPt.X;
                                 }
                             }
                         }
@@ -1440,13 +1473,33 @@ namespace HC.View
             {
                 if (FSelectCellRang.EndRow >= 0)
                 {
-                    for (int vR = FSelectCellRang.StartRow; vR <= FSelectCellRang.EndRow; vR++)
+                    FMulCellUndo.Enable = true;
+                    try
                     {
-                        for (int vC = FSelectCellRang.StartCol; vC <= FSelectCellRang.EndCol; vC++)
+                        HCUndoList vUndoList = GetSelfUndoList();
+                        vUndoList.UndoGroupBegin(0, 0);
+                        try
                         {
-                            if (this[vR, vC].CellData != null)
-                                this[vR, vC].CellData.DeleteSelected();
+                            for (int vR = FSelectCellRang.StartRow; vR <= FSelectCellRang.EndRow; vR++)
+                            {
+                                for (int vC = FSelectCellRang.StartCol; vC <= FSelectCellRang.EndCol; vC++)
+                                {
+                                    if (this[vR, vC].CellData != null)
+                                    {
+                                        FMulCellUndo.Init(vR, vC);
+                                        this[vR, vC].CellData.DeleteSelected();
+                                    }
+                                }
+                            }
                         }
+                        finally
+                        {
+                            vUndoList.UndoGroupEnd(0, 0);
+                        }
+                    }
+                    finally
+                    {
+                        FMulCellUndo.Enable = false;
                     }
 
                     FLastChangeFormated = false;
@@ -1603,6 +1656,16 @@ namespace HC.View
         // 撤销重做相关方法
         protected override HCUndo DoSelfUndoNew()
         {
+            if (FMulCellUndo.Enable)
+            {
+                HCUndo Result = new HCDataUndo();
+                HCMulCellUndoData vMulCellUndoData = new HCMulCellUndoData();
+                vMulCellUndoData.Row = FMulCellUndo.Row;
+                vMulCellUndoData.Col = FMulCellUndo.Col;
+                Result.Data = vMulCellUndoData;
+                return Result;
+            }
+            else
             if (FSelectCellRang.EditCell())  // 在同一单元格中编辑
             {
                 HCUndo Result = new HCDataUndo();
@@ -1629,6 +1692,13 @@ namespace HC.View
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
 
+            if (aUndo.Data is HCMulCellUndoData)
+            {
+                HCMulCellUndoData vMulCellUndoData = aUndo.Data as HCMulCellUndoData;
+                FRows[vMulCellUndoData.Row][vMulCellUndoData.Col].CellData.Undo(aUndo);
+                FLastChangeFormated = false;
+            }
+            else
             if (aUndo.Data is HCCellUndoData)
             {
                 HCCellUndoData vCellUndoData = aUndo.Data as HCCellUndoData;
@@ -1646,10 +1716,10 @@ namespace HC.View
             if (aUndo.Data is HCColSizeUndoData)
             {
                 HCColSizeUndoData vColSizeUndoData = aUndo.Data as HCColSizeUndoData;
-                if (vColSizeUndoData.Col < FColWidths.Count - 1)
+                if (FResizeKeepWidth && (vColSizeUndoData.Col < FColWidths.Count - 1))
                 {
                     FColWidths[vColSizeUndoData.Col + 1] = FColWidths[vColSizeUndoData.Col + 1] +
-                        FColWidths[vColSizeUndoData.Col] - vColSizeUndoData.OldWidth;
+                        vColSizeUndoData.NewWidth - vColSizeUndoData.OldWidth;
                 }
                 FColWidths[vColSizeUndoData.Col] = vColSizeUndoData.OldWidth;
                 FLastChangeFormated = false;
@@ -1697,15 +1767,22 @@ namespace HC.View
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
 
+            if (aRedo.Data is HCMulCellUndoData)
+            {
+                HCMulCellUndoData vMulCellUndoData = aRedo.Data as HCMulCellUndoData;
+                FRows[vMulCellUndoData.Row][vMulCellUndoData.Col].CellData.Redo(aRedo);
+                FLastChangeFormated = false;
+            }
+            else
             if (aRedo.Data is HCCellUndoData)
             {
-                HCCellUndoData vRedoCellUndoData = aRedo.Data as HCCellUndoData;
-                FSelectCellRang.StartRow = vRedoCellUndoData.Row;
-                FSelectCellRang.StartCol = vRedoCellUndoData.Col;
+                HCCellUndoData vCellUndoData = aRedo.Data as HCCellUndoData;
+                FSelectCellRang.StartRow = vCellUndoData.Row;
+                FSelectCellRang.StartCol = vCellUndoData.Col;
 
                 HCProcedure vEvent = delegate()
                 {
-                    FRows[vRedoCellUndoData.Row][vRedoCellUndoData.Col].CellData.Redo(aRedo);
+                    FRows[vCellUndoData.Row][vCellUndoData.Col].CellData.Redo(aRedo);
                 };
 
                 CellChangeByAction(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEvent);
@@ -1714,10 +1791,10 @@ namespace HC.View
             if (aRedo.Data is HCColSizeUndoData)
             {
                 HCColSizeUndoData vColSizeUndoData = aRedo.Data as HCColSizeUndoData;
-                if (vColSizeUndoData.Col < FColWidths.Count - 1)
+                if (FResizeKeepWidth && (vColSizeUndoData.Col < FColWidths.Count - 1))
                 {
-                    FColWidths[vColSizeUndoData.Col + 1] = FColWidths[vColSizeUndoData.Col + 1] +
-                        FColWidths[vColSizeUndoData.Col] - vColSizeUndoData.NewWidth;
+                    FColWidths[vColSizeUndoData.Col + 1] = FColWidths[vColSizeUndoData.Col + 1] -
+                        vColSizeUndoData.NewWidth - vColSizeUndoData.OldWidth;
                 }
                 FColWidths[vColSizeUndoData.Col] = vColSizeUndoData.NewWidth;
                 FLastChangeFormated = false;
@@ -1798,7 +1875,7 @@ namespace HC.View
             }
         }
 
-        protected void Undo_MergeCells()
+        protected void Undo_Mirror()
         {
             HCUndoList vUndoList = GetSelfUndoList();
             if ((vUndoList != null) && vUndoList.Enable)
@@ -2244,11 +2321,13 @@ namespace HC.View
             FBorderWidth = 1;
             FBorderColor = Color.Black;
             FBorderVisible = true;
+            FResizeKeepWidth = false;
 
             StyleNo = HCStyle.Table;
             ParaNo = OwnerData.CurParaNo;
             CanPageBreak = true;
             FPageBreaks = new List<PageBreak>();
+            FMulCellUndo = new HCMulCellUndo();
 
             //FWidth := FRows[0].ColCount * (MinColWidth + FBorderWidth) + FBorderWidth;
             Height = aRowCount * (HC.MinRowHeight + FBorderWidth) + FBorderWidth;
@@ -4175,7 +4254,7 @@ namespace HC.View
 
             if ((FSelectCellRang.StartRow >= 0) && (FSelectCellRang.EndRow >= 0))
             {
-                Undo_MergeCells();
+                Undo_Mirror();
 
                 Result = MergeCells(FSelectCellRang.StartRow, FSelectCellRang.StartCol,
                     FSelectCellRang.EndRow, FSelectCellRang.EndCol);

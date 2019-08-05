@@ -63,6 +63,8 @@ namespace HC.View
         }
     }
 
+    public class HCMulCellUndoData : HCCellUndoData { }
+
     public class HCColSizeUndoData : HCBaseKeysUndoData  // 改变列宽
     {
         private int FCol;

@@ -383,6 +383,8 @@ namespace HC.View
             buffer = System.BitConverter.GetBytes(FParaNo);
             aStream.Write(buffer, 0, buffer.Length);
 
+            FOptions.ExClude((byte)ItemOption.ioSelectPart);
+            FOptions.ExClude((byte)ItemOption.ioSelectComplate);
             aStream.WriteByte(FOptions.Value);
         }
 
@@ -412,6 +414,7 @@ namespace HC.View
             aNode.Attributes["sno"].Value = FStyleNo.ToString();
             aNode.Attributes["pno"].Value = FParaNo.ToString();
             aNode.Attributes["parafirst"].Value = this.ParaFirst.ToString();
+            aNode.Attributes["pagebreak"].Value = this.PageBreak.ToString();
         }
 
         public virtual void ParseXml(XmlElement aNode)
@@ -419,6 +422,7 @@ namespace HC.View
             FStyleNo = int.Parse(aNode.Attributes["sno"].Value);
             FParaNo = int.Parse(aNode.Attributes["pno"].Value);
             this.ParaFirst = bool.Parse(aNode.Attributes["parafirst"].Value);
+            this.PageBreak = bool.Parse(aNode.Attributes["pagebreak"].Value);
         }
 
         // 撤销重做相关方法
