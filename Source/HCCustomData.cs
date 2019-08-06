@@ -109,7 +109,9 @@ namespace HC.View
         HCDrawItems FDrawItems;
         SelectInfo FSelectInfo;
         HashSet<DrawOption> FDrawOptions;
+        HCOperStates FOperStates;
         int FCaretDrawItemNo;  // 当前Item光标处的DrawItem限定其只在相关的光标处理中使用(解决同一Item分行后Offset为行尾时不能区分是上行尾还是下行始)
+
         DataItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
         GetUndoListEventHandler FOnGetUndoList;
         EventHandler FOnCurParaNoChange;
@@ -538,7 +540,7 @@ namespace HC.View
             return Result;
         }
 
-        protected HCUndoList GetUndoList()
+        protected virtual HCUndoList GetUndoList()
         {
             if (FOnGetUndoList != null)
                 return FOnGetUndoList();
@@ -593,9 +595,20 @@ namespace HC.View
             }
         }
 
+        protected virtual void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            Clear();
+        }
+
+        protected HCOperStates OperStates
+        {
+            get { return FOperStates; }
+        }
+
         public HCCustomData(HCStyle aStyle)
         {
             FStyle = aStyle;
+            FOperStates = new HCOperStates();
             FDrawItems = new HCDrawItems();
             FItems = new HCItems();
             FItems.OnInsertItem += DoInsertItem;
@@ -2476,9 +2489,17 @@ namespace HC.View
             return false;
         }
 
-        public virtual void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            Clear();
+            FOperStates.Include(HCOperState.hosLoading);
+            try
+            {
+                DoLoadFromStream(aStream, aStyle, aFileVersion);
+            }
+            finally
+            {
+                FOperStates.Exclude(HCOperState.hosLoading);
+            }
         }
 
         public string ToHtml(string aPath)

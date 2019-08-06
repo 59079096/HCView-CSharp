@@ -588,6 +588,13 @@ namespace HC.View
             SelectInfo.StartItemOffset = vCaretOffset;
         }
 
+        protected override HCUndoList GetUndoList()
+        {
+            if (OperStates.Contain(HCOperState.hosLoading))
+                return null;
+            else
+                return base.GetUndoList();
+        }
         protected void SaveItemToStreamAlone(HCCustomItem aItem, Stream aStream)
         {
             HC._SaveFileFormatAndVersion(aStream);

@@ -496,6 +496,27 @@ namespace HC.View
 
         #endregion
 
+        protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.DoLoadFromStream(aStream, aStyle, aFileVersion);
+
+            if (aFileVersion > 22)
+            {
+                ushort vAnnCount = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vAnnCount);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                if (vAnnCount > 0)
+                {
+                    for (int i = 0; i <= vAnnCount - 1; i++)
+                    {
+                        HCDataAnnotate vAnn = new HCDataAnnotate();
+                        vAnn.LoadFromStream(aStream, aFileVersion);
+                        FDataAnnotates.Add(vAnn);
+                    }
+                }
+            }
+        }
+
         protected override void DoItemAction(int aItemNo, int aOffset, HCItemAction aAction)
         {
             switch (aAction)
@@ -679,27 +700,6 @@ namespace HC.View
 
             for (int i = 0; i <= vAnnCount - 1; i++)
                 FDataAnnotates[i].SaveToStream(aStream);
-        }
-
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-
-            if (aFileVersion > 22)
-            {
-                ushort vAnnCount = 0;
-                byte[] vBuffer = BitConverter.GetBytes(vAnnCount);
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                if (vAnnCount > 0)
-                {
-                    for (int i = 0; i <= vAnnCount - 1; i++)
-                    {
-                        HCDataAnnotate vAnn = new HCDataAnnotate();
-                        vAnn.LoadFromStream(aStream, aFileVersion);
-                        FDataAnnotates.Add(vAnn);
-                    }
-                }
-            }
         }
 
         public bool InsertAnnotate(string aTitle, string aText)

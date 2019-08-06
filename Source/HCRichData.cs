@@ -482,6 +482,26 @@ namespace HC.View
             return Result;
         }
 
+        protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            if (!CanEdit())
+                return;
+
+            base.DoLoadFromStream(aStream, aStyle, aFileVersion);
+
+            this.BeginFormat();
+            try
+            {
+                InsertStream(aStream, aStyle, aFileVersion);
+                // 加载完成后，初始化(有一部分在LoadFromStream中初始化了)
+                ReSetSelectAndCaret(0, 0);
+            }
+            finally
+            {
+                this.EndFormat();
+            }
+        }
+
         protected virtual bool CanDeleteItem(int aItemNo)
         {
             return CanEdit();
@@ -1498,26 +1518,6 @@ namespace HC.View
         {
             InitializeMouseField();
             base.InitializeField();
-        }
-
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            if (!CanEdit())
-                return;
-
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-
-            this.BeginFormat();
-            try
-            {
-                InsertStream(aStream, aStyle, aFileVersion);
-                // 加载完成后，初始化(有一部分在LoadFromStream中初始化了)
-                ReSetSelectAndCaret(0, 0);
-            }
-            finally
-            {
-                this.EndFormat();
-            }
         }
 
         public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)

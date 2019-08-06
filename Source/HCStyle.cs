@@ -121,7 +121,7 @@ namespace HC.View
         private UpdateInfo FUpdateInfo;
         private bool FShowParaLastMark;  // 是否显示换行符
         private int FHtmlFileTempName;
-        private HCOperStates FOperStates;
+        private HCOperStates FOperStates;  // 全局操作状态
 
         private InvalidateRectEventHandler FOnInvalidateRect;
 

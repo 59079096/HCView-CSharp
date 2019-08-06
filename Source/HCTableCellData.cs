@@ -47,6 +47,19 @@ namespace HC.View
             return Result;
         }
 
+        protected override void DoLoadFromStream(System.IO.Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            this.BeginFormat();
+            try
+            {
+                base.DoLoadFromStream(aStream, aStyle, aFileVersion);
+            }
+            finally
+            {
+                this.EndFormat(false);
+            }
+        }
+
         /// <summary> 取消选中 </summary>
         /// <returns>取消时当前是否有选中，True：有选中；False：无选中</returns>
         public override bool DisSelect()
@@ -130,19 +143,6 @@ namespace HC.View
                 return FOnGetRootData();
             else
                 return base.GetRootData();
-        }
-
-        public override void LoadFromStream(System.IO.Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            this.BeginFormat();
-            try
-            {
-                base.LoadFromStream(aStream, aStyle, aFileVersion);
-            }
-            finally
-            {
-                this.EndFormat(false);
-            }
         }
 
         /// <summary> 选在第一个Item最前面 </summary>

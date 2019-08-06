@@ -81,6 +81,34 @@ namespace HC.View
             }
         }
 
+        protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.DoLoadFromStream(aStream, aStyle, aFileVersion);
+
+            if (aFileVersion > 12)
+            {
+                int vFloatCount = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vFloatCount);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vFloatCount = BitConverter.ToInt32(vBuffer, 0);
+                HCCustomFloatItem vFloatItem = null;
+
+                while (vFloatCount > 0)
+                {
+                    int vStyleNo = HCStyle.Null;
+                    vBuffer = BitConverter.GetBytes(vStyleNo);
+                    aStream.Read(vBuffer, 0, vBuffer.Length);
+                    vStyleNo = BitConverter.ToInt32(vBuffer, 0);
+
+                    vFloatItem = CreateFloatItemByStyle(vStyleNo);
+                    vFloatItem.LoadFromStream(aStream, aStyle, aFileVersion);
+                    FFloatItems.Add(vFloatItem);
+
+                    vFloatCount--;
+                }
+            }
+        }
+
         public HCSectionData(HCStyle aStyle) : base(aStyle)
         {
             FFloatItems = new List<HCCustomFloatItem>();
@@ -310,34 +338,6 @@ namespace HC.View
                 FFloatItems[i].SaveToStream(aStream, 0, HC.OffsetAfter);
         }
 
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
-
-            if (aFileVersion > 12)
-            {
-                int vFloatCount = 0;
-                byte[] vBuffer = BitConverter.GetBytes(vFloatCount);
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                vFloatCount = BitConverter.ToInt32(vBuffer, 0);
-                HCCustomFloatItem vFloatItem = null;
-                
-                while (vFloatCount > 0)
-                {
-                    int vStyleNo = HCStyle.Null;
-                    vBuffer = BitConverter.GetBytes(vStyleNo);
-                    aStream.Read(vBuffer, 0, vBuffer.Length);
-                    vStyleNo = BitConverter.ToInt32(vBuffer, 0);
-
-                    vFloatItem = CreateFloatItemByStyle(vStyleNo);
-                    vFloatItem.LoadFromStream(aStream, aStyle, aFileVersion);
-                    FFloatItems.Add(vFloatItem);
-
-                    vFloatCount--;
-                }
-            }
-        }
-
         public override void ToXml(XmlElement aNode)
         {
             XmlElement vNode = aNode.OwnerDocument.CreateElement("items");
@@ -555,6 +555,15 @@ namespace HC.View
                 aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
+        protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            byte[] vBuffer = BitConverter.GetBytes(FShowUnderLine);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
+            FShowUnderLine = BitConverter.ToBoolean(vBuffer, 0);
+
+            base.DoLoadFromStream(aStream, aStyle, aFileVersion);
+        }
+
         public override void MouseDown(MouseEventArgs e)
         {
             if (FShowLineActiveMark)
@@ -576,15 +585,6 @@ namespace HC.View
             aStream.Write(vBuffer, 0, vBuffer.Length);
             
             base.SaveToStream(aStream);
-        }
-
-        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
-        {
-            byte[] vBuffer = BitConverter.GetBytes(FShowUnderLine);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FShowUnderLine = BitConverter.ToBoolean(vBuffer, 0);
-
-            base.LoadFromStream(aStream, aStyle, aFileVersion);
         }
 
         public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
