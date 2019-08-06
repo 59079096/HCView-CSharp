@@ -555,7 +555,7 @@ namespace EMRView
 
                         if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
                         {
-                            vPt.Y = vPt.Y + FEmrView.ZoomIn(vActiveDrawItem.Height());
+                            vPt.Y = vPt.Y + FEmrView.ZoomIn(vActiveDrawItem.Height);
                             vPt.Offset(FEmrView.Left, FEmrView.Top);
                             HC.Win32.User.ClientToScreen(FEmrView.Handle, ref vPt);
 

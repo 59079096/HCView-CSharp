@@ -465,7 +465,7 @@ namespace HC.View
                             ACanvas.Pen.EndUpdate();
                         }
 
-                        int vTop = aDrawRect.Top + DrawItems[aDrawItemNo].Height() / 2;
+                        int vTop = aDrawRect.Top + DrawItems[aDrawItemNo].Height / 2;
                         ACanvas.MoveTo(aDataDrawLeft - 10, vTop);
                         ACanvas.LineTo(aDataDrawLeft - 11, vTop);
                         ACanvas.MoveTo(aDataDrawLeft - 11, vTop - 1);

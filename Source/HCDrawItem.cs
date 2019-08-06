@@ -52,7 +52,7 @@ namespace HC.View
                 FOptions.Remove(DrawOption.doParaFirst);
         }
 
-        public int 
+        public int
             ItemNo,    // 对应的Item
             CharOffs,  // 从1开始
             CharLen;   // 从CharOffs开始的字符长度
@@ -63,20 +63,20 @@ namespace HC.View
         {
             FOptions = new HashSet<DrawOption>();
         }
-    
+
         public int CharOffsetEnd()
         {
             return CharOffs + CharLen - 1;
         }
 
-        public int Width()
+        public int Width
         {
-            return Rect.Width;
+            get { return Rect.Width; }
         }
 
-        public int Height()
+        public int Height
         {
-            return Rect.Height;
+            get {return Rect.Height;}
         }
 
         public bool LineFirst

@@ -1921,7 +1921,15 @@ namespace HC.View
                         this.BeginUpdate();
                         try
                         {
-                            ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
+                            FStyle.OperStates.Include(HCOperState.hosPasting);
+                            try
+                            {
+                                ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
+                            }
+                            finally
+                            {
+                                FStyle.OperStates.Exclude(HCOperState.hosPasting);
+                            }
                         }
                         finally
                         {
@@ -2488,22 +2496,31 @@ namespace HC.View
                     FUndoList.Enable = false;
                     this.Clear();
 
-                    aStream.Position = 0;
-                    LoadSectionProcHandler vEvent = delegate(ushort AFileVersion)
+                    FStyle.OperStates.Include(HCOperState.hosLoading);
+                    try
                     {
-                        byte vByte = 0;
-                        vByte = (byte)aStream.ReadByte();  // 节数量
-                        // 各节数据
-                        FSections[0].LoadFromStream(aStream, FStyle, AFileVersion);
-                        for (int i = 1; i <= vByte - 1; i++)
+                        aStream.Position = 0;
+                        LoadSectionProcHandler vEvent = delegate (ushort AFileVersion)
                         {
-                            HCSection vSection = NewDefaultSection();
-                            vSection.LoadFromStream(aStream, FStyle, AFileVersion);
-                            FSections.Add(vSection);
-                        }
-                    };
+                            byte vByte = 0;
+                            vByte = (byte)aStream.ReadByte();  // 节数量
+                                                               // 各节数据
+                        FSections[0].LoadFromStream(aStream, FStyle, AFileVersion);
+                            for (int i = 1; i <= vByte - 1; i++)
+                            {
+                                HCSection vSection = NewDefaultSection();
+                                vSection.LoadFromStream(aStream, FStyle, AFileVersion);
+                                FSections.Add(vSection);
+                            }
+                        };
 
-                    DoLoadFromStream(aStream, FStyle, vEvent);
+                        DoLoadFromStream(aStream, FStyle, vEvent);
+                    }
+                    finally
+                    {
+                        FStyle.OperStates.Exclude(HCOperState.hosLoading);
+                    }
+
                     DoViewResize();
                 }
                 finally

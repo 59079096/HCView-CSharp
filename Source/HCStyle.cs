@@ -40,6 +40,74 @@ namespace HC.View
         }
     }
 
+    public class HCStateDictionary : HCObject
+    {
+        public HCOperState State;
+        public int Count;
+    }
+
+    public class HCOperStates : HCObject
+    {
+        private List<HCStateDictionary> FStates;
+        
+        private void DeleteState(int aIndex)
+        {
+            FStates.RemoveAt(aIndex);
+        }
+
+        private int GetStateIndex(HCOperState aState)
+        {
+            for (int i = 0; i < FStates.Count; i++)
+            {
+                if (FStates[i].State == aState)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        public HCOperStates()
+        {
+            FStates = new List<HCStateDictionary>();
+        }
+
+        ~HCOperStates()
+        {
+
+        }
+
+        public void Include(HCOperState aState)
+        {
+            int vIndex = GetStateIndex(aState);
+            if (vIndex >= 0)
+                FStates[vIndex].Count++;
+            else
+            {
+                HCStateDictionary vStateDic = new HCStateDictionary();
+                vStateDic.State = aState;
+                vStateDic.Count = 1;
+                FStates.Add(vStateDic);
+            }
+        }
+
+        public void Exclude(HCOperState aState)
+        {
+            int vIndex = GetStateIndex(aState);
+            if (vIndex >= 0)
+            {
+                if (FStates[vIndex].Count > 1)
+                    FStates[vIndex].Count--;
+                else
+                    DeleteState(vIndex);
+            }
+        }
+
+        public bool Contain(HCOperState aState)
+        {
+            return GetStateIndex(aState) >= 0;
+        }
+    }
+
     public delegate void InvalidateRectEventHandler(RECT aRect);
 
     public class HCStyle : HCObject
@@ -53,6 +121,7 @@ namespace HC.View
         private UpdateInfo FUpdateInfo;
         private bool FShowParaLastMark;  // 是否显示换行符
         private int FHtmlFileTempName;
+        private HCOperStates FOperStates;
 
         private InvalidateRectEventHandler FOnInvalidateRect;
 
@@ -97,6 +166,7 @@ namespace HC.View
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
             FLineSpaceMin = 8;
             FShowParaLastMark = true;
+            FOperStates = new HCOperStates();
             FUpdateInfo = new UpdateInfo();
             FTextStyles = new List<HCTextStyle>();
             FParaStyles = new List<HCParaStyle>();
@@ -124,6 +194,7 @@ namespace HC.View
             //FTextStyles.Free;
             //FParaStyles.Free;
             FUpdateInfo.Dispose();
+            FOperStates.Dispose();
         }
         
         public void Initialize()
@@ -453,6 +524,11 @@ namespace HC.View
         {
             get { return FShowParaLastMark; }
             set { SetShowParaLastMark(value); }
+        }
+
+        public HCOperStates OperStates
+        {
+            get { return FOperStates; }
         }
 
         public InvalidateRectEventHandler OnInvalidateRect

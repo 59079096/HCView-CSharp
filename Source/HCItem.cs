@@ -41,7 +41,12 @@ namespace HC.View
 
     public enum ItemOption : byte 
     {
-        ioParaFirst = 1, ioSelectPart = 1 << 1, ioSelectComplate = 1 << 2, ioPageBreak = 1 << 3 
+        ioParaFirst = 1, ioPageBreak  = 1 << 1
+    }
+
+    public enum ItemSelectState : byte
+    {
+        issNone = 0, issPart = 1, issComplate = 2
     }
 
     public enum HCItemAction : byte
@@ -187,6 +192,7 @@ namespace HC.View
         private int FParaNo, FStyleNo, FFirstDItemNo;
         private bool FActive, FVisible;
         private HCSet FOptions;
+        private ItemSelectState FSelectState;
 
         protected bool GetParaFirst()
         {
@@ -216,12 +222,12 @@ namespace HC.View
 
         protected virtual bool GetSelectComplate()
         {
-            return FOptions.Contains((byte)ItemOption.ioSelectComplate);
+            return FSelectState == ItemSelectState.issComplate;
         }
 
         protected bool GetSelectPart()
         {
-            return FOptions.Contains((byte)ItemOption.ioSelectPart);
+            return FSelectState == ItemSelectState.issPart;
         }
 
         protected virtual string GetText()
@@ -310,8 +316,7 @@ namespace HC.View
 
         public virtual void DisSelect()
         {
-            FOptions.ExClude((byte)ItemOption.ioSelectPart);
-            FOptions.ExClude((byte)ItemOption.ioSelectComplate);
+            FSelectState = ItemSelectState.issNone;
         }
 
         public virtual bool CanDrag()
@@ -343,14 +348,17 @@ namespace HC.View
 
         public virtual void SelectComplate()
         {
-            FOptions.ExClude((byte)ItemOption.ioSelectPart);
-            FOptions.InClude((byte)ItemOption.ioSelectComplate);
+            FSelectState = ItemSelectState.issComplate;
         }
 
         public void SelectPart()
         {
-            FOptions.ExClude((byte)ItemOption.ioSelectComplate);
-            FOptions.InClude((byte)ItemOption.ioSelectPart);
+            FSelectState = ItemSelectState.issPart;
+        }
+
+        public bool Selected()
+        {
+            return FSelectState != ItemSelectState.issNone;
         }
 
         public virtual bool CanAccept(int aOffset, HCItemAction aAction)
@@ -382,9 +390,6 @@ namespace HC.View
 
             buffer = System.BitConverter.GetBytes(FParaNo);
             aStream.Write(buffer, 0, buffer.Length);
-
-            FOptions.ExClude((byte)ItemOption.ioSelectPart);
-            FOptions.ExClude((byte)ItemOption.ioSelectComplate);
             aStream.WriteByte(FOptions.Value);
         }
 

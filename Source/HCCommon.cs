@@ -854,6 +854,13 @@ namespace HC.View
         tcaCenterRight, tcaBottomLeft, tcaBottomCenter, tcaBottomRight
     }
 
+    public enum HCOperState : byte
+    {
+        hosLoading,  // 文档加载
+        hosPasting,  // 粘贴
+        hosBatchInsert  // 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确
+    }
+
     public enum CharType : byte 
     {
         jctBreak,  //  截断点

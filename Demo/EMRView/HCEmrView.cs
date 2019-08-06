@@ -22,7 +22,6 @@ namespace EMRView
     public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, DeItem aItem);
     public class HCEmrView : HCView
     {
-        private bool FLoading;
         private bool FDesignMode;
         private bool FHideTrace;  // 隐藏痕迹
         private bool FTrace;  // 是否处于留痕迹状态
@@ -39,9 +38,12 @@ namespace EMRView
 
         private void DoDeItemPaintBKG(object sender, HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo)
         {
-            if (!aPaintInfo.Print)
+            if (aPaintInfo.Print)
+                return;
+            
+            DeItem vDeItem = sender as DeItem;
+            if (!vDeItem.Selected())
             {
-                DeItem vDeItem = sender as DeItem;
                 if (vDeItem.IsElement)
                 {
                     if (vDeItem.MouseIn || vDeItem.Active)
@@ -56,16 +58,16 @@ namespace EMRView
                                 aCanvas.Brush.Color = FDeDoneColor;
                             else  // 没填写过
                                 aCanvas.Brush.Color = FDeUnDoneColor;
-                            
+
                             aCanvas.FillRect(aDrawRect);
                         }
                     }
                     else  // 不是数据元
-                        if (FDesignMode)
-                        {
-                            aCanvas.Brush.Color = HC.View.HC.clBtnFace;
-                            aCanvas.FillRect(aDrawRect);
-                        }
+                    if (FDesignMode)
+                    {
+                        aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                        aCanvas.FillRect(aDrawRect);
+                    }
                 }
                 else  // 不是数据元
                 if (FDesignMode && vDeItem.EditProtect)
@@ -73,79 +75,79 @@ namespace EMRView
                     aCanvas.Brush.Color = HC.View.HC.clBtnFace;
                     aCanvas.FillRect(aDrawRect);
                 }
+            }
 
-                if (!FHideTrace)  // 显示痕迹
+            if (!FHideTrace)  // 显示痕迹
+            {
+                if (vDeItem.StyleEx == StyleExtra.cseDel)  // 痕迹
                 {
-                    if (vDeItem.StyleEx == StyleExtra.cseDel)  // 痕迹
+                    int vTextHeight = Style.TextStyles[vDeItem.StyleNo].FontHeight;
+                    int vAlignVert = User.DT_BOTTOM;
+                    switch (Style.ParaStyles[vDeItem.ParaNo].AlignVert)
                     {
-                        int vTextHeight = Style.TextStyles[vDeItem.StyleNo].FontHeight;
-                        int vAlignVert = User.DT_BOTTOM;
-                        switch (Style.ParaStyles[vDeItem.ParaNo].AlignVert)
-                        {
-                            case ParaAlignVert.pavCenter:
-                                vAlignVert = User.DT_CENTER;
-                                break;
+                        case ParaAlignVert.pavCenter:
+                            vAlignVert = User.DT_CENTER;
+                            break;
 
-                            case ParaAlignVert.pavTop:
-                                vAlignVert = User.DT_TOP;
-                                break;
+                        case ParaAlignVert.pavTop:
+                            vAlignVert = User.DT_TOP;
+                            break;
 
-                            default:
-                                vAlignVert = User.DT_BOTTOM;
-                                break;
-                        }
-
-                        int vTop = aDrawRect.Top;
-                        switch (vAlignVert)
-                        {
-                            case User.DT_TOP:
-                                vTop = aDrawRect.Top;
-                                break;
-
-                            case User.DT_CENTER:
-                                vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - vTextHeight) / 2;
-                                break;
-
-                            default:
-                                vTop = aDrawRect.Bottom - vTextHeight;
-                                break;
-                        }
-
-                        // 绘制删除线
-                        aCanvas.Pen.BeginUpdate();
-                        try
-                        {
-                            aCanvas.Pen.Style = HCPenStyle.psSolid;
-                            aCanvas.Pen.Color = Color.Red;
-                        }
-                        finally
-                        {
-                            aCanvas.Pen.EndUpdate();
-                        }
-
-                        vTop = vTop + (aDrawRect.Bottom - vTop) / 2;
-                        aCanvas.MoveTo(aDrawRect.Left, vTop - 1);
-                        aCanvas.LineTo(aDrawRect.Right, vTop - 1);
-                        aCanvas.MoveTo(aDrawRect.Left, vTop + 2);
-                        aCanvas.LineTo(aDrawRect.Right, vTop + 2);
+                        default:
+                            vAlignVert = User.DT_BOTTOM;
+                            break;
                     }
-                    else
-                        if (vDeItem.StyleEx == StyleExtra.cseAdd)
-                        {
-                            aCanvas.Pen.BeginUpdate();
-                            try
-                            {
-                                aCanvas.Pen.Style = HCPenStyle.psSolid;
-                                aCanvas.Pen.Color = Color.Blue;
-                            }
-                            finally
-                            {
-                                aCanvas.Pen.EndUpdate();
-                            }
 
-                            aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
-                            aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
-                        }
+                    int vTop = aDrawRect.Top;
+                    switch (vAlignVert)
+                    {
+                        case User.DT_TOP:
+                            vTop = aDrawRect.Top;
+                            break;
+
+                        case User.DT_CENTER:
+                            vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - vTextHeight) / 2;
+                            break;
+
+                        default:
+                            vTop = aDrawRect.Bottom - vTextHeight;
+                            break;
+                    }
+
+                    // 绘制删除线
+                    aCanvas.Pen.BeginUpdate();
+                    try
+                    {
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
+                        aCanvas.Pen.Color = Color.Red;
+                    }
+                    finally
+                    {
+                        aCanvas.Pen.EndUpdate();
+                    }
+
+                    vTop = vTop + (aDrawRect.Bottom - vTop) / 2;
+                    aCanvas.MoveTo(aDrawRect.Left, vTop - 1);
+                    aCanvas.LineTo(aDrawRect.Right, vTop - 1);
+                    aCanvas.MoveTo(aDrawRect.Left, vTop + 2);
+                    aCanvas.LineTo(aDrawRect.Right, vTop + 2);
+                }
+                else
+                if (vDeItem.StyleEx == StyleExtra.cseAdd)
+                {
+                    aCanvas.Pen.BeginUpdate();
+                    try
+                    {
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
+                        aCanvas.Pen.Color = Color.Blue;
+                    }
+                    finally
+                    {
+                        aCanvas.Pen.EndUpdate();
+                    }
+
+                    aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
+                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
                 }
             }
         }
@@ -181,7 +183,7 @@ namespace EMRView
         /// <param name="e"></param>
         protected override void DoSectionCreateItem(object sender, EventArgs e)
         {
-            if ((!FLoading) && FTrace)
+            if ((!Style.OperStates.Contain(HCOperState.hosLoading)) && FTrace)
                 (sender as DeItem).StyleEx = StyleExtra.cseAdd;
 
             base.DoSectionCreateItem(sender, e);
@@ -514,7 +516,6 @@ namespace EMRView
         protected override void Create()
         {
             base.Create();
-            FLoading = false;
             FHideTrace = false;
             FTrace = false;
             FTraceCount = 0;
@@ -576,20 +577,6 @@ namespace EMRView
             }
         }
 
-        /// <summary> 从二进制流加载文件 </summary>
-        /// <param name="aStream">文件流</param>
-        public override void LoadFromStream(Stream aStream)
-        {
-            FLoading = true;
-            try
-            {
-                base.LoadFromStream(aStream);
-            }
-            finally
-            {
-                FLoading = false;
-            }
-        }
 
         /// <summary> 遍历Item </summary>
         /// <param name="ATraverse">遍历时信息</param>

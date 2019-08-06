@@ -250,7 +250,7 @@ namespace HC.View
 
                         for (int i = vLineBegDItemNo + 1; i <= aLineEndDItemNo; i++)  // 以第一个为基准，其余各DrawItem增加的空间
                         {
-                            vW = DrawItems[i].Width();  // DrawItem原来Width
+                            vW = DrawItems[i].Width;  // DrawItem原来Width
                             if (vDrawItemSplitCounts[i - vLineBegDItemNo] > 0)  // 有分到间距
                             {
                                 vExtraW = vDrawItemSplitCounts[i - vLineBegDItemNo] * viSplitW;  // 多分到的width
@@ -530,7 +530,7 @@ namespace HC.View
             viBreakOffset,  // 第几个字符放不下
             vFirstCharWidth;  // 第一个字符的宽度
 
-            vLineFirst = (aPos.X == aFmtLeft) || vParaFirst;
+            vLineFirst = vParaFirst || ((aPos.X == aFmtLeft) && (DrawItems[aLastDrawItemNo].Width != 0));
             viBreakOffset = 0;  // 换行位置，第几个字符放不下
             vFirstCharWidth = vCharWidths[aCharOffset - 1] - aBasePos;  // 第一个字符的宽度
 
@@ -696,7 +696,7 @@ namespace HC.View
             else  // 非段第1个
             {
                 vParaFirst = false;
-                vLineFirst = aPos.X == aFmtLeft;
+                vLineFirst = (aPos.X == aFmtLeft) && (DrawItems[aLastDrawItemNo].Width != 0);
             }
 
             if (!vItem.Visible)  // 不显示的Item

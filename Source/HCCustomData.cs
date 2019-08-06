@@ -718,7 +718,7 @@ namespace HC.View
                 vDrawItemNo = FCaretDrawItemNo;
 
             HCCustomDrawItem vDrawItem = FDrawItems[vDrawItemNo];
-            aCaretInfo.Height = vDrawItem.Height();  // 光标高度
+            aCaretInfo.Height = vDrawItem.Height;  // 光标高度
 
             if (FStyle.UpdateInfo.ReStyle)
             {
@@ -770,10 +770,10 @@ namespace HC.View
                     || (FStyle.ParaStyles[vRectItem.ParaNo].AlignHorz == ParaAlignHorz.pahScatter))  // 分散对齐
                     {
                         if (IsLineLastDrawItem(vDrawItemNo))
-                            aCaretInfo.X = aCaretInfo.X + vDrawItem.Width() - vRectItem.Width;
+                            aCaretInfo.X = aCaretInfo.X + vDrawItem.Width - vRectItem.Width;
                     }
                     else
-                        aCaretInfo.X = aCaretInfo.X + vDrawItem.Width() - vRectItem.Width;
+                        aCaretInfo.X = aCaretInfo.X + vDrawItem.Width - vRectItem.Width;
                 }
             }
             else  // TextItem
@@ -965,15 +965,19 @@ namespace HC.View
             
             #if UNPLACEHOLDERCHAR
             string vText = GetDrawItemText(aDrawItemNo);
-            int vLen = vText.Length;
-            int[] vCharWArr = new int[vLen];
-            SIZE vSize = new SIZE(0, 0);
-            aCanvas.GetTextExtentExPoint(vText, vLen, vCharWArr, ref vSize);
-            Result = vCharWArr[aDrawOffset - 1];
+            if (vText != "")
+            {
+                int vLen = vText.Length;
+                int[] vCharWArr = new int[vLen];
+                SIZE vSize = new SIZE(0, 0);
+                aCanvas.GetTextExtentExPoint(vText, vLen, vCharWArr, ref vSize);
+                Result = vCharWArr[aDrawOffset - 1];
+            }
             #else
             HCCustomDrawItem vDrawItem = FDrawItems[aDrawItemNo];
             vText = FItems[vDrawItem.ItemNo].Text.Substring(vDrawItem.CharOffs - 1, aDrawOffset);
-            Result = aCanvas.TextWidth(vText);
+            if (vText != ")
+                Result = aCanvas.TextWidth(vText);
             #endif
 
             return Result;
@@ -995,7 +999,7 @@ namespace HC.View
             if (vStyleNo < HCStyle.Null)
             {
                 if (aDrawOffs > HC.OffsetBefor)
-                    Result = FDrawItems[aDrawItemNo].Width();
+                    Result = FDrawItems[aDrawItemNo].Width;
             }
             else
             {
@@ -1035,7 +1039,7 @@ namespace HC.View
                         SIZE vSize = new SIZE(0, 0);
                         vCanvas.GetTextExtentExPoint(vText, vLen, vCharWArr, ref vSize);
 
-                        int viSplitW = vDrawItem.Width() - vCharWArr[vLen - 1];  // 当前DItem的Rect中用于分散的空间
+                        int viSplitW = vDrawItem.Width - vCharWArr[vLen - 1];  // 当前DItem的Rect中用于分散的空间
                         int vMod = 0;
 
                         // 计算当前Ditem内容分成几份，每一份在内容中的起始位置
@@ -1546,7 +1550,7 @@ namespace HC.View
                         int[] vCharWArr = new int[vLen];
                         SIZE vSize = new SIZE(0, 0);
                         FStyle.TempCanvas.GetTextExtentExPoint(vText, vLen, vCharWArr, ref vSize);
-                        int viSplitW = vDrawItem.Width() - vCharWArr[vLen - 1];  // 当前DItem的Rect中用于分散的空间
+                        int viSplitW = vDrawItem.Width - vCharWArr[vLen - 1];  // 当前DItem的Rect中用于分散的空间
                         int vMod = 0;
                         
                         // 计算当前Ditem内容分成几份，每一份在内容中的起始位置
@@ -2126,7 +2130,7 @@ namespace HC.View
                         if (FStyle.TextStyles[vPrioStyleNo].BackColor != HC.HCTransparentColor)
                         {
                             aCanvas.Brush.Color = FStyle.TextStyles[vPrioStyleNo].BackColor;
-                            aCanvas.FillRect(new RECT(vClearRect.Left, vClearRect.Top, vClearRect.Left + vDrawItem.Width(), vClearRect.Bottom));
+                            aCanvas.FillRect(new RECT(vClearRect.Left, vClearRect.Top, vClearRect.Left + vDrawItem.Width, vClearRect.Bottom));
                         }
 
                         string vText = vItem.Text.Substring(vDrawItem.CharOffs - 1, vDrawItem.CharLen);  // 为减少判断，没有直接使用GetDrawItemText(i)
@@ -2139,7 +2143,7 @@ namespace HC.View
                             if (vDrawsSelectAll)
                             {
                                 aCanvas.Brush.Color = FStyle.SelColor;
-                                aCanvas.FillRect(new RECT(vDrawRect.Left, vDrawRect.Top, vDrawRect.Left + vDrawItem.Width(), Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
+                                aCanvas.FillRect(new RECT(vDrawRect.Left, vDrawRect.Top, vDrawRect.Left + vDrawItem.Width, Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
                             }
                             else  // 处理一部分选中
                             if (vSelEndDNo >= 0)  // 有选中内容，部分背景为选中

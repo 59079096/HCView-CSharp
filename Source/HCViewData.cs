@@ -716,7 +716,7 @@ namespace HC.View
             Undo_GroupBegin(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             try
             {
-                this.BeginBatchInsert();
+                this.Style.OperStates.Include(HCOperState.hosBatchInsert);
                 try
                 {
                     // 插入头
@@ -745,7 +745,7 @@ namespace HC.View
                 }
                 finally
                 {
-                    this.EndBatchInsert();
+                    this.Style.OperStates.Exclude(HCOperState.hosBatchInsert);
                 }
             }
             finally

@@ -137,19 +137,43 @@ namespace HC.View
 
             if (aIsUndo)
             {
-                Items.RemoveAt(vAction.ItemNo);
-                FItemAddCount--;
+                if (aCaretItemNo < Items.Count - 1)  // 不是最后一个
+                {
+                    if (Items[aCaretItemNo].ParaFirst)  // 段首删除了，光标为下一个开始
+                    {
+                        aCaretOffset = 0;
+                        aCaretDrawItemNo = Items[aCaretItemNo + 1].FirstDItemNo;
+                    }
+                    else  // 删除的不是段首
+                    if (Items[aCaretItemNo + 1].ParaFirst)  // 下一个是段首，光标保持在同段最后
+                    {
+                        aCaretItemNo--;
+                        if (Items[aCaretItemNo].StyleNo > HCStyle.Null)
+                            aCaretOffset = Items[aCaretItemNo].Length;
+                        else
+                            aCaretOffset = HC.OffsetAfter;
 
-                if (aCaretItemNo > 0)
+                        aCaretDrawItemNo = (aUndo as HCDataUndo).CaretDrawItemNo - 1;
+                    }
+                }
+                else
+                if (aCaretItemNo > 0)  // 不是第一个
                 {
                     aCaretItemNo--;
                     if (Items[aCaretItemNo].StyleNo > HCStyle.Null)
                         aCaretOffset = Items[aCaretItemNo].Length;
                     else
                         aCaretOffset = HC.OffsetAfter;
+
+                    aCaretDrawItemNo = (aUndo as HCDataUndo).CaretDrawItemNo - 1;
                 }
                 else
                     aCaretOffset = 0;
+
+
+
+                Items.RemoveAt(vAction.ItemNo);
+                FItemAddCount--;
             }
             else  // 重做
             {
@@ -481,7 +505,7 @@ namespace HC.View
                             FFormatFirstItemNo = 0;
 
                         if (FFormatLastItemNo > Items.Count - 1)
-                            FFormatLastItemNo--;
+                            FFormatLastItemNo = Items.Count - 1;
 
                         FFormatFirstDrawItemNo = GetFormatFirstDrawItem(Items[FFormatFirstItemNo].FirstDItemNo);
 

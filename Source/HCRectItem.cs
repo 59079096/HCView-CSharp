@@ -629,7 +629,7 @@ namespace HC.View
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             this.Width = 0;
-            this.Height = 5;  // 默认大小
+            this.Height = aRichData.Style.TextStyles[0].FontHeight;  // 默认大小
             if (this.MarkType == MarkType.cmtBeg)
             {
                 if (aItemNo < aRichData.Items.Count - 1)
@@ -756,7 +756,7 @@ namespace HC.View
 
         public override bool SelectExists()
         {
-            return this.Options.Contains((byte)ItemOption.ioSelectComplate);
+            return GetSelectComplate();
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
