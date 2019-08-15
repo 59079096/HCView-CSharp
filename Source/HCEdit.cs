@@ -909,6 +909,13 @@ namespace HC.View
             return FData.GetTopLevelData();
         }
 
+        /// <summary> 设置当前TextItem的文本内容 </summary>
+        public void SetActiveItemText(string aText)
+        {
+            FData.SetActiveItemText(aText);
+            CheckUpdateInfo();
+        }
+
         public void SelectAll()
         {
             FData.SelectAll();
@@ -1047,6 +1054,18 @@ namespace HC.View
             }
         }
 
+        public void UndoGroupBegin()
+        {
+            if (FUndoList.Enable)
+                FUndoList.UndoGroupBegin(FData.SelectInfo.StartItemNo, FData.SelectInfo.StartItemOffset);
+        }
+
+        public void UndoGroupEnd()
+        {
+            if (FUndoList.Enable)
+                FUndoList.UndoGroupEnd(FData.SelectInfo.StartItemNo, FData.SelectInfo.StartItemOffset);
+        }
+
         public void UpdateView()
         {
             if ((FUpdateCount == 0) && IsHandleCreated)
@@ -1072,6 +1091,7 @@ namespace HC.View
                         {
                             FData.PaintData(this.Padding.Left - FHScrollBar.Position,  // 当前页数据要绘制到的Left
                               this.Padding.Top,     // 当前页数据要绘制到的Top
+                              this.Width - FHScrollBar.Position - this.Padding.Right,
                               this.Padding.Top + FData.Height,  // 当前页数据要绘制的Bottom
                               this.Padding.Top,     // 界面呈现当前页数据的Top位置
                               this.Height - FHScrollBar.Height,  // 界面呈现当前页数据Bottom位置

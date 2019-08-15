@@ -98,11 +98,11 @@ namespace HC.View
 
         public override void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["sno"].Value = StyleNo.ToString();
-            aNode.Attributes["left"].Value = FLeft.ToString();
-            aNode.Attributes["top"].Value = FTop.ToString();
-            aNode.Attributes["width"].Value = Width.ToString();
-            aNode.Attributes["height"].Value = Height.ToString();
+            aNode.SetAttribute("sno", StyleNo.ToString());
+            aNode.SetAttribute("left", FLeft.ToString());
+            aNode.SetAttribute("top", FTop.ToString());
+            aNode.SetAttribute("width", Width.ToString());
+            aNode.SetAttribute("height", Height.ToString());
         }
 
         public override void ParseXml(XmlElement aNode)

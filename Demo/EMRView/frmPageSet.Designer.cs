@@ -349,7 +349,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmPageSet";
-            this.Text = "frmPageSet";
+            this.Text = "页面设置";
             this.ResumeLayout(false);
             this.PerformLayout();
 

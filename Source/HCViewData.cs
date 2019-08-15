@@ -340,10 +340,10 @@ namespace HC.View
         }
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, 
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
+            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
 
             if (!APaintInfo.Print)  // 拼接域范围
@@ -418,10 +418,10 @@ namespace HC.View
         #endregion
 
         protected override void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, 
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
+            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
             
             if (!APaintInfo.Print)
@@ -459,7 +459,7 @@ namespace HC.View
             //FDomainStartDeletes.Free;
         }
 
-        public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom, 
+        public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawRight, int aDataDrawBottom, 
             int aDataScreenTop, int aDataScreenBottom, int aVOffset, int aFristDItemNo, int aLastDItemNo,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
@@ -472,7 +472,7 @@ namespace HC.View
                     FActiveDomainRGN = (IntPtr)GDI.CreateRectRgn(0, 0, 0, 0);
             }
             
-            base.PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, 
+            base.PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, 
                 aVOffset, aFristDItemNo, aLastDItemNo, aCanvas, aPaintInfo);
             
             if (!aPaintInfo.Print)
@@ -585,7 +585,7 @@ namespace HC.View
         
             Undo_New();
         
-            int vCaretItemNo = aDomain.BeginNo;
+            int vBeginItemNo = aDomain.BeginNo;
 
             int vFirstDrawItemNo = GetFormatFirstDrawItem(Items[aDomain.BeginNo].FirstDItemNo);
             int vParaLastItemNo = GetParaLastItemNo(aDomain.EndNo);
@@ -607,7 +607,8 @@ namespace HC.View
             FormatPrepare(vFirstDrawItemNo, vParaLastItemNo);
         
             int vDelCount = 0;
-         
+            bool vBeginPageBreak = Items[vBeginItemNo].PageBreak;
+
             for (int i = aDomain.EndNo; i >= aDomain.BeginNo; i--)  // 删除域及域范围内的Ite
             {
                 UndoAction_DeleteItem(i, 0);
@@ -616,13 +617,25 @@ namespace HC.View
             }
 
             FActiveDomain.Clear();
+
+            if (vBeginItemNo == 0)  // 删除完了
+            {
+                HCCustomItem vItem = CreateDefaultTextItem();
+                vItem.ParaFirst = true;
+                vItem.PageBreak = vBeginPageBreak;
+
+                Items.Insert(vBeginItemNo, vItem);
+                UndoAction_InsertItem(vBeginItemNo, 0);
+                vDelCount--;
+            }
+
             ReFormatData(vFirstDrawItemNo, vParaLastItemNo - vDelCount, -vDelCount);
         
             this.InitializeField();
-            if (vCaretItemNo > Items.Count - 1)
-                ReSetSelectAndCaret(vCaretItemNo - 1);
+            if (vBeginItemNo > Items.Count - 1)
+                ReSetSelectAndCaret(vBeginItemNo - 1);
             else
-                ReSetSelectAndCaret(vCaretItemNo, 0);
+                ReSetSelectAndCaret(vBeginItemNo, 0);
 
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();

@@ -291,12 +291,7 @@ namespace EMRView
             /// <summary> 门诊 </summary>
             INOROUT_OUT = 2,
             /// <summary> 住院及门诊 </summary>
-            INOROUT_INOUT = 3,
-
-            /// <summary> 病程记录 </summary>
-            Proc = 13,
-            /// <summary> 日常病程记录 </summary>
-            NorProc = 60;
+            INOROUT_INOUT = 3;
         public
         int
             ID, PID,

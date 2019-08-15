@@ -18,6 +18,7 @@ using System.Windows.Forms;
 using HC.View;
 using System.IO;
 using System.Data.SqlClient;
+using HC.Win32;
 
 namespace EMRView
 {
@@ -25,6 +26,9 @@ namespace EMRView
     {
         private int FDomainItemID = 0;
         private HCEmrEdit FEmrEdit;
+        private int FMouseDownTick;
+        private frmRecordPop FfrmRecordPop;
+        private DeItemSetTextEventHandler FOnSetDeItemText;
 
         private void DoSaveItemContent()
         {
@@ -86,6 +90,124 @@ namespace EMRView
             }
         }
 
+        /// <summary> 设置当前数据元的文本内容 </summary>
+        private void DoSetActiveDeItemText(DeItem aDeItem, string aText, ref bool aCancel)
+        {
+            if (FOnSetDeItemText != null)
+            {
+                string vText = aText;
+                FOnSetDeItemText(this, aDeItem, ref vText, ref aCancel);
+                if (!aCancel)
+                    FEmrEdit.SetActiveItemText(vText);
+            }
+            else
+                FEmrEdit.SetActiveItemText(aText);
+        }
+
+        /// <summary> 设置当前数据元的内容为扩展内容 </summary>
+        private void DoSetActiveDeItemExtra(DeItem aDeItem, Stream aStream)
+        {
+            FEmrEdit.SetActiveItemExtra(aStream);
+        }
+
+        private frmRecordPop PopupForm()
+        {
+            //if (FfrmRecordPop == null)
+            {
+                FfrmRecordPop = new frmRecordPop();
+                FfrmRecordPop.OnSetActiveItemText = DoSetActiveDeItemText;
+                FfrmRecordPop.OnSetActiveItemExtra = DoSetActiveDeItemExtra;
+            }
+
+            return FfrmRecordPop;
+        }
+
+        private void PopupFormClose()
+        {
+            if ((FfrmRecordPop != null) && FfrmRecordPop.Visible)
+                FfrmRecordPop.Close();
+        }
+
+        private void DoEmrEditMouseDown(object sender, MouseEventArgs e)
+        {
+            PopupFormClose();
+            FMouseDownTick = Environment.TickCount;
+        }
+
+        private void DoEmrEditMouseUp(object sender, MouseEventArgs e)
+        {
+            string vInfo = "";
+
+            HCCustomItem vActiveItem = FEmrEdit.Data.GetTopLevelItem();
+            if (vActiveItem != null)
+            {
+                if (FEmrEdit.Data.ActiveDomain.BeginNo >= 0)
+                {
+                    DeGroup vDeGroup = FEmrEdit.Data.Items[FEmrEdit.Data.ActiveDomain.BeginNo] as DeGroup;
+
+                    vInfo = vDeGroup[DeProp.Name];
+                }
+
+                if (vActiveItem is DeItem)
+                {
+                    DeItem vDeItem = vActiveItem as DeItem;
+                    if (vDeItem.StyleEx != StyleExtra.cseNone)
+                        vInfo += "-" + vDeItem.GetHint();
+                    else
+                    if (vDeItem.Active
+                            && (vDeItem[DeProp.Index] != "")
+                            && (!vDeItem.IsSelectComplate)
+                            && (!vDeItem.IsSelectPart)
+                            && (Environment.TickCount - FMouseDownTick < 500)
+                        )
+                    {
+                        vInfo = vInfo + "元素(" + vDeItem[DeProp.Index] + ")";
+
+                        if (FEmrEdit.Data.ReadOnly)
+                        {
+                            //tssDeInfo.Text = "";
+                            return;
+                        }
+
+                        POINT vPt = FEmrEdit.Data.GetActiveDrawItemCoord();  // 得到相对EmrEdit的坐标
+                        HCCustomDrawItem vActiveDrawItem = FEmrEdit.Data.GetTopLevelDrawItem();
+                        RECT vDrawItemRect = vActiveDrawItem.Rect;
+                        vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
+
+                        if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
+                        {
+                            vPt.Y = vPt.Y + vActiveDrawItem.Height;
+
+                            Point vPoint = new Point(vPt.X, vPt.Y);
+                            vPoint = FEmrEdit.PointToScreen(vPoint);
+
+                            //HC.Win32.User.ClientToScreen(FEmrEdit.Handle, ref vPt);
+                            vPt.X = vPoint.X;
+                            vPt.Y = vPoint.Y;
+                            PopupForm().PopupDeItem(vDeItem, vPt);
+                        }
+                    }
+                }
+                else
+                if (vActiveItem is DeEdit)
+                {
+
+                }
+                else
+                if (vActiveItem is DeCombobox)
+                {
+
+                }
+                else
+                if (vActiveItem is DeDateTimePicker)
+                {
+
+                }
+            }
+
+            //tssDeInfo.Text = vInfo;
+        }
+
         public frmItemContent()
         {
             HCTextItem.HCDefaultTextItemClass = typeof(DeItem);
@@ -99,6 +221,9 @@ namespace EMRView
                 FEmrEdit = new HCEmrEdit();
                 this.pnlEdit.Controls.Add(FEmrEdit);
                 FEmrEdit.Dock = DockStyle.Fill;
+
+                FEmrEdit.MouseDown += DoEmrEditMouseDown;
+                FEmrEdit.MouseUp += DoEmrEditMouseUp;
                 FEmrEdit.Show();
             }
         }

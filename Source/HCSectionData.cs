@@ -345,7 +345,7 @@ namespace HC.View
             aNode.AppendChild(vNode);
 
             vNode = aNode.OwnerDocument.CreateElement("floatitems");
-            vNode.Attributes["count"].Value = FFloatItems.Count.ToString();
+            vNode.SetAttribute("count", FFloatItems.Count.ToString());
             for (int i = 0; i < FFloatItems.Count - 1; i++)
             {
                 XmlElement vFloatItemNode = aNode.OwnerDocument.CreateElement("floatitem");
@@ -359,12 +359,13 @@ namespace HC.View
         public override void ParseXml(XmlElement aNode)
         {
             XmlElement vItemsNode = aNode.SelectSingleNode("items") as XmlElement;
-            base.ParseXml(aNode);
+            base.ParseXml(vItemsNode);
 
+            XmlElement vNode = null;
             vItemsNode = aNode.SelectSingleNode("floatitems") as XmlElement;
             for (int i = 0; i <= vItemsNode.ChildNodes.Count - 1; i++)
             {
-                XmlElement vNode = vItemsNode.ChildNodes[i] as XmlElement;
+                vNode = vItemsNode.ChildNodes[i] as XmlElement;
                 HCCustomFloatItem vFloatItem = CreateFloatItemByStyle(int.Parse(aNode.Attributes["sno"].Value));
                 vFloatItem.ParseXml(vNode);
                 FFloatItems.Add(vFloatItem);
@@ -442,10 +443,10 @@ namespace HC.View
         private bool FShowLineNo;  // 行号
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, 
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop,
+            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
 
             if (!APaintInfo.Print)
@@ -548,11 +549,11 @@ namespace HC.View
         }
 
         protected override void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom, 
-                aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
+            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
         protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)

@@ -166,7 +166,7 @@ namespace HC.View
         }
 
         /// <summary> 删除当前Data指定范围内的Item </summary>
-        public virtual void DeleteActiveDataItems(int aStartNo, int aEndNo) { }
+        public virtual void DeleteActiveDataItems(int aStartNo, int aEndNo, bool aKeepPara) { }
 
         /// <summary> 直接设置当前TextItem的Text值 </summary>
         public virtual void SetActiveItemText(string aText) { }
@@ -336,8 +336,11 @@ namespace HC.View
 
         public virtual void TraverseItem(HCItemTraverse ATraverse) { }
 
-        public virtual void SaveToBitmap(ref Bitmap aBitmap) 
+        public virtual bool SaveToBitmap(ref Bitmap aBitmap) 
         {
+            if ((FWidth == 0) || (FHeight == 0))
+                return false;
+
             aBitmap = new Bitmap(FWidth, FHeight);
             PaintInfo vPaintInfo = new PaintInfo();
             vPaintInfo.Print = true;
@@ -347,25 +350,18 @@ namespace HC.View
             vPaintInfo.ScaleY = 1;
             vPaintInfo.Zoom = 1;
             
-            Graphics vGraphic = Graphics.FromImage(aBitmap);
-            IntPtr vDC = vGraphic.GetHdc();
-            try
+            using (HCCanvas vCanvas = new HCCanvas())
             {
-                HCCanvas vCanvas = new HCCanvas(vDC);
-                try
-                {
+                vCanvas.Graphics = Graphics.FromImage(aBitmap);
+                vCanvas.Brush.Color = Color.White;
+                vCanvas.FillRect(new RECT(0, 0, aBitmap.Width, aBitmap.Height));
                 this.DoPaint(OwnerData.Style, new RECT(0, 0, aBitmap.Width, aBitmap.Height),
                     0, aBitmap.Height, 0, aBitmap.Height, vCanvas, vPaintInfo);
-                }
-                finally
-                {
-                    vCanvas.Dispose();
-                }
+                    
+                vCanvas.Dispose();
             }
-            finally
-            {
-                vGraphic.ReleaseHdc();
-            }
+
+            return true;
         }
         //
         public override void MouseDown(MouseEventArgs e)
@@ -448,10 +444,11 @@ namespace HC.View
 
         public override string ToHtml(string aPath) 
         {
-            string Result = "";
             Bitmap vBitmap = null;
-            SaveToBitmap(ref vBitmap);
+            if (!this.SaveToBitmap(ref vBitmap))
+                return "";
 
+            string Result = "";
             if (aPath != "")
             {
                 if (!Directory.Exists(aPath + "images"))
@@ -475,8 +472,8 @@ namespace HC.View
         public override void ToXml(XmlElement aNode) 
         {
             base.ToXml(aNode);
-            aNode.Attributes["width"].Value = FWidth.ToString();
-            aNode.Attributes["height"].Value = FHeight.ToString();
+            aNode.SetAttribute("width", FWidth.ToString());
+            aNode.SetAttribute("height", FHeight.ToString());
         }
 
         public override void ParseXml(XmlElement aNode) 
@@ -662,6 +659,11 @@ namespace HC.View
             }
         }
 
+        public override bool SaveToBitmap(ref Bitmap aBitmap)
+        {
+            return false;
+        }
+
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
@@ -677,7 +679,7 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["mark"].Value = ((byte)FMarkType).ToString();
+            aNode.SetAttribute("mark", ((byte)FMarkType).ToString());
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -780,7 +782,7 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["textsno"].Value = FTextStyleNo.ToString();
+            aNode.SetAttribute("textsno", FTextStyleNo.ToString());
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -834,7 +836,7 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["autosize"].Value = FAutoSize.ToString();
+            aNode.SetAttribute("autosize", FAutoSize.ToString());
         }
 
         public override void ParseXml(XmlElement aNode)

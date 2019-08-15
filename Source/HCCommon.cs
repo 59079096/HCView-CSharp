@@ -629,7 +629,7 @@ namespace HC.View
         public static void SetBorderSideByPro(string aValue, HCBorderSides aBorderSides)
         {
             aBorderSides.Value = 0;
-            string[] vStrings = aValue.Split(new string[] { "," }, StringSplitOptions.None);
+            string[] vStrings = aValue.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
 
             for (int i = 0; i < vStrings.Length; i++)
             {

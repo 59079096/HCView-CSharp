@@ -416,10 +416,10 @@ namespace HC.View
 
         public virtual void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["sno"].Value = FStyleNo.ToString();
-            aNode.Attributes["pno"].Value = FParaNo.ToString();
-            aNode.Attributes["parafirst"].Value = this.ParaFirst.ToString();
-            aNode.Attributes["pagebreak"].Value = this.PageBreak.ToString();
+            aNode.SetAttribute("sno", FStyleNo.ToString());
+            aNode.SetAttribute("pno", FParaNo.ToString());
+            aNode.SetAttribute("parafirst", this.ParaFirst.ToString());
+            aNode.SetAttribute("pagebreak", this.PageBreak.ToString());
         }
 
         public virtual void ParseXml(XmlElement aNode)

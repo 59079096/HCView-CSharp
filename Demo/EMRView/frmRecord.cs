@@ -18,6 +18,7 @@ using System.Windows.Forms;
 using HC.View;
 using HC.Win32;
 using System.IO;
+using System.Drawing.Printing;
 
 namespace EMRView
 {
@@ -31,6 +32,7 @@ namespace EMRView
         private frmRecordPop frmRecordPop;
         private EventHandler FOnSave, FOnSaveStructure, FOnChangedSwitch, FOnReadOnlySwitch;
         private DeItemInsertEventHandler FOnInsertDeItem;
+        private DeItemSetTextEventHandler FOnSetDeItemText;
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
@@ -301,6 +303,8 @@ namespace EMRView
         {
             InitializeComponent();
 
+            PrintToolVisible = false;
+
             System.Drawing.Text.InstalledFontCollection fonts = new System.Drawing.Text.InstalledFontCollection();
             foreach (System.Drawing.FontFamily family in fonts.Families)
             {
@@ -352,7 +356,7 @@ namespace EMRView
                 if (value)
                 {
                     FEmrView.AnnotatePre.Visible = false;
-                    
+
                     HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
                     vAreas.Add(SectionArea.saPage);
                     TraverseElement(DoHideTraceTraverse, vAreas, TTravTag.HideTrace);
@@ -438,13 +442,21 @@ namespace EMRView
         }
 
         /// <summary> 设置当前数据元的文本内容 </summary>
-        private void DoSetActiveDeItemText(string aText)
+        private void DoSetActiveDeItemText(DeItem aDeItem, string aText, ref bool aCancel)
         {
-            FEmrView.SetActiveItemText(aText);
+            if (FOnSetDeItemText != null)
+            {
+                string vText = aText;
+                FOnSetDeItemText(this, aDeItem, ref vText, ref aCancel);
+                if (!aCancel)
+                    FEmrView.SetActiveItemText(vText);
+            }
+            else
+                FEmrView.SetActiveItemText(aText);
         }
 
         /// <summary> 设置当前数据元的内容为扩展内容 </summary>
-        private void DoSetActiveDeItemExtra(Stream aStream)
+        private void DoSetActiveDeItemExtra(DeItem aDeItem, Stream aStream)
         {
             FEmrView.SetActiveItemExtra(aStream);
         }
@@ -506,6 +518,27 @@ namespace EMRView
                 frmRecordPop.Close();
         }
 
+        private void SetPrintToolVisible(bool value)
+        {
+            if (value)
+            {
+                cbbPrinter.Items.Clear();
+                PrintDocument print = new PrintDocument();
+                string sDefault = print.PrinterSettings.PrinterName;  // 默认打印机名
+
+                foreach (string sPrint in PrinterSettings.InstalledPrinters)  // 获取所有打印机名称
+                {
+                    cbbPrinter.Items.Add(sPrint);
+                    if (sPrint == sDefault)
+                        cbbPrinter.SelectedIndex = cbbPrinter.Items.IndexOf(sPrint);
+                }
+            }
+
+            tlbPrint.Visible = value;
+            cbxPrintHeader.Visible = value;
+            cbxPrintFooter.Visible = value;
+        }
+
         protected void DoEmrViewMouseDown(object sender, MouseEventArgs e)
         {
             PopupFormClose(this, null);
@@ -564,20 +597,20 @@ namespace EMRView
                     }
                 }
                 else
-                    if (vActiveItem is DeEdit)
-                    {
+                if (vActiveItem is DeEdit)
+                {
 
-                    }
-                    else
-                        if (vActiveItem is DeCombobox)
-                        {
+                }
+                else
+                if (vActiveItem is DeCombobox)
+                {
 
-                        }
-                        else
-                            if (vActiveItem is DeDateTimePicker)
-                            {
+                }
+                else
+                if (vActiveItem is DeDateTimePicker)
+                {
 
-                            }
+                }
             }
 
             tssDeInfo.Text = vInfo;
@@ -649,7 +682,7 @@ namespace EMRView
             }
             else
                 if (vArea.Count == 0)
-                    return;
+                return;
 
             HCItemTraverse vItemTraverse = new HCItemTraverse();
             vItemTraverse.Tag = aTag;
@@ -699,6 +732,18 @@ namespace EMRView
         {
             get { return FOnInsertDeItem; }
             set { FOnInsertDeItem = value; }
+        }
+
+        public DeItemSetTextEventHandler OnSetDeItemText
+        {
+            get { return FOnSetDeItemText; }
+            set { FOnSetDeItemText = value; }
+        }
+
+        public bool PrintToolVisible
+        {
+            get { return tlbPrint.Visible; }
+            set { SetPrintToolVisible(value); }
         }
 
         private void pmView_Opening(object sender, CancelEventArgs e)
@@ -950,11 +995,19 @@ namespace EMRView
             }
 
             OpenFileDialog vOpenDlg = new OpenFileDialog();
-            vOpenDlg.Filter = "文件|*" + HC.View.HC.HC_EXT;
+            vOpenDlg.Filter = "支持的文件|*" + HC.View.HC.HC_EXT + "; *.xml|HCView (*.hcf)|*" + HC.View.HC.HC_EXT + "|HCView xml (*.xml)|*.xml";
             if (vOpenDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 if (vOpenDlg.FileName != "")
-                    FEmrView.LoadFromFile(vOpenDlg.FileName);
+                {
+                    Application.DoEvents();
+                    string vExt = System.IO.Path.GetExtension(vOpenDlg.FileName);
+                    if (vExt == HC.View.HC.HC_EXT)
+                        FEmrView.LoadFromFile(vOpenDlg.FileName);
+                    else
+                    if (vExt == ".xml")
+                        FEmrView.LoadFromXml(vOpenDlg.FileName);
+                }
             }
         }
 
@@ -1012,6 +1065,52 @@ namespace EMRView
             vFrmParagraph.SetView(FEmrView);
         }
 
+        private void MniOdd_Click(object sender, EventArgs e)
+        {
+            FEmrView.PrintOdd(cbbPrinter.Text);
+        }
+
+        private void MniEven_Click(object sender, EventArgs e)
+        {
+            FEmrView.PrintEven(cbbPrinter.Text);
+        }
+
+        private void BtnPrintAll_Click(object sender, EventArgs e)
+        {
+            FEmrView.Print(cbbPrinter.Text);
+        }
+
+        private void BtnPrintCurLine_Click(object sender, EventArgs e)
+        {
+            PrintDocument vPrinter = new PrintDocument();
+            vPrinter.PrinterSettings.PrinterName = cbbPrinter.Text;
+            FEmrView.PrintCurPageByActiveLine(cbxPrintHeader.Checked, cbxPrintFooter.Checked);
+        }
+
+        private void BtnPrintSelect_Click(object sender, EventArgs e)
+        {
+            PrintDocument vPrinter = new PrintDocument();
+            vPrinter.PrinterSettings.PrinterName = cbbPrinter.Text;
+            FEmrView.PrintCurPageSelected(cbxPrintHeader.Checked, cbxPrintFooter.Checked);
+        }
+
+        private void BtnPrintRange_Click(object sender, EventArgs e)
+        {
+            int vStartPage = int.Parse(tbxPageStart.Text);
+            if (vStartPage < 0)
+                vStartPage = 0;
+
+            int vEndPage = int.Parse(tbxPageEnd.Text);
+            if (vEndPage > FEmrView.PageCount - 1)
+                vEndPage = FEmrView.PageCount - 1;
+
+            List<int> vPages = new List<int>();
+            for (int i = vStartPage; i <= vEndPage; i++)
+                vPages.Add(i);
+
+            FEmrView.Print(cbbPrinter.Text, 1, vPages.ToArray());
+        }
+
         private void mniHideTrace_Click(object sender, EventArgs e)
         {
             if (FEmrView.HideTrace)
@@ -1036,7 +1135,7 @@ namespace EMRView
         private void mniSaveAs_Click(object sender, EventArgs e)
         {
             SaveFileDialog vDlg = new SaveFileDialog();
-            vDlg.Filter = "文件|*" + HC.View.HC.HC_EXT + "|HCView xml|*.xml";
+            vDlg.Filter = "文件|*" + HC.View.HC.HC_EXT + "|HCView xml|*.xml" + "|pdf文件|*.pdf" + "|html页面|*.html";
             if (vDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 if (vDlg.FileName != "")
@@ -1050,6 +1149,14 @@ namespace EMRView
 
                         case 2:
                             vExt = ".xml";
+                            break;
+
+                        case 3:
+                            vExt = ".pdf";
+                            break;
+
+                        case 4:
+                            vExt = ".html";
                             break;
 
                         default:
@@ -1067,6 +1174,14 @@ namespace EMRView
 
                         case 2:
                             FEmrView.SaveToXml(vDlg.FileName, Encoding.UTF8);
+                            break;
+
+                        case 3:
+                            FEmrView.SaveToPDF(vDlg.FileName);
+                            break;
+
+                        case 4:
+                            FEmrView.SaveToHtml(vDlg.FileName);
                             break;
                     }
                 }

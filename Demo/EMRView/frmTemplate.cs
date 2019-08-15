@@ -130,6 +130,7 @@ namespace EMRView
         {
             ShowTemplateDeSet();  // 获取并显示模板数据集信息
             ShowAllDataElement();  // 显示数据元信息
+            mniViewItem_Click(sender, e);
         }
 
         private bool TreeNodeIsTemplate(TreeNode aNode)
@@ -370,11 +371,13 @@ namespace EMRView
                     }
                 }
             }
+            else
+                dgvCV.RowCount = 0;
         }
 
         private void mniViewItem_Click(object sender, EventArgs e)
         {
-            if (dgvDE.SelectedRows.Count > 0)
+            if ((dgvDE.SelectedRows.Count > 0) && (dgvDE.SelectedRows[0].Cells[5].Value != null))
             {
                 if (dgvDE.SelectedRows[0].Cells[5].Value.ToString() != "")
                     FDomainID = (int)(dgvDE.SelectedRows[0].Cells[5].Value);
@@ -385,6 +388,8 @@ namespace EMRView
                 lblDE.Text = dgvDE.SelectedRows[0].Cells[1].Value.ToString() + "(共 "
                     + dgvCV.RowCount.ToString() + " 条选项)";
             }
+            else
+                dgvCV.RowCount = 0;
         }
 
         private void dgvDE_DoubleClick(object sender, EventArgs e)
@@ -411,6 +416,8 @@ namespace EMRView
 
                     ShowDataElement(vRows);
                 }
+
+                mniViewItem_Click(sender, e);
             }
         }
 
@@ -731,6 +738,11 @@ namespace EMRView
         {
             frmDomain vFrmDomain = new frmDomain();
             vFrmDomain.ShowDialog();
+        }
+
+        private void DgvDE_SelectionChanged(object sender, EventArgs e)
+        {
+            mniViewItem_Click(sender, e);
         }
     }
 }

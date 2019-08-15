@@ -20,8 +20,9 @@ using System.IO;
 
 namespace EMRView
 {
-    public delegate void TextEventHandle(string aText);
-    public delegate void StreamEventHandle(Stream aStream);
+    public delegate void TextEventHandler(DeItem aDeItem, string aText, ref bool aCancel);
+    public delegate void StreamEventHandler(DeItem aDeItem, Stream aStream);
+    public delegate void DeItemSetTextEventHandler(object sender, DeItem aDeItem, ref string aText, ref bool aCancel);
 
     public partial class frmRecordPop : Form
     {
@@ -32,13 +33,13 @@ namespace EMRView
         DeItem FDeItem;
         DataTable FDBDomain = new DataTable();
 
-        private TextEventHandle FOnSetActiveItemText;
-        private StreamEventHandle FOnSetActiveItemExtra;
+        private TextEventHandler FOnSetActiveItemText;
+        private StreamEventHandler FOnSetActiveItemExtra;
 
-        private void SetDeItemValue(string value)
+        private void SetDeItemValue(string value, ref bool aCancel)
         {
             if (FOnSetActiveItemText != null)
-                FOnSetActiveItemText(value);
+                FOnSetActiveItemText(FDeItem, value, ref aCancel);
         }
 
         private void SetDeItemExtraValue(string aCVVID)
@@ -51,7 +52,7 @@ namespace EMRView
                     using(MemoryStream vSM = new MemoryStream((byte[])vRows[0]["content"]))
                     {
                         vSM.Position = 0;
-                        FOnSetActiveItemExtra(vSM);
+                        FOnSetActiveItemExtra(FDeItem, vSM);
                     }
                 }
             }
@@ -130,7 +131,8 @@ namespace EMRView
             string vDeUnit = "";
             int vCMV = -1;
 
-            DataTable dt = emrMSDB.DB.GetData(string.Format("SELECT DeCode, PY, frmtp, deunit, domainid FROM Comm_DataElement WHERE DeID ={0}", FDeItem[DeProp.Index]));
+            DataTable dt = emrMSDB.DB.GetData(string.Format("SELECT DeCode, PY, frmtp, deunit, domainid "
+                + "FROM Comm_DataElement WHERE DeID ={0}", FDeItem[DeProp.Index]));
             if (dt.Rows.Count > 0)
             {
                 FFrmtp = dt.Rows[0]["frmtp"].ToString();
@@ -202,7 +204,9 @@ namespace EMRView
 
                 if (vCMV > 0)  // 有值域
                 {
-                    FDBDomain = emrMSDB.DB.GetData(string.Format("SELECT DE.ID, DE.Code, DE.devalue, DE.PY, DC.Content FROM Comm_DataElementDomain DE LEFT JOIN Comm_DomainContent DC ON DE.ID = DC.DItemID WHERE DE.domainid = {0}", vCMV));
+                    FDBDomain = emrMSDB.DB.GetData(string.Format("SELECT DE.ID, DE.Code, DE.devalue, DE.PY, DC.Content "
+                        + "FROM Comm_DataElementDomain DE LEFT JOIN Comm_DomainContent DC ON DE.ID = DC.DItemID "
+                        + "WHERE DE.domainid = {0}", vCMV));
                 }
 
                 if (FDBDomain.Rows.Count > 0)
@@ -226,13 +230,13 @@ namespace EMRView
                 tbxValue.Focus();
         }
 
-        public TextEventHandle OnSetActiveItemText
+        public TextEventHandler OnSetActiveItemText
         {
             get { return FOnSetActiveItemText; }
             set { FOnSetActiveItemText = value; }
         }
 
-        public StreamEventHandle OnSetActiveItemExtra
+        public StreamEventHandler OnSetActiveItemExtra
         {
             get { return FOnSetActiveItemExtra; }
             set { FOnSetActiveItemExtra = value; }
@@ -251,14 +255,16 @@ namespace EMRView
         {
             if (dgvDomain.SelectedRows.Count > 0)
             {
+                bool vCancel = false;
                 int vSelIndex = dgvDomain.SelectedRows[0].Index;
                 FDeItem[DeProp.CMVVCode] = dgvDomain.Rows[vSelIndex].Cells[1].Value.ToString();
                 if (dgvDomain.Rows[vSelIndex].Cells[4].Value.ToString() != "")
                     SetDeItemExtraValue(dgvDomain.Rows[vSelIndex].Cells[2].Value.ToString());
                 else
-                    SetDeItemValue(dgvDomain.Rows[vSelIndex].Cells[0].Value.ToString());
+                    SetDeItemValue(dgvDomain.Rows[vSelIndex].Cells[0].Value.ToString(), ref vCancel);
 
-                this.Close();
+                if (!vCancel)
+                    this.Close();
             }
         }
 
@@ -272,9 +278,12 @@ namespace EMRView
                     vText += cbbUnit.Text;
 
                 FDeItem[DeProp.Unit] = cbbUnit.Text;
-                SetDeItemValue(vText);
 
-                this.Close();
+                bool vCancel = false;
+                SetDeItemValue(vText, ref vCancel);
+
+                if (!vCancel)
+                    this.Close();
             }
         }
 
@@ -282,8 +291,11 @@ namespace EMRView
         {
             if (tbxMemo.Text != "")
             {
-                SetDeItemValue(tbxMemo.Text);
-                this.Close();
+                bool vCancel = false;
+                SetDeItemValue(tbxMemo.Text, ref vCancel);
+
+                if (!vCancel)
+                    this.Close();
             }
         }
 
@@ -314,8 +326,10 @@ namespace EMRView
 
             if (vText != "")
             {
-                SetDeItemValue(vText);
-                this.Close();
+                bool vCancel = false;
+                SetDeItemValue(vText, ref vCancel);
+                if (!vCancel)
+                    this.Close();
             }
         }
 

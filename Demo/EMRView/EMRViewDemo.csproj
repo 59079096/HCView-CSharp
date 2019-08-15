@@ -86,6 +86,12 @@
     <Compile Include="frmTemplateInfo.Designer.cs">
       <DependentUpon>frmTemplateInfo.cs</DependentUpon>
     </Compile>
+    <Compile Include="frmRecordSet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmRecordSet.Designer.cs">
+      <DependentUpon>frmRecordSet.cs</DependentUpon>
+    </Compile>
     <Compile Include="HCEmrEdit.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -248,6 +254,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="frmTemplateList.resx">
       <DependentUpon>frmTemplateList.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmRecordSet.resx">
+      <DependentUpon>frmRecordSet.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

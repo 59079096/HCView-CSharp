@@ -27,6 +27,7 @@ namespace EMRView
         private bool FTrace;  // 是否处于留痕迹状态
         private int FTraceCount;  // 当前文档痕迹数量
         private Color FDeDoneColor, FDeUnDoneColor;
+        private string FPageBlankTip;
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
 
@@ -473,6 +474,17 @@ namespace EMRView
                 return base.DoInsertText(aText);
         }
 
+        #region 子方法，绘制当前页以下空白的提示
+        private void DrawBlankTip_(int aLeft, int aTop, int aRight, int aDataDrawBottom, HCCanvas aCanvas)
+        {
+            if (aTop + 14 <= aDataDrawBottom)
+            {
+                aCanvas.Font.Size = 12;
+                aCanvas.TextOut(aLeft + ((aRight - aLeft) - aCanvas.TextWidth(FPageBlankTip)) / 2, aTop, FPageBlankTip);
+            }
+        }
+        #endregion
+
         /// <summary> 文档某节的Item绘制完成 </summary>
         /// <param name="AData">当前绘制的Data</param>
         /// <param name="ADrawItemIndex">Item对应的DrawItem序号</param>
@@ -484,7 +496,7 @@ namespace EMRView
         /// <param name="ACanvas">画布</param>
         /// <param name="APaintInfo">绘制时的其它信息</param>
         protected override void DoSectionDrawItemPaintAfter(Object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if ((!FHideTrace) && (FTraceCount > 0))  // 显示痕迹且有痕迹
             {
@@ -504,8 +516,19 @@ namespace EMRView
                 }
             }
 
-            base.DoSectionDrawItemPaintAfter(sender, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawBottom,
-                aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
+            if ((FPageBlankTip != "") && (aData is HCPageData))
+            {
+                if (aDrawItemNo < aData.DrawItems.Count - 1)
+                {
+                    if (aData.Items[aData.DrawItems[aDrawItemNo + 1].ItemNo].PageBreak)
+                        DrawBlankTip_(aDataDrawLeft, aDrawRect.Top + aDrawRect.Height + aData.GetLineBlankSpace(aDrawItemNo), aDataDrawRight, aDataDrawBottom, aCanvas);
+                }
+                else
+                    DrawBlankTip_(aDataDrawLeft, aDrawRect.Top + aDrawRect.Height + aData.GetLineBlankSpace(aDrawItemNo), aDataDrawRight, aDataDrawBottom, aCanvas);
+            }
+
+            base.DoSectionDrawItemPaintAfter(sender, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
         protected override void WndProc(ref Message Message)
@@ -530,6 +553,7 @@ namespace EMRView
             this.Height = 100;
             FDeDoneColor = HC.View.HC.clBtnFace;
             FDeUnDoneColor = Color.FromArgb(0xFF, 0xDD, 0x80);
+            FPageBlankTip = "";// "--------本页以下空白--------";
         }
 
         ~HCEmrView()
@@ -788,6 +812,12 @@ namespace EMRView
         public int TraceCount
         {
             get { return FTraceCount; }
+        }
+
+        public string PageBlankTip
+        {
+            get { return FPageBlankTip; }
+            set { FPageBlankTip = value; }
         }
 
         /// <summary> 当编辑只读状态的Data时触发 </summary>

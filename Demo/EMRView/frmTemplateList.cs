@@ -138,12 +138,7 @@ namespace EMRView
                 return;
 
             FDesID = (vNode.Tag as DataSetInfo).ID;
-
-            if (FDesID == DataSetInfo.NorProc)  // 日常病程记录
-                FRecordName = vNode.Text + " " + string.Format("{0:yyyy-MM-dd HH:mm}", DateTime.Now);
-            else
-                FRecordName = vNode.Text;
-
+            FRecordName = vNode.Text;
             tbxRecordName.Text = FRecordName;
 
             DataTable dt = emrMSDB.DB.GetData(string.Format(emrMSDB.Sql_GetTemplateList, FDesID));

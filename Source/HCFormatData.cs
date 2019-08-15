@@ -560,106 +560,106 @@ namespace HC.View
                 vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
             }
             else
-                if (viBreakOffset == 1)  // 当前行剩余空间连第一个字符也放不下
+            if (viBreakOffset == 1)  // 当前行剩余空间连第一个字符也放不下
+            {
+                if (vFirstCharWidth > aFmtRight - aFmtLeft)  // Data的宽度不足一个字符
                 {
-                    if (vFirstCharWidth > aFmtRight - aFmtLeft)  // Data的宽度不足一个字符
+                    vRect.Left = aPos.X;
+                    vRect.Top = aPos.Y;
+                    vRect.Right = vRect.Left + vCharWidths[vItemLen - 1] - aBasePos;  // 使用自定义测量的结果
+                    vRect.Bottom = vRect.Top + FItemFormatHeight;
+                    NewDrawItem(aItemNo, aOffset + aCharOffset - 1, 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
+                    vParaFirst = false;
+
+                    vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
+                    FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
+
+                    // 偏移到下一行顶端，准备另起一行
+                    aPos.X = aFmtLeft;
+                    aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
+
+                    if (aCharOffset < vItemLen)
                     {
-                        vRect.Left = aPos.X;
-                        vRect.Top = aPos.Y;
-                        vRect.Right = vRect.Left + vCharWidths[vItemLen - 1] - aBasePos;  // 使用自定义测量的结果
-                        vRect.Bottom = vRect.Top + FItemFormatHeight;
-                        NewDrawItem(aItemNo, aOffset + aCharOffset - 1, 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
-                        vParaFirst = false;
-
-                        vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
-                        FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
-
-                        // 偏移到下一行顶端，准备另起一行
-                        aPos.X = aFmtLeft;
-                        aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
-
-                        if (aCharOffset < vItemLen)
-                        {
-                            DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset + 1, aFmtRight - aPos.X, vCharWidths[aCharOffset - 1],
-                                aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths,
-                                ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
-                        }
+                        DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset + 1, aFmtRight - aPos.X, vCharWidths[aCharOffset - 1],
+                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths,
+                            ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     }
-                    else  // Data的宽度足够一个字符
-                        if ((HC.PosCharHC(vText[aCharOffset - 1], HC.DontLineFirstChar) > 0)
-                            && (Items[aItemNo - 1].StyleNo > HCStyle.Null)
-                            && (DrawItems[aLastDrawItemNo].CharLen > 1))
-                        {
-                            _FormatBreakTextDrawItem(aItemNo, aFmtLeft, aFmtRight, ref aLastDrawItemNo, ref aPos, ref vRect, ref vRemainderWidth, ref vParaFirst);  // 上一个重新分裂
-                            CalcItemFormatHeigh(vItem);
-
-                            DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos, aItemNo, vItemLen, aFmtLeft, aContentWidth,
-                                aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
-                        }
-                        else  // 整体下移到下一行
-                        {
-                            vRemainderWidth = aPlaceWidth;
-                            FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
-                            // 偏移到下一行开始计算
-                            aPos.X = aFmtLeft;
-                            aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
-                            DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos,
-                                aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths,
-                                ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
-                        }
                 }
-                else  // 当前行剩余宽度能放下当前Text的一部分
-                {
-                    if (vFirstCharWidth > aFmtRight - aFmtLeft)  // Data的宽度不足一个字符
-                        viPlaceOffset = viBreakOffset;
-                    else
-                        viPlaceOffset = viBreakOffset - 1;  // 第viBreakOffset个字符放不下，前一个能放下
+                else  // Data的宽度足够一个字符
+                    if ((HC.PosCharHC(vText[aCharOffset - 1], HC.DontLineFirstChar) > 0)
+                        && (Items[aItemNo - 1].StyleNo > HCStyle.Null)
+                        && (DrawItems[aLastDrawItemNo].CharLen > 1))
+                    {
+                        _FormatBreakTextDrawItem(aItemNo, aFmtLeft, aFmtRight, ref aLastDrawItemNo, ref aPos, ref vRect, ref vRemainderWidth, ref vParaFirst);  // 上一个重新分裂
+                        CalcItemFormatHeigh(vItem);
 
-                    FindLineBreak(vText, aCharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
-
-                    if ((viPlaceOffset == 0) && (!vLineFirst))  // 能放下的都不合适放到当前行且不是行首格式化，整体下移
+                        DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos, aItemNo, vItemLen, aFmtLeft, aContentWidth,
+                            aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
+                    }
+                    else  // 整体下移到下一行
                     {
                         vRemainderWidth = aPlaceWidth;
                         FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
-                        aPos.X = aFmtLeft;  // 偏移到下一行开始计算
-                        aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
-                        DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos, aItemNo, vItemLen,
-                            aFmtLeft, aContentWidth, aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
-                    }
-                    else  // 有适合放到当前行的内容
-                    {
-                        if (viPlaceOffset < aCharOffset)  // 找不到截断位置，就在原位置截断(如整行文本都是逗号)
-                        {
-                            if (vFirstCharWidth > aFmtRight - aFmtLeft)  // Data的宽度不足一个字符
-                                viPlaceOffset = viBreakOffset;
-                            else
-                                viPlaceOffset = viBreakOffset - 1;
-                        }
-
-                        vRect.Left = aPos.X;
-                        vRect.Top = aPos.Y;
-                        vRect.Right = vRect.Left + vCharWidths[viPlaceOffset - 1] - aBasePos;  // 使用自定义测量的结果
-                        vRect.Bottom = vRect.Top + FItemFormatHeight;
-
-                        NewDrawItem(aItemNo, aOffset + aCharOffset - 1, viPlaceOffset - aCharOffset + 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
-                        vParaFirst = false;
-
-                        vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
-
-                        FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
-
-                        // 偏移到下一行顶端，准备另起一行
+                        // 偏移到下一行开始计算
                         aPos.X = aFmtLeft;
-                        aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
+                        aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
+                        DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos,
+                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths,
+                            ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
+                    }
+            }
+            else  // 当前行剩余宽度能放下当前Text的一部分
+            {
+                if (vFirstCharWidth > aFmtRight - aFmtLeft)  // Data的宽度不足一个字符
+                    viPlaceOffset = viBreakOffset;
+                else
+                    viPlaceOffset = viBreakOffset - 1;  // 第viBreakOffset个字符放不下，前一个能放下
 
-                        if (viPlaceOffset < vItemLen)
-                        {
-                            DoFormatTextItemToDrawItems(vItem, aOffset, vText, viPlaceOffset + 1, aFmtRight - aPos.X, vCharWidths[viPlaceOffset - 1],
-                                aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos,
-                                ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
-                        }
+                FindLineBreak(vText, aCharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
+
+                if ((viPlaceOffset == 0) && (!vLineFirst))  // 能放下的都不合适放到当前行且不是行首格式化，整体下移
+                {
+                    vRemainderWidth = aPlaceWidth;
+                    FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
+                    aPos.X = aFmtLeft;  // 偏移到下一行开始计算
+                    aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
+                    DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos, aItemNo, vItemLen,
+                        aFmtLeft, aContentWidth, aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
+                }
+                else  // 有适合放到当前行的内容
+                {
+                    if (viPlaceOffset < aCharOffset)  // 找不到截断位置，就在原位置截断(如整行文本都是逗号)
+                    {
+                        if (vFirstCharWidth > aFmtRight - aFmtLeft)  // Data的宽度不足一个字符
+                            viPlaceOffset = viBreakOffset;
+                        else
+                            viPlaceOffset = viBreakOffset - 1;
+                    }
+
+                    vRect.Left = aPos.X;
+                    vRect.Top = aPos.Y;
+                    vRect.Right = vRect.Left + vCharWidths[viPlaceOffset - 1] - aBasePos;  // 使用自定义测量的结果
+                    vRect.Bottom = vRect.Top + FItemFormatHeight;
+
+                    NewDrawItem(aItemNo, aOffset + aCharOffset - 1, viPlaceOffset - aCharOffset + 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
+                    vParaFirst = false;
+
+                    vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
+
+                    FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
+
+                    // 偏移到下一行顶端，准备另起一行
+                    aPos.X = aFmtLeft;
+                    aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;  // 不使用 vRect.Bottom 因为如果行中间有高的，会修正vRect.Bottom
+
+                    if (viPlaceOffset < vItemLen)
+                    {
+                        DoFormatTextItemToDrawItems(vItem, aOffset, vText, viPlaceOffset + 1, aFmtRight - aPos.X, vCharWidths[viPlaceOffset - 1],
+                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos,
+                            ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     }
                 }
+            }
         }
         #endregion
 

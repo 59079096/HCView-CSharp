@@ -270,7 +270,7 @@ namespace HC.View
                     vS += FItems[i] + HC.sLineBreak;
             }
 
-            aNode.Attributes["item"].Value = vS;
+            aNode.SetAttribute("item", vS);
 
             vS = "";
             if (FItems.Count > 0)
@@ -283,7 +283,7 @@ namespace HC.View
                         vS += "0" + HC.sLineBreak;
                 }
             }
-            aNode.Attributes["check"].Value = vS;
+            aNode.SetAttribute("check", vS);
         }
 
         public override void ParseXml(XmlElement aNode)

@@ -66,59 +66,59 @@
             this.预览全部病程ToolStripMenuItem,
             this.导出XML结构ToolStripMenuItem});
             this.pmRecord.Name = "contextMenuStrip1";
-            this.pmRecord.Size = new System.Drawing.Size(153, 186);
+            this.pmRecord.Size = new System.Drawing.Size(181, 186);
             // 
             // 新建ToolStripMenuItem
             // 
             this.新建ToolStripMenuItem.Name = "新建ToolStripMenuItem";
-            this.新建ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.新建ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.新建ToolStripMenuItem.Text = "新建";
             this.新建ToolStripMenuItem.Click += new System.EventHandler(this.新建ToolStripMenuItem_Click);
             // 
             // 查看ToolStripMenuItem
             // 
             this.查看ToolStripMenuItem.Name = "查看ToolStripMenuItem";
-            this.查看ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.查看ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.查看ToolStripMenuItem.Text = "查看";
             this.查看ToolStripMenuItem.Click += new System.EventHandler(this.查看ToolStripMenuItem_Click);
             // 
             // 编辑ToolStripMenuItem
             // 
             this.编辑ToolStripMenuItem.Name = "编辑ToolStripMenuItem";
-            this.编辑ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.编辑ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.编辑ToolStripMenuItem.Text = "编辑";
             this.编辑ToolStripMenuItem.Click += new System.EventHandler(this.编辑ToolStripMenuItem_Click);
             // 
             // 签名ToolStripMenuItem
             // 
             this.签名ToolStripMenuItem.Name = "签名ToolStripMenuItem";
-            this.签名ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.签名ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.签名ToolStripMenuItem.Text = "签名";
             this.签名ToolStripMenuItem.Click += new System.EventHandler(this.签名ToolStripMenuItem_Click);
             // 
             // 删除ToolStripMenuItem
             // 
             this.删除ToolStripMenuItem.Name = "删除ToolStripMenuItem";
-            this.删除ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.删除ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.删除ToolStripMenuItem.Text = "删除";
             this.删除ToolStripMenuItem.Click += new System.EventHandler(this.删除ToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(149, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
             // 
             // 预览全部病程ToolStripMenuItem
             // 
             this.预览全部病程ToolStripMenuItem.Name = "预览全部病程ToolStripMenuItem";
-            this.预览全部病程ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.预览全部病程ToolStripMenuItem.Text = "预览全部病程";
+            this.预览全部病程ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.预览全部病程ToolStripMenuItem.Text = "病历合并显示";
             this.预览全部病程ToolStripMenuItem.Click += new System.EventHandler(this.预览全部病程ToolStripMenuItem_Click);
             // 
             // 导出XML结构ToolStripMenuItem
             // 
             this.导出XML结构ToolStripMenuItem.Name = "导出XML结构ToolStripMenuItem";
-            this.导出XML结构ToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.导出XML结构ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.导出XML结构ToolStripMenuItem.Text = "导出XML结构";
             this.导出XML结构ToolStripMenuItem.Click += new System.EventHandler(this.导出XML结构ToolStripMenuItem_Click);
             // 

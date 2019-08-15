@@ -579,11 +579,11 @@ namespace EMRView
 
         public void ToXmlEmr(System.Xml.XmlElement aNode)
         {
-            aNode.Attributes["DeCode"].Value = EMR.EMRSTYLE_TOOTH.ToString();
-            aNode.Attributes["lefttop"].Value = FLeftTopText;
-            aNode.Attributes["righttop"].Value = FRightTopText;
-            aNode.Attributes["leftbottom"].Value = FLeftBottomText;
-            aNode.Attributes["rightbottom"].Value = FRightBottomText;
+            aNode.SetAttribute("DeCode", EMR.EMRSTYLE_TOOTH.ToString());
+            aNode.SetAttribute("lefttop", FLeftTopText);
+            aNode.SetAttribute("righttop", FRightTopText);
+            aNode.SetAttribute("leftbottom", FLeftBottomText);
+            aNode.SetAttribute("rightbottom", FRightBottomText);
         }
 
         public void ParseXmlEmr(System.Xml.XmlElement aNode)

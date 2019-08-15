@@ -165,6 +165,7 @@
             this.dgvDE.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvDE.Size = new System.Drawing.Size(299, 316);
             this.dgvDE.TabIndex = 5;
+            this.dgvDE.SelectionChanged += new System.EventHandler(this.DgvDE_SelectionChanged);
             this.dgvDE.DoubleClick += new System.EventHandler(this.dgvDE_DoubleClick);
             // 
             // Key
@@ -225,7 +226,7 @@
             this.toolStripSeparator2,
             this.mniRefresh});
             this.pmde.Name = "pmde";
-            this.pmde.Size = new System.Drawing.Size(190, 264);
+            this.pmde.Size = new System.Drawing.Size(190, 242);
             // 
             // mniNew
             // 

@@ -14,6 +14,7 @@ using System.Text;
 using HC.View;
 using System.Drawing;
 using HC.Win32;
+using System.IO;
 
 namespace EMRView
 {
@@ -102,6 +103,45 @@ namespace EMRView
             this.Height = 100;
             FDeDoneColor = HC.View.HC.clBtnFace;
             FDeUnDoneColor = Color.FromArgb(0xFF, 0xDD, 0x80);
+        }
+
+        /// <summary> 直接设置当前数据元的值为扩展内容 </summary>
+        /// <param name="aStream">扩展内容流</param>
+        public void SetActiveItemExtra(Stream aStream)
+        {
+            string vFileFormat = "";
+            ushort vFileVersion = 0;
+            byte vLang = 0;
+            HC.View.HC._LoadFileFormatAndVersion(aStream, ref vFileFormat, ref vFileVersion, ref vLang);
+            HCStyle vStyle = new HCStyle();
+            try
+            {
+                vStyle.LoadFromStream(aStream, vFileVersion);
+                this.BeginUpdate();
+                try
+                {
+                    this.UndoGroupBegin();
+                    try
+                    {
+                        this.Data.DeleteActiveDataItems(this.Data.SelectInfo.StartItemNo,
+                            this.Data.SelectInfo.StartItemNo, true);
+
+                        this.Data.InsertStream(aStream, vStyle, vFileVersion);
+                    }
+                    finally
+                    {
+                        this.UndoGroupEnd();
+                    }
+                }
+                finally
+                {
+                    this.EndUpdate();
+                }
+            }
+            finally
+            {
+                vStyle.Dispose();
+            }
         }
 
         public bool DesignModeEx

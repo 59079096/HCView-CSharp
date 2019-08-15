@@ -37,7 +37,8 @@ namespace HC.View
         private HCScrollBar FHScrollBar;
         private HCRichScrollBar FVScrollBar;
         private IntPtr FDC = IntPtr.Zero;
-        private IntPtr FMemDC = IntPtr.Zero;
+        private Bitmap FDataBmp;
+        private HCCanvas FDataBmpCanvas;
         private IntPtr FhImc = IntPtr.Zero;
         private int FActiveSectionIndex, FViewWidth, FViewHeight, FDisplayFirstSection, FDisplayLastSection;
         private uint FUpdateCount;
@@ -290,15 +291,15 @@ namespace HC.View
         }
 
         private void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnSectionDrawItemPaintBefor != null)
-                FOnSectionDrawItemPaintBefor(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+                FOnSectionDrawItemPaintBefor(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
         private void DoSectionDrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, RECT aClearRect, string aDrawText,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             // 背景处理完，绘制文本前触发，可处理高亮关键字
         }
@@ -756,17 +757,13 @@ namespace HC.View
                 FCaret = new HCCaret(this.Handle);
 
             if (FDC == IntPtr.Zero)
-            {
                 FDC = User.GetDC(this.Handle);
-                //FMemDC = (IntPtr)GDI.CreateCompatibleDC(FDC);
-            }
 
             FhImc = Imm.ImmGetContext(this.Handle);
         }
 
         protected override void OnHandleDestroyed(EventArgs e)
         {
-            GDI.DeleteDC(FMemDC);
             User.ReleaseDC(this.Handle, FDC);
 
             Imm.ImmReleaseContext(this.Handle, FhImc);
@@ -777,7 +774,7 @@ namespace HC.View
         {
             //base.OnPaint(e);
 
-            GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FMemDC, 0, 0, GDI.SRCCOPY);
+            GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FDataBmpCanvas.Handle, 0, 0, GDI.SRCCOPY);
 
             using (SolidBrush vBrush = new SolidBrush(this.BackColor))
             {
@@ -791,6 +788,15 @@ namespace HC.View
 
             GetViewWidth();
             GetViewHeight();
+
+            if ((FViewWidth > 0) && (FViewHeight > 0))
+            {
+                FDataBmp = new Bitmap(FViewWidth, FViewHeight);  // 设置为除滚动条外的大小
+                if (FDataBmpCanvas == null)
+                    FDataBmpCanvas = new HCCanvas();
+
+                FDataBmpCanvas.Graphics = Graphics.FromImage(FDataBmp);
+            }
 
             if (FAutoZoom)
             {
@@ -859,10 +865,10 @@ namespace HC.View
         }
 
         protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnSectionDrawItemPaintAfter != null)
-                FOnSectionDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+                FOnSectionDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
@@ -1435,12 +1441,12 @@ namespace HC.View
         }
 
         /// <summary> 删除当前Data指定范围内的Item </summary>
-        public void DeleteActiveDataItems(int aStartNo, int aEndNo = -1)
+        public void DeleteActiveDataItems(int aStartNo, int aEndNo = -1, bool aKeepPara = true)
         {
             if (aEndNo < aStartNo)
-                ActiveSection.DeleteActiveDataItems(aStartNo, aStartNo);
+                ActiveSection.DeleteActiveDataItems(aStartNo, aStartNo, aKeepPara);
             else
-                ActiveSection.DeleteActiveDataItems(aStartNo, aEndNo);
+                ActiveSection.DeleteActiveDataItems(aStartNo, aEndNo, aKeepPara);
         }
 
         /// <summary> 删除当前节 </summary>
@@ -1480,21 +1486,20 @@ namespace HC.View
             this.BeginUpdate();
             try
             {
-                HCStyle vStyle = new HCStyle();
-                try
+                using (HCStyle vStyle = new HCStyle())
                 {
-                    LoadSectionProcHandler vEvent = delegate(ushort aFileVersion)
+                    LoadSectionProcHandler vEvent = delegate (ushort aFileVersion)
                     {
                         byte[] vBuffer = new byte[1];
                         aStream.Read(vBuffer, 0, vBuffer.Length);
                         byte vByte = vBuffer[0];  // 节数量
 
-                        MemoryStream vDataStream = new MemoryStream();
-                        try
+                        using (MemoryStream vDataStream = new MemoryStream())
                         {
-                            HCSection vSection = new HCSection(vStyle);
-                            try
+                            using (HCSection vSection = new HCSection(vStyle))
                             {
+                                vSection.OnCreateItemByStyle = DoSectionCreateStyleItem;  // 样式要保持一致
+
                                 // 不循环，只插入第一节的正文
                                 vSection.LoadFromStream(aStream, vStyle, aFileVersion);
                                 vDataStream.SetLength(0);
@@ -1508,23 +1513,10 @@ namespace HC.View
 
                                 vResult = ActiveSection.InsertStream(vDataStream, vStyle, aFileVersion);  // 只插入第一节的数据
                             }
-                            finally
-                            {
-                                vSection.Dispose();
-                            }
-                        }
-                        finally
-                        {
-                            vDataStream.Close();
-                            vDataStream.Dispose();
                         }
                     };
 
                     DoLoadFromStream(aStream, vStyle, vEvent);
-                }
-                finally
-                {
-                    vStyle.Dispose();
                 }
             }
             finally
@@ -2087,80 +2079,66 @@ namespace HC.View
         {
             if ((FUpdateCount == 0) && IsHandleCreated)
             {
-                if (FMemDC != IntPtr.Zero)
-                    GDI.DeleteDC(FMemDC);
-                FMemDC = (IntPtr)GDI.CreateCompatibleDC(FDC);
-                IntPtr vBitmap = (IntPtr)GDI.CreateCompatibleBitmap(FDC, FViewWidth, FViewHeight);
-                GDI.SelectObject(FMemDC, vBitmap);
+                // 创建一个新的剪切区域，该区域是当前剪切区域和一个特定矩形的交集
+                GDI.IntersectClipRect(FDataBmpCanvas.Handle, aRect.Left, aRect.Top, aRect.Right, aRect.Bottom);
+
+                // 控件背景
+                if (FViewModel == HCViewModel.hvmFilm)
+                    FDataBmpCanvas.Brush.Color = this.BackColor;// $00E7BE9F;
+                else
+                    FDataBmpCanvas.Brush.Color = FStyle.BackgroudColor;
+
+                FDataBmpCanvas.FillRect(new RECT(0, 0, FViewWidth, FViewHeight));
+                // 因基于此计算当前页面数据起始结束，所以不能用ARect代替
+                CalcDisplaySectionAndPage();  // 计算当前范围内可显示的起始节、页和结束节、页
+
+                SectionPaintInfo vPaintInfo = new SectionPaintInfo();
                 try
                 {
-                    using (HCCanvas vDataBmpCanvas = new HCCanvas(FMemDC))
+                    vPaintInfo.ScaleX = FZoom;
+                    vPaintInfo.ScaleY = FZoom;
+                    vPaintInfo.Zoom = FZoom;
+                    vPaintInfo.ViewModel = FViewModel;
+                    vPaintInfo.WindowWidth = FViewWidth;
+                    vPaintInfo.WindowHeight = FViewHeight;
+
+                    ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(FDataBmpCanvas);
+                    try
                     {
-                        // 创建一个新的剪切区域，该区域是当前剪切区域和一个特定矩形的交集
-                        GDI.IntersectClipRect(vDataBmpCanvas.Handle, aRect.Left, aRect.Top, aRect.Right, aRect.Bottom);
+                        if (FOnPaintViewBefor != null)
+                            FOnPaintViewBefor(FDataBmpCanvas);
 
-                        // 控件背景
-                        if (FViewModel == HCViewModel.hvmFilm)
-                            vDataBmpCanvas.Brush.Color = this.BackColor;// $00E7BE9F;
-                        else
-                            vDataBmpCanvas.Brush.Color = FStyle.BackgroudColor;
+                        if (FAnnotatePre.DrawCount > 0)
+                            FAnnotatePre.ClearDrawAnnotate();
 
-                        vDataBmpCanvas.FillRect(new RECT(0, 0, FViewWidth, FViewHeight));
-                        // 因基于此计算当前页面数据起始结束，所以不能用ARect代替
-                        CalcDisplaySectionAndPage();  // 计算当前范围内可显示的起始节、页和结束节、页
-
-                        SectionPaintInfo vPaintInfo = new SectionPaintInfo();
-                        try
+                        int vOffsetY = 0;
+                        for (int i = FDisplayFirstSection; i <= FDisplayLastSection; i++)
                         {
-                            vPaintInfo.ScaleX = FZoom;
-                            vPaintInfo.ScaleY = FZoom;
-                            vPaintInfo.Zoom = FZoom;
-                            vPaintInfo.ViewModel = FViewModel;
-                            vPaintInfo.WindowWidth = FViewWidth;
-                            vPaintInfo.WindowHeight = FViewHeight;
+                            vPaintInfo.SectionIndex = i;
 
-                            ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vDataBmpCanvas);
-                            try
-                            {
-                                if (FOnPaintViewBefor != null)
-                                    FOnPaintViewBefor(vDataBmpCanvas);
-
-                                if (FAnnotatePre.DrawCount > 0)
-                                    FAnnotatePre.ClearDrawAnnotate();
-
-                                int vOffsetY = 0;
-                                for (int i = FDisplayFirstSection; i <= FDisplayLastSection; i++)
-                                {
-                                    vPaintInfo.SectionIndex = i;
-
-                                    vOffsetY = ZoomOut(FVScrollBar.Position) - GetSectionTopFilm(i);  // 转为原始Y向偏移
-                                    FSections[i].PaintDisplayPage(GetSectionDrawLeft(i) - ZoomOut(FHScrollBar.Position),  // 原始X向偏移
-                                        vOffsetY, vDataBmpCanvas, vPaintInfo);
-                                }
-
-                                for (int i = 0; i <= vPaintInfo.TopItems.Count - 1; i++)  // 绘制顶层Ite
-                                    vPaintInfo.TopItems[i].PaintTop(vDataBmpCanvas);
-
-                                DoPaintViewAfter(vDataBmpCanvas);
-                            }
-                            finally
-                            {
-                                vPaintInfo.RestoreCanvasScale(vDataBmpCanvas, vScaleInfo);
-                            }
-                        }
-                        finally
-                        {
-                            vPaintInfo.Dispose();
+                            vOffsetY = ZoomOut(FVScrollBar.Position) - GetSectionTopFilm(i);  // 转为原始Y向偏移
+                            FSections[i].PaintDisplayPage(GetSectionDrawLeft(i) - ZoomOut(FHScrollBar.Position),  // 原始X向偏移
+                                vOffsetY, FDataBmpCanvas, vPaintInfo);
                         }
 
-                        GDI.BitBlt(FDC, aRect.Left, aRect.Top, aRect.Width, aRect.Height,
-                            FMemDC, aRect.Left, aRect.Top, GDI.SRCCOPY);
+                        for (int i = 0; i <= vPaintInfo.TopItems.Count - 1; i++)  // 绘制顶层Ite
+                            vPaintInfo.TopItems[i].PaintTop(FDataBmpCanvas);
+
+                        DoPaintViewAfter(FDataBmpCanvas);
+                    }
+                    finally
+                    {
+                        vPaintInfo.RestoreCanvasScale(FDataBmpCanvas, vScaleInfo);
                     }
                 }
                 finally
                 {
-                    GDI.DeleteObject(vBitmap);
+                    vPaintInfo.Dispose();
                 }
+
+                GDI.BitBlt(FDC, aRect.Left, aRect.Top, aRect.Width, aRect.Height,
+                    FDataBmpCanvas.Handle, aRect.Left, aRect.Top, GDI.SRCCOPY);
+
 
                 User.InvalidateRect(this.Handle, ref aRect, 0);  // 只更新变动区域，防止闪烁，解决BitBlt光标滞留问题
                 User.UpdateWindow(this.Handle);
@@ -2505,7 +2483,7 @@ namespace HC.View
                             byte vByte = 0;
                             vByte = (byte)aStream.ReadByte();  // 节数量
                                                                // 各节数据
-                        FSections[0].LoadFromStream(aStream, FStyle, AFileVersion);
+                            FSections[0].LoadFromStream(aStream, FStyle, AFileVersion);
                             for (int i = 1; i <= vByte - 1; i++)
                             {
                                 HCSection vSection = NewDefaultSection();
@@ -2541,6 +2519,7 @@ namespace HC.View
             DeleteUnUsedStyle(FStyle, FSections, vParts);
 
             XmlDocument vXml = new XmlDocument();
+            vXml.PreserveWhitespace = true;
             //vXml. = "1.0";
             //vXml.DocumentElement
             XmlElement vElement = vXml.CreateElement("HCView");
@@ -2554,7 +2533,7 @@ namespace HC.View
             vElement.AppendChild(vNode);
 
             vNode = vXml.CreateElement("sections");
-            vNode.Attributes["count"].Value = FSections.Count.ToString();  // 节数量
+            vNode.SetAttribute("count", FSections.Count.ToString());  // 节数量
             vElement.AppendChild(vNode);
 
             for (int i = 0; i <= FSections.Count - 1; i++)  // 各节数据
@@ -2581,16 +2560,17 @@ namespace HC.View
                     this.Clear();
 
                     XmlDocument vXml = new XmlDocument();
+                    vXml.PreserveWhitespace = true;
                     vXml.Load(aFileName);
                     if (vXml.DocumentElement.Name == "HCView")
                     {
-                        if (vXml.DocumentElement.Attributes["EXT"].ToString() != HC.HC_EXT)
+                        if (vXml.DocumentElement.Attributes["EXT"].Value != HC.HC_EXT)
                             return;
 
-                        string vVersion = vXml.DocumentElement.Attributes["ver"].ToString();
-                        byte vLang = byte.Parse(vXml.DocumentElement.Attributes["lang"].ToString());
+                        string vVersion = vXml.DocumentElement.Attributes["ver"].Value;
+                        byte vLang = byte.Parse(vXml.DocumentElement.Attributes["lang"].Value);
 
-                        for (int i = 0; i < vXml.DocumentElement.ChildNodes.Count - 1; i++)
+                        for (int i = 0; i <= vXml.DocumentElement.ChildNodes.Count - 1; i++)
                         {
                             XmlElement vNode = vXml.DocumentElement.ChildNodes[i] as XmlElement;
                             if (vNode.Name == "style")
@@ -2648,7 +2628,7 @@ namespace HC.View
             vHtmlTexts.Append("</head>");
 
             vHtmlTexts.Append("<body>");
-            for (int i = 0; i < FSections.Count - 1; i++)
+            for (int i = 0; i <= FSections.Count - 1; i++)
               vHtmlTexts.Append(FSections[i].ToHtml(vPath));
 
             vHtmlTexts.Append("</body>");
@@ -2812,10 +2792,34 @@ namespace HC.View
             return PrintResult.prOk;
         }
 
+        public PrintResult PrintOdd(string aPrinter)
+        {
+            List<int> vPages = new List<int>();
+            for (int i = 0; i < PageCount; i++)
+            {
+                if ((i & 1) != 1)  // 偶数序号是奇数页
+                    vPages.Add(i);
+            }
+
+            return Print(aPrinter, 1, vPages.ToArray());
+        }
+
+        public PrintResult PrintEven(string aPrinter)
+        {
+            List<int> vPages = new List<int>();
+            for (int i = 0; i < PageCount; i++)
+            {
+                if ((i & 1) == 1)  // 奇数序号是偶数页
+                    vPages.Add(i);
+            }
+
+            return Print(aPrinter, 1, vPages.ToArray());
+        }
+
         /// <summary> 从当前行打印当前页(仅限正文) </summary>
         /// <param name="APrintHeader"> 是否打印页眉 </param>
         /// <param name="APrintFooter"> 是否打印页脚 </param>
-        public PrintResult PrintCurPageByActiveLine(bool APrintHeader, bool  APrintFooter)
+        public PrintResult PrintCurPageByActiveLine(bool APrintHeader, bool APrintFooter)
         {
             PrintDocument vPrinter = new PrintDocument();
             PrintResult Result = PrintResult.prError;

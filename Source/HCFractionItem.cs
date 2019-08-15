@@ -401,8 +401,8 @@ namespace HC.View
         public override void ToXml(System.Xml.XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["toptext"].Value = FTopText;
-            aNode.Attributes["bottomtext"].Value = FBottomText;
+            aNode.SetAttribute("toptext", FTopText);
+            aNode.SetAttribute("bottomtext", FBottomText);
         }
 
         public override void ParseXml(System.Xml.XmlElement aNode)

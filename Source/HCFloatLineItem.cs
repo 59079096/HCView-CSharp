@@ -242,10 +242,10 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["sx"].Value = FStartPt.X.ToString();
-            aNode.Attributes["sy"].Value = FStartPt.Y.ToString();
-            aNode.Attributes["ex"].Value = FEndPt.X.ToString();
-            aNode.Attributes["ey"].Value = FEndPt.Y.ToString();
+            aNode.SetAttribute("sx", FStartPt.X.ToString());
+            aNode.SetAttribute("sy", FStartPt.Y.ToString());
+            aNode.SetAttribute("ex", FEndPt.X.ToString());
+            aNode.SetAttribute("ey", FEndPt.Y.ToString());
         }
 
         public override void ParseXml(XmlElement aNode)

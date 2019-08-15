@@ -317,8 +317,8 @@ namespace HC.View
         public override void ToXml(System.Xml.XmlElement aNode)
         {
  	        base.ToXml(aNode);
-            aNode.Attributes["format"].Value = FFormat;
-            aNode.Attributes["datetime"].Value = FDateTime.ToString();
+            aNode.SetAttribute("format", FFormat);
+            aNode.SetAttribute("datetime", FDateTime.ToString());
         }
 
         public override void  ParseXml(System.Xml.XmlElement aNode)

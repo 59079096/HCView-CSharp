@@ -676,6 +676,7 @@ namespace HC.View
                             {
                                 FRows[vDestRow][vDestCol].PaintTo(
                                     vCellDrawLeft, vDestCellDataDrawTop - FCellVPadding,
+                                    vCellDrawLeft + FColWidths[vC] + GetColSpanWidth(vDestRow, vDestCol),
                                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
                                     0, FCellHPadding, FCellVPadding, aCanvas, aPaintInfo);
 
@@ -2653,14 +2654,14 @@ namespace HC.View
             return Result;
         }
 
-        public override void DeleteActiveDataItems(int aStartNo, int aEndNo)
+        public override void DeleteActiveDataItems(int aStartNo, int aEndNo, bool aKeepPara)
         {
             if (FSelectCellRang.EditCell())
             {
                 HCProcedure vEvent = delegate()
                 {
                     HCTableCell vEditCell = FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol];
-                    vEditCell.CellData.DeleteActiveDataItems(aStartNo, aEndNo);
+                    vEditCell.CellData.DeleteActiveDataItems(aStartNo, aEndNo, aKeepPara);
                 };
 
                 CellChangeByAction(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEvent);
@@ -3629,12 +3630,12 @@ namespace HC.View
             for (int vC = 1; vC <= FColWidths.Count - 1; vC++)
                 vS = vS + "," + FColWidths[vC].ToString();
 
-            aNode.Attributes["bordervisible"].Value = FBorderVisible.ToString();
-            aNode.Attributes["borderwidth"].Value = FBorderWidth.ToString();
-            aNode.Attributes["row"].Value = FRows.Count.ToString();
-            aNode.Attributes["col"].Value = FColWidths.Count.ToString();
-            aNode.Attributes["colwidth"].Value = vS;
-            aNode.Attributes["link"].Value = "";
+            aNode.SetAttribute("bordervisible", FBorderVisible.ToString());
+            aNode.SetAttribute("borderwidth", FBorderWidth.ToString());
+            aNode.SetAttribute("row", FRows.Count.ToString());
+            aNode.SetAttribute("col", FColWidths.Count.ToString());
+            aNode.SetAttribute("colwidth", vS);
+            aNode.SetAttribute("link", "");
 
             for (int vR = 0; vR <= FRows.Count - 1; vR++)
             {
@@ -3663,7 +3664,7 @@ namespace HC.View
 
             // 加载各列标准宽度
             FColWidths.Clear();
-            string[] vStrings = aNode.Attributes["colwidth"].Value.Split(new string[] { "," }, StringSplitOptions.None);
+            string[] vStrings = aNode.Attributes["colwidth"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i <= vC - 1; i++)
                 FColWidths.Add(int.Parse(vStrings[i]));
 
@@ -3924,7 +3925,7 @@ namespace HC.View
 
                 if (vCellDrawBottom - vCellDataDrawTop > FCellVPadding)
                 {
-                    FRows[ARow][vC].PaintTo(vCellDrawLeft, vCellDataDrawTop - FCellVPadding,
+                    FRows[ARow][vC].PaintTo(vCellDrawLeft, vCellDataDrawTop - FCellVPadding, vCellRect.Right,
                         vCellDrawBottom, ATop, ABottom, 0, FCellHPadding, FCellVPadding, ACanvas, APaintInfo);
                 }
            
@@ -4069,7 +4070,7 @@ namespace HC.View
                     if (vRect.Bottom > ABottom)
                         vRect.Bottom = ABottom;
 
-                    FRows[vR][vC].PaintTo(vCellLeft, vCellTop, vCellBottom, ATop, ABottom, 0,
+                    FRows[vR][vC].PaintTo(vCellLeft, vCellTop, vRect.Right, vCellBottom, ATop, ABottom, 0,
                     FCellHPadding, FCellVPadding, ACanvas, APaintInfo);
 
                     if (FBorderVisible || (!APaintInfo.Print))

@@ -539,7 +539,7 @@ namespace HC.View
             FReadOnly = value;
         }
 
-        public void DeleteItems(int aStartNo, int aEndNo = -1)
+        public void DeleteItems(int aStartNo, int aEndNo, bool aKeepPara)
         {
             if (!CanEdit()) return;
 
@@ -567,21 +567,39 @@ namespace HC.View
             if (Items.Count == 0)  // 删除没有了，不用SetEmptyData，因为其无Undo
             {
                 HCCustomItem vItem = CreateDefaultTextItem();
+                this.CurStyleNo = vItem.StyleNo;
                 vItem.ParaFirst = true;
                 Items.Add(vItem);
+                vDelCount--;
                 UndoAction_InsertItem(0, 0);
             }
             else
-                if (vStartParaFirst && (!Items[aStartNo].ParaFirst))
+            if (vStartParaFirst)  // 段首删除了
+            {
+                if ((aStartNo < Items.Count - 1) && (!Items[aStartNo].ParaFirst))  // 下一个不是段首
                 {
                     UndoAction_ItemParaFirst(aStartNo, 0, true);
                     Items[aStartNo].ParaFirst = true;
                 }
+                else  // 段删除完了
+                if (aKeepPara)
+                {
+                    HCCustomItem vItem = CreateDefaultTextItem();
+                    this.CurStyleNo = vItem.StyleNo;
+                    vItem.ParaFirst = true;
+                    Items.Insert(aStartNo, vItem);
+                    vDelCount--;
+                    UndoAction_InsertItem(aStartNo, 0);
+                }
+            }
 
             ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
 
+            if (vStartParaFirst && aKeepPara)
+                ReSetSelectAndCaret(aStartNo, 0);
+            else
             if (aStartNo > 0)
                 ReSetSelectAndCaret(aStartNo - 1);
             else  // 从第一个开始删除
@@ -1163,6 +1181,7 @@ namespace HC.View
                         if (vParaFirstItemNo == vParaLastItemNo)  // 段就一个Item全删除了
                         {
                             HCCustomItem vNewItem = CreateDefaultTextItem();
+                            this.CurStyleNo = vNewItem.StyleNo; // 防止RectItem删除插入文本当前样式不正确
                             vNewItem.ParaFirst = true;
                             Items.Insert(SelectInfo.StartItemNo, vNewItem);
                             UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
@@ -1409,6 +1428,7 @@ namespace HC.View
                                 if (SelectInfo.EndItemNo == vFormatLastItemNo)
                                 {
                                     HCCustomItem vNewItem = CreateDefaultTextItem();
+                                    this.CurStyleNo = vNewItem.StyleNo; // 防止RectItem删除插入文本当前样式不正确
                                     vNewItem.ParaFirst = true;
                                     Items.Insert(SelectInfo.StartItemNo, vNewItem);
                                     UndoAction_InsertItem(SelectInfo.StartItemNo, vNewItem.Length);
@@ -1697,6 +1717,12 @@ namespace HC.View
                         UndoAction_ItemParaFirst(vInsPos, 0, Items[vInsPos - 1].ParaFirst);
                         Items[vInsPos].ParaFirst = Items[vInsPos - 1].ParaFirst;
 
+                        if (Items[vInsPos - 1].PageBreak)
+                        {
+                            UndoAction_ItemPageBreak(vInsPos, 0, true);
+                            Items[vInsPos].PageBreak = true;
+                        }
+
                         UndoAction_DeleteItem(vInsPos - 1, 0);
                         Items.RemoveAt(vInsPos - 1);  // 删除空行
 
@@ -1941,6 +1967,13 @@ namespace HC.View
                             {
                                 UndoAction_ItemParaFirst(aIndex, 0, false);
                                 Items[aIndex].ParaFirst = false;
+
+                                if (Items[aIndex].PageBreak)
+                                {
+                                    UndoAction_ItemPageBreak(aIndex, 0, false);
+                                    Items[aIndex].PageBreak = false;
+                                    aItem.PageBreak = true;
+                                }
                             }
                         }
                     }
@@ -3785,6 +3818,7 @@ namespace HC.View
                         {
                             vCurItem = CreateDefaultTextItem();
                             vCurItem.ParaFirst = true;
+                            vCurItem.PageBreak = aPageBreak;
                             Items.Insert(SelectInfo.StartItemNo + 1, vCurItem);
                             UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
 
@@ -4734,7 +4768,7 @@ namespace HC.View
             Style.UpdateInfoReCaret(false);
         }
 
-        public void DeleteActiveDataItems(int aStartNo, int aEndNo)
+        public void DeleteActiveDataItems(int aStartNo, int aEndNo, bool aKeepPara)
         {
             if ((aStartNo < 0) || (aStartNo > Items.Count - 1))
                 return;
@@ -4751,7 +4785,7 @@ namespace HC.View
                 else
                     UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
-                vRectItem.DeleteActiveDataItems(aStartNo, aEndNo);
+                vRectItem.DeleteActiveDataItems(aStartNo, aEndNo, aKeepPara);
                 if (vRectItem.SizeChanged)
                 {
                     int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
@@ -4764,7 +4798,7 @@ namespace HC.View
                     this.FormatInit();
             }
             else
-                DeleteItems(aStartNo, aEndNo);
+                DeleteItems(aStartNo, aEndNo, aKeepPara);
         }
 
         /// <summary> 添加Data到当前 </summary>

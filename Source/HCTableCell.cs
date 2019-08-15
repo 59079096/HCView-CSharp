@@ -347,13 +347,13 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["width"].Value = FWidth.ToString();
-            aNode.Attributes["height"].Value = FHeight.ToString();
-            aNode.Attributes["rowspan"].Value = FRowSpan.ToString();
-            aNode.Attributes["colspan"].Value = FColSpan.ToString();
-            aNode.Attributes["vert"].Value = ((byte)FAlignVert).ToString();
-            aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackgroundColor);
-            aNode.Attributes["border"].Value = HC.GetBorderSidePro(FBorderSides);
+            aNode.SetAttribute("width", FWidth.ToString());
+            aNode.SetAttribute("height", FHeight.ToString());
+            aNode.SetAttribute("rowspan", FRowSpan.ToString());
+            aNode.SetAttribute("colspan", FColSpan.ToString());
+            aNode.SetAttribute("vert", ((byte)FAlignVert).ToString());
+            aNode.SetAttribute("bkcolor", HC.GetColorXmlRGB(FBackgroundColor));
+            aNode.SetAttribute("border", HC.GetBorderSidePro(FBorderSides));
 
             if (FCellData != null)  // 存数据
             {
@@ -376,10 +376,13 @@ namespace HC.View
             if ((FRowSpan < 0) || (FColSpan < 0))
             {
                 FCellData.Dispose();
-                //FCellData = null;
+                FCellData = null;
             }
             else
+            {
+                FCellData.Width = FWidth;  // // 不准确的赋值，应该减去2个水平padding，加载时使用无大碍
                 FCellData.ParseXml(aNode.SelectSingleNode("items") as XmlElement);
+            }
         }
 
         public void GetCaretInfo(int aItemNo, int aOffset, byte aCellHPadding, byte aCellVPadding, ref HCCaretInfo aCaretInfo)
@@ -405,15 +408,15 @@ namespace HC.View
         /// <param name="aDataScreenBottom">屏幕区域Bottom</param>
         /// <param name="aVOffset">指定从哪个位置开始的数据绘制到目标区域的起始位置</param>
         /// <param name="ACanvas">画布</param>
-        public  void PaintTo(int aDrawLeft, int aDrawTop, int aDataDrawBottom, 
+        public void PaintTo(int aDrawLeft, int aDrawTop, int aDrawRight, int aDataDrawBottom, 
             int aDataScreenTop, int aDataScreenBottom, int aVOffset, byte aCellHPadding, byte aCellVPadding,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FCellData != null)
             {
                 int vTop = aDrawTop + GetCellDataTop(aCellVPadding);
-                FCellData.PaintData(aDrawLeft + aCellHPadding, vTop, aDataDrawBottom, aDataScreenTop,
-                    aDataScreenBottom, aVOffset, ACanvas, APaintInfo);
+                FCellData.PaintData(aDrawLeft + aCellHPadding, vTop, aDrawRight - aCellHPadding, 
+                    aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aVOffset, ACanvas, APaintInfo);
             }
         }
 

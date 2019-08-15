@@ -541,7 +541,7 @@ namespace HC.View
 
         protected override void DoDrawItemPaintContent(HCCustomData aData, int aDrawItemNo,
             RECT aDrawRect, RECT aClearRect, string aDrawText,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if ((FOnDrawItemAnnotate != null) && DrawItemOfAnnotate(aDrawItemNo, aCanvas, aClearRect))  // 当前DrawItem是某批注中的一部分
@@ -584,7 +584,7 @@ namespace HC.View
             }
 
             base.DoDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
-                aDataDrawLeft, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
+                aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
         protected void DoInsertAnnotate(object sender, EventArgs e)
@@ -655,12 +655,12 @@ namespace HC.View
             }
         }
 
-        public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawBottom,
+        public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawRight, int aDataDrawBottom,
             int aDataScreenTop, int aDataScreenBottom, int aVOffset, int aFirstDItemNo, int aLastDItemNo,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             CheckAnnotateRange(aFirstDItemNo, aLastDItemNo);  // 指定DrawItem范围内的批注获取各自的DrawItem范围
-            base.PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawBottom, aDataScreenTop,
+            base.PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawRight, aDataDrawBottom, aDataScreenTop,
                 aDataScreenBottom, aVOffset, aFirstDItemNo, aLastDItemNo, aCanvas, aPaintInfo);
             FDrawItemAnnotates.Clear();
         }

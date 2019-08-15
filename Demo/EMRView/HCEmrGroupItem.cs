@@ -14,6 +14,7 @@ using System.Text;
 using HC.Win32;
 using HC.View;
 using System.IO;
+using System.Xml;
 
 namespace EMRView
 {
@@ -76,6 +77,18 @@ namespace EMRView
             string vS = DeProp.GetPropertyString((source as DeGroup).Propertys);
             DeProp.SetPropertyString(vS, FPropertys);
             FReadOnly = (source as DeGroup).ReadOnly;
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
         }
 
         public void ToJson(string aJsonObj)

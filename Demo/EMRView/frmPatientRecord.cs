@@ -56,7 +56,7 @@ namespace EMRView
 
             using (MemoryStream vSM = new MemoryStream())
             {
-                emrMSDB.DB.GetTemplateContent(vTemplateID, vSM);  // 取模板内容
+                emrMSDB.DB.GetTemplateContent(vTemplateID, vSM);  // 取模板内容(流)
 
                 TabPage vPage = null;
                 frmRecord vFrmRecord = null;
@@ -64,17 +64,33 @@ namespace EMRView
                 NewPageAndRecord(vRecordInfo, ref vPage, ref vFrmRecord);
                 emrMSDB.DB.GetDataSetElement(vRecordInfo.DesID);
 
-                if (vSM.Length > 0)
+                if (vSM.Length > 0)  // 模板内容不为空
                 {
+                    // 获取当前数据集有哪些数据可以被替换的数据
+                    // 放到本地DataTable：FDataElementSetMacro中
                     PrepareSyncData(vRecordInfo.DesID);
 
-                    vFrmRecord.EmrView.OnSyncDeItem = DoSyncDeItem;
+                    // 赋值模板加载时替换数据元内容的方法
+                    vFrmRecord.EmrView.OnSyncDeItem = DoSyncDeItem;  
                     try
                     {
-                        vFrmRecord.EmrView.LoadFromStream(vSM);
-                        SyncDeGroupByStruct(vFrmRecord.EmrView);
-                        vFrmRecord.EmrView.FormatData();
-                        vFrmRecord.EmrView.IsChanged = true;
+                        vFrmRecord.EmrView.BeginUpdate();
+                        try
+                        {
+                            // 加载模板，加载过程会调用DoSyncDeItem
+                            // 给每一个数据元到FDataElementSetMacro中找
+                            // 自己要替换为什么内容的机会
+                            vFrmRecord.EmrView.LoadFromStream(vSM);
+
+                            // 替换数据组的内容
+                            SyncDeGroupByStruct(vFrmRecord.EmrView);
+                            vFrmRecord.EmrView.FormatData();
+                            vFrmRecord.EmrView.IsChanged = true;
+                        }
+                        finally
+                        {
+                            vFrmRecord.EmrView.EndUpdate();
+                        }
                     }
                     finally
                     {
@@ -301,22 +317,23 @@ namespace EMRView
 
                 while (vIndex >= 0)
                 {
-                    if (HCDomainItem.IsBeginMark(vData.Items[vIndex]))
+                    if (HCDomainItem.IsBeginMark(vData.Items[vIndex]))  // 是数据组开始位置
                     {
-                        string vDeGroupIndex = (vData.Items[vIndex] as DeGroup)[DeProp.Index];
+                        string vDeGroupIndex = (vData.Items[vIndex] as DeGroup)[DeProp.Index];  // 数据组标识
                         DataRow[] vRows = FDataElementSetMacro.Select("MacroType=3 and ObjID=" + vDeGroupIndex);
-                        if (vRows.Length > 0)
+                        if (vRows.Length > 0)  // 有该数据组的引用替换配置信息
                         {
+                            // 得到指定的数据集对应的病历结构xml文档，并从xml中找该数据组的节点
                             XmlElement vXmlNode = GetDeItemNodeFromStructDoc(PatientInfo.PatID,
                                 int.Parse(vRows[0]["Macro"].ToString()), vDeGroupIndex);
 
-                            if (vXmlNode != null)
+                            if (vXmlNode != null)  // 找到了该数据组对应的节点
                             {
                                 string vText = "";
                                 for (int j = 0; j < vXmlNode.ChildNodes.Count; j++)
                                     vText = vText + vXmlNode.ChildNodes[j].InnerText;
 
-                                if (vText != "")
+                                if (vText != "")  // 得到不为空的节点内容并赋值给数据组
                                     aEmrView.SetDeGroupText(vData, vIndex, vText);
                             }
                         }
@@ -661,6 +678,7 @@ namespace EMRView
                     vFrmRecord.EmrView.ReadOnly = true;
            
                     tabRecord.SelectedTab = vPage;
+                    vFrmRecord.EmrView.Focus();
                 }
             }
         }
@@ -716,15 +734,15 @@ namespace EMRView
 
         private XmlDocument GetStructureToXml(frmRecord aFrmRecord)
         {
-            HCItemTraverse vItemTraverse = new HCItemTraverse();
-            XmlStruct vXmlStruct = new XmlStruct();
-            vItemTraverse.Areas.Add(SectionArea.saPage);
-            vItemTraverse.Process = vXmlStruct.TraverseItem;
+            HCItemTraverse vItemTraverse = new HCItemTraverse();  // 准备存放遍历信息的对象
+            XmlStruct vXmlStruct = new XmlStruct();  
+            vItemTraverse.Areas.Add(SectionArea.saPage);  // 遍历正文中的信息
+            vItemTraverse.Process = vXmlStruct.TraverseItem;  // 遍历到每一个文本对象是触发的事件
 
             vXmlStruct.XmlDoc.DocumentElement.SetAttribute("DesID", (aFrmRecord.Tag as RecordInfo).DesID.ToString());
             vXmlStruct.XmlDoc.DocumentElement.SetAttribute("DocName", (aFrmRecord.Tag as RecordInfo).RecName);
 
-            aFrmRecord.EmrView.TraverseItem(vItemTraverse);
+            aFrmRecord.EmrView.TraverseItem(vItemTraverse);  // 开始遍历
             return vXmlStruct.XmlDoc;
         }
 
@@ -912,25 +930,27 @@ namespace EMRView
 
         private void 预览全部病程ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
-                return;
+            frmRecordSet vFrmRecordSet = new frmRecordSet();
+            vFrmRecordSet.ShowDialog(PatientInfo.PatID, PatientInfo.VisitID);
+            //if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
+            //    return;
 
-            int vDesPID = -1, vDesID = -1, vRecordID = -1;
-            GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
+            //int vDesPID = -1, vDesID = -1, vRecordID = -1;
+            //GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
-            if (vDesPID == DataSetInfo.Proc)
-            {
-                int vPageIndex = GetRecordPageIndex(-vDesPID);
-                if (vPageIndex < 0)
-                    LoadPatientDataSetContent(vDesPID);
-                else
-                    tabRecord.SelectedIndex = vPageIndex;
-            }
+            //if (vDesPID == DataSetInfo.Proc)
+            //{
+            //    int vPageIndex = GetRecordPageIndex(-vDesPID);
+            //    if (vPageIndex < 0)
+            //        LoadPatientDataSetContent(vDesPID);
+            //    else
+            //        tabRecord.SelectedIndex = vPageIndex;
+            //}
         }
 
         private void 导出XML结构ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-                        if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
+            if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
                 return;
 
             int vDesPID = -1, vDesID = -1, vRecordID = -1;

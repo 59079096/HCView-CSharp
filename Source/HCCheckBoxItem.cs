@@ -175,7 +175,7 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["check"].Value = FChecked.ToString();
+            aNode.SetAttribute("check", FChecked.ToString());
             aNode.InnerText = FText;
         }
 

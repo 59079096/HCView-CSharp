@@ -231,10 +231,12 @@ namespace HC.View
 
         public string ToCSS()
         {
-            string Result = string.Format(" font-size: #.#pt", FSize)
+            string Result = string.Format(" font-size: {0:N1}pt", FSize)
                 + string.Format(" font-family: {0};", FFamily)
-                + string.Format(" color:rgb({0}, {1}, {2});", FColor.R, FColor.G, FColor.B)
-                + string.Format(" background-color:rgb({0}, {1}, {2});", FBackColor.R, FBackColor.G, FBackColor.B);
+                + string.Format(" color:rgb({0}, {1}, {2});", FColor.R, FColor.G, FColor.B);
+
+            if (((FBackColor.R != 255) && (FBackColor.G != 255) && (FBackColor.B != 255)) && (FBackColor != HC.HCTransparentColor))
+                Result += string.Format(" background-color:rgb({0}, {1}, {2});", FBackColor.R, FBackColor.G, FBackColor.B);
 
             if (FFontStyles.Contains((byte)HCFontStyle.tsItalic))
                 Result = Result + string.Format(" font-style: {0};", "italic");
@@ -310,10 +312,10 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["size"].Value = string.Format("{0:0.#}", FSize);
-            aNode.Attributes["color"].Value = HC.GetColorXmlRGB(FColor);
-            aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackColor);
-            aNode.Attributes["style"].Value = GetFontStyleXML();
+            aNode.SetAttribute("size", string.Format("{0:0.#}", FSize));
+            aNode.SetAttribute("color", HC.GetColorXmlRGB(FColor));
+            aNode.SetAttribute("bkcolor", HC.GetColorXmlRGB(FBackColor));
+            aNode.SetAttribute("style", GetFontStyleXML());
             aNode.InnerText = FFamily;
         }
 
@@ -324,7 +326,7 @@ namespace HC.View
             FColor = HC.GetXmlRGBColor(aNode.Attributes["color"].Value);
             FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
 
-            string[] vsStyles = aNode.Attributes["style"].Value.Split(new string[] { "," }, StringSplitOptions.None);
+            string[] vsStyles = aNode.Attributes["style"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < vsStyles.Length; i++)
             {
                 if (vsStyles[i] == "bold")

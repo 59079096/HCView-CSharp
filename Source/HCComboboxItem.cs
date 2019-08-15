@@ -455,7 +455,7 @@ namespace HC.View
                         vText = vText + HC.sLineBreak + FItems[i];
                 }
 
-                aNode.Attributes["item"].Value = vText;
+                aNode.SetAttribute("item", vText);
             }
         }
 

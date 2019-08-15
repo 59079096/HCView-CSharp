@@ -82,8 +82,8 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["autoheight"].Value = FAutoHeight.ToString();
-            aNode.Attributes["height"].Value = FHeight.ToString();
+            aNode.SetAttribute("autoheight", FAutoHeight.ToString());
+            aNode.SetAttribute("height", FHeight.ToString());
             for (int i = 0; i <= this.Count - 1; i++)
             {
                 XmlElement vNode = aNode.OwnerDocument.CreateElement("cell");

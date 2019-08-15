@@ -60,7 +60,7 @@ namespace HC.View
         RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo);
 
     public delegate void SectionDrawItemPaintEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-        int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo);
+        int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo);
 
     public delegate void SectionDataItemNotifyEventHandler(object sender, HCCustomData aData, HCCustomItem aItem);
 
@@ -168,28 +168,28 @@ namespace HC.View
         }
 
         private void DoDataDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FOnDrawItemPaintBefor != null)
-                FOnDrawItemPaintBefor(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+                FOnDrawItemPaintBefor(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
         private void DoDataDrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, RECT aClearRect, string aDrawText,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnDrawItemPaintContent != null)
                 FOnDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
-                    aDataDrawLeft, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
+                    aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
         private void DoDataDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-            int aDataDrawLeft, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FOnDrawItemPaintAfter != null)
-                FOnDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft,
+                FOnDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
@@ -1371,7 +1371,7 @@ namespace HC.View
         {
             int vHeaderDataDrawTop = vPaperDrawTop + GetHeaderPageDrawTop();
 
-            FHeader.PaintData(vPageDrawLeft, vHeaderDataDrawTop,
+            FHeader.PaintData(vPageDrawLeft, vHeaderDataDrawTop, vPageDrawRight,
                 vPageDrawTop, Math.Max(vHeaderDataDrawTop, 0),
                 Math.Min(vPageDrawTop, aPaintInfo.WindowHeight), 0, aCanvas, aPaintInfo);
 
@@ -1395,7 +1395,7 @@ namespace HC.View
         private void PaintFooter(int vPaperDrawBottom, int vPageDrawLeft, int vPageDrawRight, int vPageDrawBottom, int vMarginLeft,
             int vMarginRight, int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            FFooter.PaintData(vPageDrawLeft, vPageDrawBottom, vPaperDrawBottom,
+            FFooter.PaintData(vPageDrawLeft, vPageDrawRight, vPageDrawBottom, vPaperDrawBottom,
                 Math.Max(vPageDrawBottom, 0), Math.Min(vPaperDrawBottom, aPaintInfo.WindowHeight),
                 0, aCanvas, aPaintInfo);
 
@@ -1426,6 +1426,7 @@ namespace HC.View
             /* 绘制数据，把Data中指定位置的数据，绘制到指定的页区域中，并按照可显示出来的区域约束 }*/
             FPage.PaintData(vPageDrawLeft,  // 当前页数据要绘制到的Left
                 vPageDrawTop,     // 当前页数据要绘制到的Top
+                vPageDrawRight,   // 当前页数据要绘制到的Right
                 vPageDrawBottom,  // 当前页数据要绘制的Bottom
                 vPageDataScreenTop,     // 界面呈现当前页数据的Top位置
                 vPageDataScreenBottom,  // 界面呈现当前页数据Bottom位置
@@ -2300,11 +2301,11 @@ namespace HC.View
             return ActiveDataChangeByAction(vEvent);
         }
 
-        public bool DeleteActiveDataItems(int aStartNo, int aEndNo)
+        public bool DeleteActiveDataItems(int aStartNo, int aEndNo, bool aKeepPara)
         {
             HCFunction vEvent = delegate()
             {
-                FActiveData.DeleteActiveDataItems(aStartNo, aEndNo);
+                FActiveData.DeleteActiveDataItems(aStartNo, aEndNo, aKeepPara);
                 return true;
             };
 
@@ -2453,7 +2454,7 @@ namespace HC.View
             return FPage.SaveToText();
         }
 
-        public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion, bool aNatural = false)
+        public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             long vDataSize = 0;
             bool vArea = false;
@@ -2520,8 +2521,7 @@ namespace HC.View
             if (vLoadParts.Contains(SectionArea.saPage))
                 FPage.LoadFromStream(aStream, FStyle, aFileVersion);
 
-            if (!aNatural)
-                BuildSectionPages(0);
+            BuildSectionPages(0);
         }
 
         public bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -2994,24 +2994,24 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["symmargin"].Value = SymmetryMargin.ToString(); // 是否对称页边距
-            aNode.Attributes["ori"].Value = ((byte)PaperOrientation).ToString();  // 纸张方向
-            aNode.Attributes["pagenovisible"].Value = PageNoVisible.ToString();  // 是否显示页码
+            aNode.SetAttribute("symmargin", SymmetryMargin.ToString()); // 是否对称页边距
+            aNode.SetAttribute("ori", ((byte)PaperOrientation).ToString());  // 纸张方向
+            aNode.SetAttribute("pagenovisible", PageNoVisible.ToString());  // 是否显示页码
 
-            aNode.Attributes["pagesize"].Value =  // 纸张大小
+            aNode.SetAttribute("pagesize",  // 纸张大小
                 ((int)this.PaperSize).ToString()
                 + "," + string.Format("{0:0.#}", this.PaperWidth)
-                + "," + string.Format("{0:0.#}", this.PaperHeight);
+                + "," + string.Format("{0:0.#}", this.PaperHeight));
 
-            aNode.Attributes["margin"].Value =  // 边距
+            aNode.SetAttribute("margin",  // 边距
                 string.Format("{0:0.#}", this.PaperMarginLeft) + ","
                 + string.Format("{0:0.#}", this.PaperMarginTop) + ","
                 + string.Format("{0:0.#}", this.PaperMarginRight) + ","
-                + string.Format("{0:0.#}", this.PaperMarginBottom);
+                + string.Format("{0:0.#}", this.PaperMarginBottom));
 
             // 存页眉
             XmlElement vNode = aNode.OwnerDocument.CreateElement("header");
-            vNode.Attributes["offset"].Value = HeaderOffset.ToString();
+            vNode.SetAttribute("offset", HeaderOffset.ToString());
             Header.ToXml(vNode);
             aNode.AppendChild(vNode);
 
@@ -3031,33 +3031,39 @@ namespace HC.View
             SymmetryMargin = bool.Parse(aNode.Attributes["symmargin"].Value);  // 是否对称页边距
             this.PaperOrientation = (PaperOrientation)(byte.Parse(aNode.Attributes["ori"].Value));  // 纸张方向
 
-            PageNoVisible = bool.Parse(aNode.Attributes["pagenovisible"].Value);  // 是否对称页边距
+            PageNoVisible = bool.Parse(aNode.Attributes["pagenovisible"].Value);  // 是否显示页码
 
             // GetXmlPaper_
-            string[] vStrings = aNode.Attributes["pagesize"].Value.Split(new string[] { "," }, StringSplitOptions.None);
+            string[] vStrings = aNode.Attributes["pagesize"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
             this.PaperSize = (PaperKind)(int.Parse(vStrings[0]));
             this.PaperWidth = int.Parse(vStrings[1]);
             this.PaperHeight = int.Parse(vStrings[2]);
             // GetXmlPaperMargin_
-            vStrings = aNode.Attributes["margin"].Value.Split(new string[] { "," }, StringSplitOptions.None);
+            vStrings = aNode.Attributes["margin"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
             this.PaperMarginLeft = int.Parse(vStrings[0]);
             this.PaperMarginTop = int.Parse(vStrings[1]);
             this.PaperMarginRight = int.Parse(vStrings[2]);
             this.PaperMarginBottom = int.Parse(vStrings[3]);
+
+            Page.Width = this.GetPageWidth();
 
             for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
             {
                 if (aNode.ChildNodes[i].Name == "header")
                 {
                     HeaderOffset = int.Parse(aNode.ChildNodes[i].Attributes["offset"].Value);
+                    Header.Width = Page.Width;
                     Header.ParseXml(aNode.ChildNodes[i] as XmlElement);
                 }
                 else
                 if (aNode.ChildNodes[i].Name == "footer")
+                {
+                    Footer.Width = Page.Width;
                     Footer.ParseXml(aNode.ChildNodes[i] as XmlElement);
+                }
                 else
                 if (aNode.ChildNodes[i].Name == "page")
-                    this.Page.ParseXml(aNode.ChildNodes[i] as XmlElement);
+                    Page.ParseXml(aNode.ChildNodes[i] as XmlElement);
             }
 
             BuildSectionPages(0);

@@ -92,8 +92,8 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["height"].Value = FLineHeight.ToString();
-            aNode.Attributes["style"].Value = ((byte)FLineStyle).ToString();
+            aNode.SetAttribute("height", FLineHeight.ToString());
+            aNode.SetAttribute("style", ((byte)FLineStyle).ToString());
         }
 
         public override void ParseXml(XmlElement aNode)

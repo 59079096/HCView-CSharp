@@ -319,9 +319,9 @@ namespace HC.View
         public override void ToXml(System.Xml.XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["readonly"].Value = FReadOnly.ToString();
-            aNode.Attributes["border"].Value = HC.GetBorderSidePro(FBorderSides);
-            aNode.Attributes["borderwidth"].Value = FBorderWidth.ToString();
+            aNode.SetAttribute("readonly", FReadOnly.ToString());
+            aNode.SetAttribute("border", HC.GetBorderSidePro(FBorderSides));
+            aNode.SetAttribute("borderwidth", FBorderWidth.ToString());
             aNode.InnerText = FText;
         }
 

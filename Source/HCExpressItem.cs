@@ -381,8 +381,8 @@ namespace HC.View
         public override void ToXml(System.Xml.XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["lefttext"].Value = FLeftText;
-            aNode.Attributes["righttext"].Value = FRightText;
+            aNode.SetAttribute("lefttext", FLeftText);
+            aNode.SetAttribute("righttext", FRightText);
         }
 
         public override void ParseXml(System.Xml.XmlElement aNode)

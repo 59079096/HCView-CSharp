@@ -33,7 +33,7 @@ namespace HC.View
             if (aIsUndo)
             {
                 vText = vText.Insert(vAction.Offset - 1, vAction.Text);
-                aCaretOffset = vAction.Offset + vLen - 1;
+                aCaretOffset = vAction.Offset - 1;  // 不 + vLen，防止Offset超过当前CaretDrawItem范围
             }
             else
             {
@@ -145,7 +145,7 @@ namespace HC.View
                         aCaretDrawItemNo = Items[aCaretItemNo + 1].FirstDItemNo;
                     }
                     else  // 删除的不是段首
-                    if (Items[aCaretItemNo + 1].ParaFirst)  // 下一个是段首，光标保持在同段最后
+                    //if (Items[aCaretItemNo + 1].ParaFirst)  // 下一个是段首，光标保持在同段最后
                     {
                         aCaretItemNo--;
                         if (Items[aCaretItemNo].StyleNo > HCStyle.Null)
@@ -153,7 +153,7 @@ namespace HC.View
                         else
                             aCaretOffset = HC.OffsetAfter;
 
-                        aCaretDrawItemNo = (aUndo as HCDataUndo).CaretDrawItemNo - 1;
+                        aCaretDrawItemNo = (aUndo as HCDataUndo).CaretDrawItemNo;// - 1;
                     }
                 }
                 else
@@ -169,8 +169,6 @@ namespace HC.View
                 }
                 else
                     aCaretOffset = 0;
-
-
 
                 Items.RemoveAt(vAction.ItemNo);
                 FItemAddCount--;
@@ -263,7 +261,6 @@ namespace HC.View
             else
                 LoadItemFromStreamAlone(vAction.ItemStream, ref vItem);
         }
-
 
         private void DoUndoRedoAction(HCCustomUndo aUndo, HCCustomUndoAction aAction, bool aIsUndo, ref int aCaretItemNo, ref int aCaretOffset, ref int aCaretDrawItemNo)
         {
@@ -572,12 +569,21 @@ namespace HC.View
             {
                 ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount, FForceClearExtra);
 
-                if (vCaretDrawItemNo < 0)
-                    vCaretDrawItemNo = GetDrawItemNoByOffset(vCaretItemNo, vCaretOffset);
-                else
-                    if (vCaretDrawItemNo > this.DrawItems.Count - 1)
-                        vCaretDrawItemNo = this.DrawItems.Count - 1;
+                int vCaretDI = GetDrawItemNoByOffset(vCaretItemNo, vCaretOffset);  // 因为多个Action不一定每个会有有效的CaretDrawItem，所以需要重新计算一下
 
+                if ((vCaretDrawItemNo < 0) || (vCaretDrawItemNo > this.DrawItems.Count - 1))
+                    vCaretDrawItemNo = vCaretDI;
+                else
+                if (vCaretDI != vCaretDrawItemNo)
+                {
+                    if ((DrawItems[vCaretDrawItemNo].ItemNo == vCaretItemNo) && (DrawItems[vCaretDrawItemNo].CharOffs == vCaretOffset))  // 换行
+                    {
+
+                    }
+                    else
+                        vCaretDrawItemNo = vCaretDI;  // 纠正
+                }
+                
                 CaretDrawItemNo = vCaretDrawItemNo;
 
                 Style.UpdateInfoReCaret();

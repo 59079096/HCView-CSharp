@@ -421,8 +421,8 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.Attributes["sup"].Value = FSupText;
-            aNode.Attributes["sub"].Value = FSubText;
+            aNode.SetAttribute("sup", FSupText);
+            aNode.SetAttribute("sub", FSubText);
         }
 
         public override void ParseXml(XmlElement aNode)

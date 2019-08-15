@@ -317,20 +317,20 @@ protected void SetFirstIndent(Single value)
 
         public void ToXml(XmlElement aNode)
         {
-            aNode.Attributes["firstindent"].Value = FFirstIndent.ToString();
-            aNode.Attributes["leftindent"].Value = FLeftIndent.ToString();
-            aNode.Attributes["rightindent"].Value = FRightIndent.ToString();
-            aNode.Attributes["bkcolor"].Value = HC.GetColorXmlRGB(FBackColor);
-            aNode.Attributes["spacemode"].Value = GetLineSpaceModeXML_();
-            aNode.Attributes["horz"].Value = GetHorzXML_();
-            aNode.Attributes["vert"].Value = GetVertXML_();
+            aNode.SetAttribute("firstindent", FFirstIndent.ToString());
+            aNode.SetAttribute("leftindent", FLeftIndent.ToString());
+            aNode.SetAttribute("rightindent", FRightIndent.ToString());
+            aNode.SetAttribute("bkcolor", HC.GetColorXmlRGB(FBackColor));
+            aNode.SetAttribute("spacemode", GetLineSpaceModeXML_());
+            aNode.SetAttribute("horz", GetHorzXML_());
+            aNode.SetAttribute("vert", GetVertXML_());
         }
 
         public void ParseXml(XmlElement aNode)
         {
-            FirstIndent = int.Parse(aNode.Attributes["firstindent"].Value);
-            LeftIndent = int.Parse(aNode.Attributes["leftindent"].Value);
-            RightIndent = int.Parse(aNode.Attributes["rightindent"].Value);
+            FirstIndent = float.Parse(aNode.Attributes["firstindent"].Value);
+            LeftIndent = float.Parse(aNode.Attributes["leftindent"].Value);
+            RightIndent = float.Parse(aNode.Attributes["rightindent"].Value);
             FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
             //GetXMLLineSpaceMode_;
             if (aNode.Attributes["spacemode"].Value == "100")

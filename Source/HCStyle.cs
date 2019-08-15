@@ -408,7 +408,7 @@ namespace HC.View
                 Result = Result + HC.sLineBreak + "a.fs" + i.ToString() + " {";
                 Result = Result + FTextStyles[i].ToCSS() + " }"; 
             }
-
+            // 注意单倍行间距，文本底色不为白色也不透明时会造成字符看起来叠加的问题
             for (int i = 0; i <= FParaStyles.Count - 1; i++)
             {
                 Result = Result + HC.sLineBreak + "p.ps" + i.ToString() + " {";
@@ -450,17 +450,17 @@ namespace HC.View
                 {
                     FTextStyles.Clear();
                     XmlElement vNode = aNode.ChildNodes[i] as XmlElement;
-                    for (int j = 0; j < vNode.ChildNodes.Count - 1; i++)
+                    for (int j = 0; j <= vNode.ChildNodes.Count - 1; j++)
                         FTextStyles[NewDefaultTextStyle()].ParseXml(vNode.ChildNodes[j] as XmlElement);
                 }
                 else
-                    if (aNode.ChildNodes[i].Name == "parastyles")
-                    {
-                        FParaStyles.Clear();
-                        XmlElement vNode = aNode.ChildNodes[i] as XmlElement;
-                        for (int j = 0; j < vNode.ChildNodes.Count - 1; i++)
-                            FParaStyles[NewDefaultParaStyle()].ParseXml(vNode.ChildNodes[j] as XmlElement);
-                    }
+                if (aNode.ChildNodes[i].Name == "parastyles")
+                {
+                    FParaStyles.Clear();
+                    XmlElement vNode = aNode.ChildNodes[i] as XmlElement;
+                    for (int j = 0; j <= vNode.ChildNodes.Count - 1; j++)
+                        FParaStyles[NewDefaultParaStyle()].ParseXml(vNode.ChildNodes[j] as XmlElement);
+                }
             }
         }
 
