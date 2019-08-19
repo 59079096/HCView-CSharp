@@ -54,6 +54,31 @@ namespace EMRView
         {
             return (aNode != null) && (aNode.Tag is RecordInfo);
         }
+
+        public static void GetNodeRecordInfo(TreeNode aNode, ref int aDesPID, ref int aDesID, ref int aRecordID)
+        {
+            aDesPID = -1;
+            aDesID = -1;
+            aRecordID = -1;
+
+            if (EMR.TreeNodeIsRecord(aNode))
+            {
+                aDesID = (aNode.Tag as RecordInfo).DesID;
+                aRecordID = (aNode.Tag as RecordInfo).ID;
+
+                aDesPID = -1;
+                TreeNode vNode = aNode;
+                while (vNode.Parent != null)
+                {
+                    vNode = vNode.Parent;
+                    if (EMR.TreeNodeIsRecordDataSet(vNode))
+                    {
+                        aDesPID = (vNode.Tag as RecordDataSetInfo).DesPID;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     public class CustomUserInfo : Object

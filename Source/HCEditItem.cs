@@ -224,6 +224,12 @@ namespace HC.View
 
         public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
         {
+            if (FCaretOffset < 0)
+            {
+                aCaretInfo.Visible = false;
+                return;
+            }
+
             string vS = FText.Substring(0, FCaretOffset);
             OwnerData.Style.ApplyTempStyle(TextStyleNo);
             

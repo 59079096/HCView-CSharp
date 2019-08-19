@@ -24,6 +24,7 @@ namespace EMRView
 {
     public delegate void DeItemInsertEventHandler(HCEmrView aEmrView, HCSection aSection,
         HCCustomData aData, HCCustomItem aItem);
+    public delegate void ImportEventHandler(string aText);
 
     public partial class frmRecord : Form
     {
@@ -518,6 +519,11 @@ namespace EMRView
                 frmRecordPop.Close();
         }
 
+        private void SetEditToolVisible(bool value)
+        {
+            tlbEditTool.Visible = value;
+        }
+
         private void SetPrintToolVisible(bool value)
         {
             if (value)
@@ -644,7 +650,7 @@ namespace EMRView
         /// <summary> 隐藏工具栏 </summary>
         public void HideToolbar()
         {
-            tlbTool.Visible = false;
+            tlbEditTool.Visible = false;
         }
 
         /// <summary> 插入一个数据元 </summary>
@@ -738,6 +744,12 @@ namespace EMRView
         {
             get { return FOnSetDeItemText; }
             set { FOnSetDeItemText = value; }
+        }
+
+        public bool EditToolVisible
+        {
+            get { return tlbEditTool.Visible; }
+            set { SetEditToolVisible(value); }
         }
 
         public bool PrintToolVisible
@@ -894,17 +906,25 @@ namespace EMRView
         {
             OpenFileDialog vOpenDlg = new OpenFileDialog();
             vOpenDlg.Filter = "图像文件|*.bmp; *.jpg; *.jpeg; *.png|Windows Bitmap|*.bmp|JPEG 文件|*.jpg; *.jpge|可移植网络图形|*.png";
-            if (vOpenDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            FEmrView.Enabled = false;
+            try
             {
-                if (vOpenDlg.FileName != "")
+                if (vOpenDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    HCRichData vTopData = FEmrView.ActiveSectionTopLevelData() as HCRichData;
-                    HCImageItem vImageItem = new HCImageItem(vTopData);
-                    vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
-                    vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
-                    Application.DoEvents();
-                    FEmrView.InsertItem(vImageItem);
+                    if (vOpenDlg.FileName != "")
+                    {
+                        HCRichData vTopData = FEmrView.ActiveSectionTopLevelData() as HCRichData;
+                        HCImageItem vImageItem = new HCImageItem(vTopData);
+                        vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
+                        vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
+                        Application.DoEvents();
+                        FEmrView.InsertItem(vImageItem);
+                    }
                 }
+            }
+            finally
+            {
+                FEmrView.Enabled = true;
             }
         }
 
@@ -912,14 +932,22 @@ namespace EMRView
         {
             OpenFileDialog vOpenDlg = new OpenFileDialog();
             vOpenDlg.Filter = "GIF动画文件|*.gif";
-            if (vOpenDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            FEmrView.Enabled = false;
+            try
             {
-                if (vOpenDlg.FileName != "")
+                if (vOpenDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    HCGifItem vGifItem = new HCGifItem(FEmrView.ActiveSectionTopLevelData());
-                    vGifItem.LoadFromFile(vOpenDlg.FileName);
-                    FEmrView.InsertItem(vGifItem);
+                    if (vOpenDlg.FileName != "")
+                    {
+                        HCGifItem vGifItem = new HCGifItem(FEmrView.ActiveSectionTopLevelData());
+                        vGifItem.LoadFromFile(vOpenDlg.FileName);
+                        FEmrView.InsertItem(vGifItem);
+                    }
                 }
+            }
+            finally
+            {
+                FEmrView.Enabled = true;
             }
         }
 

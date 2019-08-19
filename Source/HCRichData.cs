@@ -2173,6 +2173,22 @@ namespace HC.View
             }
             else
             {
+                if (aText.IndexOf("\r\n") >= 0)
+                {
+                    Undo_GroupBegin(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                    try
+                    {
+                        DeleteItems(SelectInfo.StartItemNo, SelectInfo.StartItemNo, true);
+                        InsertText(aText);
+                    }
+                    finally
+                    {
+                        Undo_GroupEnd(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                    }
+
+                    return;
+                }
+
                 Undo_New();
                 UndoAction_SetItemText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, aText);
                 Items[SelectInfo.StartItemNo].Text = aText;
@@ -4857,8 +4873,11 @@ namespace HC.View
                     {
                         UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
                         vTextItem.Text = AText + vTextItem.Text;
-                        if (ANewPara)
+                        if ((ANewPara) && (!vTextItem.ParaFirst))
+                        {
+                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
                             vTextItem.ParaFirst = true;
+                        }
 
                         vLen = AText.Length;
                     }
@@ -4867,16 +4886,25 @@ namespace HC.View
                     {
                         if (ANewPara)
                         {
-                            HCCustomItem vNewItem = CreateDefaultTextItem();
-                            vNewItem.ParaFirst = true;
-                            vNewItem.Text = AText;
+                            if ((!IsParaLastItem(SelectInfo.StartItemNo)) && (Items[SelectInfo.StartItemNo + 1].StyleNo > HCStyle.Null))
+                            {
+                                SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                                SelectInfo.StartItemOffset = 0;
+                                return DoTextItemInsert(AText, ANewPara, ref vAddCount);
+                            }
+                            else
+                            {
+                                HCCustomItem vNewItem = CreateDefaultTextItem();
+                                vNewItem.ParaFirst = true;
+                                vNewItem.Text = AText;
 
-                            Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
-                            UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
-                            vAddCount++;
+                                Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
+                                UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                                vAddCount++;
 
-                            SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
-                            vLen = vNewItem.Length;
+                                SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                                vLen = vNewItem.Length;
+                            }
                         }
                         else
                         {
@@ -4887,11 +4915,31 @@ namespace HC.View
                     }
                     else  // 在Item中间
                     {
-                        vLen = SelectInfo.StartItemOffset + AText.Length;
-                        string vS = vTextItem.Text;
-                        vS = vS.Insert(SelectInfo.StartItemOffset, AText);
-                        UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
-                        vTextItem.Text = vS;
+                        if (ANewPara)
+                        {
+                            // 原TextItem打断
+                            string vS = vTextItem.SubString(SelectInfo.StartItemOffset + 1 - 1, vTextItem.Length - SelectInfo.StartItemOffset);
+                            UndoAction_DeleteText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, vS);
+                            // 原位置后半部分
+                            HCCustomItem vAfterItem = vTextItem.BreakByOffset(SelectInfo.StartItemOffset);
+                            vAfterItem.Text = AText + vAfterItem.Text;
+                            vAfterItem.ParaFirst = true;
+                            // 插入原TextItem后半部分增加Text后的
+                            Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
+                            UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                            vAddCount++;
+
+                            SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                            vLen = AText.Length;
+                        }
+                        else
+                        {
+                            vLen = SelectInfo.StartItemOffset + AText.Length;
+                            string vS = vTextItem.Text;
+                            vS = vS.Insert(SelectInfo.StartItemOffset, AText);
+                            UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
+                            vTextItem.Text = vS;
+                        }
                     }
 
                     SelectInfo.StartItemOffset = vLen;
@@ -4983,6 +5031,7 @@ namespace HC.View
                 }
             }
 
+            CurStyleNo = Items[SelectInfo.StartItemNo].StyleNo;  // 防止连续插入不同样式的
             return Result;
         }
         #endregion
@@ -5145,7 +5194,7 @@ namespace HC.View
             return Result;
         }
 
-        public bool InsertImage(string AFile)
+        public bool InsertImage(Bitmap aImage)
         {
             if (!CanEdit())
                 return false;
@@ -5153,7 +5202,9 @@ namespace HC.View
             bool Result = false;
             HCRichData vTopData = this.GetTopLevelData() as HCRichData;
             HCImageItem vImageItem = new HCImageItem(vTopData);
-            vImageItem.LoadFromBmpFile(AFile);
+            vImageItem.Image = aImage;
+            vImageItem.Width = aImage.Width;
+            vImageItem.Height = aImage.Height;
             vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
             Result = InsertItem(vImageItem);
             InitializeMouseField();

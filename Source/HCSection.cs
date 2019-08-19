@@ -1042,11 +1042,11 @@ namespace HC.View
             return ActiveDataChangeByAction(vEvent);
         }
 
-        public bool InsertImage(string aFile)
+        public bool InsertImage(Bitmap aImage)
         {
             HCFunction vEvent = delegate()
             {
-                return FActiveData.InsertImage(aFile);
+                return FActiveData.InsertImage(aImage);
             };
 
             return ActiveDataChangeByAction(vEvent);

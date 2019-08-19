@@ -151,6 +151,7 @@ namespace EMRView
     public class emrMSDB
     {
         private string FDBConnectstring;
+        private SqlConnection FConn;
         private string FErrMsg;
         private DataTable FDataElementDT, FDataSetElementDT, FDataSetDT;
         private static emrMSDB FDB = new emrMSDB();
@@ -168,7 +169,8 @@ namespace EMRView
         public const string Sql_SaveDomainItemContent = "EXEC SaveDomainContent @DItemID, @Content";
         public const string Sql_GetDomainItemContent = "SELECT Content FROM Comm_DomainContent WHERE DItemID = {0}";
         public const string Sql_GetDataSetRecord = "SELECT rec.ID, rec.Name, cnt.content FROM Inch_RecordInfo rec LEFT JOIN Comm_DataElementSet cdes ON rec.desID = cdes.id LEFT JOIN Inch_RecordContent cnt ON rec.ID = cnt.rid WHERE PatID = {0} AND VisitID = {1} AND cdes.pid = {2}";
-
+        public const string Sql_GetPatientHisInchInfo = "SELECT PI.Patient_ID AS PatID, PI.Visit_ID AS VisitID, PI.INP_NO AS InpNo, PI.Name, SX.Name AS Sex, PI.AgeYear AS Age, BedNo, PI.IN_Dept_DT as InDate, Dept.ID AS DeptID, Dept.Name AS DeptName FROM Inch_Patient PI LEFT JOIN Comm_Dept Dept ON PI.DeptID = Dept.ID LEFT JOIN Comm_Dic_Sex SX ON PI.SexCode = SX.Code WHERE PI.InflagID = 0 AND PI.Patient_ID = '{0}' AND PI.Visit_ID <> {1}";
+        
         #region 数据库操作
         /// <summary>
         /// 通过SQL查询数据
@@ -178,17 +180,14 @@ namespace EMRView
         public DataTable GetData(string sql)
         {
             DataTable dt = null;
-            SqlConnection conn = new SqlConnection(FDBConnectstring);
-
             try
             {
-                conn.Open();
                 SqlCommand cmd = new SqlCommand();
-                cmd.Connection = conn;
+                cmd.Connection = FConn;
                 cmd.CommandText = sql;
                 //SqlDataReader dr = cmd.ExecuteReader();
 
-                SqlDataAdapter da = new SqlDataAdapter(sql, conn);
+                SqlDataAdapter da = new SqlDataAdapter(sql, FConn);
                 DataSet ds = new DataSet();
                 da.Fill(ds);
                 if (ds != null && ds.Tables.Count > 0)
@@ -199,10 +198,6 @@ namespace EMRView
             catch (Exception exp)
             {
                 FErrMsg = "执行查询失败：" + exp.Message;
-            }
-            finally
-            {
-                conn.Close();
             }
 
             return dt;
@@ -216,12 +211,10 @@ namespace EMRView
         /// <returns>bool</returns>
         public bool ExecSql(string sql)
         {
-            SqlConnection conn = new SqlConnection(FDBConnectstring);
-            conn.Open();
             try
             {
                 SqlCommand sqlComm = new SqlCommand();
-                sqlComm.Connection = conn;
+                sqlComm.Connection = FConn;
                 sqlComm.CommandText = sql;
                 sqlComm.ExecuteNonQuery();
                 return true;
@@ -230,10 +223,6 @@ namespace EMRView
             {
                 FErrMsg = ex.Message;
                 return false;
-            }
-            finally
-            {
-                conn.Close();
             }
         }
 
@@ -247,12 +236,13 @@ namespace EMRView
         /// <returns>bool</returns>
         public bool ExecSql(string sql, ExecCommandEventHanler exec, ExecCommandEventHanler exec2 = null)
         {
-            SqlConnection conn = new SqlConnection(FDBConnectstring);
-            conn.Open();
             try
             {
+                if (FConn.State == ConnectionState.Closed)
+                    FConn.Open();
+
                 SqlCommand sqlComm = new SqlCommand();
-                sqlComm.Connection = conn;
+                sqlComm.Connection = FConn;
                 sqlComm.CommandText = sql;
                 if (exec != null)
                     exec(sqlComm);
@@ -269,20 +259,17 @@ namespace EMRView
                 FErrMsg = ex.Message;
                 return false;
             }
-            finally
-            {
-                conn.Close();
-            }
         }
 
         public bool ExecStoredProcedure(ExecCommandEventHanler exec)
         {
-            SqlConnection conn = new SqlConnection(FDBConnectstring);
-            conn.Open();
             try
             {
+                if (FConn.State == ConnectionState.Closed)
+                    FConn.Open();
+
                 SqlCommand sqlComm = new SqlCommand();
-                sqlComm.Connection = conn;
+                sqlComm.Connection = FConn;
                 if (exec != null)
                     exec(sqlComm);
 
@@ -293,16 +280,13 @@ namespace EMRView
                 FErrMsg = ex.Message;
                 return false;
             }
-            finally
-            {
-                conn.Close();
-            }
         }
         #endregion
 
         public emrMSDB()
         {
             FDBConnectstring = @"user=emr;password=emr;database=emrDB;server=(local)";
+            FConn = new SqlConnection(FDBConnectstring);
             FDataSetDT = this.GetData("SELECT id, pid, Name, Class, Type FROM Comm_DataElementSet WHERE pid = 0 ORDER BY od");
             GetDataElement();
         }
@@ -310,6 +294,24 @@ namespace EMRView
         ~emrMSDB()
         {
     
+        }
+
+        public DataSetInfo GetDataSetInfo(int aDesPID)
+        {
+            DataRow[] vRows = emrMSDB.DB.DataSetDT.Select(string.Format("ID = {0}", aDesPID));
+            if (vRows.Length > 0)
+            {
+                DataSetInfo Result = new DataSetInfo();
+                Result.ID = int.Parse(vRows[0]["ID"].ToString());//id, pid, Name, Class, Type
+                Result.PID = int.Parse(vRows[0]["pid"].ToString());
+                Result.GroupName = vRows[0]["Name"].ToString();
+                Result.GroupClass = int.Parse(vRows[0]["Class"].ToString());
+                Result.GroupType = int.Parse(vRows[0]["Type"].ToString());
+
+                return Result;
+            }
+
+            return null;
         }
 
         public string ErrMsg
@@ -329,7 +331,7 @@ namespace EMRView
 
         public void GetTemplateContent(int aTempID, Stream aStream)
         {
-            DataTable dt = FDB.GetData(string.Format(Sql_GetTemplateContent, (aTempID)));
+            DataTable dt = FDB.GetData(string.Format(Sql_GetTemplateContent, aTempID));
             if (dt.Rows.Count > 0)
             {
                 if (dt.Rows[0]["content"].GetType() != typeof(System.DBNull))
@@ -342,7 +344,7 @@ namespace EMRView
 
         public void GetRecordContent(int aRecordID, Stream aStream)
         {
-            DataTable dt = FDB.GetData(string.Format("SELECT content FROM Inch_RecordContent WHERE rid = {0}", (aRecordID)));
+            DataTable dt = FDB.GetData(string.Format("SELECT content FROM Inch_RecordContent WHERE rid = {0}", aRecordID));
             if (dt.Rows.Count > 0)
             {
                 byte[] vContent = (byte[])dt.Rows[0]["content"];
@@ -350,9 +352,14 @@ namespace EMRView
             }
         }
 
+        public DataTable GetPatientHisInchInfo(string aPatientID, int aVisitID)
+        {
+            return FDB.GetData(string.Format(Sql_GetPatientHisInchInfo, aPatientID, aVisitID));
+        }
+
         public bool GetInchRecordSignature(int aRecordID)
         {
-            DataTable dt = FDB.GetData(string.Format("SELECT UserID FROM Inch_RecordSignature WHERE RID = {0}", (aRecordID)));
+            DataTable dt = FDB.GetData(string.Format("SELECT UserID FROM Inch_RecordSignature WHERE RID = {0}", aRecordID));
             return dt.Rows.Count > 0;
         }
 

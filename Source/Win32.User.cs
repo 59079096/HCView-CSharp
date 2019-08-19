@@ -729,7 +729,7 @@ namespace HC.Win32
         public static extern bool GetClassInfo(HANDLE hInstance, string lpClassName, out WNDCLASS lpWndClass);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern bool GetClassInfoEx(IntPtr hinst, string lpClassName, out WNDCLASSEX lpWndClassEX);
+        public static extern bool GetClassInfoEx(IntPtr hinst, string lpClassName, ref WNDCLASSEX lpWndClassEX);
 
         [DllImport("user32")] public static extern int GetClassLong(HWND hwnd, int nIndex);
 		[DllImport("user32")] public static extern int GetClassName(HWND hwnd, string lpClassName, int nMaxCount);

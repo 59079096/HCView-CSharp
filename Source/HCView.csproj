@@ -99,6 +99,9 @@
     </Compile>
     <Compile Include="HCLineItem.cs" />
     <Compile Include="HCViewDevData.cs" />
+    <Compile Include="HCViewTool.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HCTabItem.cs" />
     <Compile Include="SharpZXingQRCode.cs" />

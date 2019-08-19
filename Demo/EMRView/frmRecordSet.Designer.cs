@@ -225,7 +225,9 @@
             this.Controls.Add(this.pnlRecord);
             this.Controls.Add(this.splitter1);
             this.Controls.Add(this.panel1);
+            this.MinimizeBox = false;
             this.Name = "frmRecordSet";
+            this.ShowInTaskbar = false;
             this.Text = "病历集合";
             this.Load += new System.EventHandler(this.FrmRecordSet_Load);
             this.panel1.ResumeLayout(false);

@@ -20,7 +20,7 @@ using System.Drawing;
 namespace EMRView
 {
     public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, DeItem aItem);
-    public class HCEmrView : HCView
+    public class HCEmrView : HCEmrViewIH
     {
         private bool FDesignMode;
         private bool FHideTrace;  // 隐藏痕迹

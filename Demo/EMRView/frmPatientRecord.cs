@@ -554,24 +554,6 @@ namespace EMRView
             return tvRecord.Nodes[0];
         }
 
-        private DataSetInfo GetDataSetInfo(int aDesPID)
-        {
-            DataRow[] vRows = emrMSDB.DB.DataSetDT.Select(string.Format("ID = {0}", aDesPID));
-            if (vRows.Length > 0)
-            {
-                DataSetInfo Result = new DataSetInfo();
-                Result.ID = int.Parse(vRows[0]["ID"].ToString());//id, pid, Name, Class, Type
-                Result.PID = int.Parse(vRows[0]["pid"].ToString());
-                Result.GroupName = vRows[0]["Name"].ToString();
-                Result.GroupClass = int.Parse(vRows[0]["Class"].ToString());
-                Result.GroupType = int.Parse(vRows[0]["Type"].ToString());
-
-                return Result;
-            }
-
-            return null;
-        }
-
         private void GetPatientRecordListUI()
         {
             tvRecord.Nodes.Clear();
@@ -593,7 +575,7 @@ namespace EMRView
                         RecordDataSetInfo vRecordDataSetInfo = new RecordDataSetInfo();
                         vRecordDataSetInfo.DesPID = vDesPID;
 
-                        DataSetInfo vDataSetInfo = GetDataSetInfo(vDesPID);
+                        DataSetInfo vDataSetInfo = emrMSDB.DB.GetDataSetInfo(vDesPID);
                         vNode = vPatNode.Nodes.Add(vDataSetInfo.GroupName);
                         vNode.Tag = vRecordDataSetInfo;
                     }
@@ -686,31 +668,6 @@ namespace EMRView
         private void DeletePatientRecord(int aRecordID)
         {
             emrMSDB.DB.ExecSql(string.Format("EXEC DeleteInchRecord {0}", aRecordID));
-        }
-
-        private void GetNodeRecordInfo(TreeNode aNode, ref int aDesPID, ref int aDesID, ref int aRecordID)
-        {
-            aDesPID = -1;
-            aDesID = -1;
-            aRecordID = -1;
-
-            if (EMR.TreeNodeIsRecord(aNode))
-            {
-                aDesID = (aNode.Tag as RecordInfo).DesID;
-                aRecordID = (aNode.Tag as RecordInfo).ID;
-
-                aDesPID = -1;
-                TreeNode vNode = aNode;
-                while (vNode.Parent != null)
-                {
-                    vNode = vNode.Parent;
-                    if (EMR.TreeNodeIsRecordDataSet(vNode))
-                    {
-                        aDesPID = (vNode.Tag as RecordDataSetInfo).DesPID;
-                        break;
-                    }
-                }
-            }
         }
 
         private TreeNode FindRecordNode(int aRecordID)
@@ -815,7 +772,7 @@ namespace EMRView
                 return;
 
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
-            GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
+            EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
             if (vRecordID > 0)
             {
@@ -848,7 +805,7 @@ namespace EMRView
                 return;
 
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
-            GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
+            EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
             if (vRecordID > 0)
             {
@@ -885,7 +842,7 @@ namespace EMRView
                 return;
 
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
-            GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
+            EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
             if (vRecordID > 0)
             {
@@ -907,7 +864,7 @@ namespace EMRView
                 return;
 
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
-            GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
+            EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
             if (vRecordID > 0)
             {
@@ -954,7 +911,7 @@ namespace EMRView
                 return;
 
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
-            GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
+            EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
             if (vRecordID > 0)
             {
@@ -993,6 +950,24 @@ namespace EMRView
         private void 关闭ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CloseRecordPage(tabRecord.SelectedIndex);
+        }
+
+        private void DoImportText(string aText)
+        {
+            frmRecord vFrmRecord = GetActiveRecord();
+            if (vFrmRecord != null)
+                vFrmRecord.EmrView.InsertText(aText);
+            else
+                MessageBox.Show("未发现打开的病历！");
+        }
+
+        private void MniHisRecord_Click(object sender, EventArgs e)
+        {
+            frmPatientHisInchRecord vFrmHisRecord = new frmPatientHisInchRecord();
+            vFrmHisRecord.PatientInfo = PatientInfo;
+            vFrmHisRecord.OnImport = DoImportText;  // 导入病历窗体中点击导入时触发的事件
+            this.AddOwnedForm(vFrmHisRecord);
+            vFrmHisRecord.Show();
         }
     }
 

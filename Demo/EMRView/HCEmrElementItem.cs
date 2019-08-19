@@ -255,8 +255,8 @@ namespace EMRView
                     if (aAction == HCItemAction.hiaInsertChar)
                         Result = false;
                     else
-                        if ((aAction == HCItemAction.hiaBackDeleteChar) || (aAction == HCItemAction.hiaDeleteChar) || (aAction == HCItemAction.hiaRemove))
-                            Result = !FEditProtect;
+                    if ((aAction == HCItemAction.hiaBackDeleteChar) || (aAction == HCItemAction.hiaDeleteChar) || (aAction == HCItemAction.hiaRemove))
+                        Result = !FEditProtect;
                 }
                 else
                     Result = !FEditProtect;
@@ -307,7 +307,8 @@ namespace EMRView
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public void ToJson(string aJsonObj)

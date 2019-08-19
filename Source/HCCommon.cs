@@ -626,6 +626,11 @@ namespace HC.View
                 return string.Format("255,{0},{1},{2}", aColor.R, aColor.G, aColor.B);
         }
 
+        public static string GetXmlRN(string aText)
+        {
+            return aText.Replace(((Char)10).ToString(), "\r\n");
+        }
+
         public static void SetBorderSideByPro(string aValue, HCBorderSides aBorderSides)
         {
             aBorderSides.Value = 0;

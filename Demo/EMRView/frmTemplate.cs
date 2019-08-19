@@ -23,7 +23,7 @@ namespace EMRView
 {
     public partial class frmTemplate : Form
     {
-        private frmRecord frmRecord;
+        //private frmRecord frmRecord;
         //private string FOpenedTID;
         private int FDomainID;
 

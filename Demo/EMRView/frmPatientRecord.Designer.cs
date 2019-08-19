@@ -36,6 +36,7 @@
             this.签名ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.删除ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.mniHisRecord = new System.Windows.Forms.ToolStripMenuItem();
             this.预览全部病程ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.导出XML结构ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panel1 = new System.Windows.Forms.Panel();
@@ -63,10 +64,11 @@
             this.签名ToolStripMenuItem,
             this.删除ToolStripMenuItem,
             this.toolStripSeparator1,
+            this.mniHisRecord,
             this.预览全部病程ToolStripMenuItem,
             this.导出XML结构ToolStripMenuItem});
             this.pmRecord.Name = "contextMenuStrip1";
-            this.pmRecord.Size = new System.Drawing.Size(181, 186);
+            this.pmRecord.Size = new System.Drawing.Size(181, 208);
             // 
             // 新建ToolStripMenuItem
             // 
@@ -107,6 +109,13 @@
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
+            // 
+            // mniHisRecord
+            // 
+            this.mniHisRecord.Name = "mniHisRecord";
+            this.mniHisRecord.Size = new System.Drawing.Size(180, 22);
+            this.mniHisRecord.Text = "历史病历";
+            this.mniHisRecord.Click += new System.EventHandler(this.MniHisRecord_Click);
             // 
             // 预览全部病程ToolStripMenuItem
             // 
@@ -199,6 +208,7 @@
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.panel1);
             this.Name = "frmPatientRecord";
+            this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "病历书写";
             this.Load += new System.EventHandler(this.frmPatientRecord_Load);
@@ -232,5 +242,6 @@
         private System.Windows.Forms.ToolStripMenuItem 导出XML结构ToolStripMenuItem;
         private System.Windows.Forms.ContextMenuStrip pmpg;
         private System.Windows.Forms.ToolStripMenuItem 关闭ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem mniHisRecord;
     }
 }

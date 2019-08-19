@@ -74,6 +74,18 @@
     <Compile Include="frmDomainOper.Designer.cs">
       <DependentUpon>frmDomainOper.cs</DependentUpon>
     </Compile>
+    <Compile Include="frmImportRecord.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmImportRecord.Designer.cs">
+      <DependentUpon>frmImportRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmPatientHisInchRecord.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmPatientHisInchRecord.Designer.cs">
+      <DependentUpon>frmPatientHisInchRecord.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmItemContent.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -189,9 +201,14 @@
     <Compile Include="frmTemplate.Designer.cs">
       <DependentUpon>frmTemplate.cs</DependentUpon>
     </Compile>
-    <Compile Include="HCInputHelper.cs" />
-    <Compile Include="HCViewIH.cs">
+    <Compile Include="frmInputHelper.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="HCEmrViewIH.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="frmInputHelper.Designer.cs">
+      <DependentUpon>frmInputHelper.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -218,6 +235,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="frmDomainOper.resx">
       <DependentUpon>frmDomainOper.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmImportRecord.resx">
+      <DependentUpon>frmImportRecord.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmPatientHisInchRecord.resx">
+      <DependentUpon>frmPatientHisInchRecord.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmInsertTable.resx">
       <DependentUpon>frmInsertTable.cs</DependentUpon>
@@ -257,6 +280,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="frmRecordSet.resx">
       <DependentUpon>frmRecordSet.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmInputHelper.resx">
+      <DependentUpon>frmInputHelper.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

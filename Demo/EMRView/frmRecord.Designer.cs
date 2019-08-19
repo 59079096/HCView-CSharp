@@ -96,6 +96,7 @@
             this.mniInsertImage = new System.Windows.Forms.ToolStripMenuItem();
             this.mniInsertGif = new System.Windows.Forms.ToolStripMenuItem();
             this.控件ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniCombobox = new System.Windows.Forms.ToolStripMenuItem();
             this.mniCheckbox = new System.Windows.Forms.ToolStripMenuItem();
             this.mniEditItem = new System.Windows.Forms.ToolStripMenuItem();
             this.日期时间ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -128,7 +129,7 @@
             this.mniLS150 = new System.Windows.Forms.ToolStripMenuItem();
             this.mniLS200 = new System.Windows.Forms.ToolStripMenuItem();
             this.mniLSFix = new System.Windows.Forms.ToolStripMenuItem();
-            this.tlbTool = new System.Windows.Forms.ToolStrip();
+            this.tlbEditTool = new System.Windows.Forms.ToolStrip();
             this.cbxPrintHeader = new System.Windows.Forms.CheckBox();
             this.cbxPrintFooter = new System.Windows.Forms.CheckBox();
             this.cbbPrinter = new System.Windows.Forms.ToolStripComboBox();
@@ -152,7 +153,7 @@
             this.pnlView = new System.Windows.Forms.Panel();
             this.pmView.SuspendLayout();
             this.statusStrip1.SuspendLayout();
-            this.tlbTool.SuspendLayout();
+            this.tlbEditTool.SuspendLayout();
             this.tlbPrint.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -695,6 +696,7 @@
             // 控件ToolStripMenuItem1
             // 
             this.控件ToolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mniCombobox,
             this.mniCheckbox,
             this.mniEditItem,
             this.日期时间ToolStripMenuItem});
@@ -702,11 +704,18 @@
             this.控件ToolStripMenuItem1.Size = new System.Drawing.Size(124, 22);
             this.控件ToolStripMenuItem1.Text = "控件";
             // 
+            // mniCombobox
+            // 
+            this.mniCombobox.Name = "mniCombobox";
+            this.mniCombobox.Size = new System.Drawing.Size(124, 22);
+            this.mniCombobox.Text = "下拉框";
+            this.mniCombobox.Click += new System.EventHandler(this.mniCombobox_Click);
+            // 
             // mniCheckbox
             // 
             this.mniCheckbox.Name = "mniCheckbox";
             this.mniCheckbox.Size = new System.Drawing.Size(124, 22);
-            this.mniCheckbox.Text = "下拉框";
+            this.mniCheckbox.Text = "勾选框";
             this.mniCheckbox.Click += new System.EventHandler(this.mniCheckbox_Click);
             // 
             // mniEditItem
@@ -989,9 +998,9 @@
             this.mniLSFix.Text = "固定值";
             this.mniLSFix.Click += new System.EventHandler(this.mniLS100_Click);
             // 
-            // tlbTool
+            // tlbEditTool
             // 
-            this.tlbTool.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tlbEditTool.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnFile,
             this.btnSave,
             this.btnPrint,
@@ -1020,11 +1029,11 @@
             this.btnAlignJustify,
             this.btnAlignScatter,
             this.btnLineSpace});
-            this.tlbTool.Location = new System.Drawing.Point(0, 0);
-            this.tlbTool.Name = "tlbTool";
-            this.tlbTool.Size = new System.Drawing.Size(920, 25);
-            this.tlbTool.TabIndex = 4;
-            this.tlbTool.Text = "toolStrip1";
+            this.tlbEditTool.Location = new System.Drawing.Point(0, 0);
+            this.tlbEditTool.Name = "tlbEditTool";
+            this.tlbEditTool.Size = new System.Drawing.Size(920, 25);
+            this.tlbEditTool.TabIndex = 4;
+            this.tlbEditTool.Text = "toolStrip1";
             // 
             // cbxPrintHeader
             // 
@@ -1089,14 +1098,14 @@
             // mniOdd
             // 
             this.mniOdd.Name = "mniOdd";
-            this.mniOdd.Size = new System.Drawing.Size(180, 22);
+            this.mniOdd.Size = new System.Drawing.Size(112, 22);
             this.mniOdd.Text = "奇数页";
             this.mniOdd.Click += new System.EventHandler(this.MniOdd_Click);
             // 
             // mniEven
             // 
             this.mniEven.Name = "mniEven";
-            this.mniEven.Size = new System.Drawing.Size(180, 22);
+            this.mniEven.Size = new System.Drawing.Size(112, 22);
             this.mniEven.Text = "偶数页";
             this.mniEven.Click += new System.EventHandler(this.MniEven_Click);
             // 
@@ -1210,15 +1219,15 @@
             this.Controls.Add(this.cbxPrintHeader);
             this.Controls.Add(this.tlbPrint);
             this.Controls.Add(this.statusStrip1);
-            this.Controls.Add(this.tlbTool);
+            this.Controls.Add(this.tlbEditTool);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "frmRecord";
-            this.Text = "h";
+            this.Text = "病历文档";
             this.pmView.ResumeLayout(false);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
-            this.tlbTool.ResumeLayout(false);
-            this.tlbTool.PerformLayout();
+            this.tlbEditTool.ResumeLayout(false);
+            this.tlbEditTool.PerformLayout();
             this.tlbPrint.ResumeLayout(false);
             this.tlbPrint.PerformLayout();
             this.ResumeLayout(false);
@@ -1325,7 +1334,7 @@
         private System.Windows.Forms.ToolStripMenuItem mniLS150;
         private System.Windows.Forms.ToolStripMenuItem mniLS200;
         private System.Windows.Forms.ToolStripMenuItem mniLSFix;
-        private System.Windows.Forms.ToolStrip tlbTool;
+        private System.Windows.Forms.ToolStrip tlbEditTool;
         private System.Windows.Forms.CheckBox cbxPrintHeader;
         private System.Windows.Forms.CheckBox cbxPrintFooter;
         private System.Windows.Forms.ToolStripComboBox cbbPrinter;
@@ -1347,5 +1356,6 @@
         private System.Windows.Forms.ToolStripButton btnPrintSelect;
         private System.Windows.Forms.ToolStrip tlbPrint;
         private System.Windows.Forms.Panel pnlView;
+        private System.Windows.Forms.ToolStripMenuItem mniCombobox;
     }
 }

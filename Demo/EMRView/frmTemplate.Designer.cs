@@ -595,6 +595,7 @@
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.splitContainer2);
             this.Name = "frmTemplate";
+            this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "模板制作";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;

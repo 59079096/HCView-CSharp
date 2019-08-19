@@ -669,6 +669,8 @@ namespace HC.View
         {
             for (int i = 0; i <= FSections.Count - 1; i++)
                 FSections[i].ReadOnly = Value;
+
+            UpdateView();
         }
 
         private void SetPageNoFormat(string value)
@@ -1558,10 +1560,16 @@ namespace HC.View
         /// <summary> 插入图片 </summary>
         public bool InsertImage(string aFile)
         {
+            Bitmap vImage = new Bitmap(aFile);
+            return InsertImage(vImage);
+        }
+
+        public bool InsertImage(Bitmap aImage)
+        {
             this.BeginUpdate();
             try
             {
-                return ActiveSection.InsertImage(aFile);
+                return ActiveSection.InsertImage(aImage);
             }
             finally
             {

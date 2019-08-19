@@ -84,8 +84,8 @@ namespace HC.View
         private void RegFormClass()
         {
             IntPtr hInstance = Marshal.GetHINSTANCE(this.GetType().Module); //(IntPtr)Kernel.GetModuleHandle(null);
-            WNDCLASSEX vWndCls;
-            if (!User.GetClassInfoEx(hInstance, "HCPopupForm", out vWndCls))
+            WNDCLASSEX vWndCls = WNDCLASSEX.Build();
+            if (!User.GetClassInfoEx(hInstance, "HCPopupForm", ref vWndCls))
             {
                 vWndCls = WNDCLASSEX.Build();  //vWndCls.cbSize = 48;
                 vWndCls.lpszClassName = "HCPopupForm";
