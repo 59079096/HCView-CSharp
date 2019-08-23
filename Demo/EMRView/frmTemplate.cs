@@ -281,7 +281,9 @@ namespace EMRView
             return null;
         }
 
-        private void mniInsertAsDE_Click(object sender, EventArgs e)
+        private delegate void InsertAsProc(frmRecord frmrecord);
+
+        private void InsertDataElementAs(InsertAsProc proc)
         {
             if (dgvDE.SelectedRows.Count == 0)
                 return;
@@ -292,58 +294,45 @@ namespace EMRView
                 if (!vFrmRecord.EmrView.Focused)  // 先给焦点，便于处理光标处域
                     vFrmRecord.EmrView.Focus();
 
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                vFrmRecord.InsertDeItem(vSelectedRow.Cells[0].Value.ToString(), 
-                    vSelectedRow.Cells[1].Value.ToString());
+                proc(vFrmRecord);
             }
             else
                 MessageBox.Show("未发现打开的模板！");
+        }
+        private void mniInsertAsDE_Click(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
+                frmRecord.InsertDeItem(vSelectedRow.Cells[0].Value.ToString(),
+                    vSelectedRow.Cells[1].Value.ToString());
+            };
+
+            InsertDataElementAs(vEvent);
         }
 
         private void mniInsertAsDG_Click(object sender, EventArgs e)
         {
-            if (dgvDE.SelectedRows.Count == 0)
-                return;
-
-            frmRecord vFrmRecord = GetActiveRecord();
-            if (vFrmRecord != null)
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
             {
-                using (DeGroup vDeGroup = new DeGroup(vFrmRecord.EmrView.ActiveSectionTopLevelData()))
-                {
-                    vDeGroup[DeProp.Index] = dgvDE.SelectedRows[0].Cells[0].Value.ToString();
-                    vDeGroup[DeProp.Name] = dgvDE.SelectedRows[0].Cells[0].Value.ToString();
+                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
+                frmRecord.InsertDeGroup(vSelectedRow.Cells[0].Value.ToString(),
+                    vSelectedRow.Cells[1].Value.ToString());
+            };
 
-                    if (!vFrmRecord.EmrView.Focused)  // 先给焦点，便于处理光标处域
-                        vFrmRecord.EmrView.Focus();
-
-                    vFrmRecord.EmrView.InsertDeGroup(vDeGroup);
-                }
-            }
-            else
-                MessageBox.Show("未发现打开的模板！");
+            InsertDataElementAs(vEvent);
         }
 
         private void mniInsertAsCombobox_Click(object sender, EventArgs e)
         {
-            if (dgvDE.SelectedRows.Count == 0)
-                return;
-
-            frmRecord vFrmRecord = GetActiveRecord();
-            if (vFrmRecord != null)
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
             {
-                DeCombobox vDeCombobox = new DeCombobox(vFrmRecord.EmrView.ActiveSectionTopLevelData(),
-                    dgvDE.SelectedRows[0].Cells[1].Value.ToString());
+                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
+                frmRecord.InsertDeCombobox(vSelectedRow.Cells[0].Value.ToString(),
+                    vSelectedRow.Cells[1].Value.ToString());
+            };
 
-                vDeCombobox.SaveItem = false;
-                vDeCombobox[DeProp.Index] = dgvDE.SelectedRows[0].Cells[0].Value.ToString();
-                
-                if (!vFrmRecord.EmrView.Focused)  // 先给焦点，便于处理光标处域
-                    vFrmRecord.EmrView.Focus();
-
-                vFrmRecord.EmrView.InsertItem(vDeCombobox);
-            }
-            else
-                MessageBox.Show("未发现打开的模板！");
+            InsertDataElementAs(vEvent);
         }
 
         private void GetDomainItem(int aDomainID)
@@ -743,6 +732,54 @@ namespace EMRView
         private void DgvDE_SelectionChanged(object sender, EventArgs e)
         {
             mniViewItem_Click(sender, e);
+        }
+
+        private void MniInsertAsEdit_Click(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
+                frmRecord.InsertDeEdit(vSelectedRow.Cells[0].Value.ToString(),
+                    vSelectedRow.Cells[1].Value.ToString());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void MniInsertAsDateTime_Click(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
+                frmRecord.InsertDeDateTime(vSelectedRow.Cells[0].Value.ToString(),
+                    vSelectedRow.Cells[1].Value.ToString());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void MniInsertAsRadioGroup_Click(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
+                frmRecord.InsertDeRadioGroup(vSelectedRow.Cells[0].Value.ToString(),
+                    vSelectedRow.Cells[1].Value.ToString());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void MniInsertAsCheckBox_Click(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
+                frmRecord.InsertDeCheckBox(vSelectedRow.Cells[0].Value.ToString(),
+                    vSelectedRow.Cells[1].Value.ToString());
+            };
+
+            InsertDataElementAs(vEvent);
         }
     }
 }

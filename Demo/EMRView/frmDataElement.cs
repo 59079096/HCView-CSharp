@@ -22,18 +22,18 @@ namespace EMRView
 
     public partial class frmDataElement : Form
     {
-        private InsertAsDeEventHandler FOnInsertAsDE;
+        //private InsertAsDeEventHandler FOnInsertAsDE;
 
         public frmDataElement()
         {
             InitializeComponent();
         }
 
-        public InsertAsDeEventHandler OnInsertAsDE
-        {
-            get { return FOnInsertAsDE; }
-            set { FOnInsertAsDE = value; }
-        }
+        //public InsertAsDeEventHandler OnInsertAsDE
+        //{
+        //    get { return FOnInsertAsDE; }
+        //    set { FOnInsertAsDE = value; }
+        //}
 
         private void ShowDataElement(DataRow[] aRows = null)
         {
@@ -83,8 +83,8 @@ namespace EMRView
 
         private void DoInsertAsDE(string aIndex, string aName)
         {
-            if (FOnInsertAsDE != null)
-                FOnInsertAsDE(aIndex, aName);
+            //if (FOnInsertAsDE != null)
+            //    FOnInsertAsDE(aIndex, aName);
         }
 
         private void mniInsertAsDE_Click(object sender, EventArgs e)

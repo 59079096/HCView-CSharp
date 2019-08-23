@@ -811,6 +811,11 @@ namespace HC.View
             GDI.Rectangle(FHandle, aLeft, aTop, aRight, aBottom);
         }
 
+        public void Ellipse(int aLeft, int aTop, int aRight, int aBottom)
+        {
+            GDI.Ellipse(FHandle, aLeft, aTop, aRight, aBottom);
+        }
+
         public void StretchDraw(RECT aRect, Image aImage)
         {
             //Graphics grImage = Graphics.FromImage(aImage);

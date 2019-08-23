@@ -52,6 +52,7 @@ namespace HC.View
         private EventHandler FOnVisibleChanged;
         protected POINT FMouseDownPt;
         protected RECT FThumRect, FLeftBtnRect, FRightBtnRect;
+        protected int FLeftBlank, FRightBlank;
 
         /// <summary>
         /// 得到鼠标上去要实现改变的区域
@@ -60,13 +61,13 @@ namespace HC.View
         {
             if (FOrientation == View.Orientation.oriHorizontal)
             {
-                FLeftBtnRect = new RECT(0, 0, ButtonSize, Height);
-                FRightBtnRect = new RECT(Width - ButtonSize, 0, Width, Height);
+                FLeftBtnRect = HC.Bounds(FLeftBlank, 0, ButtonSize, Height);
+                FRightBtnRect = HC.Bounds(Width - FRightBlank - ButtonSize, 0, ButtonSize, Height);
             }
             else
             {
-                FLeftBtnRect = new RECT(0, 0, Width, ButtonSize);
-                FRightBtnRect = new RECT(0, Height - ButtonSize, Width, Height);
+                FLeftBtnRect = HC.Bounds(0, FLeftBlank, Width, ButtonSize);
+                FRightBtnRect = HC.Bounds(0, Height - FRightBlank - ButtonSize, Width, ButtonSize);
             }
         }
 
@@ -86,23 +87,23 @@ namespace HC.View
                 {
                     vPer = FPageSize / (float)FRange;  // 计算滑块比例
                     // 计算滑块的高度
-                    vThumHeight = (int)Math.Round((Width - 2 * ButtonSize) * vPer);
+                    vThumHeight = (int)Math.Round((Width - FLeftBlank - FRightBlank - 2 * ButtonSize) * vPer);
                     if (vThumHeight < ButtonSize)
                         vThumHeight = ButtonSize;
                     
-                    FPercent = (Width - 2 * ButtonSize - vThumHeight) / (float)(FRange - FPageSize);  // 界面可滚动范围和实际代表范围的比率
+                    FPercent = (Width - FLeftBlank - FRightBlank - 2 * ButtonSize - vThumHeight) / (float)(FRange - FPageSize);  // 界面可滚动范围和实际代表范围的比率
                     if (FPercent < 0)
                         return;
                     if (FPercent == 0)
                         FPercent = 1;
                     
-                    FThumRect.Left = ButtonSize + (int)Math.Round(FPosition * FPercent);
+                    FThumRect.Left = FLeftBlank + ButtonSize + (int)Math.Round(FPosition * FPercent);
                     FThumRect.Right = FThumRect.Left + vThumHeight;
                 }
                 else  // 滚动轨道大于等于范围
                 {
-                    FThumRect.Left = ButtonSize;
-                    FThumRect.Right = Width - ButtonSize;
+                    FThumRect.Left = FLeftBlank + ButtonSize;
+                    FThumRect.Right = Width - FRightBlank - ButtonSize;
                 }
             }
             else
@@ -113,22 +114,23 @@ namespace HC.View
                 {
                     vPer = FPageSize / (float)FRange;  // 计算滑块比例
                     // 计算滑块的高度
-                    vThumHeight = (int)Math.Round((Height - 2 * ButtonSize) * vPer);
+                    vThumHeight = (int)Math.Round((Height - FLeftBlank - FRightBlank - 2 * ButtonSize) * vPer);
                     if (vThumHeight < ButtonSize)
                         vThumHeight = ButtonSize;
-                    FPercent = (Height - 2 * ButtonSize - vThumHeight) / (float)(FRange - FPageSize);  // 界面可滚动范围和实际代表范围的比率
+                    FPercent = (Height - FLeftBlank - FRightBlank - 2 * ButtonSize - vThumHeight) / (float)(FRange - FPageSize);  // 界面可滚动范围和实际代表范围的比率
                     if (FPercent < 0)
                         return;
                     if (FPercent == 0)
                         FPercent = 1;
-                    FThumRect.Top = ButtonSize + (int)Math.Round(FPosition * FPercent);
+
+                    FThumRect.Top = FLeftBlank + ButtonSize + (int)Math.Round(FPosition * FPercent);
                     FThumRect.Bottom = FThumRect.Top + vThumHeight;
                     //Scroll(scTrack, FPosition);  //鼠标移动改变滑块的垂直位置
                 }
                 else  // 滚动轨道大于等于范围
                 {
-                    FThumRect.Top = ButtonSize;
-                    FThumRect.Bottom = Height - ButtonSize;
+                    FThumRect.Top = FLeftBlank + ButtonSize;
+                    FThumRect.Bottom = Height - FRightBlank - ButtonSize;
                 }
             }
         }
@@ -264,6 +266,32 @@ namespace HC.View
             }
         }
 
+        private bool PtInLeftBlankArea(int x, int y)
+        {
+            if (FLeftBlank != 0)
+            {
+                if (FOrientation == Orientation.oriHorizontal)
+                    return HC.PtInRect(HC.Bounds(0, 0, FLeftBlank, Height), new POINT(x, y));
+                else
+                    return HC.PtInRect(HC.Bounds(0, 0, Width, FLeftBlank), new POINT(x, y));
+            }
+
+            return false;
+        }
+
+        private bool PtInRightBlankArea(int x, int y)
+        {
+            if (FRightBlank != 0)
+            {
+                if (FOrientation == Orientation.oriHorizontal)
+                    return HC.PtInRect(HC.Bounds(Width - FRightBlank, 0, FRightBlank, Height), new POINT(x, y));
+                else
+                    return HC.PtInRect(HC.Bounds(0, Height - FRightBlank, Width, FRightBlank), new POINT(x, y));
+            }
+
+            return false;
+        }
+
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
@@ -339,6 +367,8 @@ namespace HC.View
             FRange = 100;
             FPageSize = 0;
             FBtnStep = 5;
+            FLeftBlank = 0;
+            FRightBlank = 0;
             //
             Width = 20;
             Height = 20;
@@ -371,25 +401,35 @@ namespace HC.View
                 ScrollStep(ScrollCode.scLineUp);  // 数据向上（左）滚动
             }
             else
-                if (HC.PtInRect(FThumRect, FMouseDownPt))
-                {
-                    FMouseDownControl = BarControl.cbcThum;
-                }
+            if (HC.PtInRect(FThumRect, FMouseDownPt))
+            {
+                FMouseDownControl = BarControl.cbcThum;
+            }
+            else
+            if (HC.PtInRect(FRightBtnRect, FMouseDownPt))
+            {
+                FMouseDownControl = BarControl.cbcRightBtn;
+                ScrollStep(ScrollCode.scLineDown);  // 数据向下（右）滚动
+            }
+            else  // 鼠标在滚动条的其他区域
+            if (PtInLeftBlankArea(e.X, e.Y))  // 左空白区域
+            {
+
+            }
+            else
+            if (PtInRightBlankArea(e.X, e.Y))  // 右空白区域
+            {
+
+            }
+            else
+            {
+                FMouseDownControl = BarControl.cbcBar;  // 滚动条其他区域类型
+                if ((FThumRect.Top > e.Y) || (FThumRect.Left > e.X))
+                    ScrollStep(ScrollCode.scPageUp); // 数据向上（左）翻页
                 else
-                    if (HC.PtInRect(FRightBtnRect, FMouseDownPt))
-                    {
-                        FMouseDownControl = BarControl.cbcRightBtn;
-                        ScrollStep(ScrollCode.scLineDown);  // 数据向下（右）滚动
-                    }
-                    else  // 鼠标在滚动条的其他区域
-                    {
-                        FMouseDownControl = BarControl.cbcBar;  // 滚动条其他区域类型
-                        if ((FThumRect.Top > e.Y) || (FThumRect.Left > e.X))
-                            ScrollStep(ScrollCode.scPageUp); // 数据向上（左）翻页
-                        else
-                            if ((FThumRect.Bottom < e.Y) || (FThumRect.Right < e.X))
-                                ScrollStep(ScrollCode.scPageDown);  // 数据向下（右）翻页
-                    }
+                if ((FThumRect.Bottom < e.Y) || (FThumRect.Right < e.X))
+                    ScrollStep(ScrollCode.scPageDown);  // 数据向下（右）翻页
+            }
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -457,7 +497,7 @@ namespace HC.View
             set { FPercent = value; }
         }
 
-        public void PaintToEx(HCCanvas ACanvas)
+        public virtual void PaintToEx(HCCanvas ACanvas)
         {
             RECT vRect = new RECT();
             ACanvas.Brush.Color = this.Color;

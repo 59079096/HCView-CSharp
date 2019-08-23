@@ -290,16 +290,22 @@ namespace HC.View
             }
         }
 
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
             if ((e.Button == MouseButtons.Left) && HC.PtInRect(FButtonRect, e.X, e.Y))
+            {
                 DoPopup();
+                return true;
+            }
             else
-                base.MouseDown(e);
+                return base.MouseDown(e);
         }
 
-        public override void MouseMove(MouseEventArgs e)
+        public override bool MouseMove(MouseEventArgs e)
         {
+            //if (FPopupForm.Open)
+            //    HC.GCursor = Cursors.Default;
+
             if (HC.PtInRect(FButtonRect, e.X, e.Y))
             {
                 if (!FMouseInButton)
@@ -309,6 +315,7 @@ namespace HC.View
                 }
                 
                 HC.GCursor = Cursors.Default;
+                return true;
             }
             else
             {
@@ -318,11 +325,8 @@ namespace HC.View
                     OwnerData.Style.UpdateInfoRePaint();
                 }
                 
-                base.MouseMove(e);
+                return base.MouseMove(e);
             }
-
-            if (FPopupForm.Open)
-                HC.GCursor = Cursors.Default;
         }
 
         public override void MouseLeave()

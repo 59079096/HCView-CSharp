@@ -802,8 +802,8 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int CreatePen(int nPenStyle, int nWidth, int crColor);
 		[DllImport("gdi32")] public static extern int CreatePenIndirect(ref LOGPEN lpLogPen);
 		[DllImport("gdi32")] public static extern int CreatePolyPolygonRgn(ref POINT lpPoint, ref int lpPolyCounts, int nCount, int nPolyFillMode);
-		[DllImport("gdi32")] public static extern int CreatePolygonRgn(ref POINT lpPoint, int nCount, int nPolyFillMode);
-		[DllImport("gdi32")] public static extern int CreateRectRgn(int X1, int Y1, int X2, int Y2);
+		[DllImport("gdi32")] public static extern IntPtr CreatePolygonRgn(POINT[] lpPoint, int nCount, int nPolyFillMode);
+		[DllImport("gdi32")] public static extern IntPtr CreateRectRgn(int X1, int Y1, int X2, int Y2);
 		[DllImport("gdi32")] public static extern int CreateRectRgnIndirect(ref RECT lpRect);
 		[DllImport("gdi32")] public static extern int CreateRoundRectRgn(int X1, int Y1, int X2, int Y2, int X3, int Y3);
 		[DllImport("gdi32")] public static extern int CreateScalableFontResource(int fHidden, string lpszResourceFile, string lpszFontFile, string lpszCurrentPath);
@@ -969,7 +969,7 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int Polygon(HDC hdc, ref POINT lpPoint, int nCount);
 		[DllImport("gdi32")] public static extern int Polyline(HDC hdc, ref POINT lpPoint, int nCount);
 		[DllImport("gdi32")] public static extern int PolylineTo(HDC hdc, ref POINT lppt, int cCount);
-		[DllImport("gdi32")] public static extern int PtInRegion(HANDLE hRgn, int x, int y);
+		[DllImport("gdi32")] public static extern bool PtInRegion(HANDLE hRgn, int x, int y);
 		[DllImport("gdi32")] public static extern int PtVisible(HDC hdc, int x, int y);
 		[DllImport("gdi32")] public static extern int RealizePalette(HDC hdc);
 		[DllImport("gdi32")] public static extern int RectInRegion(HANDLE hRgn, ref RECT lpRect);

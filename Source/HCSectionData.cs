@@ -28,12 +28,12 @@ namespace HC.View
         private GetScreenCoordEventHandler FOnGetScreenCoord;
 
         private List<HCCustomFloatItem> FFloatItems;  // THCItems支持Add时控制暂时不用
-        int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex, FMouseX, FMouseY;
+        int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex;
 
         private HCCustomFloatItem CreateFloatItemByStyle(int aStyleNo)
         {
             HCCustomFloatItem Result = null;
-            if (aStyleNo == HCFloatStyle.Line)
+            if (aStyleNo == (byte)HCShapeStyle.hssLine)
             {
                 Result = new HCFloatLineItem(this);
             }
@@ -52,7 +52,7 @@ namespace HC.View
             {
                 vFloatItem = FFloatItems[i];
 
-                if (vFloatItem.PtInClient(x - vFloatItem.Left, y - vFloatItem.Top))
+                if (vFloatItem.PointInClient(x - vFloatItem.Left, y - vFloatItem.Top))
                 {
                     Result = i;
                     break;
@@ -130,7 +130,8 @@ namespace HC.View
 
         public bool MouseDownFloatItem(MouseEventArgs e)
         {
-            bool Result = true;
+            bool vResult = false;
+
             FMouseDownIndex = GetFloatItemAt(e.X, e.Y);
 
             int vOldIndex = FFloatItemIndex;
@@ -150,41 +151,28 @@ namespace HC.View
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
                     e.X - FFloatItems[FFloatItemIndex].Left, e.Y - FFloatItems[FFloatItemIndex].Top,
                     e.Delta);
-                FFloatItems[FFloatItemIndex].MouseDown(vMouseArgs);
+                vResult = FFloatItems[FFloatItemIndex].MouseDown(vMouseArgs);
             }
 
             if ((FMouseDownIndex < 0) && (vOldIndex < 0))
-                Result = false;
-            else
-            {
-                FMouseX = e.X;
-                FMouseY = e.Y;
-            }
+                vResult = false;
 
-            return Result;
+            return vResult;
         }
 
         public bool MouseMoveFloatItem(MouseEventArgs e)
         {
-            bool Result = true;
+            bool vResult = false;
 
             if ((e.Button == MouseButtons.Left) && (FMouseDownIndex >= 0))
             {
                 HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, 
                     e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
-                vFloatItem.MouseMove(vMouseArgs);
-                
-                if (!vFloatItem.Resizing)
-                {
-                    vFloatItem.Left = vFloatItem.Left + e.X - FMouseX;
-                    vFloatItem.Top = vFloatItem.Top + e.Y - FMouseY;
-                    
-                    FMouseX = e.X;
-                    FMouseY = e.Y;
-                }
-            
-                Style.UpdateInfoRePaint();
+                vResult = vFloatItem.MouseMove(vMouseArgs);
+
+                if (vResult)
+                    Style.UpdateInfoRePaint();
             }
             else  // 普通鼠标移动
             {
@@ -203,31 +191,27 @@ namespace HC.View
                 {
                     HCCustomFloatItem vFloatItem = FFloatItems[vItemIndex];
                     MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
-                    e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
-                    vFloatItem.MouseMove(vMouseArgs);
+                        e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
+                    vResult = vFloatItem.MouseMove(vMouseArgs);
                 }
-                else
-                    Result = false;
             }
 
-            return Result;
+            return vResult;
         }
 
         public bool MouseUpFloatItem(MouseEventArgs e)
         {
-            bool Result = true;
+            bool vResult = false;
 
             if (FMouseDownIndex >= 0)
             {
                 HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
                     e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
-                vFloatItem.MouseUp(vMouseArgs);
+                vResult = vFloatItem.MouseUp(vMouseArgs);
             }
-            else
-                Result = false;
 
-            return Result;
+            return vResult;
         }
 
         public bool KeyDownFloatItem(KeyEventArgs e)
@@ -442,11 +426,11 @@ namespace HC.View
         private bool FShowUnderLine;  // 下划线
         private bool FShowLineNo;  // 行号
 
-        protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, 
+        protected override void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, 
             RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+            base.DoDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
 
             if (!APaintInfo.Print)
@@ -548,11 +532,11 @@ namespace HC.View
             }
         }
 
-        protected override void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        protected override void DoDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+            base.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 

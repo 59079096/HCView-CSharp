@@ -50,9 +50,9 @@ namespace EMRView
             tbxBorderWidth.Text = vTable.BorderWidth.ToString();
 
             tbxFixRowFirst.Text = (vTable.FixRow + 1).ToString();
-            tbxFixRowLast.Text = (vTable.FixRow + 1 + vTable.FixRowCount).ToString();
+            tbxFixRowLast.Text = (vTable.FixRow + vTable.FixRowCount).ToString();
             tbxFixColFirst.Text = (vTable.FixCol + 1).ToString();
-            tbxFixColLast.Text = (vTable.FixCol + 1 + vTable.FixColCount).ToString();
+            tbxFixColLast.Text = (vTable.FixCol + vTable.FixColCount).ToString();
 
             // 行
             if (vTable.SelectCellRang.StartRow >= 0)
@@ -114,6 +114,11 @@ namespace EMRView
                     vTable.CellVPadding = byte.Parse(tbxCellVPadding.Text);
                     vTable.BorderWidth = byte.Parse(tbxBorderWidth.Text);
                     vTable.BorderVisible = cbxBorderVisible.Checked;
+
+                    vTable.FixRow = (sbyte)(int.Parse(tbxFixRowFirst.Text, 0) - 1);
+                    vTable.FixRowCount = (byte)(int.Parse(tbxFixRowLast.Text, 0) - vTable.FixRow);
+                    vTable.FixCol = (sbyte)(int.Parse(tbxFixColFirst.Text, 0) - 1);
+                    vTable.FixColCount = (byte)(int.Parse(tbxFixColLast.Text, 0) - vTable.FixCol);
 
                     // 行
                     if (vTable.SelectCellRang.StartRow >= 0)

@@ -24,7 +24,6 @@ namespace EMRView
 {
     public delegate void DeItemInsertEventHandler(HCEmrView aEmrView, HCSection aSection,
         HCCustomData aData, HCCustomItem aItem);
-    public delegate void ImportEventHandler(string aText);
 
     public partial class frmRecord : Form
     {
@@ -519,11 +518,6 @@ namespace EMRView
                 frmRecordPop.Close();
         }
 
-        private void SetEditToolVisible(bool value)
-        {
-            tlbEditTool.Visible = value;
-        }
-
         private void SetPrintToolVisible(bool value)
         {
             if (value)
@@ -587,7 +581,7 @@ namespace EMRView
                             return;
                         }
 
-                        POINT vPt = FEmrView.GetActiveDrawItemClientCoord();  // 得到相对EmrView的坐标
+                        POINT vPt = FEmrView.GetActiveDrawItemViewCoord();  // 得到相对EmrView的坐标
                         HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
                         RECT vDrawItemRect = vActiveDrawItem.Rect;
                         vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
@@ -653,20 +647,124 @@ namespace EMRView
             tlbEditTool.Visible = false;
         }
 
-        /// <summary> 插入一个数据元 </summary>
+        /// <summary> 插入一个数据元(文本形式) </summary>
         /// <param name="aIndex">数据元唯一标识</param>
         /// <param name="aName">数据元名称</param>
-        public void InsertDeItem(string aIndex, string aName)
+        public DeItem InsertDeItem(string aIndex, string aName)
         {
             if ((aIndex == "") || (aName == ""))
             {
                 MessageBox.Show("要插入的数据元索引和名称不能为空！");
-                return;
+                return null;
             }
+
             DeItem vDeItem = FEmrView.NewDeItem(aName);
             vDeItem[DeProp.Index] = aIndex;
             vDeItem[DeProp.Name] = aName;
             FEmrView.InsertDeItem(vDeItem);
+            return vDeItem;
+        }
+
+        /// <summary> 插入一个数据组 </summary>
+        public void InsertDeGroup(string aIndex, string aName)
+        {
+            if ((aIndex == "") || (aName == ""))
+            {
+                MessageBox.Show("要插入的数据组索引和名称不能为空！");
+                return;
+            }
+
+            using (DeGroup vDeGroup = new DeGroup(FEmrView.ActiveSectionTopLevelData()))
+            {
+                vDeGroup[DeProp.Index] = aIndex;
+                vDeGroup[DeProp.Name] = aName;
+                FEmrView.InsertDeGroup(vDeGroup);
+            }
+        }
+
+        /// <summary> 插入一个数据元(Edit形式) </summary>
+        public DeEdit InsertDeEdit(string aIndex, string aName)
+        {
+            if ((aIndex == "") || (aName == ""))
+            {
+                MessageBox.Show("要插入的Edit索引和名称不能为空！");
+                return null;
+            }
+
+            DeEdit vDeEdit = new DeEdit(FEmrView.ActiveSectionTopLevelData(), aName);
+            vDeEdit[DeProp.Index] = aIndex;
+            vDeEdit[DeProp.Name] = aName;
+            FEmrView.InsertItem(vDeEdit);
+            return vDeEdit;
+        }
+
+        /// <summary> 插入一个数据元(Combobox形式) </summary>
+        public DeCombobox InsertDeCombobox(string aIndex, string aName)
+        {
+            if ((aIndex == "") || (aName == ""))
+            {
+                MessageBox.Show("要插入的Combobox索引和名称不能为空！");
+                return null;
+            }
+
+            DeCombobox vCombobox = new DeCombobox(FEmrView.ActiveSectionTopLevelData(), aName);
+            vCombobox.SaveItem = false;
+            vCombobox[DeProp.Index] = aIndex;
+            vCombobox[DeProp.Name] = aName;
+            FEmrView.InsertItem(vCombobox);
+            return vCombobox;
+        }
+
+        /// <summary> 插入一个数据元(DateTime形式) </summary>
+        public DeDateTimePicker InsertDeDateTime(string aIndex, string aName)
+        {
+            if ((aIndex == "") || (aName == ""))
+            {
+                MessageBox.Show("要插入的DateTiem索引和名称不能为空！");
+                return null;
+            }
+
+            DeDateTimePicker vDateTime = new DeDateTimePicker(FEmrView.ActiveSectionTopLevelData(), DateTime.Now);
+            vDateTime[DeProp.Index] = aIndex;
+            vDateTime[DeProp.Name] = aName;
+            FEmrView.InsertItem(vDateTime);
+            return vDateTime;
+        }
+
+        /// <summary> 插入一个数据元(RadioGroup形式) </summary>
+        public DeRadioGroup InsertDeRadioGroup(string aIndex, string aName)
+        {
+            if ((aIndex == "") || (aName == ""))
+            {
+                MessageBox.Show("要插入的RadioGroup索引和名称不能为空！");
+                return null;
+            }
+
+            DeRadioGroup vRadioGroup = new DeRadioGroup(FEmrView.ActiveSectionTopLevelData());
+            vRadioGroup[DeProp.Index] = aIndex;
+            vRadioGroup[DeProp.Name] = aName;
+            // 取数据元的选项，选项太多时提示是否都插入
+            vRadioGroup.AddItem("选项1");
+            vRadioGroup.AddItem("选项2");
+            vRadioGroup.AddItem("选项3");
+            FEmrView.InsertItem(vRadioGroup);
+            return vRadioGroup;
+        }
+
+        /// <summary> 插入一个数据元(CheckBox形式) </summary>
+        public DeCheckBox InsertDeCheckBox(string aIndex, string aName)
+        {
+            if ((aIndex == "") || (aName == ""))
+            {
+                MessageBox.Show("要插入的CheckBox索引和名称不能为空！");
+                return null;
+            }
+
+            DeCheckBox vCheckBox = new DeCheckBox(FEmrView.ActiveSectionTopLevelData(), aName, false);
+            vCheckBox[DeProp.Index] = aIndex;
+            vCheckBox[DeProp.Name] = aName;
+            FEmrView.InsertItem(vCheckBox);
+            return vCheckBox;
         }
 
         /// <summary> 遍历文档指定Data的Item </summary>
@@ -744,12 +842,6 @@ namespace EMRView
         {
             get { return FOnSetDeItemText; }
             set { FOnSetDeItemText = value; }
-        }
-
-        public bool EditToolVisible
-        {
-            get { return tlbEditTool.Visible; }
-            set { SetEditToolVisible(value); }
         }
 
         public bool PrintToolVisible
@@ -1010,7 +1102,7 @@ namespace EMRView
         private void mniInsertDeItem_Click(object sender, EventArgs e)
         {
             frmDataElement vFrmDataElement = new frmDataElement();
-            vFrmDataElement.OnInsertAsDE = InsertDeItem;
+            //vFrmDataElement.OnInsertAsDE = InsertDeItem;
             vFrmDataElement.ShowDialog();
         }
 
@@ -1132,11 +1224,26 @@ namespace EMRView
             if (vEndPage > FEmrView.PageCount - 1)
                 vEndPage = FEmrView.PageCount - 1;
 
-            List<int> vPages = new List<int>();
-            for (int i = vStartPage; i <= vEndPage; i++)
-                vPages.Add(i);
+            FEmrView.Print(cbbPrinter.Text, vStartPage, vEndPage, 1);
+        }
 
-            FEmrView.Print(cbbPrinter.Text, 1, vPages.ToArray());
+        private void MniViewFilm_Click(object sender, EventArgs e)
+        {
+            FEmrView.ViewModel = HCViewModel.hvmFilm;
+            //FHRuler.Visible = true;
+            //FVRuler.Visible = true;
+        }
+
+        private void MniViewPage_Click(object sender, EventArgs e)
+        {
+            FEmrView.ViewModel = HCViewModel.hvmPage;
+            //FHRuler.Visible = False;
+            //FVRuler.Visible = False;
+        }
+
+        private void MniInputHelp_Click(object sender, EventArgs e)
+        {
+            FEmrView.InputHelpEnable = !FEmrView.InputHelpEnable;
         }
 
         private void mniHideTrace_Click(object sender, EventArgs e)
@@ -1158,6 +1265,11 @@ namespace EMRView
                 else
                     mniHideTrace.Text = "不显示痕迹";
             }
+
+            if (FEmrView.InputHelpEnable)
+                mniInputHelp.Text = "关闭辅助输入";
+            else
+                mniInputHelp.Text = "开启辅助输入";
         }
 
         private void mniSaveAs_Click(object sender, EventArgs e)

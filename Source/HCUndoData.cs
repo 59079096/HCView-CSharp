@@ -405,6 +405,12 @@ namespace HC.View
                         FFormatFirstItemNo = (vUndoList[vUndoList.CurGroupBeginIndex] as HCUndoGroupBegin).ItemNo;
                         FFormatLastItemNo = (vUndoList[vUndoList.CurGroupEndIndex] as HCUndoGroupEnd).ItemNo;
 
+                        // 如果是序号0、1在一行，1删除后，又插入2个，其中第一个和序号0合并，第2个换行，
+                        // 撤销时FFormatFirstItemNo为1从而FFormatFirstDrawItemNo为1，而此时1为行首，
+                        // 撤销完后格式化会按在行首开始，导致原来的序号1撤销后换行。所以暴力回退1个
+                        if (FFormatFirstItemNo > 0)
+                            FFormatFirstItemNo--;
+
                         if (FFormatLastItemNo < Items.Count - 1)
                             FFormatLastItemNo++;
 
@@ -569,19 +575,19 @@ namespace HC.View
             {
                 ReFormatData(FFormatFirstDrawItemNo, FFormatLastItemNo + FItemAddCount, FItemAddCount, FForceClearExtra);
 
-                int vCaretDI = GetDrawItemNoByOffset(vCaretItemNo, vCaretOffset);  // 因为多个Action不一定每个会有有效的CaretDrawItem，所以需要重新计算一下
+                int vCaretDIItem = GetDrawItemNoByOffset(vCaretItemNo, vCaretOffset);  // 因为多个Action不一定每个会有有效的CaretDrawItem，所以需要重新计算一下
 
                 if ((vCaretDrawItemNo < 0) || (vCaretDrawItemNo > this.DrawItems.Count - 1))
-                    vCaretDrawItemNo = vCaretDI;
+                    vCaretDrawItemNo = vCaretDIItem;
                 else
-                if (vCaretDI != vCaretDrawItemNo)
+                if (vCaretDIItem != vCaretDrawItemNo)
                 {
                     if ((DrawItems[vCaretDrawItemNo].ItemNo == vCaretItemNo) && (DrawItems[vCaretDrawItemNo].CharOffs == vCaretOffset))  // 换行
                     {
 
                     }
                     else
-                        vCaretDrawItemNo = vCaretDI;  // 纠正
+                        vCaretDrawItemNo = vCaretDIItem;  // 纠正
                 }
                 
                 CaretDrawItemNo = vCaretDrawItemNo;

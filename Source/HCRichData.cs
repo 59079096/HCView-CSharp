@@ -22,7 +22,7 @@ namespace HC.View
 {
     public delegate bool InsertProcEventHandler(HCCustomItem aItem);
     public delegate void DataItemEventHandler(HCCustomData aData, int aItemNo);
-    public delegate void ItemMouseEventHandler(HCCustomData aData, int aItemNo, MouseEventArgs e);
+    public delegate void ItemMouseEventHandler(HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e);
 
     public class HCRichData : HCUndoData
     {
@@ -582,7 +582,7 @@ namespace HC.View
                     Items[aStartNo].ParaFirst = true;
                 }
                 else  // 段删除完了
-                if (aKeepPara)
+                if (aKeepPara)  // 保持段
                 {
                     HCCustomItem vItem = CreateDefaultTextItem();
                     this.CurStyleNo = vItem.StyleNo;
@@ -1484,9 +1484,9 @@ namespace HC.View
                             }
                             else
                             {
-                                if (!vSelEndComplate)  // 起始和结束都没有删除完
+                                if ((!vSelEndComplate) && (SelectInfo.StartItemNo + 1 == SelectInfo.EndItemNo - vDelCount))  // 起始和结束都没有删除完且中间没有不可删除的
                                 {
-                                    if (MergeItemText(Items[SelectInfo.StartItemNo], Items[SelectInfo.EndItemNo - vDelCount]))
+                                    if (MergeItemText(Items[SelectInfo.StartItemNo], Items[SelectInfo.EndItemNo - vDelCount]))  // 起始和结束挨在一起了
                                     {
                                         UndoAction_InsertText(SelectInfo.StartItemNo,
                                             Items[SelectInfo.StartItemNo].Length - Items[SelectInfo.EndItemNo - vDelCount].Length + 1,
@@ -1712,7 +1712,7 @@ namespace HC.View
 
                 if (vInsPos > 0)
                 {
-                    if (vInsertEmptyLine)
+                    if (vInsertEmptyLine)  // 插入位置前面是空行Item
                     {
                         UndoAction_ItemParaFirst(vInsPos, 0, Items[vInsPos - 1].ParaFirst);
                         Items[vInsPos].ParaFirst = Items[vInsPos - 1].ParaFirst;
@@ -2226,7 +2226,7 @@ namespace HC.View
             Items[aItemNo].MouseDown(vMouseArgs);
 
             if (FOnItemMouseDown != null)
-                FOnItemMouseDown(this, aItemNo, vMouseArgs);
+                FOnItemMouseDown(this, aItemNo, aOffset, vMouseArgs);
         }
         #endregion
 
@@ -2462,7 +2462,7 @@ namespace HC.View
             Items[aItemNo].MouseUp(vMouseArgs);
 
             if (FOnItemMouseUp != null)
-                FOnItemMouseUp(this, aItemNo, vMouseArgs);
+                FOnItemMouseUp(this, aItemNo, aOffset, vMouseArgs);
         }
         #endregion
 
@@ -3474,6 +3474,18 @@ namespace HC.View
                             SelectInfo.StartItemOffset = HC.OffsetBefor;
                             RectItemKeyDown(vSelectExist, ref vCurItem, e, aPageBreak);
                             break;
+
+                        case User.VK_LEFT:  // 移出去
+                            SelectInfo.StartItemOffset = HC.OffsetBefor;
+                            vRectItem.Active = false;
+                            Style.UpdateInfoRePaint();
+                            break;
+
+                        case User.VK_RIGHT:  // 移出去
+                            SelectInfo.StartItemOffset = HC.OffsetAfter;
+                            vRectItem.Active = false;
+                            Style.UpdateInfoRePaint();
+                            break;
                     }
                 }
             }
@@ -3835,6 +3847,7 @@ namespace HC.View
                             vCurItem = CreateDefaultTextItem();
                             vCurItem.ParaFirst = true;
                             vCurItem.PageBreak = aPageBreak;
+
                             Items.Insert(SelectInfo.StartItemNo + 1, vCurItem);
                             UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
 

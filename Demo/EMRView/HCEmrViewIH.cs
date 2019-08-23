@@ -246,6 +246,9 @@ namespace EMRView
             if (!FInputHelper.EnableEx)
                 return;
 
+            if (!this.Style.UpdateInfo.ReStyle)
+                return;
+
             string vsBefor = "";
             string vsAfter = "";
 
@@ -325,6 +328,12 @@ namespace EMRView
             }
 
             return base.PreProcessMessage(ref msg);
+        }
+
+        public bool InputHelpEnable
+        {
+            get { return FInputHelper.EnableEx; }
+            set { FInputHelper.EnableEx = value; }
         }
     }
 }

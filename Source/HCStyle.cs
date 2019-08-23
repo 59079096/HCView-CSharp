@@ -537,10 +537,4 @@ namespace HC.View
             set { FOnInvalidateRect = value; }
         }
     }
-
-    public class HCFloatStyle
-    {
-        public const int
-            Line = 1;  // 直线
-    }
 }

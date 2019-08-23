@@ -153,6 +153,7 @@ namespace HC.View
         {
             aCellData.OnInsertItem = (OwnerData as HCViewData).OnInsertItem;
             aCellData.OnRemoveItem = (OwnerData as HCViewData).OnRemoveItem;
+            aCellData.OnItemMouseDown = (OwnerData as HCViewData).OnItemMouseDown;
             aCellData.OnItemMouseUp = (OwnerData as HCViewData).OnItemMouseUp;
 
             aCellData.OnCreateItemByStyle = (OwnerData as HCViewData).OnCreateItemByStyle;      
@@ -922,8 +923,10 @@ namespace HC.View
         }
 
         // 继承THCCustomItem抽象方法
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
+            bool vResult = true;
+
             int vMouseDownRow = -1, vMouseDownCol = -1;
             HCTableCell vCell = null;
             POINT vCellPt = new POINT();
@@ -948,7 +951,7 @@ namespace HC.View
                 FMouseDownX = e.X;
                 FMouseDownY = e.Y;
                 OwnerData.Style.UpdateInfoRePaint();
-                return;
+                return vResult;
             }
 
             if (FResizeInfo.TableSite == TableSite.tsCell)
@@ -1004,6 +1007,8 @@ namespace HC.View
                     FOutsideInfo.Leftside = (e.X < 0);  // 左边
                 }
             }
+
+            return vResult;
         }
 
         #region MouseMove子方法
@@ -1151,8 +1156,10 @@ namespace HC.View
 
         #endregion
 
-        public override void MouseMove(MouseEventArgs e)
+        public override bool MouseMove(MouseEventArgs e)
         {
+            bool vResult = true;
+
             POINT vCellPt = new POINT();
 
             if (ActiveDataResizing())
@@ -1161,8 +1168,8 @@ namespace HC.View
                 MouseEventArgs vEventArgs = new MouseEventArgs(e.Button, e.Clicks,
                     e.X - vCellPt.X, e.Y - vCellPt.Y, e.Delta);
                 this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].MouseMove(vEventArgs, FCellHPadding, FCellVPadding);
-                
-                return;
+
+                return vResult;
             }
 
             if (Resizing)
@@ -1171,7 +1178,7 @@ namespace HC.View
                 FResizeInfo.DestY = e.Y;
                 OwnerData.Style.UpdateInfoRePaint();
                 
-                return;
+                return vResult;
             }
 
             int vMoveRow = -1, vMoveCol = -1;
@@ -1191,7 +1198,7 @@ namespace HC.View
                             e.X - vCellPt.X, e.Y - vCellPt.Y, e.Delta);
                         this[FMouseMoveRow, FMouseMoveCol].MouseMove(vEventArgs, FCellHPadding, FCellVPadding);
                         
-                        return;
+                        return vResult;
                     }
 
                     if (!FSelecting)
@@ -1226,7 +1233,7 @@ namespace HC.View
                     }
                     
                     if ((FMouseMoveRow < 0) || (FMouseMoveCol < 0))
-                        return;
+                        return vResult;
                     
                     vCellPt = GetCellPostion(FMouseMoveRow, FMouseMoveCol);
                     MouseEventArgs vEventArgs = new MouseEventArgs(e.Button, e.Clicks,
@@ -1251,10 +1258,14 @@ namespace HC.View
                     if (vResizeInfo.TableSite == TableSite.tsBorderBottom)
                         HC.GCursor = Cursors.HSplit;
             }
+
+            return vResult;
         }
 
-        public override void MouseUp(MouseEventArgs e)
+        public override bool MouseUp(MouseEventArgs e)
         {
+            bool vResult = true;
+
             POINT vCellPt = new POINT();
 
             FMouseLBDowning = false;
@@ -1266,7 +1277,7 @@ namespace HC.View
                     e.X - vCellPt.X, e.Y - vCellPt.Y, e.Delta);
                 this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].MouseUp(vEventArgs, FCellHPadding, FCellVPadding);
                 
-                return;
+                return vResult;
             }
             
             int vUpRow = -1, vUpCol = -1;
@@ -1344,7 +1355,7 @@ namespace HC.View
                 OwnerData.Style.UpdateInfoRePaint();
                 OwnerData.Style.UpdateInfoReCaret();
                 
-                return;
+                return vResult;
             }
 
             if (FSelecting || OwnerData.Style.UpdateInfo.Selecting)
@@ -1405,6 +1416,8 @@ namespace HC.View
                     e.X - vCellPt.X, e.Y - vCellPt.Y, e.Delta);
                 this[FMouseDownRow, FMouseDownCol].MouseUp(vEventArgs, FCellHPadding, FCellVPadding);
             }
+
+            return vResult;
         }
 
         public override void MouseLeave()
@@ -2686,18 +2699,17 @@ namespace HC.View
 
         #region KeyDown子方法
 
-        private bool DoCrossCellKey(int aKey)
+        private bool DoCrossCellKey(int aKey, HCTableCell vEditCell)
         {
             bool Result = false;
             int vRow = -1, vCol = -1;
-            HCTableCell vEditCell = null;
 
             if (aKey == User.VK_LEFT)
             {
                 if (vEditCell.CellData.SelectFirstItemOffsetBefor())
                 {
                     // 找左侧单元格
-                    for (int i = FSelectCellRang.StartCol; i >= 0; i--)
+                    for (int i = FSelectCellRang.StartCol - 1; i >= 0; i--)
                     {
                         if (FRows[FSelectCellRang.StartRow][i].ColSpan >= 0)
                         {
@@ -2718,61 +2730,61 @@ namespace HC.View
                 }
             }
             else
-                if (aKey == User.VK_RIGHT)
+            if (aKey == User.VK_RIGHT)
+            {
+                if (vEditCell.CellData.SelectLastItemOffsetAfter())
                 {
-                    if (vEditCell.CellData.SelectLastItemOffsetAfter())
+                    // 找右侧单元格
+                    for (int i = FSelectCellRang.StartCol + 1; i <= FColWidths.Count - 1; i++)
                     {
-                        // 找右侧单元格
-                        for (int i = FSelectCellRang.StartCol; i <= FColWidths.Count - 1; i++)
+                        if (this[FSelectCellRang.StartRow, i].ColSpan >= 0)
                         {
-                            if (this[FSelectCellRang.StartRow, i].ColSpan >= 0)
-                            {
-                                if (FRows[FSelectCellRang.StartRow][i].RowSpan < 0)
-                                    FSelectCellRang.StartRow = FSelectCellRang.StartRow + FRows[FSelectCellRang.StartRow][i].RowSpan;
+                            if (FRows[FSelectCellRang.StartRow][i].RowSpan < 0)
+                                FSelectCellRang.StartRow = FSelectCellRang.StartRow + FRows[FSelectCellRang.StartRow][i].RowSpan;
 
-                                vCol = i;
-                                break;
-                            }
+                            vCol = i;
+                            break;
                         }
+                    }
 
-                        if (vCol >= 0)
-                        {
-                            FSelectCellRang.StartCol = vCol;
-                            FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].CellData.SelectFirstItemBeforWithCaret();
-                            Result = true;
-                        }
+                    if (vCol >= 0)
+                    {
+                        FSelectCellRang.StartCol = vCol;
+                        FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].CellData.SelectFirstItemBeforWithCaret();
+                        Result = true;
                     }
                 }
-                else
-                    if (aKey == User.VK_UP)
+            }
+            else
+            if (aKey == User.VK_UP)
+            {
+                if ((vEditCell.CellData.SelectFirstLine()) && (FSelectCellRang.StartRow > 0))
+                {
+                    GetDestCell(FSelectCellRang.StartRow - 1, FSelectCellRang.StartCol, ref vRow, ref vCol);
+                    if ((vRow >= 0) && (vCol >= 0))
                     {
-                        if ((vEditCell.CellData.SelectFirstLine()) && (FSelectCellRang.StartRow > 0))
-                        {
-                            GetDestCell(FSelectCellRang.StartRow - 1, FSelectCellRang.StartCol, ref vRow, ref vCol);
-                            if ((vRow >= 0) && (vCol >= 0))
-                            {
-                                FSelectCellRang.StartRow = vRow;
-                                FSelectCellRang.StartCol = vCol;
-                                FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].CellData.SelectLastItemAfterWithCaret();
-                                Result = true;
-                            }
-                        }
+                        FSelectCellRang.StartRow = vRow;
+                        FSelectCellRang.StartCol = vCol;
+                        FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].CellData.SelectLastItemAfterWithCaret();
+                        Result = true;
                     }
-                    else
-                        if (aKey == User.VK_DOWN)
-                        {
-                            if ((vEditCell.CellData.SelectLastLine()) && (FSelectCellRang.StartRow < this.RowCount - 1))
-                            {
-                                GetDestCell(FSelectCellRang.StartRow + 1, FSelectCellRang.StartCol, ref vRow, ref vCol);
-                                if ((vRow >= 0) && (vCol >= 0))
-                                {
-                                    FSelectCellRang.StartRow = vRow;
-                                    FSelectCellRang.StartCol = vCol;
-                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].CellData.SelectFirstItemBeforWithCaret();
-                                    Result = true;
-                                }
-                            }
-                        }
+                }
+            }
+            else
+            if (aKey == User.VK_DOWN)
+            {
+                if ((vEditCell.CellData.SelectLastLine()) && (FSelectCellRang.StartRow < this.RowCount - 1))
+                {
+                    GetDestCell(FSelectCellRang.StartRow + 1, FSelectCellRang.StartCol, ref vRow, ref vCol);
+                    if ((vRow >= 0) && (vCol >= 0))
+                    {
+                        FSelectCellRang.StartRow = vRow;
+                        FSelectCellRang.StartCol = vCol;
+                        FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].CellData.SelectFirstItemBeforWithCaret();
+                        Result = true;
+                    }
+                }
+            }
 
             return Result;
         }
@@ -2807,7 +2819,7 @@ namespace HC.View
                         vEditCell.CellData.KeyDown(e);
                         if ((e.Handled) && (HC.IsDirectionKey(e.KeyValue)))
                         {
-                            if (DoCrossCellKey(e.KeyValue))
+                            if (DoCrossCellKey(e.KeyValue, vEditCell))
                             {
                                 OwnerData.Style.UpdateInfoReCaret();
                                 e.Handled = vOldKey;

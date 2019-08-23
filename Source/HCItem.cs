@@ -81,6 +81,13 @@ namespace HC.View
         public ScaleInfo ScaleCanvas(HCCanvas aCanvas)
         {
             ScaleInfo Result = new ScaleInfo();
+
+            if ((FScaleX == 1) && (FScaleY == 1))
+            {
+                Result.MapMode = 0;
+                return Result;
+            }
+            
             Result.MapMode = GDI.GetMapMode(aCanvas.Handle);  // 返回映射方式，零则失败
             GDI.SetMapMode(aCanvas.Handle, GDI.MM_ANISOTROPIC);  // 逻辑单位转换成具有任意比例轴的任意单位，用SetWindowsEx和SetViewportExtEx函数指定单位、方向和需要的比例
             GDI.SetWindowOrgEx(aCanvas.Handle, 0, 0, ref Result.WindowOrg);  // 用指定的坐标设置设备环境的窗口原点
@@ -96,6 +103,9 @@ namespace HC.View
 
         public void RestoreCanvasScale(HCCanvas aCanvas, ScaleInfo aOldInfo)
         {
+            if (aOldInfo.MapMode == 0)
+                return;
+
             POINT pt = new POINT();
             SIZE size = new SIZE();
             GDI.SetViewportOrgEx(aCanvas.Handle, aOldInfo.ViewportOrg.X, aOldInfo.ViewportOrg.Y, ref pt);
@@ -244,9 +254,9 @@ namespace HC.View
 
         protected virtual void SetHyperLink(string value) { }
 
-        protected virtual void SetActive(bool Value)
+        protected virtual void SetActive(bool value)
         {
-            FActive = Value;
+            FActive = value;
         }
 
         public virtual int GetLength()
@@ -328,14 +338,21 @@ namespace HC.View
 
         public virtual void DblClick(int X, int Y) { }
 
-        public virtual void MouseDown(MouseEventArgs e)
+        public virtual bool MouseDown(MouseEventArgs e)
         {
-            FActive = true;
+            Active = true;
+            return FActive;
         }
 
-        public virtual void MouseMove(MouseEventArgs e) { }
+        public virtual bool MouseMove(MouseEventArgs e)
+        {
+            return FActive;
+        }
 
-        public virtual void MouseUp(MouseEventArgs e) { }
+        public virtual bool MouseUp(MouseEventArgs e)
+        {
+            return FActive;
+        }
 
         public virtual void MouseEnter() { }
 

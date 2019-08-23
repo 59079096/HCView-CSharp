@@ -59,7 +59,7 @@ namespace HC.View
     public delegate void SectionPaintEventHandler(object sender, int aPageIndex,
         RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo);
 
-    public delegate void SectionDrawItemPaintEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+    public delegate void SectionDrawItemPaintEventHandler(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
         int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo);
 
     public delegate void SectionDataItemNotifyEventHandler(object sender, HCCustomData aData, HCCustomItem aItem);
@@ -69,7 +69,7 @@ namespace HC.View
 
     public delegate void SectionAnnotateEventHandler(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate);
 
-    public delegate void SectionDataItemMouseEventHandler(object sender, HCCustomData aData, int aItemNo, MouseEventArgs e);
+    public delegate void SectionDataItemMouseEventHandler(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e);
 
     public class HCCustomSection : HCObject
     {
@@ -115,7 +115,7 @@ namespace HC.View
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
 
         SectionDataItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
-        SectionDataItemMouseEventHandler FOnItemMouseUp;
+        SectionDataItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         DataItemEventHandler FOnItemResize;
         EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
         StyleItemEventHandler FOnCreateItemByStyle;
@@ -167,29 +167,29 @@ namespace HC.View
                 return new POINT(0, 0);
         }
 
-        private void DoDataDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        private void DoDataDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FOnDrawItemPaintBefor != null)
-                FOnDrawItemPaintBefor(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintBefor(this, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
-        private void DoDataDrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, RECT aClearRect, string aDrawText,
+        private void DoDataDrawItemPaintContent(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect, string aDrawText,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnDrawItemPaintContent != null)
-                FOnDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
+                FOnDrawItemPaintContent(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
                     aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
-        private void DoDataDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        private void DoDataDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FOnDrawItemPaintAfter != null)
-                FOnDrawItemPaintAfter(this, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintAfter(this, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
@@ -223,10 +223,16 @@ namespace HC.View
                 FOnRemoveItem(this, aData, aItem);
         }
 
-        private void DoDataItemMouseUp(HCCustomData aData, int aItemNo, MouseEventArgs e)
+        private void DoDataItemMouseDown(HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
+        {
+            if (FOnItemMouseDown != null)
+                FOnItemMouseDown(this, aData, aItemNo, aOffset, e);
+        }
+
+        private void DoDataItemMouseUp(HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
         {
             if (FOnItemMouseUp != null)
-                FOnItemMouseUp(this, aData, aItemNo, e);
+                FOnItemMouseUp(this, aData, aItemNo, aOffset, e);
         }
 
         protected void DoDataChanged(object sender)
@@ -658,6 +664,7 @@ namespace HC.View
             aData.OnInsertItem = DoDataInsertItem;
             aData.OnRemoveItem = DoDataRemoveItem;
             aData.OnItemResized = DoDataItemResized;
+            aData.OnItemMouseDown = DoDataItemMouseDown;
             aData.OnItemMouseUp = DoDataItemMouseUp;
             aData.OnCreateItemByStyle = DoDataCreateStyleItem;
             aData.OnCanEdit = DoDataCanEdit;
@@ -1814,11 +1821,14 @@ namespace HC.View
             #region 有FloatItem时短路
             if (FActiveData.FloatItems.Count > 0)
             {
-                PaperCoordToData(FActivePageIndex, FActiveData, ref vX, ref vY, false);
-                if (FActiveData == FPage)
-                    vY = vY + GetPageDataFmtTop(FActivePageIndex);
+                int vX2 = vX;  // 使用另外的变量，防止FloatItem不处理时影响下面的正常计算
+                int vY2 = vY;
 
-                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
+                PaperCoordToData(FActivePageIndex, FActiveData, ref vX2, ref vY2, false);
+                if (FActiveData == FPage)
+                    vY2 = vY2 + GetPageDataFmtTop(FActivePageIndex);
+
+                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX2, vY2, e.Delta);
                 if (FActiveData.MouseDownFloatItem(vMouseArgs))
                     return;
             }
@@ -2824,6 +2834,12 @@ namespace HC.View
         {
             get { return FOnItemResize; }
             set { FOnItemResize = value; }
+        }
+
+        public SectionDataItemMouseEventHandler OnItemMouseDown
+        {
+            get { return FOnItemMouseDown; }
+            set { FOnItemMouseDown = value; }
         }
 
         public SectionDataItemMouseEventHandler OnItemMouseUp

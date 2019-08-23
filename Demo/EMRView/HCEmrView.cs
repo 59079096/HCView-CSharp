@@ -196,7 +196,7 @@ namespace EMRView
         /// <returns>创建好的Item</returns>
         protected override HCCustomItem DoSectionCreateStyleItem(HCCustomData aData, int aStyleNo)
         {
-            return HCEmrView.CreateEmrStyleItem(aData, aStyleNo);
+            return HCEmrViewLite.CreateEmrStyleItem(aData, aStyleNo);
         }
 
         /// <summary> 当节某Data有Item插入后触发 </summary>
@@ -495,12 +495,12 @@ namespace EMRView
         /// <param name="ADataScreenBottom">绘制时呈现Data的Bottom位置</param>
         /// <param name="ACanvas">画布</param>
         /// <param name="APaintInfo">绘制时的其它信息</param>
-        protected override void DoSectionDrawItemPaintAfter(Object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect, 
+        protected override void DoSectionDrawItemPaintAfter(Object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, 
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if ((!FHideTrace) && (FTraceCount > 0))  // 显示痕迹且有痕迹
             {
-                HCCustomItem vItem = aData.Items[aData.DrawItems[aDrawItemNo].ItemNo];
+                HCCustomItem vItem = aData.Items[aItemNo];
                 if (vItem.StyleNo > HCStyle.Null)
                 {
                     DeItem vDeItem = vItem as DeItem;
@@ -527,7 +527,7 @@ namespace EMRView
                     DrawBlankTip_(aDataDrawLeft, aDrawRect.Top + aDrawRect.Height + aData.GetLineBlankSpace(aDrawItemNo), aDataDrawRight, aDataDrawBottom, aCanvas);
             }
 
-            base.DoSectionDrawItemPaintAfter(sender, aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+            base.DoSectionDrawItemPaintAfter(sender, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
@@ -561,47 +561,6 @@ namespace EMRView
 
         }
 
-        /// <summary> 创建指定样式的Item </summary>
-        /// <param name="aData">要创建Item的Data</param>
-        /// <param name="aStyleNo">要创建的Item样式</param>
-        /// <returns>创建好的Item</returns>
-        public static HCCustomItem CreateEmrStyleItem(HCCustomData aData, int aStyleNo)
-        {
-            switch (aStyleNo)
-            {
-                case HCStyle.Table:
-                    return new DeTable(aData, 1, 1, 1);
-
-                case HCStyle.CheckBox:
-                    return new DeCheckBox(aData, "勾选框", false);
-
-                case HCStyle.Edit:
-                    return new DeEdit(aData, "");
-
-                case HCStyle.Combobox:
-                    return new DeCombobox(aData, "");
-
-                case HCStyle.DateTimePicker:
-                    return new DeDateTimePicker(aData, DateTime.Now);
-
-                case HCStyle.RadioGroup:
-                    return new DeRadioGroup(aData);
-
-                case EMR.EMRSTYLE_YUEJING:
-                    return new EmrYueJingItem(aData, "", "", "", "");
-
-                case EMR.EMRSTYLE_TOOTH:
-                    return new EmrToothItem(aData, "", "", "", "");
-
-                case EMR.EMRSTYLE_FANGJIAO:
-                    return new EmrFangJiaoItem(aData, "", "", "", "");
-
-                default:
-                    return null;
-            }
-        }
-
-
         /// <summary> 遍历Item </summary>
         /// <param name="ATraverse">遍历时信息</param>
         public void TraverseItem(HCItemTraverse aTraverse)
@@ -630,7 +589,7 @@ namespace EMRView
         /// <returns>True：成功，False：失败</returns>
         public bool InsertDeGroup(DeGroup aDeGroup)
         {
-            return InsertDomain(aDeGroup);
+            return this.InsertDomain(aDeGroup);
         }
 
         /// <summary> 插入数据元 </summary>

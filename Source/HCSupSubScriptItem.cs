@@ -164,9 +164,9 @@ namespace HC.View
             FMouseMoveArea = ExpressArea.ceaNone;
         }
 
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
-            base.MouseDown(e);
+            bool vResult = base.MouseDown(e);
             FMouseLBDowning = (e.Button == MouseButtons.Left);
             FOutSelectInto = false;
 
@@ -204,9 +204,11 @@ namespace HC.View
                 FCaretOffset = (short)vOffset;
                 OwnerData.Style.UpdateInfoReCaret();
             }
+
+            return vResult;
         }
 
-        public override void MouseMove(MouseEventArgs e)
+        public override bool MouseMove(MouseEventArgs e)
         {
             if ((!FMouseLBDowning) && (e.Button == MouseButtons.Left))
                 FOutSelectInto = true;
@@ -223,14 +225,14 @@ namespace HC.View
             else
                 FMouseMoveArea = ExpressArea.ceaNone;
             
-            base.MouseMove(e);
+            return base.MouseMove(e);
         }
 
-        public override void MouseUp(MouseEventArgs e)
+        public override bool MouseUp(MouseEventArgs e)
         {
             FMouseLBDowning = false;
             FOutSelectInto = false;
-            base.MouseUp(e);
+            return base.MouseUp(e);
         }
 
         public override void KeyDown(KeyEventArgs e)

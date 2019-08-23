@@ -59,17 +59,18 @@ namespace HC.View
             FMouseIn = false;
         }
 
-        public override void MouseMove(MouseEventArgs e)
+        public override bool MouseMove(MouseEventArgs e)
         {
-            base.MouseMove(e);
             HC.GCursor = Cursors.Arrow;
+            return base.MouseMove(e);            
         }
 
-        public override void MouseUp(MouseEventArgs e)
+        public override bool MouseUp(MouseEventArgs e)
         {
-            base.MouseUp(e);
             if (HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
                 Checked = !FChecked;
+
+            return base.MouseUp(e);            
         }
 
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)

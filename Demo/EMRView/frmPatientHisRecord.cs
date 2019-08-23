@@ -10,10 +10,10 @@ using System.Windows.Forms;
 
 namespace EMRView
 {
-    public partial class frmPatientHisInchRecord : Form
+    public partial class frmPatientHisRecord : Form
     {
         frmImportRecord FfrmImportRecord;
-        public frmPatientHisInchRecord()
+        public frmPatientHisRecord()
         {
             InitializeComponent();
 
@@ -56,10 +56,10 @@ namespace EMRView
             }
         }
 
-        public ImportEventHandler OnImport
+        public HCImportAsTextEventHandler OnImportAsText
         {
-            get { return FfrmImportRecord.OnImport; }
-            set { FfrmImportRecord.OnImport = value; }
+            get { return FfrmImportRecord.OnImportAsText; }
+            set { FfrmImportRecord.OnImportAsText = value; }
         }
 
         private void FrmPatientHisInchRecord_FormClosed(object sender, FormClosedEventArgs e)
@@ -116,6 +116,8 @@ namespace EMRView
         {
             if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
                 return;
+
+            FfrmImportRecord.EmrView.Clear();
 
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
             EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);

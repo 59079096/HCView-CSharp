@@ -1,6 +1,6 @@
 ﻿namespace EMRView
 {
-    partial class frmPatientHisInchRecord
+    partial class frmPatientHisRecord
     {
         /// <summary>
         /// Required designer variable.

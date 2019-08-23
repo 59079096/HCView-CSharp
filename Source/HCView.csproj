@@ -75,6 +75,8 @@
     <Compile Include="HCRadioGroup.cs" />
     <Compile Include="HCRectItem.cs" />
     <Compile Include="HCRichData.cs" />
+    <Compile Include="HCShape.cs" />
+    <Compile Include="HCToolBar.cs" />
     <Compile Include="HCUnitConversion.cs" />
     <Compile Include="HCViewData.cs" />
     <Compile Include="HCRichScrollBar.cs" />
@@ -104,6 +106,11 @@
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HCTabItem.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="SharpZXingQRCode.cs" />
     <Compile Include="Win32.cs" />
     <Compile Include="Win32.ErrorCodes.cs" />
@@ -119,6 +126,25 @@
     <EmbeddedResource Include="HCView.resx">
       <DependentUpon>HCView.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\tool0.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\tool1.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\tool2.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\tool3.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\tool4.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

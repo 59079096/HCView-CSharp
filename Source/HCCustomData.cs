@@ -91,12 +91,12 @@ namespace HC.View
 
     public delegate void DataItemNotifyEventHandler(HCCustomData aData, HCCustomItem aItem);
 
-    public delegate void DrawItemPaintEventHandler(HCCustomData aData,
+    public delegate void DrawItemPaintEventHandler(HCCustomData aData, int aItemNo,
       int aDrawItemNo, RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight,
       int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
       HCCanvas aCanvas, PaintInfo aPaintInfo);
 
-    public delegate void DrawItemPaintContentEventHandler(HCCustomData aData,
+    public delegate void DrawItemPaintContentEventHandler(HCCustomData aData, int aItemNo,
       int aDrawItemNo, RECT aDrawRect, RECT aClearRect, string aDrawText,
       int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
       HCCanvas aCanvas, PaintInfo aPaintInfo);
@@ -118,14 +118,14 @@ namespace HC.View
         DrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
 
-        private void DrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        private void DrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             int vDCState = ACanvas.Save();
             try
             {
-                this.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
+                this.DoDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
                     aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
             }
             finally
@@ -134,14 +134,14 @@ namespace HC.View
             }
         }
 
-        private void DrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        private void DrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             int vDCState = aCanvas.Save();
             try
             {
-                this.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
+                this.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
                     aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
             finally
@@ -150,14 +150,14 @@ namespace HC.View
             }
         }
 
-        private void DrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        private void DrawItemPaintContent(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             RECT aClearRect, string aDrawText, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             int vDCState = aCanvas.Save();
             try
             {
-                this.DoDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
+                this.DoDrawItemPaintContent(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
                     aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
             finally
@@ -562,35 +562,35 @@ namespace HC.View
 
         protected virtual void DoItemAction(int aItemNo, int aOffset, HCItemAction aAction) { }
 
-        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnDrawItemPaintBefor != null)
             {
-                FOnDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
         }
 
-        protected virtual void DoDrawItemPaintContent(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoDrawItemPaintContent(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             RECT aClearRect, string aDrawText, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnDrawItemPaintContent != null)
             {
-                FOnDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
+                FOnDrawItemPaintContent(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
                     aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
         }
 
-        protected virtual void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnDrawItemPaintAfter != null)
             {
-                FOnDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
         }
@@ -2045,7 +2045,8 @@ namespace HC.View
                         vLineSpace = GetLineBlankSpace(i);
 
                     // 绘制内容前
-                    DrawItemPaintBefor(this, i, vDrawRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
+                    DrawItemPaintBefor(this, vDrawItem.ItemNo, i, vDrawRect, aDataDrawLeft, aDataDrawRight, 
+                        aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
                     if (vPrioParaNo != vItem.ParaNo)  // 水平对齐方式
                     {
@@ -2087,7 +2088,7 @@ namespace HC.View
                                 break;
                         }
 
-                        DrawItemPaintContent(this, i, vDrawRect, vClearRect, "", aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
+                        DrawItemPaintContent(this, vDrawItem.ItemNo, i, vDrawRect, vClearRect, "", aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
                             aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
                         if (vRectItem.IsSelectComplate)  // 选中背景区域
@@ -2147,7 +2148,7 @@ namespace HC.View
                         }
 
                         string vText = vItem.Text.Substring(vDrawItem.CharOffs - 1, vDrawItem.CharLen);  // 为减少判断，没有直接使用GetDrawItemText(i)
-                        DrawItemPaintContent(this, i, vDrawRect, vClearRect, vText, aDataDrawLeft, aDataDrawRight,
+                        DrawItemPaintContent(this, vDrawItem.ItemNo, i, vDrawRect, vClearRect, vText, aDataDrawLeft, aDataDrawRight,
                             aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
                         // 绘制优先级更高的选中情况下的背景
@@ -2222,7 +2223,7 @@ namespace HC.View
                         }
                     }
 
-                    DrawItemPaintAfter(this, i, vClearRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
+                    DrawItemPaintAfter(this, vDrawItem.ItemNo, i, vClearRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
                         aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);  // 绘制内容后
                 }
             }

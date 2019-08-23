@@ -20,7 +20,7 @@ namespace HC.View
     public class HCImageItem : HCResizeRectItem
     {
         private Bitmap FImage;
-
+        private HCShapeManager FShapeManager;
         private void DoImageChange(Object sender)
         {
             //if (FImage.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb)
@@ -65,6 +65,8 @@ namespace HC.View
             else
                 aCanvas.StretchDraw(aDrawRect, FImage);
 
+            FShapeManager.PaintTo(aCanvas, aDrawRect, aPaintInfo);
+
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenBottom, aDataScreenBottom,
                 aCanvas, aPaintInfo);
         }
@@ -74,12 +76,14 @@ namespace HC.View
         {
             FImage = new Bitmap(1, 1);
             StyleNo = HCStyle.Image;
+            FShapeManager = new HCShapeManager();
         }
 
         public HCImageItem(HCCustomData aOwnerData, int aWidth, int aHeight)
             : base(aOwnerData, aWidth, aHeight)
         {
             StyleNo = HCStyle.Image;
+            FShapeManager = new HCShapeManager();
         }
 
         ~HCImageItem()
@@ -219,6 +223,8 @@ namespace HC.View
 
                 aStream.Write(vBuffer, 0, vBuffer.Length);
             }
+
+            FShapeManager.SaveToStream(aStream);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -238,6 +244,9 @@ namespace HC.View
             {
                 FImage = new Bitmap(vImgStream);
             }
+
+            if (aFileVersion > 26)
+                FShapeManager.LoadFromStream(aStream);
 
             DoImageChange(this);
         }
@@ -283,6 +292,11 @@ namespace HC.View
         {
             get { return FImage; }
             set { FImage = value; }
+        }
+
+        public HCShapeManager ShapeManager
+        {
+            get { return FShapeManager; }
         }
     }
 }

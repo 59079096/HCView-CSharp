@@ -28,126 +28,83 @@ namespace HC.View
 
     public class HCFloatLineItem : HCCustomFloatItem  // 可浮动LineItem
     {
+        private POINT FLeftTop;
+        private HCShapeLine FShapeLine;
 
-        private POINT FStartPt, FEndPt, FLeftTop;
-
-        private HCLineObj FMouseDownObj;
-
-        private HCLineObj GetLineObjAt(int x, int  y)
+        protected override void SetActive(bool value)
         {
-            HCLineObj Result = HCLineObj.cloNone;
-            if (HC.PtInRect(new RECT(FStartPt.X - PointSize, FStartPt.Y - PointSize, FStartPt.X + PointSize, FStartPt.Y + PointSize), new POINT(x, y)))
-                Result = HCLineObj.cloLeftOrTop;
-            else
-            if (HC.PtInRect(new RECT(FEndPt.X - PointSize, FEndPt.Y - PointSize, FEndPt.X + PointSize, FEndPt.Y + PointSize), new POINT(x, y)))
-                Result = HCLineObj.cloRightOrBottom;
-            else
-            {
-                POINT[] vPointArr = new POINT[4];
-                vPointArr[0] = new POINT(FStartPt.X - PointSize, FStartPt.Y);
-                vPointArr[1] = new POINT(FStartPt.X + PointSize, FStartPt.Y);
-                vPointArr[2] = new POINT(FEndPt.X + PointSize, FEndPt.Y);
-                vPointArr[3] = new POINT(FEndPt.X - PointSize, FEndPt.Y);
-                IntPtr vRgn = (IntPtr)GDI.CreatePolygonRgn(ref vPointArr[0], 4, GDI.WINDING);
-                try
-                {
-                    if (GDI.PtInRegion(vRgn, x, y) > 0)
-                        Result = HCLineObj.cloLine;
-                }
-                finally
-                {
-                    GDI.DeleteObject(vRgn);
-                }
-            }
-
-            return Result;
+            base.SetActive(value);
+            FShapeLine.Active = this.Active;
         }
 
         public HCFloatLineItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
-            this.StyleNo = HCFloatStyle.Line;
-            FMouseDownObj = HCLineObj.cloNone;
+            this.StyleNo = (byte)HCShapeStyle.hssLine;
             Width = 100;
             Height = 70;
-            FStartPt = new POINT(0, 0);
-            FEndPt = new POINT(Width, Height);
+            FShapeLine = new HCShapeLine(new POINT(0, 0), new POINT(Width, Height));
         }
 
-        public override bool PtInClient(POINT aPoint)
+        public override bool PointInClient(POINT aPoint)
         {
-            return (GetLineObjAt(aPoint.X, aPoint.Y) != HCLineObj.cloNone);
+            return FShapeLine.PointInClient(aPoint);
         }
 
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            FStartPt.X = (source as HCFloatLineItem).FStartPt.X;
-            FStartPt.Y = (source as HCFloatLineItem).FStartPt.Y;
-            FEndPt.X = (source as HCFloatLineItem).FEndPt.X;
-            FEndPt.Y = (source as HCFloatLineItem).FEndPt.Y;
+            FShapeLine.Assign((source as HCFloatLineItem).FShapeLine);
         }
 
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
+            bool vResult = FShapeLine.MouseDown(e);
+            Active = FShapeLine.ActiveObj != HCShapeLineObj.sloNone;
             if (Active)
             {
-                FMouseDownObj = GetLineObjAt(e.X, e.Y);
                 this.Resizing = (e.Button == MouseButtons.Left) 
-                        && ((FMouseDownObj == HCLineObj.cloLeftOrTop) || (FMouseDownObj == HCLineObj.cloRightOrBottom));
+                        && ((FShapeLine.ActiveObj == HCShapeLineObj.sloStart) || (FShapeLine.ActiveObj == HCShapeLineObj.sloEnd));
+
                 if (this.Resizing)
                 {
                     this.FResizeX = e.X;
                     this.FResizeY = e.Y;
-                    // 缩放前的Rect的LeftTop
-                    if (FStartPt.X < FEndPt.X)
-                        FLeftTop.X = FStartPt.X;
-                    else
-                        FLeftTop.X = FEndPt.X;
 
-                    if (FStartPt.Y < FEndPt.Y)
-                        FLeftTop.Y = FStartPt.Y;
+                    // 缩放前的Rect的LeftTop
+                    if (FShapeLine.StartPt.X < FShapeLine.EndPt.X)
+                        FLeftTop.X = FShapeLine.StartPt.X;
                     else
-                        FLeftTop.Y = FEndPt.Y;
+                        FLeftTop.X = FShapeLine.EndPt.X;
+
+                    if (FShapeLine.StartPt.Y < FShapeLine.EndPt.Y)
+                        FLeftTop.Y = FShapeLine.StartPt.Y;
+                    else
+                        FLeftTop.Y = FShapeLine.EndPt.Y;
                 }
             }
-            else
-            {
-                FMouseDownObj = HCLineObj.cloNone;
-                Active = PtInClient(e.X, e.Y);
-            }
+
+            return vResult;
         }
 
-        public override void MouseMove(MouseEventArgs e)
+        public override bool MouseMove(MouseEventArgs e)
         {
+            bool vResult = FShapeLine.MouseMove(e);
             if (Active)
             {
                 if (this.Resizing)
                 {
-                    if (FMouseDownObj == HCLineObj.cloLeftOrTop)
-                        FStartPt.Offset(e.X - this.FResizeX, e.Y - this.FResizeY);
-                    else
-                        FEndPt.Offset(e.X - this.FResizeX, e.Y - this.FResizeY);
-                    
                     this.FResizeX = e.X;
                     this.FResizeY = e.Y;
-            
-                    HC.GCursor = Cursors.Cross;
-                }
-                else
-                {
-                    HCLineObj vLineObj = GetLineObjAt(e.X, e.Y);
-                    if ((vLineObj == HCLineObj.cloLeftOrTop) || (vLineObj == HCLineObj.cloRightOrBottom))
-                        HC.GCursor = Cursors.Cross;
-                    else
-                    if (vLineObj != HCLineObj.cloNone)
-                        HC.GCursor = Cursors.SizeAll;
                 }
             }
-            else
-                HC.GCursor = Cursors.Default;
+            
+            if (vResult)
+                HC.GCursor = FShapeLine.Cursor;
+
+            return vResult;
         }
 
-        public override void MouseUp(MouseEventArgs e)
+        public override bool MouseUp(MouseEventArgs e)
         {
             if (this.Resizing)
             {
@@ -155,106 +112,84 @@ namespace HC.View
                 POINT vNewLeftTop = new POINT();
                 
                 // 缩放后的Rect的LeftTop
-                if (FStartPt.X < FEndPt.X)
-                    vNewLeftTop.X = FStartPt.X;
+                if (FShapeLine.StartPt.X < FShapeLine.EndPt.X)
+                    vNewLeftTop.X = FShapeLine.StartPt.X;
                 else
-                    vNewLeftTop.X = FEndPt.X;
+                    vNewLeftTop.X = FShapeLine.EndPt.X;
 
-                if (FStartPt.Y < FEndPt.Y)
-                    vNewLeftTop.Y = FStartPt.Y;
+                if (FShapeLine.StartPt.Y < FShapeLine.EndPt.Y)
+                    vNewLeftTop.Y = FShapeLine.StartPt.Y;
                 else
-                    vNewLeftTop.Y = FEndPt.Y;
+                    vNewLeftTop.Y = FShapeLine.EndPt.Y;
             
                 vNewLeftTop.X = vNewLeftTop.X - FLeftTop.X;
                 vNewLeftTop.Y = vNewLeftTop.Y - FLeftTop.Y;
-            
-                FStartPt.Offset(-vNewLeftTop.X, -vNewLeftTop.Y);
-                FEndPt.Offset(-vNewLeftTop.X, -vNewLeftTop.Y);
-            
+                
                 this.Left = this.Left + vNewLeftTop.X;
                 this.Top = this.Top + vNewLeftTop.Y;
-            
-                this.Width = Math.Abs(FEndPt.X - FStartPt.X);
-                this.Height = Math.Abs(FEndPt.Y - FStartPt.Y);
+                // 线的点坐标以新LeftTop为原点
+                FShapeLine.StartPt.Offset(-vNewLeftTop.X, -vNewLeftTop.Y);
+                FShapeLine.EndPt.Offset(-vNewLeftTop.X, -vNewLeftTop.Y);
+
+                this.Width = Math.Abs(FShapeLine.EndPt.X - FShapeLine.StartPt.X);
+                this.Height = Math.Abs(FShapeLine.EndPt.Y - FShapeLine.StartPt.Y);
             }
+
+            return FShapeLine.MouseUp(e);
         }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, 
             int aDataDrawTop, int  aDataDrawBottom, int  aDataScreenTop, 
             int  aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            aCanvas.Pen.BeginUpdate();
-            try
-            {
-                aCanvas.Pen.Color = Color.Black;
-                aCanvas.Pen.Style = HCPenStyle.psSolid;
-            }
-            finally
-            {
-                aCanvas.Pen.EndUpdate();
-            }
-
-            aCanvas.MoveTo(FStartPt.X + this.DrawRect.Left, FStartPt.Y + this.DrawRect.Top);
-            aCanvas.LineTo(FEndPt.X + this.DrawRect.Left, FEndPt.Y + this.DrawRect.Top);
-
-            if ((this.Active) && (!aPaintInfo.Print))  // 激活
-            {
-                aCanvas.Rectangle(FStartPt.X + this.DrawRect.Left - PointSize, FStartPt.Y + this.DrawRect.Top - PointSize,
-                    FStartPt.X + this.DrawRect.Left + PointSize, FStartPt.Y + this.DrawRect.Top + PointSize);
-                aCanvas.Rectangle(FEndPt.X + this.DrawRect.Left - PointSize, FEndPt.Y + this.DrawRect.Top - PointSize,
-                    FEndPt.X + this.DrawRect.Left + PointSize, FEndPt.Y + this.DrawRect.Top + PointSize);
-            }
+            FShapeLine.PaintTo(aCanvas, aDrawRect, aPaintInfo);
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            byte[] vBuffer = BitConverter.GetBytes(FStartPt.X);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(FStartPt.Y);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(FEndPt.X);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(FEndPt.X);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
+            FShapeLine.SaveToStream(aStream);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            byte[] vBuffer = BitConverter.GetBytes(FStartPt.X);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FStartPt.X = BitConverter.ToInt32(vBuffer, 0);
+            if (aFileVersion > 26)
+                FShapeLine.LoadFromStream(aStream);
+            else
+            {
+                FShapeLine.Width = 1;
+                FShapeLine.Color = Color.Black;
+                int vX = 0, vY = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vX);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vX = BitConverter.ToInt32(vBuffer, 0);
 
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FStartPt.Y = BitConverter.ToInt32(vBuffer, 0);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vY = BitConverter.ToInt32(vBuffer, 0);
 
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FEndPt.X = BitConverter.ToInt32(vBuffer, 0);
+                FShapeLine.StartPt = new POINT(vX, vY);
+                
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vX = BitConverter.ToInt32(vBuffer, 0);
 
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FEndPt.X = BitConverter.ToInt32(vBuffer, 0);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vY = BitConverter.ToInt32(vBuffer, 0);
+
+                FShapeLine.EndPt = new POINT(vX, vY);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.SetAttribute("sx", FStartPt.X.ToString());
-            aNode.SetAttribute("sy", FStartPt.Y.ToString());
-            aNode.SetAttribute("ex", FEndPt.X.ToString());
-            aNode.SetAttribute("ey", FEndPt.Y.ToString());
+            FShapeLine.ToXml(aNode);
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            FStartPt.X = int.Parse(aNode.Attributes["sx"].Value);
-            FStartPt.Y = int.Parse(aNode.Attributes["sy"].Value);
-            FEndPt.X = int.Parse(aNode.Attributes["ex"].Value);
-            FEndPt.Y = int.Parse(aNode.Attributes["ex"].Value);
+            FShapeLine.ParseXml(aNode);
         }
     }
 }

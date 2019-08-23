@@ -20,17 +20,18 @@ namespace EMRView
 {
     public enum ToothArea : byte
     {
-        ctaNone, ctaLeftTop, ctaLeftBottom, ctaRightTop, ctaRightBottom
+        ctaNone, ctaLeftTop, ctaRightTop, ctaLeftBottom, ctaRightBottom
     }
 
     public class EmrToothItem : HCTextRectItem
     {
-        string FLeftTopText, FLeftBottomText, FRightTopText, FRightBottomText;
-        RECT FLeftTopRect, FLeftBottomRect, FRightTopRect, FRightBottomRect;
-        byte FPadding;
-        ToothArea FActiveArea, FMouseMoveArea;
-        int FCaretOffset;
-        bool FMouseLBDowning, FOutSelectInto;
+        private string FLeftTopText, FLeftBottomText, FRightTopText, FRightBottomText;
+        private RECT FLeftTopRect, FLeftBottomRect, FRightTopRect, FRightBottomRect;
+        private byte FPadding;
+        private ToothArea FActiveArea, FMouseMoveArea;
+        private int FCaretOffset;
+        private bool FMouseLBDowning, FOutSelectInto, FEmptyLower;
+        private static int AreaMinSize = 5;
 
         private ToothArea GetToothArea(int x, int y)
         {
@@ -60,16 +61,24 @@ namespace EMRView
             }
 
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
-            aCanvas.TextOut(aDrawRect.Left + FLeftTopRect.Left, aDrawRect.Top + FLeftTopRect.Top, FLeftTopText);
-            aCanvas.TextOut(aDrawRect.Left + FLeftBottomRect.Left, aDrawRect.Top + FLeftBottomRect.Top, FLeftBottomText);
-            aCanvas.TextOut(aDrawRect.Left + FRightTopRect.Left, aDrawRect.Top + FRightTopRect.Top, FRightTopText);
-            aCanvas.TextOut(aDrawRect.Left + FRightBottomRect.Left, aDrawRect.Top + FRightBottomRect.Top, FRightBottomText);
-            
+            if (FLeftTopText != "")
+                aCanvas.TextOut(aDrawRect.Left + FLeftTopRect.Left, aDrawRect.Top + FLeftTopRect.Top, FLeftTopText);
+
+            if (FLeftBottomText != "")
+                aCanvas.TextOut(aDrawRect.Left + FLeftBottomRect.Left, aDrawRect.Top + FLeftBottomRect.Top, FLeftBottomText);
+
+            if (FRightTopText != "")
+                aCanvas.TextOut(aDrawRect.Left + FRightTopRect.Left, aDrawRect.Top + FRightTopRect.Top, FRightTopText);
+
+            if (FRightBottomText != "")
+                aCanvas.TextOut(aDrawRect.Left + FRightBottomRect.Left, aDrawRect.Top + FRightBottomRect.Top, FRightBottomText);
+
+            // 十字线
             aCanvas.Pen.Color = Color.Black;
-            aCanvas.MoveTo(aDrawRect.Left + FPadding, aDrawRect.Top + FLeftTopRect.Bottom + FPadding);
-            aCanvas.LineTo(aDrawRect.Right - FPadding, aDrawRect.Top + FLeftTopRect.Bottom + FPadding);
-            aCanvas.MoveTo(aDrawRect.Left + FLeftTopRect.Right + FPadding, aDrawRect.Top + FPadding);
-            aCanvas.LineTo(aDrawRect.Left + FLeftTopRect.Right + FPadding, aDrawRect.Bottom - FPadding);
+            aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Top + FLeftTopRect.Bottom + FPadding);
+            aCanvas.LineTo(aDrawRect.Right, aDrawRect.Top + FLeftTopRect.Bottom + FPadding);
+            aCanvas.MoveTo(aDrawRect.Left + FLeftTopRect.Right + FPadding, aDrawRect.Top);
+            aCanvas.LineTo(aDrawRect.Left + FLeftTopRect.Right + FPadding, aDrawRect.Bottom);
 
             if (!aPaintInfo.Print)
             {
@@ -135,7 +144,10 @@ namespace EMRView
         {
             base.SetActive(value);
             if (!value)
+            {
                 FActiveArea = ToothArea.ctaNone;
+                FCaretOffset = -1;
+            }
         }
 
         public EmrToothItem(HCCustomData aOwnerData, string aLeftTopText, string aRightTopText,
@@ -143,9 +155,11 @@ namespace EMRView
             : base(aOwnerData)
         {
             this.StyleNo = EMR.EMRSTYLE_TOOTH;
-            FPadding = 5;
+            FPadding = 2;
             FActiveArea = ToothArea.ctaNone;
             FCaretOffset = -1;
+            FEmptyLower = true;
+
             FLeftTopText = aLeftTopText;
             FLeftBottomText = aLeftBottomText;
             FRightTopText = aRightTopText;
@@ -183,7 +197,7 @@ namespace EMRView
                 FLeftTopRect = HC.View.HC.Bounds(FPadding, FPadding, vLeftTopW, vH);
                 FLeftBottomRect = HC.View.HC.Bounds(FPadding, Height - FPadding - vH, vLeftTopW, vH);
             }
-            else
+            else  // 左下宽
             {
                 FLeftTopRect = HC.View.HC.Bounds(FPadding, FPadding, vLeftBottomW, vH);
                 FLeftBottomRect = HC.View.HC.Bounds(FPadding, Height - FPadding - vH, vLeftBottomW, vH);
@@ -194,12 +208,33 @@ namespace EMRView
                 FRightTopRect = HC.View.HC.Bounds(FLeftTopRect.Right + FPadding + FPadding, FPadding, vRightTopW, vH);
                 FRightBottomRect = HC.View.HC.Bounds(FLeftTopRect.Right + FPadding + FPadding, Height - FPadding - vH, vRightTopW, vH);
             }
-            else
+            else  // 右下宽
             {
                 FRightTopRect = HC.View.HC.Bounds(FLeftTopRect.Right + FPadding + FPadding, FPadding, vRightBottomW, vH);
                 FRightBottomRect = HC.View.HC.Bounds(FLeftTopRect.Right + FPadding + FPadding, Height - FPadding - vH, vRightBottomW, vH);
             }
 
+            if (FEmptyLower)
+            {
+                vH = 0;
+                if ((FLeftTopText == "") && (FRightTopText == ""))
+                {
+                    vH = FLeftTopRect.Height - AreaMinSize;
+                    FLeftTopRect.Height = AreaMinSize;
+                    FRightTopRect.Height = AreaMinSize;
+                    FLeftBottomRect.Offset(0, -vH);
+                    FRightBottomRect.Offset(0, -vH);
+                }
+
+                if ((FLeftBottomText == "") && (FRightBottomText == ""))
+                {
+                    vH = vH + FLeftBottomRect.Height - AreaMinSize;
+                    FLeftBottomRect.Height = AreaMinSize;
+                    FRightBottomRect.Height = AreaMinSize;
+                }
+
+                Height = Height - vH;
+            }
         }
 
         public override int GetOffsetAt(int x)
@@ -224,9 +259,9 @@ namespace EMRView
             FMouseMoveArea = ToothArea.ctaNone;
         }
 
-        public override void MouseDown(System.Windows.Forms.MouseEventArgs e)
+        public override bool MouseDown(System.Windows.Forms.MouseEventArgs e)
         {
-            base.MouseDown(e);
+            bool vResult = base.MouseDown(e);
            
             FMouseLBDowning = (e.Button == MouseButtons.Left);
             FOutSelectInto = false;
@@ -276,9 +311,11 @@ namespace EMRView
                 FCaretOffset = vOffset;
                 OwnerData.Style.UpdateInfoReCaret();
             }
+
+            return vResult;
         }
 
-        public override void MouseMove(System.Windows.Forms.MouseEventArgs e)
+        public override bool MouseMove(System.Windows.Forms.MouseEventArgs e)
         {
             if ((!FMouseLBDowning) && (e.Button == MouseButtons.Left))
                 FOutSelectInto = true;
@@ -295,19 +332,49 @@ namespace EMRView
             else
                 FMouseMoveArea = ToothArea.ctaNone;
 
-            base.MouseMove(e);
+            return base.MouseMove(e);
         }
 
-        public override void MouseUp(System.Windows.Forms.MouseEventArgs e)
+        public override bool MouseUp(System.Windows.Forms.MouseEventArgs e)
         {
             FMouseLBDowning = false;
             FOutSelectInto = false;
-            base.MouseUp(e);
+            return base.MouseUp(e);
         }
 
         public override bool WantKeyDown(System.Windows.Forms.KeyEventArgs e)
         {
-            return true;
+            bool vResult = false;
+
+            if (e.KeyValue == User.VK_LEFT)
+            {
+                if ((FActiveArea == ToothArea.ctaLeftTop) && (FCaretOffset == 0))
+                    vResult = false;
+                else
+                if (FActiveArea == ToothArea.ctaNone)
+                {
+                    FActiveArea = ToothArea.ctaRightBottom;
+                    FCaretOffset = FRightBottomText.Length;
+                    vResult = true;
+                }
+            }
+            else
+            if (e.KeyValue == User.VK_RIGHT)
+            {
+                if ((FActiveArea == ToothArea.ctaRightBottom) && (FCaretOffset == FRightBottomText.Length))
+                    vResult = false;
+                else
+                if (FActiveArea == ToothArea.ctaNone)
+                {
+                    FActiveArea = ToothArea.ctaLeftTop;
+                    FCaretOffset = 0;
+                    vResult = true;
+                }
+            }
+            else
+                vResult = true;
+
+            return vResult;
         }
 
         #region KeyDown子方法
@@ -348,6 +415,35 @@ namespace EMRView
         {
             if (FCaretOffset > 0)
                 FCaretOffset--;
+            else
+            if (FActiveArea > ToothArea.ctaLeftTop)
+            {
+                ToothArea vArea = FActiveArea - 1;
+                if (FActiveArea != vArea)
+                {
+                    FActiveArea = vArea;
+                    switch (FActiveArea)
+                    {
+                        case ToothArea.ctaLeftTop:
+                            FCaretOffset = FLeftTopText.Length;
+                            break;
+
+                        case ToothArea.ctaLeftBottom:
+                            FCaretOffset = FLeftBottomText.Length;
+                            break;
+
+                        case ToothArea.ctaRightTop:
+                            FCaretOffset = FRightTopText.Length;
+                            break;
+
+                        case ToothArea.ctaRightBottom:
+                            FCaretOffset = FRightBottomText.Length;
+                            break;
+                    }
+
+                    OwnerData.Style.UpdateInfoRePaint();
+                }
+            }
         }
 
         private void RightKeyDown()
@@ -375,6 +471,51 @@ namespace EMRView
 
             if (FCaretOffset < vS.Length)
                 FCaretOffset++;
+            else
+            if (FActiveArea < ToothArea.ctaRightBottom)
+            {
+                ToothArea vArea = FActiveArea + 1;
+                if (FActiveArea != vArea)
+                {
+                    FActiveArea = vArea;
+                    FCaretOffset = 0;
+                    OwnerData.Style.UpdateInfoRePaint();
+                }
+            }
+        }
+
+        private void UpKeyDown()
+        {
+            if (FActiveArea == ToothArea.ctaLeftBottom)
+            {
+                FActiveArea = ToothArea.ctaLeftTop;
+                FCaretOffset = 0;
+                OwnerData.Style.UpdateInfoRePaint();
+            }
+            else
+            if (FActiveArea == ToothArea.ctaRightBottom)
+            {
+                FActiveArea = ToothArea.ctaRightTop;
+                FCaretOffset = 0;
+                OwnerData.Style.UpdateInfoRePaint();
+            }
+        }
+
+        private void DownKeyDown()
+        {
+            if (FActiveArea == ToothArea.ctaLeftTop)
+            {
+                FActiveArea = ToothArea.ctaLeftBottom;
+                FCaretOffset = 0;
+                OwnerData.Style.UpdateInfoRePaint();
+            }
+            else
+            if (FActiveArea == ToothArea.ctaRightTop)
+            {
+                FActiveArea = ToothArea.ctaRightBottom;
+                FCaretOffset = 0;
+                OwnerData.Style.UpdateInfoRePaint();
+            }
         }
 
         private void DeleteChar(ref string s)
@@ -455,16 +596,24 @@ namespace EMRView
                     RightKeyDown();  // 右方向键
                     break;
 
+                case User.VK_UP:     
+                    UpKeyDown();     // 上方向键
+                    break;
+
+                case User.VK_DOWN:   
+                    DownKeyDown();   // 下方向键
+                    break;
+
                 case User.VK_DELETE:
-                    DeleteKeyDown();  // 删除键
+                    DeleteKeyDown(); // 删除键
                     break;
 
                 case User.VK_HOME:
-                    HomeKeyDown();  // Home键
+                    HomeKeyDown();   // Home键
                     break;
 
                 case User.VK_END:
-                    EndKeyDown();  // End键
+                    EndKeyDown();    // End键
                     break;
             }
         }
@@ -518,25 +667,41 @@ namespace EMRView
                 {
                     case ToothArea.ctaLeftTop:
                         aCaretInfo.Height = FLeftTopRect.Bottom - FLeftTopRect.Top;
-                        aCaretInfo.X = FLeftTopRect.Left + OwnerData.Style.TempCanvas.TextWidth(FLeftTopText.Substring(1 - 1, FCaretOffset));
+                        if (FLeftTopText != "")
+                            aCaretInfo.X = FLeftTopRect.Left + OwnerData.Style.TempCanvas.TextWidth(FLeftTopText.Substring(1 - 1, FCaretOffset));
+                        else
+                            aCaretInfo.X = FLeftTopRect.Left;
+
                         aCaretInfo.Y = FLeftTopRect.Top;
                         break;
 
                     case ToothArea.ctaLeftBottom:
                         aCaretInfo.Height = FLeftBottomRect.Bottom - FLeftBottomRect.Top;
-                        aCaretInfo.X = FLeftBottomRect.Left + OwnerData.Style.TempCanvas.TextWidth(FLeftBottomText.Substring(1 - 1, FCaretOffset));
+                        if (FLeftBottomText != "")
+                            aCaretInfo.X = FLeftBottomRect.Left + OwnerData.Style.TempCanvas.TextWidth(FLeftBottomText.Substring(1 - 1, FCaretOffset));
+                        else
+                            aCaretInfo.X = FLeftBottomRect.Left;
+
                         aCaretInfo.Y = FLeftBottomRect.Top;
                         break;
 
                     case ToothArea.ctaRightTop:
                         aCaretInfo.Height = FRightTopRect.Bottom - FRightTopRect.Top;
-                        aCaretInfo.X = FRightTopRect.Left + OwnerData.Style.TempCanvas.TextWidth(FRightTopText.Substring(1 - 1, FCaretOffset));
+                        if (FRightTopText != "")
+                            aCaretInfo.X = FRightTopRect.Left + OwnerData.Style.TempCanvas.TextWidth(FRightTopText.Substring(1 - 1, FCaretOffset));
+                        else
+                            aCaretInfo.X = FRightTopRect.Left;
+
                         aCaretInfo.Y = FRightTopRect.Top;
                         break;
 
                     case ToothArea.ctaRightBottom:
                         aCaretInfo.Height = FRightBottomRect.Bottom - FRightBottomRect.Top;
-                        aCaretInfo.X = FRightBottomRect.Left + OwnerData.Style.TempCanvas.TextWidth(FRightBottomText.Substring(1 - 1, FCaretOffset));
+                        if (FRightBottomText != "")
+                            aCaretInfo.X = FRightBottomRect.Left + OwnerData.Style.TempCanvas.TextWidth(FRightBottomText.Substring(1 - 1, FCaretOffset));
+                        else
+                            aCaretInfo.X = FRightBottomRect.Left;
+
                         aCaretInfo.Y = FRightBottomRect.Top;
                         break;
                 }
@@ -548,7 +713,6 @@ namespace EMRView
         public override void SaveToStream(System.IO.Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            HC.View.HC.HCSaveTextToStream(aStream, FLeftTopText);
             HC.View.HC.HCSaveTextToStream(aStream, FLeftTopText);
             HC.View.HC.HCSaveTextToStream(aStream, FLeftBottomText);
             HC.View.HC.HCSaveTextToStream(aStream, FRightTopText);

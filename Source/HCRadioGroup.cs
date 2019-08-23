@@ -122,9 +122,9 @@ namespace HC.View
             }
         }
 
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
-            base.MouseDown(e);
+            bool vResult = base.MouseDown(e);
             if (e.Button == MouseButtons.Left)
             {
                 int vIndex = GetItemAt(e.X, e.Y);
@@ -141,12 +141,14 @@ namespace HC.View
                     }
                 }
             }
+
+            return vResult;
         }
     
-        public override void MouseMove(MouseEventArgs e)
+        public override bool MouseMove(MouseEventArgs e)
         {
-            base.MouseMove(e);
             HC.GCursor = Cursors.Default;
+            return base.MouseMove(e);
         }
 
         public override void MouseEnter()

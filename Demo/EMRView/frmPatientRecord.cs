@@ -952,7 +952,7 @@ namespace EMRView
             CloseRecordPage(tabRecord.SelectedIndex);
         }
 
-        private void DoImportText(string aText)
+        private void DoImportAsText(string aText)
         {
             frmRecord vFrmRecord = GetActiveRecord();
             if (vFrmRecord != null)
@@ -963,9 +963,9 @@ namespace EMRView
 
         private void MniHisRecord_Click(object sender, EventArgs e)
         {
-            frmPatientHisInchRecord vFrmHisRecord = new frmPatientHisInchRecord();
+            frmPatientHisRecord vFrmHisRecord = new frmPatientHisRecord();
             vFrmHisRecord.PatientInfo = PatientInfo;
-            vFrmHisRecord.OnImport = DoImportText;  // 导入病历窗体中点击导入时触发的事件
+            vFrmHisRecord.OnImportAsText = DoImportAsText;  // 导入病历窗体中点击导入时触发的事件
             this.AddOwnedForm(vFrmHisRecord);
             vFrmHisRecord.Show();
         }

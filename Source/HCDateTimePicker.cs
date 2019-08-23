@@ -189,7 +189,7 @@ namespace HC.View
             }
         }
 
-        public override void MouseDown(System.Windows.Forms.MouseEventArgs e)
+        public override bool MouseDown(System.Windows.Forms.MouseEventArgs e)
         {
  	         //base.MouseDown(e);
             this.Active = HC.PtInRect(new RECT(0, 0, Width, Height), new POINT(e.X, e.Y));
@@ -206,6 +206,8 @@ namespace HC.View
 
                 this.OwnerData.Style.UpdateInfoRePaint();
             }
+
+            return true;
         }
 
         public override bool WantKeyDown(System.Windows.Forms.KeyEventArgs e)

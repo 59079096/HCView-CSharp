@@ -111,6 +111,13 @@ namespace HC.View
                     return HC.OffsetInner;
         }
 
+        protected override void SetActive(bool value)
+        {
+            base.SetActive(value);
+            if (!value)
+                FCaretOffset = -1;
+        }
+
         public override void MouseEnter()
         {
             base.MouseEnter();
@@ -123,9 +130,9 @@ namespace HC.View
             FMouseIn = false;
         }
 
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
-            base.MouseDown(e);
+            bool vResult = base.MouseDown(e);
             OwnerData.Style.ApplyTempStyle(TextStyleNo);
             int vX = e.X - FMargin;// - (Width - FMargin - OwnerData.Style.DefCanvas.TextWidth(FText) - FMargin) div 2;
             short vOffset = (short)HC.GetNorAlignCharOffsetAt(OwnerData.Style.TempCanvas, FText, vX);
@@ -134,22 +141,46 @@ namespace HC.View
                 FCaretOffset = vOffset;
                 OwnerData.Style.UpdateInfoReCaret();
             }
-        }
 
-        public override void MouseMove(MouseEventArgs e)
-        {
-            base.MouseMove(e);
-        }
-
-        public override void MouseUp(MouseEventArgs e)
-        {
-            base.MouseUp(e);
+            return vResult;
         }
         
         /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>
         public override bool WantKeyDown(KeyEventArgs e)
         {
-            return true;
+            bool vResult = false;
+
+            if (e.KeyCode == Keys.Left)
+            {
+                if (FCaretOffset == 0)
+                {
+
+                }
+                else
+                if (FCaretOffset < 0)
+                {
+                    FCaretOffset = (short)FText.Length;
+                    vResult = true;
+                }
+            }
+            else
+            if (e.KeyCode == Keys.Right)
+            {
+                if (FCaretOffset == FText.Length)
+                {
+
+                }
+                else
+                if (FCaretOffset < 0)
+                {
+                    FCaretOffset = 0;
+                    vResult = true;
+                }
+            }
+            else
+                vResult = true;
+
+            return vResult;
         }
 
         public override void KeyDown(KeyEventArgs e)

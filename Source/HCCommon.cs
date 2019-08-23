@@ -109,10 +109,11 @@ namespace HC.View
             // 2.4 兼容EmrView保存保护元素属性
             // 2.5 使用unicode字符集保存文档以便支持藏文等
             // 2.6 文件保存时直接使用TItemOptions集合变量的值，不再单独判断成员存储
-            HC_FileVersion = "2.6";
+            // 2.7 浮动直线改为ShapeLine
+            HC_FileVersion = "2.7";
 
         public const ushort
-            HC_FileVersionInt = 26;
+            HC_FileVersionInt = 27;
 
         public static ushort SwapBytes(ushort aValue)
         {
@@ -932,26 +933,56 @@ namespace HC.View
 
     public class HCCaret
     {
+        private bool FReCreate, FDisFocus;
         private int FHeight;
-
         private IntPtr FOwnHandle;
+        private int FX, FY;
+        private byte FWidth;
+
+        protected void SetX(int value)
+        {
+            if (FX != value)
+            {
+                FX = value;
+                Show();
+            }
+        }
+
+        protected void SetY(int value)
+        {
+            if (FY != value)
+            {
+                FY = value;
+                Show();
+            }
+        }
 
         protected void SetHeight(int value)
         {
             if (FHeight != value)
             {
                 FHeight = value;
-                ReCreate();
+                FReCreate = true;
             }
         }
 
-        public int X, Y;
+        protected void SetWidth(byte value)
+        {
+            if (FWidth != value)
+            {
+                FWidth = value;
+                FReCreate = true;
+            }
+        }
 
         //Visible: Boolean;
         public HCCaret(IntPtr aHandle)
         {
             FOwnHandle = aHandle;
-            User.CreateCaret(FOwnHandle, IntPtr.Zero, 2, 20);
+            FWidth = 2;
+            User.CreateCaret(FOwnHandle, IntPtr.Zero, FWidth, 20);
+            FReCreate = false;
+            FDisFocus = false;
         }
 
         ~HCCaret()
@@ -963,23 +994,28 @@ namespace HC.View
         public void ReCreate()
         {
             User.DestroyCaret();
-            User.CreateCaret(FOwnHandle, IntPtr.Zero, 2, FHeight);
+            User.CreateCaret(FOwnHandle, IntPtr.Zero, FWidth, FHeight);
         }
 
         public void Show(int aX, int  aY)
         {
-            ReCreate();
+            FDisFocus = false;
+
+            if (FReCreate)
+                ReCreate();
+
             User.SetCaretPos(aX, aY);
             User.ShowCaret(FOwnHandle);
         }
 
         public void Show()
         {
-            this.Show(X, Y);
+            this.Show(FX, FY);
         }
 
-        public void Hide()
+        public void Hide(bool aDisFocus = false)
         {
+            FDisFocus = aDisFocus;
             User.HideCaret(FOwnHandle);
         }
 
@@ -987,6 +1023,29 @@ namespace HC.View
         {
             get { return FHeight; }
             set { SetHeight(value); }
+        }
+
+        public Byte Width
+        {
+            get { return FWidth; }
+            set { SetWidth(value); }
+        }
+
+        public int X
+        {
+            get { return FX; }
+            set { SetX(value); }
+        }
+
+        public int Y
+        {
+            get { return FY; }
+            set { SetY(value); }
+        }
+
+        public bool DisFocus
+        {
+            get { return FDisFocus; }
         }
     }
 

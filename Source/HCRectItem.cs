@@ -364,9 +364,10 @@ namespace HC.View
             return true;
         }
         //
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
             this.Active = HC.PtInRect(new RECT(0, 0, FWidth, FHeight), e.X, e.Y);
+            return this.Active;
         }
 
         public override HCCustomItem BreakByOffset(int aOffset)
@@ -932,10 +933,10 @@ namespace HC.View
             }
         }
 
-        public override void MouseDown(MouseEventArgs e)
+        public override bool MouseDown(MouseEventArgs e)
         {
             FResizeGrip = GripType.gtNone;
-            base.MouseDown(e);
+            bool vResult = base.MouseDown(e);
             if (Active)
             {
                 FResizeGrip = GetGripType(e.X, e.Y);
@@ -949,6 +950,8 @@ namespace HC.View
                     FResizeHeight = Height;
                 }
             }
+
+            return vResult;
         }
 
         // 撤销恢复相关方法
@@ -1051,10 +1054,10 @@ namespace HC.View
         }
 
         // 继承THCCustomItem抽象方法
-        public override void MouseMove(MouseEventArgs e)
+        public override bool MouseMove(MouseEventArgs e)
         {
-            base.MouseMove(e);
-                HC.GCursor = Cursors.Default;
+            bool vResult = base.MouseMove(e);
+            HC.GCursor = Cursors.Default;
             if (Active)
             {
                 int vW = 0, vH = 0, vTempW = 0, vTempH = 0;
@@ -1173,22 +1176,26 @@ namespace HC.View
                     }
                 }
             }
+
+            return vResult;
         }
 
-        public override void MouseUp(MouseEventArgs e)
+        public override bool MouseUp(MouseEventArgs e)
         {
-            base.MouseUp(e);
+            bool vResult = base.MouseUp(e);
             if (FResizing)
             {
                 FResizing = false;
 
                 if ((FResizeWidth < 0) || (FResizeHeight < 0))
-                    return;
+                    return vResult;
 
                 SelfUndo_Resize(FResizeWidth, FResizeHeight);
                 Width = FResizeWidth;
                 Height = FResizeHeight;
             }
+
+            return vResult;
         }
 
         public override bool CanDrag()

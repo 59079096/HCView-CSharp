@@ -539,7 +539,7 @@ namespace HC.View
             }
         }
 
-        protected override void DoDrawItemPaintContent(HCCustomData aData, int aDrawItemNo,
+        protected override void DoDrawItemPaintContent(HCCustomData aData, int aItemNo, int aDrawItemNo,
             RECT aDrawRect, RECT aClearRect, string aDrawText,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
@@ -583,7 +583,7 @@ namespace HC.View
                 }
             }
 
-            base.DoDrawItemPaintContent(aData, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
+            base.DoDrawItemPaintContent(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
                 aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 

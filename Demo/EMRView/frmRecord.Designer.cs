@@ -65,6 +65,14 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.tssPage = new System.Windows.Forms.ToolStripStatusLabel();
             this.tssDeInfo = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.cbbZoom = new System.Windows.Forms.ToolStripComboBox();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.cbbFont = new System.Windows.Forms.ToolStripComboBox();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.cbbFontSize = new System.Windows.Forms.ToolStripComboBox();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.tlbEditTool = new System.Windows.Forms.ToolStrip();
             this.btnFile = new System.Windows.Forms.ToolStripDropDownButton();
             this.mniOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.mniClear = new System.Windows.Forms.ToolStripMenuItem();
@@ -80,17 +88,14 @@
             this.mniPrintCurLine = new System.Windows.Forms.ToolStripMenuItem();
             this.mniPrintSelect = new System.Windows.Forms.ToolStripMenuItem();
             this.mniPageSet = new System.Windows.Forms.ToolStripMenuItem();
+            this.视图ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniViewFilm = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniViewPage = new System.Windows.Forms.ToolStripMenuItem();
             this.btnSave = new System.Windows.Forms.ToolStripButton();
             this.btnPrint = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnUndo = new System.Windows.Forms.ToolStripButton();
             this.btnRedo = new System.Windows.Forms.ToolStripButton();
-            this.cbbZoom = new System.Windows.Forms.ToolStripComboBox();
             this.btnSymmetryMargin = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.cbbFont = new System.Windows.Forms.ToolStripComboBox();
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.cbbFontSize = new System.Windows.Forms.ToolStripComboBox();
             this.mniInsert = new System.Windows.Forms.ToolStripSplitButton();
             this.mniInsertTable = new System.Windows.Forms.ToolStripMenuItem();
             this.mniInsertImage = new System.Windows.Forms.ToolStripMenuItem();
@@ -115,7 +120,6 @@
             this.btnStrikeOut = new System.Windows.Forms.ToolStripButton();
             this.btnSuperScript = new System.Windows.Forms.ToolStripButton();
             this.btnSubScript = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRightIndent = new System.Windows.Forms.ToolStripButton();
             this.btnLeftIndent = new System.Windows.Forms.ToolStripButton();
             this.btnAlignLeft = new System.Windows.Forms.ToolStripButton();
@@ -129,28 +133,28 @@
             this.mniLS150 = new System.Windows.Forms.ToolStripMenuItem();
             this.mniLS200 = new System.Windows.Forms.ToolStripMenuItem();
             this.mniLSFix = new System.Windows.Forms.ToolStripMenuItem();
-            this.tlbEditTool = new System.Windows.Forms.ToolStrip();
             this.cbxPrintHeader = new System.Windows.Forms.CheckBox();
             this.cbxPrintFooter = new System.Windows.Forms.CheckBox();
             this.cbbPrinter = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
-            this.btnPrintAll = new System.Windows.Forms.ToolStripButton();
-            this.btnOdevity = new System.Windows.Forms.ToolStripSplitButton();
-            this.mniOdd = new System.Windows.Forms.ToolStripMenuItem();
-            this.mniEven = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.tbxPageStart = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.tbxPageEnd = new System.Windows.Forms.ToolStripTextBox();
-            this.btnPrintRange = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripLabel4 = new System.Windows.Forms.ToolStripLabel();
+            this.tlbPrint = new System.Windows.Forms.ToolStrip();
+            this.btnPrintAll = new System.Windows.Forms.ToolStripButton();
+            this.btnOdevity = new System.Windows.Forms.ToolStripSplitButton();
+            this.mniOdd = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniEven = new System.Windows.Forms.ToolStripMenuItem();
+            this.btnPrintRange = new System.Windows.Forms.ToolStripButton();
             this.btnPrintCurLine = new System.Windows.Forms.ToolStripButton();
             this.btnPrintSelect = new System.Windows.Forms.ToolStripButton();
-            this.tlbPrint = new System.Windows.Forms.ToolStrip();
             this.pnlView = new System.Windows.Forms.Panel();
+            this.mniInputHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.pmView.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.tlbEditTool.SuspendLayout();
@@ -426,168 +430,10 @@
             this.tssDeInfo.Size = new System.Drawing.Size(68, 17);
             this.tssDeInfo.Text = "数据元信息";
             // 
-            // btnFile
-            // 
-            this.btnFile.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mniOpen,
-            this.mniClear,
-            this.toolStripSeparator5,
-            this.mniSave,
-            this.mniSaveAs,
-            this.mniSaveStructure,
-            this.mniHideTrace,
-            this.toolStripSeparator7,
-            this.mniPrint,
-            this.mniPageSet});
-            this.btnFile.Image = global::EMRView.Properties.Resources._00018;
-            this.btnFile.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnFile.Name = "btnFile";
-            this.btnFile.Size = new System.Drawing.Size(29, 22);
-            this.btnFile.Text = "toolStripDropDownButton1";
-            this.btnFile.DropDownOpened += new System.EventHandler(this.btnFile_DropDownOpened);
-            // 
-            // mniOpen
-            // 
-            this.mniOpen.Name = "mniOpen";
-            this.mniOpen.Size = new System.Drawing.Size(124, 22);
-            this.mniOpen.Text = "打开";
-            this.mniOpen.Click += new System.EventHandler(this.mniOpen_Click);
-            // 
-            // mniClear
-            // 
-            this.mniClear.Name = "mniClear";
-            this.mniClear.Size = new System.Drawing.Size(124, 22);
-            this.mniClear.Text = "清空";
-            this.mniClear.Click += new System.EventHandler(this.mniClear_Click);
-            // 
-            // toolStripSeparator5
-            // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(121, 6);
-            // 
-            // mniSave
-            // 
-            this.mniSave.Name = "mniSave";
-            this.mniSave.Size = new System.Drawing.Size(124, 22);
-            this.mniSave.Text = "保存";
-            this.mniSave.Click += new System.EventHandler(this.mniSave_Click);
-            // 
-            // mniSaveAs
-            // 
-            this.mniSaveAs.Name = "mniSaveAs";
-            this.mniSaveAs.Size = new System.Drawing.Size(124, 22);
-            this.mniSaveAs.Text = "另存为";
-            this.mniSaveAs.Click += new System.EventHandler(this.mniSaveAs_Click);
-            // 
-            // mniSaveStructure
-            // 
-            this.mniSaveStructure.Name = "mniSaveStructure";
-            this.mniSaveStructure.Size = new System.Drawing.Size(124, 22);
-            this.mniSaveStructure.Text = "保存结构";
-            this.mniSaveStructure.Click += new System.EventHandler(this.mniSaveStructure_Click);
-            // 
-            // mniHideTrace
-            // 
-            this.mniHideTrace.Name = "mniHideTrace";
-            this.mniHideTrace.Size = new System.Drawing.Size(124, 22);
-            this.mniHideTrace.Text = "显示痕迹";
-            this.mniHideTrace.Click += new System.EventHandler(this.mniHideTrace_Click);
-            // 
-            // toolStripSeparator7
-            // 
-            this.toolStripSeparator7.Name = "toolStripSeparator7";
-            this.toolStripSeparator7.Size = new System.Drawing.Size(121, 6);
-            // 
-            // mniPrint
-            // 
-            this.mniPrint.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mniFastPrint,
-            this.mniPrintPreview,
-            this.mniPrintCurLine,
-            this.mniPrintSelect});
-            this.mniPrint.Name = "mniPrint";
-            this.mniPrint.Size = new System.Drawing.Size(124, 22);
-            this.mniPrint.Text = "打印";
-            // 
-            // mniFastPrint
-            // 
-            this.mniFastPrint.Name = "mniFastPrint";
-            this.mniFastPrint.Size = new System.Drawing.Size(136, 22);
-            this.mniFastPrint.Text = "快速打印";
-            this.mniFastPrint.Click += new System.EventHandler(this.mniFastPrint_Click);
-            // 
-            // mniPrintPreview
-            // 
-            this.mniPrintPreview.Name = "mniPrintPreview";
-            this.mniPrintPreview.Size = new System.Drawing.Size(136, 22);
-            this.mniPrintPreview.Text = "预览";
-            // 
-            // mniPrintCurLine
-            // 
-            this.mniPrintCurLine.Name = "mniPrintCurLine";
-            this.mniPrintCurLine.Size = new System.Drawing.Size(136, 22);
-            this.mniPrintCurLine.Text = "从当前行";
-            this.mniPrintCurLine.Click += new System.EventHandler(this.mniPrintCurLine_Click);
-            // 
-            // mniPrintSelect
-            // 
-            this.mniPrintSelect.Name = "mniPrintSelect";
-            this.mniPrintSelect.Size = new System.Drawing.Size(136, 22);
-            this.mniPrintSelect.Text = "当前页选中";
-            this.mniPrintSelect.Click += new System.EventHandler(this.mniPrintSelect_Click);
-            // 
-            // mniPageSet
-            // 
-            this.mniPageSet.Name = "mniPageSet";
-            this.mniPageSet.Size = new System.Drawing.Size(124, 22);
-            this.mniPageSet.Text = "页面设置";
-            this.mniPageSet.Click += new System.EventHandler(this.mniPageSet_Click);
-            // 
-            // btnSave
-            // 
-            this.btnSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnSave.Image = global::EMRView.Properties.Resources._00003;
-            this.btnSave.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(23, 22);
-            this.btnSave.Text = "保存";
-            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
-            // 
-            // btnPrint
-            // 
-            this.btnPrint.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnPrint.Image = global::EMRView.Properties.Resources._00004;
-            this.btnPrint.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnPrint.Name = "btnPrint";
-            this.btnPrint.Size = new System.Drawing.Size(23, 22);
-            this.btnPrint.Text = "打印";
-            this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
-            // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
-            // 
-            // btnUndo
-            // 
-            this.btnUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnUndo.Image = global::EMRView.Properties.Resources._00128;
-            this.btnUndo.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnUndo.Name = "btnUndo";
-            this.btnUndo.Size = new System.Drawing.Size(23, 22);
-            this.btnUndo.Text = "撤销";
-            this.btnUndo.Click += new System.EventHandler(this.btnUndo_Click);
-            // 
-            // btnRedo
-            // 
-            this.btnRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnRedo.Image = global::EMRView.Properties.Resources._00129;
-            this.btnRedo.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnRedo.Name = "btnRedo";
-            this.btnRedo.Size = new System.Drawing.Size(23, 22);
-            this.btnRedo.Text = "恢复";
-            this.btnRedo.Click += new System.EventHandler(this.btnRedo_Click);
             // 
             // cbbZoom
             // 
@@ -604,16 +450,6 @@
             this.cbbZoom.Size = new System.Drawing.Size(75, 25);
             this.cbbZoom.Text = "100";
             this.cbbZoom.DropDownClosed += new System.EventHandler(this.cbbZoom_DropDownClosed);
-            // 
-            // btnSymmetryMargin
-            // 
-            this.btnSymmetryMargin.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnSymmetryMargin.Image = global::EMRView.Properties.Resources._00196;
-            this.btnSymmetryMargin.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnSymmetryMargin.Name = "btnSymmetryMargin";
-            this.btnSymmetryMargin.Size = new System.Drawing.Size(23, 22);
-            this.btnSymmetryMargin.Text = "对称页边距";
-            this.btnSymmetryMargin.Click += new System.EventHandler(this.btnSymmetryMargin_Click);
             // 
             // toolStripSeparator3
             // 
@@ -651,6 +487,241 @@
             this.cbbFontSize.Name = "cbbFontSize";
             this.cbbFontSize.Size = new System.Drawing.Size(75, 25);
             this.cbbFontSize.DropDownClosed += new System.EventHandler(this.cbbFontSize_DropDownClosed);
+            // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 25);
+            // 
+            // tlbEditTool
+            // 
+            this.tlbEditTool.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.btnFile,
+            this.btnSave,
+            this.btnPrint,
+            this.toolStripSeparator1,
+            this.btnUndo,
+            this.btnRedo,
+            this.cbbZoom,
+            this.btnSymmetryMargin,
+            this.toolStripSeparator3,
+            this.cbbFont,
+            this.toolStripSeparator2,
+            this.cbbFontSize,
+            this.mniInsert,
+            this.btnBold,
+            this.btnItalic,
+            this.btnUnderLine,
+            this.btnStrikeOut,
+            this.btnSuperScript,
+            this.btnSubScript,
+            this.toolStripSeparator4,
+            this.btnRightIndent,
+            this.btnLeftIndent,
+            this.btnAlignLeft,
+            this.btnAlignCenter,
+            this.btnAlignRight,
+            this.btnAlignJustify,
+            this.btnAlignScatter,
+            this.btnLineSpace});
+            this.tlbEditTool.Location = new System.Drawing.Point(0, 0);
+            this.tlbEditTool.Name = "tlbEditTool";
+            this.tlbEditTool.Size = new System.Drawing.Size(920, 25);
+            this.tlbEditTool.TabIndex = 4;
+            this.tlbEditTool.Text = "toolStrip1";
+            // 
+            // btnFile
+            // 
+            this.btnFile.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mniOpen,
+            this.mniClear,
+            this.toolStripSeparator5,
+            this.mniSave,
+            this.mniSaveAs,
+            this.mniSaveStructure,
+            this.mniHideTrace,
+            this.toolStripSeparator7,
+            this.mniPrint,
+            this.mniPageSet,
+            this.视图ToolStripMenuItem,
+            this.mniInputHelp});
+            this.btnFile.Image = global::EMRView.Properties.Resources._00018;
+            this.btnFile.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnFile.Name = "btnFile";
+            this.btnFile.Size = new System.Drawing.Size(29, 22);
+            this.btnFile.Text = "toolStripDropDownButton1";
+            this.btnFile.DropDownOpened += new System.EventHandler(this.btnFile_DropDownOpened);
+            // 
+            // mniOpen
+            // 
+            this.mniOpen.Name = "mniOpen";
+            this.mniOpen.Size = new System.Drawing.Size(180, 22);
+            this.mniOpen.Text = "打开";
+            this.mniOpen.Click += new System.EventHandler(this.mniOpen_Click);
+            // 
+            // mniClear
+            // 
+            this.mniClear.Name = "mniClear";
+            this.mniClear.Size = new System.Drawing.Size(180, 22);
+            this.mniClear.Text = "清空";
+            this.mniClear.Click += new System.EventHandler(this.mniClear_Click);
+            // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(177, 6);
+            // 
+            // mniSave
+            // 
+            this.mniSave.Name = "mniSave";
+            this.mniSave.Size = new System.Drawing.Size(180, 22);
+            this.mniSave.Text = "保存";
+            this.mniSave.Click += new System.EventHandler(this.mniSave_Click);
+            // 
+            // mniSaveAs
+            // 
+            this.mniSaveAs.Name = "mniSaveAs";
+            this.mniSaveAs.Size = new System.Drawing.Size(180, 22);
+            this.mniSaveAs.Text = "另存为";
+            this.mniSaveAs.Click += new System.EventHandler(this.mniSaveAs_Click);
+            // 
+            // mniSaveStructure
+            // 
+            this.mniSaveStructure.Name = "mniSaveStructure";
+            this.mniSaveStructure.Size = new System.Drawing.Size(180, 22);
+            this.mniSaveStructure.Text = "保存结构";
+            this.mniSaveStructure.Click += new System.EventHandler(this.mniSaveStructure_Click);
+            // 
+            // mniHideTrace
+            // 
+            this.mniHideTrace.Name = "mniHideTrace";
+            this.mniHideTrace.Size = new System.Drawing.Size(180, 22);
+            this.mniHideTrace.Text = "显示痕迹";
+            this.mniHideTrace.Click += new System.EventHandler(this.mniHideTrace_Click);
+            // 
+            // toolStripSeparator7
+            // 
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(177, 6);
+            // 
+            // mniPrint
+            // 
+            this.mniPrint.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mniFastPrint,
+            this.mniPrintPreview,
+            this.mniPrintCurLine,
+            this.mniPrintSelect});
+            this.mniPrint.Name = "mniPrint";
+            this.mniPrint.Size = new System.Drawing.Size(180, 22);
+            this.mniPrint.Text = "打印";
+            // 
+            // mniFastPrint
+            // 
+            this.mniFastPrint.Name = "mniFastPrint";
+            this.mniFastPrint.Size = new System.Drawing.Size(136, 22);
+            this.mniFastPrint.Text = "快速打印";
+            this.mniFastPrint.Click += new System.EventHandler(this.mniFastPrint_Click);
+            // 
+            // mniPrintPreview
+            // 
+            this.mniPrintPreview.Name = "mniPrintPreview";
+            this.mniPrintPreview.Size = new System.Drawing.Size(136, 22);
+            this.mniPrintPreview.Text = "预览";
+            // 
+            // mniPrintCurLine
+            // 
+            this.mniPrintCurLine.Name = "mniPrintCurLine";
+            this.mniPrintCurLine.Size = new System.Drawing.Size(136, 22);
+            this.mniPrintCurLine.Text = "从当前行";
+            this.mniPrintCurLine.Click += new System.EventHandler(this.mniPrintCurLine_Click);
+            // 
+            // mniPrintSelect
+            // 
+            this.mniPrintSelect.Name = "mniPrintSelect";
+            this.mniPrintSelect.Size = new System.Drawing.Size(136, 22);
+            this.mniPrintSelect.Text = "当前页选中";
+            this.mniPrintSelect.Click += new System.EventHandler(this.mniPrintSelect_Click);
+            // 
+            // mniPageSet
+            // 
+            this.mniPageSet.Name = "mniPageSet";
+            this.mniPageSet.Size = new System.Drawing.Size(180, 22);
+            this.mniPageSet.Text = "页面设置";
+            this.mniPageSet.Click += new System.EventHandler(this.mniPageSet_Click);
+            // 
+            // 视图ToolStripMenuItem
+            // 
+            this.视图ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mniViewFilm,
+            this.mniViewPage});
+            this.视图ToolStripMenuItem.Name = "视图ToolStripMenuItem";
+            this.视图ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.视图ToolStripMenuItem.Text = "视图";
+            // 
+            // mniViewFilm
+            // 
+            this.mniViewFilm.Name = "mniViewFilm";
+            this.mniViewFilm.Size = new System.Drawing.Size(100, 22);
+            this.mniViewFilm.Text = "胶卷";
+            this.mniViewFilm.Click += new System.EventHandler(this.MniViewFilm_Click);
+            // 
+            // mniViewPage
+            // 
+            this.mniViewPage.Name = "mniViewPage";
+            this.mniViewPage.Size = new System.Drawing.Size(100, 22);
+            this.mniViewPage.Text = "页面";
+            this.mniViewPage.Click += new System.EventHandler(this.MniViewPage_Click);
+            // 
+            // btnSave
+            // 
+            this.btnSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnSave.Image = global::EMRView.Properties.Resources._00003;
+            this.btnSave.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(23, 22);
+            this.btnSave.Text = "保存";
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
+            // 
+            // btnPrint
+            // 
+            this.btnPrint.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnPrint.Image = global::EMRView.Properties.Resources._00004;
+            this.btnPrint.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnPrint.Name = "btnPrint";
+            this.btnPrint.Size = new System.Drawing.Size(23, 22);
+            this.btnPrint.Text = "打印";
+            this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
+            // 
+            // btnUndo
+            // 
+            this.btnUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnUndo.Image = global::EMRView.Properties.Resources._00128;
+            this.btnUndo.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnUndo.Name = "btnUndo";
+            this.btnUndo.Size = new System.Drawing.Size(23, 22);
+            this.btnUndo.Text = "撤销";
+            this.btnUndo.Click += new System.EventHandler(this.btnUndo_Click);
+            // 
+            // btnRedo
+            // 
+            this.btnRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnRedo.Image = global::EMRView.Properties.Resources._00129;
+            this.btnRedo.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnRedo.Name = "btnRedo";
+            this.btnRedo.Size = new System.Drawing.Size(23, 22);
+            this.btnRedo.Text = "恢复";
+            this.btnRedo.Click += new System.EventHandler(this.btnRedo_Click);
+            // 
+            // btnSymmetryMargin
+            // 
+            this.btnSymmetryMargin.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnSymmetryMargin.Image = global::EMRView.Properties.Resources._00196;
+            this.btnSymmetryMargin.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSymmetryMargin.Name = "btnSymmetryMargin";
+            this.btnSymmetryMargin.Size = new System.Drawing.Size(23, 22);
+            this.btnSymmetryMargin.Text = "对称页边距";
+            this.btnSymmetryMargin.Click += new System.EventHandler(this.btnSymmetryMargin_Click);
             // 
             // mniInsert
             // 
@@ -861,11 +932,6 @@
             this.btnSubScript.Text = "下标";
             this.btnSubScript.Click += new System.EventHandler(this.btnBold_Click);
             // 
-            // toolStripSeparator4
-            // 
-            this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 25);
-            // 
             // btnRightIndent
             // 
             this.btnRightIndent.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
@@ -952,10 +1018,9 @@
             this.mniLS150,
             this.mniLS200,
             this.mniLSFix});
-            this.btnLineSpace.Image = global::EMRView.Properties.Resources.行间距057341;
             this.btnLineSpace.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnLineSpace.Name = "btnLineSpace";
-            this.btnLineSpace.Size = new System.Drawing.Size(32, 22);
+            this.btnLineSpace.Size = new System.Drawing.Size(16, 22);
             this.btnLineSpace.Text = "行距";
             // 
             // mniLS100
@@ -998,43 +1063,6 @@
             this.mniLSFix.Text = "固定值";
             this.mniLSFix.Click += new System.EventHandler(this.mniLS100_Click);
             // 
-            // tlbEditTool
-            // 
-            this.tlbEditTool.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.btnFile,
-            this.btnSave,
-            this.btnPrint,
-            this.toolStripSeparator1,
-            this.btnUndo,
-            this.btnRedo,
-            this.cbbZoom,
-            this.btnSymmetryMargin,
-            this.toolStripSeparator3,
-            this.cbbFont,
-            this.toolStripSeparator2,
-            this.cbbFontSize,
-            this.mniInsert,
-            this.btnBold,
-            this.btnItalic,
-            this.btnUnderLine,
-            this.btnStrikeOut,
-            this.btnSuperScript,
-            this.btnSubScript,
-            this.toolStripSeparator4,
-            this.btnRightIndent,
-            this.btnLeftIndent,
-            this.btnAlignLeft,
-            this.btnAlignCenter,
-            this.btnAlignRight,
-            this.btnAlignJustify,
-            this.btnAlignScatter,
-            this.btnLineSpace});
-            this.tlbEditTool.Location = new System.Drawing.Point(0, 0);
-            this.tlbEditTool.Name = "tlbEditTool";
-            this.tlbEditTool.Size = new System.Drawing.Size(920, 25);
-            this.tlbEditTool.TabIndex = 4;
-            this.tlbEditTool.Text = "toolStrip1";
-            // 
             // cbxPrintHeader
             // 
             this.cbxPrintHeader.AutoSize = true;
@@ -1073,6 +1101,68 @@
             this.toolStripLabel1.Size = new System.Drawing.Size(68, 22);
             this.toolStripLabel1.Text = "打印方式：";
             // 
+            // toolStripSeparator8
+            // 
+            this.toolStripSeparator8.Name = "toolStripSeparator8";
+            this.toolStripSeparator8.Size = new System.Drawing.Size(6, 25);
+            // 
+            // toolStripLabel2
+            // 
+            this.toolStripLabel2.Name = "toolStripLabel2";
+            this.toolStripLabel2.Size = new System.Drawing.Size(56, 22);
+            this.toolStripLabel2.Text = "范围：从";
+            // 
+            // tbxPageStart
+            // 
+            this.tbxPageStart.Name = "tbxPageStart";
+            this.tbxPageStart.Size = new System.Drawing.Size(40, 25);
+            // 
+            // toolStripLabel3
+            // 
+            this.toolStripLabel3.Name = "toolStripLabel3";
+            this.toolStripLabel3.Size = new System.Drawing.Size(13, 22);
+            this.toolStripLabel3.Text = "-";
+            // 
+            // tbxPageEnd
+            // 
+            this.tbxPageEnd.Name = "tbxPageEnd";
+            this.tbxPageEnd.Size = new System.Drawing.Size(40, 25);
+            // 
+            // toolStripSeparator10
+            // 
+            this.toolStripSeparator10.Name = "toolStripSeparator10";
+            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 25);
+            // 
+            // toolStripLabel4
+            // 
+            this.toolStripLabel4.Name = "toolStripLabel4";
+            this.toolStripLabel4.Size = new System.Drawing.Size(208, 22);
+            this.toolStripLabel4.Text = "续打印：                                      ";
+            // 
+            // tlbPrint
+            // 
+            this.tlbPrint.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.cbbPrinter,
+            this.toolStripSeparator9,
+            this.toolStripLabel1,
+            this.btnPrintAll,
+            this.btnOdevity,
+            this.toolStripSeparator8,
+            this.toolStripLabel2,
+            this.tbxPageStart,
+            this.toolStripLabel3,
+            this.tbxPageEnd,
+            this.btnPrintRange,
+            this.toolStripSeparator10,
+            this.toolStripLabel4,
+            this.btnPrintCurLine,
+            this.btnPrintSelect});
+            this.tlbPrint.Location = new System.Drawing.Point(0, 25);
+            this.tlbPrint.Name = "tlbPrint";
+            this.tlbPrint.Size = new System.Drawing.Size(920, 25);
+            this.tlbPrint.TabIndex = 0;
+            this.tlbPrint.Text = "toolStrip1";
+            // 
             // btnPrintAll
             // 
             this.btnPrintAll.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
@@ -1109,33 +1199,6 @@
             this.mniEven.Text = "偶数页";
             this.mniEven.Click += new System.EventHandler(this.MniEven_Click);
             // 
-            // toolStripSeparator8
-            // 
-            this.toolStripSeparator8.Name = "toolStripSeparator8";
-            this.toolStripSeparator8.Size = new System.Drawing.Size(6, 25);
-            // 
-            // toolStripLabel2
-            // 
-            this.toolStripLabel2.Name = "toolStripLabel2";
-            this.toolStripLabel2.Size = new System.Drawing.Size(56, 22);
-            this.toolStripLabel2.Text = "范围：从";
-            // 
-            // tbxPageStart
-            // 
-            this.tbxPageStart.Name = "tbxPageStart";
-            this.tbxPageStart.Size = new System.Drawing.Size(40, 25);
-            // 
-            // toolStripLabel3
-            // 
-            this.toolStripLabel3.Name = "toolStripLabel3";
-            this.toolStripLabel3.Size = new System.Drawing.Size(13, 22);
-            this.toolStripLabel3.Text = "-";
-            // 
-            // tbxPageEnd
-            // 
-            this.tbxPageEnd.Name = "tbxPageEnd";
-            this.tbxPageEnd.Size = new System.Drawing.Size(40, 25);
-            // 
             // btnPrintRange
             // 
             this.btnPrintRange.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
@@ -1145,17 +1208,6 @@
             this.btnPrintRange.Size = new System.Drawing.Size(36, 22);
             this.btnPrintRange.Text = "打印";
             this.btnPrintRange.Click += new System.EventHandler(this.BtnPrintRange_Click);
-            // 
-            // toolStripSeparator10
-            // 
-            this.toolStripSeparator10.Name = "toolStripSeparator10";
-            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 25);
-            // 
-            // toolStripLabel4
-            // 
-            this.toolStripLabel4.Name = "toolStripLabel4";
-            this.toolStripLabel4.Size = new System.Drawing.Size(208, 22);
-            this.toolStripLabel4.Text = "续打印：                                      ";
             // 
             // btnPrintCurLine
             // 
@@ -1177,30 +1229,6 @@
             this.btnPrintSelect.Text = "当前页选中";
             this.btnPrintSelect.Click += new System.EventHandler(this.BtnPrintSelect_Click);
             // 
-            // tlbPrint
-            // 
-            this.tlbPrint.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.cbbPrinter,
-            this.toolStripSeparator9,
-            this.toolStripLabel1,
-            this.btnPrintAll,
-            this.btnOdevity,
-            this.toolStripSeparator8,
-            this.toolStripLabel2,
-            this.tbxPageStart,
-            this.toolStripLabel3,
-            this.tbxPageEnd,
-            this.btnPrintRange,
-            this.toolStripSeparator10,
-            this.toolStripLabel4,
-            this.btnPrintCurLine,
-            this.btnPrintSelect});
-            this.tlbPrint.Location = new System.Drawing.Point(0, 25);
-            this.tlbPrint.Name = "tlbPrint";
-            this.tlbPrint.Size = new System.Drawing.Size(920, 25);
-            this.tlbPrint.TabIndex = 0;
-            this.tlbPrint.Text = "toolStrip1";
-            // 
             // pnlView
             // 
             this.pnlView.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -1208,6 +1236,13 @@
             this.pnlView.Name = "pnlView";
             this.pnlView.Size = new System.Drawing.Size(920, 440);
             this.pnlView.TabIndex = 8;
+            // 
+            // mniInputHelp
+            // 
+            this.mniInputHelp.Name = "mniInputHelp";
+            this.mniInputHelp.Size = new System.Drawing.Size(180, 22);
+            this.mniInputHelp.Text = "辅助输入";
+            this.mniInputHelp.Click += new System.EventHandler(this.MniInputHelp_Click);
             // 
             // frmRecord
             // 
@@ -1357,5 +1392,9 @@
         private System.Windows.Forms.ToolStrip tlbPrint;
         private System.Windows.Forms.Panel pnlView;
         private System.Windows.Forms.ToolStripMenuItem mniCombobox;
+        private System.Windows.Forms.ToolStripMenuItem 视图ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem mniViewFilm;
+        private System.Windows.Forms.ToolStripMenuItem mniViewPage;
+        private System.Windows.Forms.ToolStripMenuItem mniInputHelp;
     }
 }

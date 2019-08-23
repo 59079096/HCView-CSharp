@@ -262,6 +262,8 @@ namespace HC.View
                     else  // 域起始标记
                         Result = FDomainStartDeletes.IndexOf(aItemNo) >= 0;  // 结束标识已经删除了
                 }
+                else
+                    Result = Items[aItemNo].CanAccept(0, HCItemAction.hiaRemove);
             }
 
             return Result;
@@ -339,11 +341,11 @@ namespace HC.View
             return Result;
         }
 
-        protected override void DoDrawItemPaintBefor(HCCustomData aData, int aDrawItemNo, 
+        protected override void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, 
             RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintBefor(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+            base.DoDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
 
             if (!APaintInfo.Print)  // 拼接域范围
@@ -417,11 +419,11 @@ namespace HC.View
         }
         #endregion
 
-        protected override void DoDrawItemPaintAfter(HCCustomData aData, int aDrawItemNo, 
+        protected override void DoDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, 
             RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintAfter(aData, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+            base.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
             
             if (!APaintInfo.Print)

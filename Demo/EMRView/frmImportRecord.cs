@@ -11,48 +11,40 @@ namespace EMRView
 {
     public partial class frmImportRecord : Form
     {
-        private frmRecord FfrmRecord;
-        private ImportEventHandler FOnImport;
+        private HCEmrViewLite FEmrViewLite;
+        private HCImportAsTextEventHandler FOnImportAsText;
 
         public frmImportRecord()
         {
             InitializeComponent();
 
-            FfrmRecord = new frmRecord();
-            FfrmRecord.EditToolVisible = false;
-            FfrmRecord.TopLevel = false;
-            this.pnlRecord.Controls.Add(FfrmRecord);
-            FfrmRecord.Dock = DockStyle.Fill;
-            FfrmRecord.Show();
+            FEmrViewLite = new HCEmrViewLite();
+            this.pnlRecord.Controls.Add(FEmrViewLite);
+            FEmrViewLite.Dock = DockStyle.Fill;
+            FEmrViewLite.Show();
         }
 
         private void BtnImportSelect_Click(object sender, EventArgs e)
         {
-            if (FOnImport != null)
-            {
-                string vText = FfrmRecord.EmrView.ActiveSection.ActiveData.GetSelectText();
-                FOnImport(vText);
-            }
+            if (FOnImportAsText != null)
+                FOnImportAsText(FEmrViewLite.ActiveSection.ActiveData.GetSelectText());
         }
 
         private void BtnImportAll_Click(object sender, EventArgs e)
         {
-            if (FOnImport != null)
-            {
-                string vText = FfrmRecord.EmrView.SaveToText();
-                FOnImport(vText);
-            }
+            if (FOnImportAsText != null)
+                FOnImportAsText(FEmrViewLite.SaveToText());
         }
 
-        public HCEmrView EmrView
+        public HCEmrViewLite EmrView
         {
-            get { return FfrmRecord.EmrView; }
+            get { return FEmrViewLite; }
         }
 
-        public ImportEventHandler OnImport
+        public HCImportAsTextEventHandler OnImportAsText
         {
-            get { return FOnImport; }
-            set { FOnImport = value; }
+            get { return FOnImportAsText; }
+            set { FOnImportAsText = value; }
         }
     }
 }

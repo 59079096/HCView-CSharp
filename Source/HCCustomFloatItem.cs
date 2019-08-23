@@ -23,7 +23,6 @@ namespace HC.View
     {
         private int FLeft, FTop, FPageIndex;
         private RECT FDrawRect;
-        public const byte PointSize = 5;
 
         public HCCustomFloatItem(HCCustomData aOwnerData)
             : base(aOwnerData)
@@ -31,14 +30,14 @@ namespace HC.View
 
         }
 
-        public virtual bool PtInClient(POINT aPoint)
+        public virtual bool PointInClient(POINT aPoint)
         {
             return HC.PtInRect(HC.Bounds(0, 0, Width, Height), aPoint);
         }
 
-        public bool PtInClient(int x, int y)
+        public bool PointInClient(int x, int y)
         {
-            return PtInClient(new POINT(x, y));
+            return PointInClient(new POINT(x, y));
         }
 
         public override void Assign(HCCustomItem source)
