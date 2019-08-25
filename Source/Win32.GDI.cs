@@ -789,7 +789,7 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int CreateDIBitmap(HDC hdc, ref BITMAPINFOHEADER lpInfoHeader, int dwUsage, IntPtr lpInitBits, ref BITMAPINFO lpInitInfo, int wUsage);
 		[DllImport("gdi32")] public static extern int CreateDiscardableBitmap(HDC hdc, int nWidth, int nHeight);
 		[DllImport("gdi32")] public static extern int CreateEllipticRgn(int X1, int Y1, int X2, int Y2);
-		[DllImport("gdi32")] public static extern int CreateEllipticRgnIndirect(ref RECT lpRect);
+		[DllImport("gdi32")] public static extern IntPtr CreateEllipticRgnIndirect(ref RECT lpRect);
 		[DllImport("gdi32")] public static extern int CreateEnhMetaFile(HWND hdcRef, string lpFileName, ref RECT lpRect, string lpDescription);
 		[DllImport("gdi32")] public static extern int CreateFont(HANDLE h, int W, int E, int O, int W2, int I, int u, int S, int C, int OP, int CP, int Q, int PAF, string F);
 		[DllImport("gdi32")] public static extern int CreateFontIndirect(ref LOGFONT lpLogFont);

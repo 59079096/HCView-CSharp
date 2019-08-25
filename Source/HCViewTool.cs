@@ -1,4 +1,5 @@
-﻿using HC.Win32;
+﻿using HC.View.Properties;
+using HC.Win32;
 using System;
 using System.ComponentModel;
 using System.Drawing;
@@ -112,7 +113,8 @@ namespace HC.View
         private void DoImageToolBarControlPaint(HCToolBarControl control, int left, int top, HCCanvas canvas)
         {
             string resName = "tool" + control.Tag.ToString();
-            Bitmap vBmp = new Bitmap(typeof(System.Drawing.Icon), resName);
+            Icon icon = (Icon)Resources.ResourceManager.GetObject(resName);
+            Bitmap vBmp = ((System.Drawing.Icon)icon).ToBitmap();
             canvas.Draw(left + 4, top + 4, vBmp);
         }
 

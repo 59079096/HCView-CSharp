@@ -1096,8 +1096,7 @@ namespace HC.View
         protected override void OnKeyPress(KeyPressEventArgs e)
         {
             base.OnKeyPress(e);
-            if (((Control.ModifierKeys & Keys.Control) == Keys.Control)  // 按下ctrl
-                || ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // 按下shift
+            if ((Control.ModifierKeys & Keys.Control) == Keys.Control)  // 按下ctrl
                 return;
 
             ActiveSection.KeyPress(e);
@@ -2200,7 +2199,7 @@ namespace HC.View
                             FDataBmpCanvas.Pen.BeginUpdate();
                             try
                             {
-                                FDataBmpCanvas.Pen.Color = Color.Blue;
+                                FDataBmpCanvas.Pen.Color = Color.Gray;
                                 FDataBmpCanvas.Pen.Style = HCPenStyle.psSolid;
                                 FDataBmpCanvas.Pen.Width = FCaret.Width;
                             }

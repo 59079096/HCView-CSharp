@@ -269,6 +269,10 @@ namespace HC.View
             else
             {
                 POINT[] vPointArr = new POINT[4];
+                vPointArr[0] = new POINT(FStartPt.X - PointSize, FStartPt.Y);
+                vPointArr[1] = new POINT(FStartPt.X + PointSize, FStartPt.Y);
+                vPointArr[2] = new POINT(FEndPt.X + PointSize, FEndPt.Y);
+                vPointArr[3] = new POINT(FEndPt.X - PointSize, FEndPt.Y);
 
                 IntPtr vRgn = GDI.CreatePolygonRgn(vPointArr, 4, GDI.WINDING);
                 try
@@ -616,15 +620,6 @@ namespace HC.View
                 PaintAnchor(aCanvas, aRect);
         }
 
-        public override bool PointInClient(POINT aPoint)
-        {
-            RECT vRect = ClientRect();
-            if (this.Active)
-                vRect.Inflate(PointSize, PointSize);
-
-            return HC.PtInRect(vRect, aPoint);
-        }
-
         public Color BackColor
         {
             get { return FBackColor; }
@@ -634,6 +629,48 @@ namespace HC.View
 
     public class HCShapeEllipse : HCShapeRectangle
     {
+        protected override HCShapeLineObj GetObjAt(int x, int y)
+        {
+            HCShapeLineObj vResult = HCShapeLineObj.sloNone;
+
+            if (HC.PtInRect(new RECT(StartPt.X - PointSize, StartPt.Y - PointSize,
+                   StartPt.X + PointSize, StartPt.Y + PointSize), new POINT(x, y)))
+                vResult = HCShapeLineObj.sloStart;
+            else
+            if (HC.PtInRect(new RECT(EndPt.X - PointSize, EndPt.Y - PointSize,
+                   EndPt.X + PointSize, EndPt.Y + PointSize), new POINT(x, y)))
+                vResult = HCShapeLineObj.sloEnd;
+            else
+            {
+                RECT vRect = ClientRect();
+                vRect.Inflate(PointSize, PointSize);
+                IntPtr vRgn1 = GDI.CreateEllipticRgnIndirect(ref vRect);
+                try
+                {
+                    if (GDI.PtInRegion(vRgn1, x, y))  // 在外围
+                    {
+                        vRect.Inflate(-PointSize - PointSize, -PointSize - PointSize);
+                        IntPtr vRgn2 = GDI.CreateEllipticRgnIndirect(ref vRect);
+                        try
+                        {
+                            if (!GDI.PtInRegion(vRgn2, x, y))  // 不在内围
+                                vResult = HCShapeLineObj.sloLine;
+                        }
+                        finally
+                        {
+                            GDI.DeleteObject(vRgn2);
+                        }
+                    }
+                }
+                finally
+                {
+                    GDI.DeleteObject(vRgn1);
+                }
+            }
+
+            return vResult;
+        }
+
         public HCShapeEllipse() : base()
         {
             Style = HCShapeStyle.hssEllipse;
@@ -678,6 +715,12 @@ namespace HC.View
             X = ax;
             Y = ay;
         }
+
+        public void Offset(int ax, int ay)
+        {
+            X += ax;
+            Y += ay;
+        }
     }
 
     public class HCShapePolygon : HCShape
@@ -686,7 +729,13 @@ namespace HC.View
         List<HCPoint> FPoints;
         byte FWidth;
         HCPenStyle FLineStyle;
-        int FActiveIndex;
+        int FActivePointIndex, FActiveLineIndex;
+
+        private void OffsetPoints(int x, int y)
+        {
+            for (int i = 0; i < FPoints.Count; i++)
+                FPoints[i].Offset(x, y);
+        }
 
         private void SetWidth(byte value)
         {
@@ -721,17 +770,17 @@ namespace HC.View
                     FPoints[i].X + aRect.Left + PointSize, FPoints[i].Y + aRect.Top + PointSize);
             }
 
-            if (FActiveIndex >= 0)
+            if (FActivePointIndex >= 0)
             {
                 aCanvas.Pen.Color = Color.Red;
                 if (StructState == HCStructState.hstcStructing)
                     aCanvas.Pen.Style = HCPenStyle.psDot;
 
                 aCanvas.Rectangle(
-                    FPoints[FActiveIndex].X + aRect.Left - PointSize,
-                    FPoints[FActiveIndex].Y + aRect.Top - PointSize,
-                    FPoints[FActiveIndex].X + aRect.Left + PointSize,
-                    FPoints[FActiveIndex].Y + aRect.Top + PointSize);
+                    FPoints[FActivePointIndex].X + aRect.Left - PointSize,
+                    FPoints[FActivePointIndex].Y + aRect.Top - PointSize,
+                    FPoints[FActivePointIndex].X + aRect.Left + PointSize,
+                    FPoints[FActivePointIndex].Y + aRect.Top + PointSize);
             }
         }
 
@@ -739,7 +788,10 @@ namespace HC.View
         {
             base.SetActive(value);
             if (!this.Active)
-                FActiveIndex = -1;
+            {
+                FActivePointIndex = -1;
+                FActiveLineIndex = -1;
+            }
         }
 
         protected int GetPointAt(int x, int y)
@@ -806,7 +858,8 @@ namespace HC.View
             FWidth = 1;
             FLineStyle = HCPenStyle.psSolid;
             FPoints = new List<HCPoint>();
-            FActiveIndex = -1;
+            FActivePointIndex = -1;
+            FActiveLineIndex = -1;
         }
 
         public override void Assign(HCShape source)
@@ -847,7 +900,7 @@ namespace HC.View
 
                     vPoint = new HCPoint(e.X, e.Y);
                     FPoints.Add(vPoint);
-                    FActiveIndex = FPoints.Count - 1;
+                    FActivePointIndex = FPoints.Count - 1;
                     StructState = HCStructState.hstcStructing;
                 }
                 else
@@ -855,7 +908,7 @@ namespace HC.View
                 {
                     HCPoint vPoint = new HCPoint(e.X, e.Y);
                     FPoints.Add(vPoint);
-                    FActiveIndex = FPoints.Count - 1;
+                    FActivePointIndex = FPoints.Count - 1;
                 }
                 else
                     StructOver();
@@ -865,14 +918,27 @@ namespace HC.View
             else
             {
                 int vIndex = GetPointAt(e.X, e.Y);
-                if (FActiveIndex != vIndex)
+                if (FActivePointIndex != vIndex)
                 {
-                    FActiveIndex = vIndex;
-                    Active = FActiveIndex >= 0;
+                    FActivePointIndex = vIndex;
+                    Active = FActivePointIndex >= 0;
                     vResult = Active;
                 }
                 else
                     vResult = vIndex >= 0;
+
+                if (!vResult)  // 是否在线段上
+                {
+                    vIndex = GetLineAt(e.X, e.Y);
+                    if (FActiveLineIndex != vIndex)
+                    {
+                        FActiveLineIndex = vIndex;
+                        Active = FActiveLineIndex >= 0;
+                        vResult = Active;
+                    }
+                    else
+                        vResult = vIndex >= 0;
+                }
 
                 if (vResult)
                 {
@@ -888,14 +954,27 @@ namespace HC.View
         {
             if (StructState == HCStructState.hstcStructing)
             {
-                FPoints[FActiveIndex].Init(e.X, e.Y);
+                FPoints[FActivePointIndex].Init(e.X, e.Y);
                 return true;
             }
 
-            if ((e.Button == MouseButtons.Left) && (FActiveIndex >= 0))
+            if (e.Button == MouseButtons.Left)
             {
-                FPoints[FActiveIndex].Init(e.X, e.Y);
-                return true;
+                if (FActivePointIndex >= 0)
+                {
+                    FPoints[FActivePointIndex].Init(e.X, e.Y);
+                    return true;
+                }
+                else
+                if (FActiveLineIndex >= 0)  // 整体移动
+                {
+                    OffsetPoints(e.X - FMousePt.X, e.Y - FMousePt.Y);
+
+                    FMousePt.X = e.X;
+                    FMousePt.Y = e.Y;
+
+                    return true;
+                }
             }
             else
             {
@@ -928,12 +1007,12 @@ namespace HC.View
         {
             if ((e.KeyValue == User.VK_BACK) || (e.KeyValue == User.VK_DELETE))
             {
-                if ((StructState == HCStructState.hstcStop) && (FActiveIndex >= 0))
+                if ((StructState == HCStructState.hstcStop) && (FActivePointIndex >= 0))
                 {
                     if (FPoints.Count > 2)
                     {
-                        FPoints.RemoveAt(FActiveIndex);
-                        FActiveIndex = -1;
+                        FPoints.RemoveAt(FActivePointIndex);
+                        FActivePointIndex = -1;
                         return true;
                     }
                 }
@@ -967,9 +1046,25 @@ namespace HC.View
                 PaintAnchor(aCanvas, aRect);
         }
 
+        public override bool PointInClient(POINT aPoint)
+        {
+            int vIndex = GetPointAt(aPoint.X, aPoint.Y);
+            if (vIndex >= 0)
+                return true;
+            else
+            {
+                vIndex = GetLineAt(aPoint.X, aPoint.Y);
+                if (vIndex >= 0)
+                    return true;
+            }
+
+            return false;
+        }
+
         public override void StructOver()
         {
-            FActiveIndex = -1;
+            FActivePointIndex = -1;
+            FActiveLineIndex = -1;
             if (FPoints.Count > 2)
                 FPoints.RemoveAt(FPoints.Count - 1);
 
