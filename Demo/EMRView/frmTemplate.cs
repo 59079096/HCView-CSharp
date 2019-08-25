@@ -23,9 +23,8 @@ namespace EMRView
 {
     public partial class frmTemplate : Form
     {
-        //private frmRecord frmRecord;
-        //private string FOpenedTID;
-        private int FDomainID;
+        private frmDataElement frmDataElement;
+        private frmDataElementDomain frmDataElementDomain;
 
         public frmTemplate()
         {
@@ -93,44 +92,109 @@ namespace EMRView
             }
         }
 
-        private void ShowDataElement(DataRow[] aRows = null)
+        private void DoDESelectChange(object sender, EventArgs e)
         {
-            DataRow[] vRows = null;
-            if (aRows == null)
-            {
-                vRows = new DataRow[emrMSDB.DB.DataElementDT.Rows.Count];
-                emrMSDB.DB.DataElementDT.Rows.CopyTo(vRows, 0);
-            }
-            else
-                vRows = aRows;
-
-            dgvDE.RowCount = vRows.Length;
-            for (int i = 0; i < vRows.Length; i++)
-            {
-                TemplateInfo vTempInfo = new TemplateInfo();
-                dgvDE.Rows[i].Cells[0].Value = vRows[i]["deid"];
-                dgvDE.Rows[i].Cells[1].Value = vRows[i]["dename"];
-                dgvDE.Rows[i].Cells[2].Value = vRows[i]["decode"];
-                dgvDE.Rows[i].Cells[3].Value = vRows[i]["py"];
-                dgvDE.Rows[i].Cells[4].Value = vRows[i]["frmtp"];
-                dgvDE.Rows[i].Cells[5].Value = vRows[i]["domainid"];
-            }
+            frmDataElementDomain.DeName = frmDataElement.GetDeName();
+            frmDataElementDomain.DomainID = frmDataElement.GetDomainID();
         }
 
-        private void ShowAllDataElement()
+        private void DoDEInsertAsDeItem(object sender, EventArgs e)
         {
-            tbxPY.Clear();
-            dgvDE.RowCount = 1;
-            dgvCV.RowCount = 1;
-            emrMSDB.DB.GetDataElement();
-            ShowDataElement();
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeItem(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void DoDEInsertAsDeGroup(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeGroup(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void DoDEInsertAsDeEdit(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeEdit(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void DoDEInsertAsDeCombobox(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeCombobox(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void DoDEInsertAsDeDateTime(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeDateTime(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void DoDEInsertAsDeRadioGroup(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeRadioGroup(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
+        private void DoDEInsertAsDeCheckBox(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeCheckBox(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
         }
 
         private void frm_Template_Load(object sender, EventArgs e)
         {
             ShowTemplateDeSet();  // 获取并显示模板数据集信息
-            ShowAllDataElement();  // 显示数据元信息
-            mniViewItem_Click(sender, e);
+
+            // 选项窗体
+            frmDataElementDomain = new frmDataElementDomain();
+            frmDataElementDomain.FormBorderStyle = FormBorderStyle.None;
+            frmDataElementDomain.Dock = DockStyle.Fill;
+            frmDataElementDomain.TopLevel = false;
+            this.splitContainerDataElement.Panel2.Controls.Add(frmDataElementDomain);
+            frmDataElementDomain.Show();
+
+            // 数据元窗体
+            frmDataElement = new frmDataElement();
+            frmDataElement.FormBorderStyle = FormBorderStyle.None;
+            frmDataElement.Dock = DockStyle.Fill;
+            frmDataElement.TopLevel = false;
+            this.splitContainerDataElement.Panel1.Controls.Add(frmDataElement);
+            frmDataElement.OnSelectRowChange = DoDESelectChange;
+            frmDataElement.OnInsertAsDeItem = DoDEInsertAsDeItem;
+            frmDataElement.OnInsertAsDeGroup = DoDEInsertAsDeGroup;
+            frmDataElement.OnInsertAsDeEdit = DoDEInsertAsDeEdit;
+            frmDataElement.OnInsertAsDeCombobox = DoDEInsertAsDeCombobox;
+            frmDataElement.OnInsertAsDeDateTime = DoDEInsertAsDeDateTime;
+            frmDataElement.OnInsertAsDeRadioGroup = DoDEInsertAsDeRadioGroup;
+            frmDataElement.OnInsertAsDeCheckBox = DoDEInsertAsDeCheckBox;
+            frmDataElement.Show();
         }
 
         private bool TreeNodeIsTemplate(TreeNode aNode)
@@ -285,9 +349,6 @@ namespace EMRView
 
         private void InsertDataElementAs(InsertAsProc proc)
         {
-            if (dgvDE.SelectedRows.Count == 0)
-                return;
-
             frmRecord vFrmRecord = GetActiveRecord();
             if (vFrmRecord != null)
             {
@@ -298,147 +359,6 @@ namespace EMRView
             }
             else
                 MessageBox.Show("未发现打开的模板！");
-        }
-        private void mniInsertAsDE_Click(object sender, EventArgs e)
-        {
-            InsertAsProc vEvent = delegate (frmRecord frmRecord)
-            {
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                frmRecord.InsertDeItem(vSelectedRow.Cells[0].Value.ToString(),
-                    vSelectedRow.Cells[1].Value.ToString());
-            };
-
-            InsertDataElementAs(vEvent);
-        }
-
-        private void mniInsertAsDG_Click(object sender, EventArgs e)
-        {
-            InsertAsProc vEvent = delegate (frmRecord frmRecord)
-            {
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                frmRecord.InsertDeGroup(vSelectedRow.Cells[0].Value.ToString(),
-                    vSelectedRow.Cells[1].Value.ToString());
-            };
-
-            InsertDataElementAs(vEvent);
-        }
-
-        private void mniInsertAsCombobox_Click(object sender, EventArgs e)
-        {
-            InsertAsProc vEvent = delegate (frmRecord frmRecord)
-            {
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                frmRecord.InsertDeCombobox(vSelectedRow.Cells[0].Value.ToString(),
-                    vSelectedRow.Cells[1].Value.ToString());
-            };
-
-            InsertDataElementAs(vEvent);
-        }
-
-        private void GetDomainItem(int aDomainID)
-        {
-            dgvCV.RowCount = 1;
-            if (aDomainID > 0)
-            {
-                DataTable dt = emrMSDB.DB.GetData(string.Format(emrMSDB.Sql_GetDomainItem, (aDomainID)));
-
-                dgvCV.RowCount = dt.Rows.Count;
-                for (int i = 0; i < dt.Rows.Count; i++)
-                {
-                    dgvCV.Rows[i].Cells[0].Value = dt.Rows[i]["devalue"];
-                    dgvCV.Rows[i].Cells[1].Value = dt.Rows[i]["code"];
-                    dgvCV.Rows[i].Cells[2].Value = dt.Rows[i]["py"];
-                    dgvCV.Rows[i].Cells[3].Value = dt.Rows[i]["id"];
-
-                    dgvCV.Rows[i].Cells[4].Value = "";
-
-                    if (dt.Rows[i]["content"].GetType() != typeof(System.DBNull))
-                    {
-                        byte[] vbuffer = (byte[])dt.Rows[i]["content"];
-                        if (vbuffer.Length > 0)
-                            dgvCV.Rows[i].Cells[4].Value = "...";
-                    }
-                }
-            }
-            else
-                dgvCV.RowCount = 0;
-        }
-
-        private void mniViewItem_Click(object sender, EventArgs e)
-        {
-            if ((dgvDE.SelectedRows.Count > 0) && (dgvDE.SelectedRows[0].Cells[5].Value != null))
-            {
-                if (dgvDE.SelectedRows[0].Cells[5].Value.ToString() != "")
-                    FDomainID = (int)(dgvDE.SelectedRows[0].Cells[5].Value);
-                else
-                    FDomainID = 0;
-
-                GetDomainItem(FDomainID);
-                lblDE.Text = dgvDE.SelectedRows[0].Cells[1].Value.ToString() + "(共 "
-                    + dgvCV.RowCount.ToString() + " 条选项)";
-            }
-            else
-                dgvCV.RowCount = 0;
-        }
-
-        private void dgvDE_DoubleClick(object sender, EventArgs e)
-        {
-            mniInsertAsDE_Click(sender, e);
-        }
-
-        private void tbxPY_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Return)
-            {
-                
-                if (tbxPY.Text == "")
-                {
-                    ShowDataElement();
-                }
-                else
-                {
-                    DataRow[] vRows = null;
-                    if (EMR.IsPY(tbxPY.Text[0]))
-                        vRows = emrMSDB.DB.DataElementDT.Select("py like '%" + tbxPY.Text + "%'");
-                    else
-                        vRows = emrMSDB.DB.DataElementDT.Select("dename like '%" + tbxPY.Text + "%'");
-
-                    ShowDataElement(vRows);
-                }
-
-                mniViewItem_Click(sender, e);
-            }
-        }
-
-        private void mniRefresh_Click(object sender, EventArgs e)
-        {
-            ShowAllDataElement();  // 刷新数据元信息
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-            mniRefresh_Click(sender, e);
-        }
-
-        private void mniEditItemLink_Click(object sender, EventArgs e)
-        {
-            if (dgvCV.SelectedRows.Count == 0)
-                return;
-
-            int vRow = dgvCV.SelectedRows[0].Index;
-            if (dgvCV.Rows[vRow].Cells[3].Value.ToString() == "")
-                return;
-
-            frmItemContent vFrmItemContent = new frmItemContent();
-            vFrmItemContent.DomainItemID = int.Parse(dgvCV.Rows[vRow].Cells[3].Value.ToString());
-            vFrmItemContent.ShowDialog();
-        }
-
-        private void lblDE_Click(object sender, EventArgs e)
-        {
-            frmItemContent vFrmItemContent = new frmItemContent();
-            vFrmItemContent.DomainItemID = 599;
-            vFrmItemContent.ShowDialog();
         }
 
         private void mniNewTemplate_Click(object sender, EventArgs e)
@@ -596,190 +516,6 @@ namespace EMRView
         private void 关闭ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CloseTemplatePage(tabTemplate.SelectedIndex);
-        }
-
-        private bool DeleteDomainItemContent(int aDominItemID)
-        {
-            return emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DomainContent WHERE DItemID = {0}", aDominItemID));
-        }
-
-        private void mniDeleteItemLink_Click(object sender, EventArgs e)
-        {
-            if (dgvCV.SelectedRows.Count > 0)
-            {
-                int vRow = dgvCV.SelectedRows[0].Index;
-
-                MessageBoxButtons messButton = MessageBoxButtons.OKCancel;
-                DialogResult dr = MessageBox.Show("确定要删除选项【 " + dgvCV.Rows[vRow].Cells[0].Value.ToString() + "】的扩展内容吗？", "确认操作", messButton);
-                if (dr == DialogResult.OK)
-                {
-                    int vDomainItemID = int.Parse(dgvCV.Rows[vRow].Cells[3].Value.ToString());
-
-                    if (DeleteDomainItemContent(vDomainItemID))
-                        MessageBox.Show("删除值域选项扩展内容成功！");
-                    else
-                        MessageBox.Show("删除失败:" + emrMSDB.DB.ErrMsg);
-                }
-            }
-        }
-
-        private void mniNewItem_Click(object sender, EventArgs e)
-        {
-            frmDomainItem vFrmDomainItem = new frmDomainItem();
-            vFrmDomainItem.SetInfo(FDomainID, 0);
-            if (vFrmDomainItem.DialogResult == System.Windows.Forms.DialogResult.OK)
-                GetDomainItem(FDomainID);
-        }
-
-        private void mniEditItem_Click(object sender, EventArgs e)
-        {
-            if ((dgvCV.SelectedRows.Count > 0) && (FDomainID > 0))
-            {
-                frmDomainItem vFrmDomainItem = new frmDomainItem();
-                vFrmDomainItem.SetInfo(FDomainID, int.Parse(dgvCV.Rows[dgvCV.SelectedRows[0].Index].Cells[3].Value.ToString()));
-                if (vFrmDomainItem.DialogResult == System.Windows.Forms.DialogResult.OK)
-                    GetDomainItem(FDomainID);
-            }
-        }
-
-        private bool DeleteDomainItem(int aDItemID)
-        {
-            return emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DataElementDomain WHERE ID = {0}", aDItemID));
-        }
-
-        private void mniDeleteItem_Click(object sender, EventArgs e)
-        {
-            if (dgvCV.SelectedRows.Count > 0)
-            {
-                int vRow = dgvCV.SelectedRows[0].Index;
-
-                MessageBoxButtons messButton = MessageBoxButtons.OKCancel;
-                DialogResult dr = MessageBox.Show("确定要删除选项【 " + dgvCV.Rows[vRow].Cells[0].Value.ToString() + "】和该选项对应的扩展内容吗？", "确认操作", messButton);
-                if (dr == DialogResult.OK)
-                {
-                    // 删除扩展内容
-                    if (DeleteDomainItemContent(int.Parse(dgvCV.Rows[vRow].Cells[3].Value.ToString())))
-                    {
-                        MessageBox.Show("删除选项扩展内容成功！");
-
-                        // 删除选项
-                        if (DeleteDomainItem(int.Parse(dgvCV.Rows[vRow].Cells[3].Value.ToString())))
-                            MessageBox.Show("删除选项成功！");
-                        else
-                            MessageBox.Show("删除选项失败！" + emrMSDB.DB.ErrMsg);
-                    }
-                    else
-                        MessageBox.Show("删除选项扩展内容失败！" + emrMSDB.DB.ErrMsg);
-                }
-            }
-        }
-
-        private void mniNew_Click(object sender, EventArgs e)
-        {
-            frmDeInfo vFrmDeInfo = new frmDeInfo();
-            vFrmDeInfo.SetDeID(0);
-            if (vFrmDeInfo.DialogResult == System.Windows.Forms.DialogResult.OK)
-                mniRefresh_Click(sender, e);
-        }
-
-        private void mniEdit_Click(object sender, EventArgs e)
-        {
-            if (dgvDE.SelectedRows.Count > 0)
-            {
-                frmDeInfo vFrmDeInfo = new frmDeInfo();
-                vFrmDeInfo.SetDeID(int.Parse(dgvDE.Rows[dgvDE.SelectedRows[0].Index].Cells[0].Value.ToString()));
-                if (vFrmDeInfo.DialogResult == System.Windows.Forms.DialogResult.OK)
-                    mniRefresh_Click(sender, e);
-            }
-        }
-
-        private void mniDelete_Click(object sender, EventArgs e)
-        {
-            if (dgvDE.SelectedRows.Count > 0)
-            {
-                int vRow = dgvDE.SelectedRows[0].Index;
-
-                MessageBoxButtons messButton = MessageBoxButtons.OKCancel;
-                DialogResult dr = MessageBox.Show("确定要删除数据元【 " + dgvDE.Rows[vRow].Cells[1].Value.ToString() + "】吗？", "确认操作", messButton);
-                if (dr == DialogResult.OK)
-                {
-                    if (int.Parse(dgvDE.Rows[vRow].Cells[5].Value.ToString()) != 0)
-                    {
-                        MessageBoxButtons messButton2 = MessageBoxButtons.OKCancel;
-                        DialogResult dr2 = MessageBox.Show("如果【 " + dgvDE.Rows[vRow].Cells[1].Value.ToString() + "】对应的值域 "
-                            + dgvDE.Rows[vRow].Cells[5].Value.ToString() + "不再使用，请注意及时删除，继续删除数据元？", "确认操作", messButton2);
-                        if (dr2 != DialogResult.OK)
-                            return;
-                    }
-
-                    if (emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DataElement WHERE DeID = {0}", dgvDE.Rows[vRow].Cells[0].Value.ToString())))
-                    {
-                        MessageBox.Show("删除成功！");
-                        mniRefresh_Click(sender, e);
-                    }
-                    else
-                        MessageBox.Show("删除失败！" + emrMSDB.DB.ErrMsg);
-                }
-            }
-        }
-
-        private void mniDomain_Click(object sender, EventArgs e)
-        {
-            frmDomain vFrmDomain = new frmDomain();
-            vFrmDomain.ShowDialog();
-        }
-
-        private void DgvDE_SelectionChanged(object sender, EventArgs e)
-        {
-            mniViewItem_Click(sender, e);
-        }
-
-        private void MniInsertAsEdit_Click(object sender, EventArgs e)
-        {
-            InsertAsProc vEvent = delegate (frmRecord frmRecord)
-            {
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                frmRecord.InsertDeEdit(vSelectedRow.Cells[0].Value.ToString(),
-                    vSelectedRow.Cells[1].Value.ToString());
-            };
-
-            InsertDataElementAs(vEvent);
-        }
-
-        private void MniInsertAsDateTime_Click(object sender, EventArgs e)
-        {
-            InsertAsProc vEvent = delegate (frmRecord frmRecord)
-            {
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                frmRecord.InsertDeDateTime(vSelectedRow.Cells[0].Value.ToString(),
-                    vSelectedRow.Cells[1].Value.ToString());
-            };
-
-            InsertDataElementAs(vEvent);
-        }
-
-        private void MniInsertAsRadioGroup_Click(object sender, EventArgs e)
-        {
-            InsertAsProc vEvent = delegate (frmRecord frmRecord)
-            {
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                frmRecord.InsertDeRadioGroup(vSelectedRow.Cells[0].Value.ToString(),
-                    vSelectedRow.Cells[1].Value.ToString());
-            };
-
-            InsertDataElementAs(vEvent);
-        }
-
-        private void MniInsertAsCheckBox_Click(object sender, EventArgs e)
-        {
-            InsertAsProc vEvent = delegate (frmRecord frmRecord)
-            {
-                DataGridViewRow vSelectedRow = dgvDE.SelectedRows[0];
-                frmRecord.InsertDeCheckBox(vSelectedRow.Cells[0].Value.ToString(),
-                    vSelectedRow.Cells[1].Value.ToString());
-            };
-
-            InsertDataElementAs(vEvent);
         }
     }
 }

@@ -82,6 +82,7 @@
             this.Controls.Add(this.panel1);
             this.Name = "frmImportRecord";
             this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "frmImportRecord";
             this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);

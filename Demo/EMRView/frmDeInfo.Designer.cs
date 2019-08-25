@@ -254,6 +254,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmDeInfo";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "数据元维护";
             this.ResumeLayout(false);
             this.PerformLayout();

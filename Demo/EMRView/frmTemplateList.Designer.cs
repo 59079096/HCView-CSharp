@@ -174,7 +174,7 @@
             this.Column3.HeaderText = "所属ID";
             this.Column3.Name = "Column3";
             this.Column3.ReadOnly = true;
-            this.Column3.Width = 40;
+            this.Column3.Width = 70;
             // 
             // Column4
             // 
@@ -193,6 +193,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmTemplateList";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "选择模板";
             this.Load += new System.EventHandler(this.frmTemplateList_Load);
             this.panel1.ResumeLayout(false);
@@ -216,11 +217,10 @@
         private System.Windows.Forms.TextBox tbxRecordName;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.TreeView tvTemplate;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column1;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column2;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column3;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column4;
-        private System.Windows.Forms.TreeView tvTemplate;
-
     }
 }

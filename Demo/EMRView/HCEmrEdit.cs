@@ -105,6 +105,28 @@ namespace EMRView
             FDeUnDoneColor = Color.FromArgb(0xFF, 0xDD, 0x80);
         }
 
+        public DeItem NewDeItem(string atext)
+        {
+            DeItem vDeItem = new DeItem(atext);
+            if (this.CurStyleNo > HCStyle.Null)
+                vDeItem.StyleNo = this.CurStyleNo;
+            else
+                vDeItem.StyleNo = 0;
+
+            vDeItem.ParaNo = this.CurParaNo;
+            return vDeItem;
+        }
+
+        public bool InsertDeGroup(DeGroup aDeGroup)
+        {
+            return this.InsertDomain(aDeGroup);
+        }
+
+        public bool InsertDeItem(DeItem aDeItem)
+        {
+            return this.InsertItem(aDeItem);
+        }
+
         /// <summary> 直接设置当前数据元的值为扩展内容 </summary>
         /// <param name="aStream">扩展内容流</param>
         public void SetActiveItemExtra(Stream aStream)

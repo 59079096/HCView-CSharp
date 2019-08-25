@@ -111,6 +111,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmDomainItem";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "值域选项";
             this.ResumeLayout(false);
             this.PerformLayout();

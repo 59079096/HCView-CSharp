@@ -59,7 +59,7 @@
             this.pnlRecord.Size = new System.Drawing.Size(603, 450);
             this.pnlRecord.TabIndex = 6;
             // 
-            // frmPatientHisInchRecord
+            // frmPatientHisRecord
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -68,9 +68,9 @@
             this.Controls.Add(this.splitter1);
             this.Controls.Add(this.tvRecord);
             this.MinimizeBox = false;
-            this.Name = "frmPatientHisInchRecord";
+            this.Name = "frmPatientHisRecord";
             this.ShowInTaskbar = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "历次病历";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FrmPatientHisInchRecord_FormClosed);
             this.Shown += new System.EventHandler(this.FrmPatientHisInchRecord_Shown);

@@ -28,7 +28,8 @@ namespace EMRView
         private HCEmrEdit FEmrEdit;
         private int FMouseDownTick;
         private frmRecordPop FfrmRecordPop;
-        private DeItemSetTextEventHandler FOnSetDeItemText;
+        private DeItemSetTextEventHandler FOnSetDeItemText = null;
+        private frmDataElement frmDataElement;
 
         private void DoSaveItemContent()
         {
@@ -63,30 +64,6 @@ namespace EMRView
                     else
                         FEmrEdit.Clear();
                 }
-            }
-        }
-
-        private void ShowDataElement(DataRow[] aRows = null)
-        {
-            DataRow[] vRows = null;
-            if (aRows == null)
-            {
-                vRows = new DataRow[emrMSDB.DB.DataElementDT.Rows.Count];
-                emrMSDB.DB.DataElementDT.Rows.CopyTo(vRows, 0);
-            }
-            else
-                vRows = aRows;
-
-            dgvDE.RowCount = vRows.Length;
-            for (int i = 0; i < vRows.Length; i++)
-            {
-                TemplateInfo vTempInfo = new TemplateInfo();
-                dgvDE.Rows[i].Cells[0].Value = vRows[i]["deid"];
-                dgvDE.Rows[i].Cells[1].Value = vRows[i]["dename"];
-                dgvDE.Rows[i].Cells[2].Value = vRows[i]["decode"];
-                dgvDE.Rows[i].Cells[3].Value = vRows[i]["py"];
-                dgvDE.Rows[i].Cells[4].Value = vRows[i]["frmtp"];
-                dgvDE.Rows[i].Cells[5].Value = vRows[i]["domainid"];
             }
         }
 
@@ -208,6 +185,68 @@ namespace EMRView
             //tssDeInfo.Text = vInfo;
         }
 
+        private void DoDEInsertAsDeItem(object sender, EventArgs e)
+        {
+            DeItem vDeItem = FEmrEdit.NewDeItem(frmDataElement.GetDeName());
+            vDeItem[DeProp.Index] = frmDataElement.GetDeIndex();
+            vDeItem[DeProp.Name] = frmDataElement.GetDeName();
+            FEmrEdit.InsertDeItem(vDeItem);
+        }
+
+        private void DoDEInsertAsDeGroup(object sender, EventArgs e)
+        {
+            DeGroup vDeGroup = new DeGroup(FEmrEdit.TopLevelData());
+            vDeGroup[DeProp.Index] = frmDataElement.GetDeIndex();
+            vDeGroup[DeProp.Name] = frmDataElement.GetDeName();
+            FEmrEdit.InsertDeGroup(vDeGroup);
+        }
+
+        private void DoDEInsertAsDeEdit(object sender, EventArgs e)
+        {
+            DeEdit vDeEdit = new DeEdit(FEmrEdit.TopLevelData(), frmDataElement.GetDeName());
+            vDeEdit[DeProp.Index] = frmDataElement.GetDeIndex();
+            vDeEdit[DeProp.Name] = frmDataElement.GetDeName();
+            FEmrEdit.InsertItem(vDeEdit);
+        }
+
+        private void DoDEInsertAsDeCombobox(object sender, EventArgs e)
+        {
+            DeCombobox vDeCombobox = new DeCombobox(FEmrEdit.TopLevelData(), frmDataElement.GetDeName());
+            vDeCombobox.SaveItem = false;
+            vDeCombobox[DeProp.Index] = frmDataElement.GetDeIndex();
+            vDeCombobox[DeProp.Name] = frmDataElement.GetDeName();
+            FEmrEdit.InsertItem(vDeCombobox);
+        }
+
+        private void DoDEInsertAsDeDateTime(object sender, EventArgs e)
+        {
+            DeDateTimePicker vDeDateTime = new DeDateTimePicker(FEmrEdit.TopLevelData(), DateTime.Now);
+            vDeDateTime[DeProp.Index] = frmDataElement.GetDeIndex();
+            vDeDateTime[DeProp.Name] = frmDataElement.GetDeName();
+            FEmrEdit.InsertItem(vDeDateTime);
+        }
+
+        private void DoDEInsertAsDeRadioGroup(object sender, EventArgs e)
+        {
+            DeRadioGroup vDeRadioGropu = new DeRadioGroup(FEmrEdit.TopLevelData());
+            vDeRadioGropu[DeProp.Index] = frmDataElement.GetDeIndex();
+            vDeRadioGropu[DeProp.Name] = frmDataElement.GetDeName();
+            // 取数据元的选项，选项太多时提示是否都插入
+            vDeRadioGropu.AddItem("选项1");
+            vDeRadioGropu.AddItem("选项2");
+            vDeRadioGropu.AddItem("选项3");
+
+            FEmrEdit.InsertItem(vDeRadioGropu);
+        }
+
+        private void DoDEInsertAsDeCheckBox(object sender, EventArgs e)
+        {
+            DeCheckBox vDeCheckBox = new DeCheckBox(FEmrEdit.TopLevelData(), frmDataElement.GetDeName(), false);
+            vDeCheckBox[DeProp.Index] = frmDataElement.GetDeIndex();
+            vDeCheckBox[DeProp.Name] = frmDataElement.GetDeName();
+            FEmrEdit.InsertItem(vDeCheckBox);
+        }
+
         public frmItemContent()
         {
             HCTextItem.HCDefaultTextItemClass = typeof(DeItem);
@@ -215,6 +254,15 @@ namespace EMRView
 
             InitializeComponent();
             this.ShowInTaskbar = false;
+
+            System.Drawing.Text.InstalledFontCollection fonts = new System.Drawing.Text.InstalledFontCollection();
+            foreach (System.Drawing.FontFamily family in fonts.Families)
+            {
+                cbbFont.Items.Add(family.Name);
+            }
+            cbbFont.Text = "宋体";
+
+            cbbFontSize.Text = "五号";
 
             if (FEmrEdit == null)
             {
@@ -226,17 +274,30 @@ namespace EMRView
                 FEmrEdit.MouseUp += DoEmrEditMouseUp;
                 FEmrEdit.Show();
             }
+
+            FDomainItemID = 0;
+
+            frmDataElement = new frmDataElement();
+            frmDataElement.FormBorderStyle = FormBorderStyle.None;
+            frmDataElement.Dock = DockStyle.Fill;
+            frmDataElement.TopLevel = false;
+
+            frmDataElement.OnInsertAsDeItem = DoDEInsertAsDeItem;
+            frmDataElement.OnInsertAsDeGroup = DoDEInsertAsDeGroup;
+            frmDataElement.OnInsertAsDeEdit = DoDEInsertAsDeEdit;
+            frmDataElement.OnInsertAsDeCombobox = DoDEInsertAsDeCombobox;
+            frmDataElement.OnInsertAsDeDateTime = DoDEInsertAsDeDateTime;
+            frmDataElement.OnInsertAsDeRadioGroup = DoDEInsertAsDeRadioGroup;
+            frmDataElement.OnInsertAsDeCheckBox = DoDEInsertAsDeCheckBox;
+
+            splitContainer.Panel1.Controls.Add(frmDataElement);
+            frmDataElement.Show();
         }
 
         public int DomainItemID
         {
             get { return FDomainItemID; }
             set { SetDomainItemID(value); }
-        }
-
-        private void frmItemContent_Load(object sender, EventArgs e)
-        {
-            ShowDataElement();
         }
 
         private void btnSave_Click(object sender, EventArgs e)
@@ -307,48 +368,6 @@ namespace EMRView
                 case "4":
                     FEmrEdit.ApplyParaAlignHorz(ParaAlignHorz.pahScatter);  // 分散
                     break;
-            }
-        }
-
-        private void dgvDE_DoubleClick(object sender, EventArgs e)
-        {
-            if (dgvDE.SelectedRows.Count == 0)
-                return;
-
-            int vRow = dgvDE.SelectedRows[0].Index;
-            DeItem vDeItem = new DeItem(dgvDE.Rows[vRow].Cells[1].Value.ToString());
-            if (FEmrEdit.CurStyleNo > HCStyle.Null)
-                vDeItem.StyleNo = FEmrEdit.CurStyleNo;
-            else
-                vDeItem.StyleNo = 0;
-
-            vDeItem.ParaNo = FEmrEdit.CurParaNo;
-
-            vDeItem[DeProp.Name] = dgvDE.Rows[vRow].Cells[1].Value.ToString();
-            vDeItem[DeProp.Index] = dgvDE.Rows[vRow].Cells[0].Value.ToString();
-
-            FEmrEdit.InsertItem(vDeItem);
-        }
-
-        private void tbxPY_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Return)
-            {
-
-                if (tbxPY.Text == "")
-                {
-                    ShowDataElement();
-                }
-                else
-                {
-                    DataRow[] vRows = null;
-                    if (EMR.IsPY(tbxPY.Text[0]))
-                        vRows = emrMSDB.DB.DataElementDT.Select("py like '%" + tbxPY.Text + "%'");
-                    else
-                        vRows = emrMSDB.DB.DataElementDT.Select("dename like '%" + tbxPY.Text + "%'");
-
-                    ShowDataElement(vRows);
-                }
             }
         }
     }

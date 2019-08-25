@@ -92,6 +92,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmInsertTable";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "表格信息";
             this.ResumeLayout(false);
             this.PerformLayout();

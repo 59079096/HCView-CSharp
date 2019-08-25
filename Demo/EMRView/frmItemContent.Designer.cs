@@ -28,20 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmItemContent));
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.label1 = new System.Windows.Forms.Label();
-            this.tbxPY = new System.Windows.Forms.TextBox();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.dgvDE = new System.Windows.Forms.DataGridView();
-            this.Key = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.splitContainer = new System.Windows.Forms.SplitContainer();
             this.pnlEdit = new System.Windows.Forms.Panel();
             this.tlbTool = new System.Windows.Forms.ToolStrip();
             this.btnSave = new System.Windows.Forms.ToolStripButton();
@@ -52,7 +39,6 @@
             this.cbbFont = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.cbbFontSize = new System.Windows.Forms.ToolStripComboBox();
-            this.toolStripSplitButton1 = new System.Windows.Forms.ToolStripSplitButton();
             this.btnBold = new System.Windows.Forms.ToolStripButton();
             this.btnItalic = new System.Windows.Forms.ToolStripButton();
             this.btnUnderLine = new System.Windows.Forms.ToolStripButton();
@@ -67,150 +53,32 @@
             this.btnAlignRight = new System.Windows.Forms.ToolStripButton();
             this.btnAlignJustify = new System.Windows.Forms.ToolStripButton();
             this.btnAlignScatter = new System.Windows.Forms.ToolStripButton();
-            this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
-            this.splitContainer1.Panel1.SuspendLayout();
-            this.splitContainer1.Panel2.SuspendLayout();
-            this.splitContainer1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvDE)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).BeginInit();
+            this.splitContainer.Panel2.SuspendLayout();
+            this.splitContainer.SuspendLayout();
             this.tlbTool.SuspendLayout();
             this.SuspendLayout();
             // 
-            // panel1
+            // splitContainer
             // 
-            this.panel1.Controls.Add(this.label1);
-            this.panel1.Controls.Add(this.tbxPY);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(925, 36);
-            this.panel1.TabIndex = 0;
+            this.splitContainer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer.Name = "splitContainer";
             // 
-            // label1
+            // splitContainer.Panel2
             // 
-            this.label1.AutoSize = true;
-            this.label1.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.label1.Location = new System.Drawing.Point(146, 13);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(155, 12);
-            this.label1.TabIndex = 3;
-            this.label1.Text = "<- 输入名称或简拼回车检索";
-            // 
-            // tbxPY
-            // 
-            this.tbxPY.Location = new System.Drawing.Point(14, 8);
-            this.tbxPY.Name = "tbxPY";
-            this.tbxPY.Size = new System.Drawing.Size(123, 21);
-            this.tbxPY.TabIndex = 2;
-            this.tbxPY.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tbxPY_KeyDown);
-            // 
-            // splitContainer1
-            // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 36);
-            this.splitContainer1.Name = "splitContainer1";
-            // 
-            // splitContainer1.Panel1
-            // 
-            this.splitContainer1.Panel1.Controls.Add(this.dgvDE);
-            // 
-            // splitContainer1.Panel2
-            // 
-            this.splitContainer1.Panel2.Controls.Add(this.pnlEdit);
-            this.splitContainer1.Panel2.Controls.Add(this.tlbTool);
-            this.splitContainer1.Size = new System.Drawing.Size(925, 397);
-            this.splitContainer1.SplitterDistance = 311;
-            this.splitContainer1.TabIndex = 1;
-            // 
-            // dgvDE
-            // 
-            this.dgvDE.AllowUserToAddRows = false;
-            this.dgvDE.AllowUserToDeleteRows = false;
-            this.dgvDE.AllowUserToResizeRows = false;
-            this.dgvDE.BackgroundColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvDE.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            this.dgvDE.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvDE.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.Key,
-            this.value,
-            this.Column1,
-            this.Column2,
-            this.Column3,
-            this.Column4});
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("宋体", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvDE.DefaultCellStyle = dataGridViewCellStyle2;
-            this.dgvDE.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvDE.Location = new System.Drawing.Point(0, 0);
-            this.dgvDE.MultiSelect = false;
-            this.dgvDE.Name = "dgvDE";
-            this.dgvDE.ReadOnly = true;
-            this.dgvDE.RowHeadersVisible = false;
-            this.dgvDE.RowTemplate.Height = 23;
-            this.dgvDE.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDE.Size = new System.Drawing.Size(311, 397);
-            this.dgvDE.TabIndex = 6;
-            this.dgvDE.DoubleClick += new System.EventHandler(this.dgvDE_DoubleClick);
-            // 
-            // Key
-            // 
-            this.Key.HeaderText = "序";
-            this.Key.Name = "Key";
-            this.Key.ReadOnly = true;
-            this.Key.Width = 30;
-            // 
-            // value
-            // 
-            this.value.HeaderText = "名称";
-            this.value.Name = "value";
-            this.value.ReadOnly = true;
-            // 
-            // Column1
-            // 
-            this.Column1.HeaderText = "编码";
-            this.Column1.Name = "Column1";
-            this.Column1.ReadOnly = true;
-            this.Column1.Width = 60;
-            // 
-            // Column2
-            // 
-            this.Column2.HeaderText = "拼音";
-            this.Column2.Name = "Column2";
-            this.Column2.ReadOnly = true;
-            this.Column2.Width = 40;
-            // 
-            // Column3
-            // 
-            this.Column3.HeaderText = "类型";
-            this.Column3.Name = "Column3";
-            this.Column3.ReadOnly = true;
-            this.Column3.Width = 30;
-            // 
-            // Column4
-            // 
-            this.Column4.HeaderText = "值域";
-            this.Column4.Name = "Column4";
-            this.Column4.ReadOnly = true;
-            this.Column4.Width = 20;
+            this.splitContainer.Panel2.Controls.Add(this.pnlEdit);
+            this.splitContainer.Panel2.Controls.Add(this.tlbTool);
+            this.splitContainer.Size = new System.Drawing.Size(972, 509);
+            this.splitContainer.SplitterDistance = 312;
+            this.splitContainer.TabIndex = 1;
             // 
             // pnlEdit
             // 
             this.pnlEdit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlEdit.Location = new System.Drawing.Point(0, 25);
             this.pnlEdit.Name = "pnlEdit";
-            this.pnlEdit.Size = new System.Drawing.Size(610, 372);
+            this.pnlEdit.Size = new System.Drawing.Size(656, 484);
             this.pnlEdit.TabIndex = 6;
             // 
             // tlbTool
@@ -224,7 +92,6 @@
             this.cbbFont,
             this.toolStripSeparator2,
             this.cbbFontSize,
-            this.toolStripSplitButton1,
             this.btnBold,
             this.btnItalic,
             this.btnUnderLine,
@@ -241,7 +108,7 @@
             this.btnAlignScatter});
             this.tlbTool.Location = new System.Drawing.Point(0, 0);
             this.tlbTool.Name = "tlbTool";
-            this.tlbTool.Size = new System.Drawing.Size(610, 25);
+            this.tlbTool.Size = new System.Drawing.Size(656, 25);
             this.tlbTool.TabIndex = 5;
             this.tlbTool.Text = "toolStrip1";
             // 
@@ -286,6 +153,7 @@
             // cbbFont
             // 
             this.cbbFont.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbbFont.DropDownWidth = 120;
             this.cbbFont.Name = "cbbFont";
             this.cbbFont.Size = new System.Drawing.Size(75, 25);
             this.cbbFont.DropDownClosed += new System.EventHandler(this.cbbFont_DropDownClosed);
@@ -314,15 +182,6 @@
             this.cbbFontSize.Name = "cbbFontSize";
             this.cbbFontSize.Size = new System.Drawing.Size(75, 25);
             this.cbbFontSize.DropDownClosed += new System.EventHandler(this.cbbFontSize_DropDownClosed);
-            // 
-            // toolStripSplitButton1
-            // 
-            this.toolStripSplitButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripSplitButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripSplitButton1.Image")));
-            this.toolStripSplitButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripSplitButton1.Name = "toolStripSplitButton1";
-            this.toolStripSplitButton1.Size = new System.Drawing.Size(32, 22);
-            this.toolStripSplitButton1.Text = "toolStripSplitButton1";
             // 
             // btnBold
             // 
@@ -476,22 +335,17 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(925, 433);
-            this.Controls.Add(this.splitContainer1);
-            this.Controls.Add(this.panel1);
+            this.ClientSize = new System.Drawing.Size(925, 509);
+            this.Controls.Add(this.splitContainer);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmItemContent";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "frmItemContent";
-            this.Load += new System.EventHandler(this.frmItemContent_Load);
-            this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
-            this.splitContainer1.Panel1.ResumeLayout(false);
-            this.splitContainer1.Panel2.ResumeLayout(false);
-            this.splitContainer1.Panel2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
-            this.splitContainer1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dgvDE)).EndInit();
+            this.splitContainer.Panel2.ResumeLayout(false);
+            this.splitContainer.Panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
+            this.splitContainer.ResumeLayout(false);
             this.tlbTool.ResumeLayout(false);
             this.tlbTool.PerformLayout();
             this.ResumeLayout(false);
@@ -499,18 +353,7 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox tbxPY;
-        private System.Windows.Forms.DataGridView dgvDE;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Key;
-        private System.Windows.Forms.DataGridViewTextBoxColumn value;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column1;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column2;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column3;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Column4;
+        private System.Windows.Forms.SplitContainer splitContainer;
         private System.Windows.Forms.ToolStrip tlbTool;
         private System.Windows.Forms.ToolStripButton btnSave;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
@@ -520,7 +363,6 @@
         private System.Windows.Forms.ToolStripComboBox cbbFont;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripComboBox cbbFontSize;
-        private System.Windows.Forms.ToolStripSplitButton toolStripSplitButton1;
         private System.Windows.Forms.ToolStripButton btnBold;
         private System.Windows.Forms.ToolStripButton btnItalic;
         private System.Windows.Forms.ToolStripButton btnUnderLine;

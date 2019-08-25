@@ -49,10 +49,10 @@ namespace EMRView
 
             string vSql = "";
             if (FItemID > 0)  // 修改
-                vSql = string.Format("UPDATE Comm_DataElementDomain SET devalue = {0}, py = {1}, code = {2} WHERE ID = {3}", 
+                vSql = string.Format("UPDATE Comm_DataElementDomain SET devalue = '{0}', py = '{1}', code = '{2}' WHERE ID = {3}", 
                     tbxName.Text, tbxPY.Text, tbxCode.Text, FItemID);
             else
-                vSql = string.Format("INSERT INTO Comm_DataElementDomain (domainid, code, devalue, py) VALUES ({0}, {1}, {2}, {3})",
+                vSql = string.Format("INSERT INTO Comm_DataElementDomain (domainid, code, devalue, py) VALUES ({0}, '{1}', '{2}', '{3}')",
                     FDomainID, tbxCode.Text, tbxName.Text, tbxPY.Text);
 
             if (emrMSDB.DB.ExecSql(vSql))

@@ -191,6 +191,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmTableBorderBackColor";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "边框及背景色";
             this.ResumeLayout(false);
             this.PerformLayout();

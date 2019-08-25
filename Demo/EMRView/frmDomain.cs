@@ -11,10 +11,18 @@ namespace EMRView
 {
     public partial class frmDomain : Form
     {
+        private frmDataElementDomain frmDataElementDomain;
         public frmDomain()
         {
             InitializeComponent();
             this.ShowInTaskbar = false;
+
+            frmDataElementDomain = new frmDataElementDomain();
+            frmDataElementDomain.FormBorderStyle = FormBorderStyle.None;
+            frmDataElementDomain.Dock = DockStyle.Fill;
+            frmDataElementDomain.TopLevel = false;
+            this.pnlDomainItem.Controls.Add(frmDataElementDomain);
+            frmDataElementDomain.Show();
         }
 
         private void GetAllDomain()
@@ -28,6 +36,8 @@ namespace EMRView
                 dgvDomain.Rows[i].Cells[1].Value = dt.Rows[i]["DCode"];
                 dgvDomain.Rows[i].Cells[2].Value = dt.Rows[i]["DName"];
             }
+
+            DgvDomain_SelectionChanged(null, null);
         }
 
         private void frmDomain_Load(object sender, EventArgs e)
@@ -37,7 +47,7 @@ namespace EMRView
 
         private void mniNew_Click(object sender, EventArgs e)
         {
-            frmDomainOper vFrmDomainOper = new frmDomainOper();
+            frmDomainInfo vFrmDomainOper = new frmDomainInfo();
             vFrmDomainOper.SetDID(0, "", "");
             if (vFrmDomainOper.DialogResult == System.Windows.Forms.DialogResult.OK)
                 GetAllDomain();
@@ -48,7 +58,7 @@ namespace EMRView
             if (dgvDomain.SelectedRows.Count > 0)
             {
                 int vRow = dgvDomain.SelectedRows[0].Index;
-                frmDomainOper vFrmDomainOper = new frmDomainOper();
+                frmDomainInfo vFrmDomainOper = new frmDomainInfo();
                 vFrmDomainOper.SetDID(int.Parse(dgvDomain.Rows[vRow].Cells[0].Value.ToString()),
                     dgvDomain.Rows[vRow].Cells[1].Value.ToString(),
                     dgvDomain.Rows[vRow].Cells[2].Value.ToString());
@@ -57,18 +67,6 @@ namespace EMRView
                     GetAllDomain();
             }
         }
-
-        #region 子方法
-        private bool DeleteDomainItemContent(int aDItemID)
-        {
-            return emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DomainContent WHERE DItemID = {0} ", aDItemID));
-        }
-
-        private bool DeleteDomainAllItem(int aDomainID)
-        {
-            return emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DataElementDomain WHERE DomainID = {0}", aDomainID));
-        }
-        #endregion
 
         private void mniDelete_Click(object sender, EventArgs e)
         {
@@ -86,14 +84,14 @@ namespace EMRView
 
                     for (int i = 0; i < dt.Rows.Count; i++)
                     {
-                        if (!DeleteDomainItemContent(int.Parse(dt.Rows[i]["ID"].ToString())))
+                        if (!emrMSDB.DB.DeleteDomainItemContent(int.Parse(dt.Rows[i]["ID"].ToString())))
                         {
                             MessageBox.Show("删除值域选项关联内容失败，"+ emrMSDB.DB.ErrMsg);
                             return;
                         }
                     }
 
-                    if (!DeleteDomainAllItem(vDomainID))  // 删除值域对应的所有选项
+                    if (!emrMSDB.DB.DeleteDomainAllItem(vDomainID))  // 删除值域对应的所有选项
                     {
                         MessageBox.Show("删除值域选项关联内容失败，"+ emrMSDB.DB.ErrMsg);
                         return;
@@ -106,6 +104,19 @@ namespace EMRView
                     }
                 }
             }
+        }
+
+        private void DgvDomain_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dgvDomain.SelectedRows.Count > 0)
+            {
+                DataGridViewRow vSelectedRow = dgvDomain.SelectedRows[0];
+                if (vSelectedRow.Cells[0].Value != null)
+                {
+                    if (frmDataElementDomain.DomainID != int.Parse(vSelectedRow.Cells[0].Value.ToString()))
+                        frmDataElementDomain.DomainID = int.Parse(vSelectedRow.Cells[0].Value.ToString());
+                }
+            };
         }
     }
 }

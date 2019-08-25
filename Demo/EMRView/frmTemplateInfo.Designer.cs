@@ -71,6 +71,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmTemplateInfo";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "模板信息";
             this.ResumeLayout(false);
             this.PerformLayout();

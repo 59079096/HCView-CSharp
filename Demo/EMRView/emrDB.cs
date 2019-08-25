@@ -182,6 +182,9 @@ namespace EMRView
             DataTable dt = null;
             try
             {
+                if (FConn.State == ConnectionState.Closed)
+                    FConn.Open();
+
                 SqlCommand cmd = new SqlCommand();
                 cmd.Connection = FConn;
                 cmd.CommandText = sql;
@@ -213,6 +216,9 @@ namespace EMRView
         {
             try
             {
+                if (FConn.State == ConnectionState.Closed)
+                    FConn.Open();
+
                 SqlCommand sqlComm = new SqlCommand();
                 sqlComm.Connection = FConn;
                 sqlComm.CommandText = sql;
@@ -371,6 +377,22 @@ namespace EMRView
         public bool DeletePatientRecord(int aRecordID)
         {
             return FDB.ExecSql(string.Format("EXEC DeleteInchRecord {0}", aRecordID), null);
+        }
+
+        public bool DeleteDomainItemContent(int aDItemID)
+        {
+            return FDB.ExecSql(string.Format("DELETE FROM Comm_DomainContent WHERE DItemID = {0} ", aDItemID));
+        }
+
+        public bool DeleteDomainItem(int aDItemID)
+        {
+            return emrMSDB.DB.ExecSql(string.Format("DELETE FROM Comm_DataElementDomain WHERE ID = {0}", aDItemID));
+        }
+
+
+        public bool DeleteDomainAllItem(int aDomainID)
+        {
+            return FDB.ExecSql(string.Format("DELETE FROM Comm_DataElementDomain WHERE DomainID = {0}", aDomainID));
         }
 
         public DataTable DataElementDT

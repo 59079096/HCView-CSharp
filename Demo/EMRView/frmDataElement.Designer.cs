@@ -40,11 +40,21 @@
             this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pmde = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.mniInsertAsDE = new System.Windows.Forms.ToolStripMenuItem();
-            this.mniInsertAsDG = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniNew = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniEdit = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniDelete = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.mniDomain = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.mniInsertAsDeItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniInsertAsDeGroup = new System.Windows.Forms.ToolStripMenuItem();
             this.mniInsertAsEdit = new System.Windows.Forms.ToolStripMenuItem();
             this.mniInsertAsCombobox = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniInsertAsDateTime = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniInsertAsRadioGroup = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniInsertAsCheckBox = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.mniRefresh = new System.Windows.Forms.ToolStripMenuItem();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDE)).BeginInit();
             this.pmde.SuspendLayout();
@@ -63,15 +73,16 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(173, 9);
+            this.label1.Location = new System.Drawing.Point(170, 9);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(179, 12);
+            this.label1.Size = new System.Drawing.Size(131, 12);
             this.label1.TabIndex = 1;
-            this.label1.Text = "<- 输入名称或简拼回车开始检索";
+            this.label1.Text = "<- 名称或简码回车检索";
+            this.label1.Click += new System.EventHandler(this.Label1_Click);
             // 
             // tbxPY
             // 
-            this.tbxPY.Location = new System.Drawing.Point(7, 4);
+            this.tbxPY.Location = new System.Drawing.Point(4, 4);
             this.tbxPY.Name = "tbxPY";
             this.tbxPY.Size = new System.Drawing.Size(160, 21);
             this.tbxPY.TabIndex = 0;
@@ -91,6 +102,7 @@
             this.Column2,
             this.Column3,
             this.Column4});
+            this.dgvDE.ContextMenuStrip = this.pmde;
             this.dgvDE.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvDE.Location = new System.Drawing.Point(0, 30);
             this.dgvDE.MultiSelect = false;
@@ -101,6 +113,7 @@
             this.dgvDE.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvDE.Size = new System.Drawing.Size(358, 286);
             this.dgvDE.TabIndex = 1;
+            this.dgvDE.SelectionChanged += new System.EventHandler(this.DgvDE_SelectionChanged);
             this.dgvDE.DoubleClick += new System.EventHandler(this.dgvDE_DoubleClick);
             // 
             // Key
@@ -147,43 +160,123 @@
             // pmde
             // 
             this.pmde.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripSeparator1,
-            this.mniInsertAsDE,
-            this.mniInsertAsDG,
+            this.mniNew,
+            this.mniEdit,
+            this.mniDelete,
+            this.toolStripSeparator3,
+            this.mniDomain,
+            this.toolStripSeparator2,
+            this.mniInsertAsDeItem,
+            this.mniInsertAsDeGroup,
             this.mniInsertAsEdit,
-            this.mniInsertAsCombobox});
+            this.mniInsertAsCombobox,
+            this.mniInsertAsDateTime,
+            this.mniInsertAsRadioGroup,
+            this.mniInsertAsCheckBox,
+            this.toolStripSeparator4,
+            this.mniRefresh});
             this.pmde.Name = "pmde";
-            this.pmde.Size = new System.Drawing.Size(190, 98);
+            this.pmde.Size = new System.Drawing.Size(196, 286);
+            this.pmde.Opening += new System.ComponentModel.CancelEventHandler(this.Pmde_Opening);
             // 
-            // toolStripSeparator1
+            // mniNew
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(186, 6);
+            this.mniNew.Name = "mniNew";
+            this.mniNew.Size = new System.Drawing.Size(195, 22);
+            this.mniNew.Text = "添加";
+            this.mniNew.Click += new System.EventHandler(this.MniNew_Click);
             // 
-            // mniInsertAsDE
+            // mniEdit
             // 
-            this.mniInsertAsDE.Name = "mniInsertAsDE";
-            this.mniInsertAsDE.Size = new System.Drawing.Size(189, 22);
-            this.mniInsertAsDE.Text = "插入（数据元）";
-            this.mniInsertAsDE.Click += new System.EventHandler(this.mniInsertAsDE_Click);
+            this.mniEdit.Name = "mniEdit";
+            this.mniEdit.Size = new System.Drawing.Size(195, 22);
+            this.mniEdit.Text = "修改";
+            this.mniEdit.Click += new System.EventHandler(this.MniEdit_Click);
             // 
-            // mniInsertAsDG
+            // mniDelete
             // 
-            this.mniInsertAsDG.Name = "mniInsertAsDG";
-            this.mniInsertAsDG.Size = new System.Drawing.Size(189, 22);
-            this.mniInsertAsDG.Text = "插入（数据组）";
+            this.mniDelete.Name = "mniDelete";
+            this.mniDelete.Size = new System.Drawing.Size(195, 22);
+            this.mniDelete.Text = "删除";
+            this.mniDelete.Click += new System.EventHandler(this.MniDelete_Click);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(192, 6);
+            // 
+            // mniDomain
+            // 
+            this.mniDomain.Name = "mniDomain";
+            this.mniDomain.Size = new System.Drawing.Size(195, 22);
+            this.mniDomain.Text = "值域管理";
+            this.mniDomain.Click += new System.EventHandler(this.MniDomain_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(192, 6);
+            // 
+            // mniInsertAsDeItem
+            // 
+            this.mniInsertAsDeItem.Name = "mniInsertAsDeItem";
+            this.mniInsertAsDeItem.Size = new System.Drawing.Size(195, 22);
+            this.mniInsertAsDeItem.Text = "插入（数据元）";
+            this.mniInsertAsDeItem.Click += new System.EventHandler(this.mniInsertAsDeItem_Click);
+            // 
+            // mniInsertAsDeGroup
+            // 
+            this.mniInsertAsDeGroup.Name = "mniInsertAsDeGroup";
+            this.mniInsertAsDeGroup.Size = new System.Drawing.Size(195, 22);
+            this.mniInsertAsDeGroup.Text = "插入（数据组）";
+            this.mniInsertAsDeGroup.Click += new System.EventHandler(this.MniInsertAsDeGroup_Click);
             // 
             // mniInsertAsEdit
             // 
             this.mniInsertAsEdit.Name = "mniInsertAsEdit";
-            this.mniInsertAsEdit.Size = new System.Drawing.Size(189, 22);
+            this.mniInsertAsEdit.Size = new System.Drawing.Size(195, 22);
             this.mniInsertAsEdit.Text = "插入（Edit）";
+            this.mniInsertAsEdit.Click += new System.EventHandler(this.MniInsertAsEdit_Click);
             // 
             // mniInsertAsCombobox
             // 
             this.mniInsertAsCombobox.Name = "mniInsertAsCombobox";
-            this.mniInsertAsCombobox.Size = new System.Drawing.Size(189, 22);
+            this.mniInsertAsCombobox.Size = new System.Drawing.Size(195, 22);
             this.mniInsertAsCombobox.Text = "插入（Combobox）";
+            this.mniInsertAsCombobox.Click += new System.EventHandler(this.MniInsertAsCombobox_Click);
+            // 
+            // mniInsertAsDateTime
+            // 
+            this.mniInsertAsDateTime.Name = "mniInsertAsDateTime";
+            this.mniInsertAsDateTime.Size = new System.Drawing.Size(195, 22);
+            this.mniInsertAsDateTime.Text = "插入（DateTime）";
+            this.mniInsertAsDateTime.Click += new System.EventHandler(this.MniInsertAsDateTime_Click);
+            // 
+            // mniInsertAsRadioGroup
+            // 
+            this.mniInsertAsRadioGroup.Name = "mniInsertAsRadioGroup";
+            this.mniInsertAsRadioGroup.Size = new System.Drawing.Size(195, 22);
+            this.mniInsertAsRadioGroup.Text = "插入（RadioGroup）";
+            this.mniInsertAsRadioGroup.Click += new System.EventHandler(this.MniInsertAsRadioGroup_Click);
+            // 
+            // mniInsertAsCheckBox
+            // 
+            this.mniInsertAsCheckBox.Name = "mniInsertAsCheckBox";
+            this.mniInsertAsCheckBox.Size = new System.Drawing.Size(195, 22);
+            this.mniInsertAsCheckBox.Text = "插入（CheckBox）";
+            this.mniInsertAsCheckBox.Click += new System.EventHandler(this.MniInsertAsCheckBox_Click);
+            // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(192, 6);
+            // 
+            // mniRefresh
+            // 
+            this.mniRefresh.Name = "mniRefresh";
+            this.mniRefresh.Size = new System.Drawing.Size(195, 22);
+            this.mniRefresh.Text = "刷新";
+            this.mniRefresh.Click += new System.EventHandler(this.MniRefresh_Click);
             // 
             // frmDataElement
             // 
@@ -195,7 +288,9 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmDataElement";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "插入数据元";
+            this.Load += new System.EventHandler(this.FrmDataElement_Load);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDE)).EndInit();
@@ -217,10 +312,20 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Column3;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column4;
         private System.Windows.Forms.ContextMenuStrip pmde;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripMenuItem mniInsertAsDE;
-        private System.Windows.Forms.ToolStripMenuItem mniInsertAsDG;
+        private System.Windows.Forms.ToolStripMenuItem mniInsertAsDeItem;
+        private System.Windows.Forms.ToolStripMenuItem mniInsertAsDeGroup;
         private System.Windows.Forms.ToolStripMenuItem mniInsertAsEdit;
         private System.Windows.Forms.ToolStripMenuItem mniInsertAsCombobox;
+        private System.Windows.Forms.ToolStripMenuItem mniNew;
+        private System.Windows.Forms.ToolStripMenuItem mniEdit;
+        private System.Windows.Forms.ToolStripMenuItem mniDelete;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripMenuItem mniDomain;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.ToolStripMenuItem mniInsertAsDateTime;
+        private System.Windows.Forms.ToolStripMenuItem mniInsertAsRadioGroup;
+        private System.Windows.Forms.ToolStripMenuItem mniInsertAsCheckBox;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripMenuItem mniRefresh;
     }
 }
