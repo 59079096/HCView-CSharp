@@ -1930,7 +1930,7 @@ namespace HC.View
                 FMoveData = vMoveData;
             }
 
-            PaperCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY);
+            PaperCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY, e.Button != MouseButtons.None);
 
             if (FActiveData == FPage)
                 vY = vY + GetPageDataFmtTop(FMousePageIndex);

@@ -301,12 +301,21 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
+            aNode.SetAttribute("styleex", ((byte)FStyleEx).ToString());
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+
+            byte vByte = 0;
+            bool vHasValue = byte.TryParse(aNode.GetAttribute("styleex"), out vByte);
+            FStyleEx = (StyleExtra)vByte;
             string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
             DeProp.SetPropertyString(vProp, FPropertys);
         }

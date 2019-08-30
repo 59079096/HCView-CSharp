@@ -1246,6 +1246,26 @@ namespace EMRView
             FEmrView.InputHelpEnable = !FEmrView.InputHelpEnable;
         }
 
+        private void MniShapeLine_Click(object sender, EventArgs e)
+        {
+            HCFloatLineItem vFloatLineItem = new HCFloatLineItem(FEmrView.ActiveSection.ActiveData);
+            FEmrView.InsertFloatItem(vFloatLineItem);
+        }
+
+        private void MniBarCode_Click(object sender, EventArgs e)
+        {
+            string vS = "123456897";
+            HCBarCodeItem vHCBarCode = new HCBarCodeItem(FEmrView.ActiveSectionTopLevelData(), vS);
+            FEmrView.InsertItem(vHCBarCode);
+        }
+
+        private void MniQRCode_Click(object sender, EventArgs e)
+        {
+            string vS = "HCView使用了DelphiZXingQRCode二维码控件";
+            HCQRCodeItem vQRCode = new HCQRCodeItem(FEmrView.ActiveSectionTopLevelData(), vS);
+            FEmrView.InsertItem(vQRCode);
+        }
+
         private void mniHideTrace_Click(object sender, EventArgs e)
         {
             if (FEmrView.HideTrace)

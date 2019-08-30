@@ -708,23 +708,31 @@ namespace HC.View
             return Result;
         }
 
-        public static string GraphicToBase64(Image aGraphic)
+        public static string GraphicToBase64(Image aGraphic, System.Drawing.Imaging.ImageFormat format)
         {
-            MemoryStream vStream = new MemoryStream();
-            aGraphic.Save(vStream, System.Drawing.Imaging.ImageFormat.Bmp);
-            byte[] vArr = new byte[vStream.Length];
-            vStream.Position = 0;
-            vStream.Read(vArr, 0, (int)vStream.Length);
-            vStream.Close();
-            vStream.Dispose();
-            return Convert.ToBase64String(vArr);
+            using (MemoryStream vStream = new MemoryStream())
+            {
+                using (Bitmap bitmap = new Bitmap(aGraphic))  // 解决GDI+ 中发生一般性错误，因为该文件仍保留锁定对于对象的生存期
+                {
+                    bitmap.Save(vStream, format);  //  System.Drawing.Imaging.ImageFormat.Bmp
+                }
+
+                byte[] vArr = new byte[vStream.Length];
+                vStream.Position = 0;
+                vStream.Read(vArr, 0, (int)vStream.Length);
+                vStream.Close();
+                vStream.Dispose();
+                return Convert.ToBase64String(vArr);
+            }
         }
 
-        public static void Base64ToGraphic(string aBase64, Image aGraphic)
+        public static Image Base64ToGraphic(string aBase64)
         {
             byte[] vArr = Convert.FromBase64String(aBase64);
-            MemoryStream vStream = new MemoryStream(vArr);
-            aGraphic = Image.FromStream(vStream);
+            using (MemoryStream vStream = new MemoryStream(vArr))
+            {
+                return Image.FromStream(vStream);
+            }
         }
 
         public static CharType GetUnicodeCharType(uint aChar)

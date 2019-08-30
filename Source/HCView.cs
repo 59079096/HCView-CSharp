@@ -434,9 +434,20 @@ namespace HC.View
                 FOnSectionActivePageChange(sender, e);
         }
 
+        private delegate void SetStyleInvalidateRect(RECT aRect);
+
         private void DoStyleInvalidateRect(RECT aRect)
         {
-            UpdateView(aRect);
+            //if (this.InvokeRequired)
+            //{
+            //    if (this.IsHandleCreated)
+            //    {
+            //        SetStyleInvalidateRect srt = new SetStyleInvalidateRect(DoStyleInvalidateRect);
+            //        this.Invoke(srt, new object[] { aRect });
+            //    }
+            //}
+            //else
+                UpdateView(aRect);
         }
 
         private void DoAnnotatePreUpdateView(object sender, EventArgs e)
@@ -1290,7 +1301,6 @@ namespace HC.View
             this.SuspendLayout();
             this.Name = "HCView";
             this.ResumeLayout(false);
-
         }
 
         /// <summary> 便于子类在构造函数前执行 </summary>
@@ -2224,9 +2234,8 @@ namespace HC.View
 
                 GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FDataBmpCanvas.Handle, 0, 0, GDI.SRCCOPY);
 
-
                 User.InvalidateRect(this.Handle, ref aRect, 0);  // 只更新变动区域，防止闪烁，解决BitBlt光标滞留问题
-                User.UpdateWindow(this.Handle);
+                //User.UpdateWindow(this.Handle);
             }
         }
 

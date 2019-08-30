@@ -482,7 +482,7 @@ namespace HC.View
             vBuffer = BitConverter.GetBytes(FEndPt.X);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            vBuffer = BitConverter.GetBytes(FEndPt.X);
+            vBuffer = BitConverter.GetBytes(FEndPt.Y);
             aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
@@ -491,7 +491,6 @@ namespace HC.View
             base.LoadFromStream(aStream);
 
             FWidth = (byte)aStream.ReadByte();
-
             FLineStyle = (HCPenStyle)aStream.ReadByte();
 
             byte[] vBuffer = BitConverter.GetBytes(FStartPt.X);
@@ -505,7 +504,7 @@ namespace HC.View
             FEndPt.X = BitConverter.ToInt32(vBuffer, 0);
 
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            FEndPt.X = BitConverter.ToInt32(vBuffer, 0);
+            FEndPt.Y = BitConverter.ToInt32(vBuffer, 0);
         }
 
         public override void ToXml(XmlElement aNode)
@@ -1070,6 +1069,88 @@ namespace HC.View
 
             base.StructOver();
         }
+
+        public override void SaveToStream(Stream aStream)
+        {
+            base.SaveToStream(aStream);
+
+            aStream.WriteByte(FWidth);
+            aStream.WriteByte((byte)FLineStyle);
+
+            byte[] vBuffer = BitConverter.GetBytes(FPoints.Count);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            for (int i = 0; i < FPoints.Count; i++)
+            {
+                vBuffer = BitConverter.GetBytes(FPoints[i].X);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+                vBuffer = BitConverter.GetBytes(FPoints[i].Y);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+            }
+        }
+
+        public override void LoadFromStream(Stream aStream)
+        {
+            FPoints.Clear();
+
+            base.LoadFromStream(aStream);
+
+            FWidth = (byte)aStream.ReadByte();
+            FLineStyle = (HCPenStyle)aStream.ReadByte();
+
+            int vCount = 0;
+            byte[] vBuffer = BitConverter.GetBytes(vCount);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
+            vCount = BitConverter.ToInt32(vBuffer, 0);
+
+            int vX = 0, vY = 0;
+            for (int i = 0; i < vCount; i++)
+            {
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vX = BitConverter.ToInt32(vBuffer, 0);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vY = BitConverter.ToInt32(vBuffer, 0);
+                HCPoint vPoint = new HCPoint(vX, vY);
+                FPoints.Add(vPoint);
+            }
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+
+            aNode.SetAttribute("width", FWidth.ToString());
+            aNode.SetAttribute("ls", ((byte)FLineStyle).ToString());
+
+            XmlElement vNode = null;
+
+            for (int i = 0; i < FPoints.Count; i++)
+            {
+                vNode = aNode.OwnerDocument.CreateElement("pt");
+                vNode.SetAttribute("x", FPoints[i].X.ToString());
+                vNode.SetAttribute("y", FPoints[i].Y.ToString());
+                aNode.AppendChild(vNode);
+            }
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            FPoints.Clear();
+
+            base.ParseXml(aNode);
+
+            FWidth = byte.Parse(aNode.Attributes["width"].Value);
+            FLineStyle = (HCPenStyle)byte.Parse(aNode.Attributes["ls"].Value);
+
+            HCPoint vPoint = null;
+            for (int i = 0; i < aNode.ChildNodes.Count; i++)
+            {
+                vPoint = new HCPoint(int.Parse(aNode.ChildNodes[i].Attributes["x"].Value),
+                    int.Parse(aNode.ChildNodes[i].Attributes["y"].Value));
+
+                FPoints.Add(vPoint);
+            }
+        }
     }
 
     public class HCShapeManager : HCList<HCShape>
@@ -1314,12 +1395,52 @@ namespace HC.View
 
         public void ToXml(XmlElement aNode)
         {
-
+            XmlElement vShapeNode = null;
+            for (int i = 0; i < this.Count; i++)
+            {
+                vShapeNode = aNode.OwnerDocument.CreateElement("shape");
+                this[i].ToXml(vShapeNode);
+                aNode.AppendChild(vShapeNode);
+            }
         }
 
         public void ParseXml(XmlElement aNode)
         {
+            this.Clear();
 
+            HCShape vShape = null;
+            HCShapeStyle vStyle = HCShapeStyle.hssNone;
+            XmlElement vShapeNode = null;
+            for (int i = 0; i < aNode.ChildNodes.Count; i++)
+            {
+                vShapeNode = aNode.ChildNodes[i] as XmlElement;
+                vStyle = (HCShapeStyle)byte.Parse(vShapeNode.Attributes["style"].Value);
+
+                switch (vStyle)
+                {
+                    case HCShapeStyle.hssNone:
+                        throw new Exception("HCShape读取失败，无效的样式值！");
+
+                    case HCShapeStyle.hssLine:
+                        vShape = new HCShapeLine();
+                        break;
+
+                    case HCShapeStyle.hssRectangle:
+                        vShape = new HCShapeRectangle();
+                        break;
+
+                    case HCShapeStyle.hssEllipse:
+                        vShape = new HCShapeEllipse();
+                        break;
+
+                    case HCShapeStyle.hssPolygon:
+                        vShape = new HCShapePolygon();
+                        break;
+                }
+
+                vShape.ParseXml(vShapeNode);
+                this.Add(vShape);
+            }
         }
 
         public HCShapeStyle OperStyle

@@ -29,7 +29,8 @@ namespace HC.View
 
         private void DoImageAnimate(object sender, EventArgs e)
         {
-            //OwnerData.Style.InvalidateRect(FDrawRect);
+            //if (FAnimate)
+            //    OwnerData.Style.InvalidateRect(FDrawRect);
         }
 
         //开始动画方法
@@ -52,7 +53,6 @@ namespace HC.View
 
         private void StopAnimate()
         {
-            //FGifImage = null;
             ImageAnimator.StopAnimate(FGifImage, evtHandler);
         }
 
@@ -180,19 +180,19 @@ namespace HC.View
             }
             else  // 保存为Base64
                 return "<img width=\"" + Width.ToString() + "\" height=\"" + Height.ToString()
-                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FGifImage) + "\" alt=\"HCGifItem\" />";
+                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FGifImage, System.Drawing.Imaging.ImageFormat.Gif) + "\" alt=\"HCGifItem\" />";
         }
 
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.InnerText = HC.GraphicToBase64(FGifImage);
+            aNode.InnerText = HC.GraphicToBase64(FGifImage, System.Drawing.Imaging.ImageFormat.Gif);
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            HC.Base64ToGraphic(aNode.InnerText, FGifImage);
+            FGifImage = HC.Base64ToGraphic(aNode.InnerText);
             this.Width = FGifImage.Width;
             this.Height = FGifImage.Height;
             FAnimate = true;

@@ -14,6 +14,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Xml;
 
 namespace HC.View
 {
@@ -209,7 +210,7 @@ namespace HC.View
             {
                 using (Bitmap bitmap = new Bitmap(FImage))  // 解决GDI+ 中发生一般性错误，因为该文件仍保留锁定对于对象的生存期
                 {
-                    bitmap.Save(vImgStream, System.Drawing.Imaging.ImageFormat.Bmp);
+                    bitmap.Save(vImgStream, FImage.RawFormat);  // System.Drawing.Imaging.ImageFormat.Bmp);
                 }
 
                 // write bitmap data size
@@ -265,19 +266,39 @@ namespace HC.View
             }
             else  // 保存为Base64
                 return "<img width=\"" + Width.ToString() + "\" height=\"" + Height.ToString()
-                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FImage) + "\" alt=\"HCImageItem\" />";
+                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FImage, FImage.RawFormat) + "\" alt=\"HCImageItem\" />";
         }
 
-        public override void ToXml(System.Xml.XmlElement aNode)
+        public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.InnerText = HC.GraphicToBase64(FImage);
+
+            XmlElement vNode = aNode.OwnerDocument.CreateElement("img");
+            vNode.InnerText = HC.GraphicToBase64(FImage, FImage.RawFormat);
+            aNode.AppendChild(vNode);
+
+            vNode = aNode.OwnerDocument.CreateElement("shapes");
+            FShapeManager.ToXml(vNode);
+            aNode.AppendChild(vNode);
         }
 
-        public override void ParseXml(System.Xml.XmlElement aNode)
+        public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            HC.Base64ToGraphic(aNode.InnerText, FImage);
+            if (aNode.HasChildNodes)
+            {
+                for (int i = 0; i < aNode.ChildNodes.Count; i++)
+                {
+                    if (aNode.ChildNodes[i].Name == "img")
+                        FImage = new Bitmap(HC.Base64ToGraphic(aNode.ChildNodes[i].InnerText));
+                    else
+                    if (aNode.ChildNodes[i].Name == "shapes")
+                        FShapeManager.ParseXml(aNode.ChildNodes[i] as XmlElement);
+                }
+            }
+            else
+                FImage = (Bitmap)HC.Base64ToGraphic(aNode.InnerText);
+
             DoImageChange(this);
         }
 

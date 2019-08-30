@@ -330,7 +330,7 @@ namespace HC.View
 
             vNode = aNode.OwnerDocument.CreateElement("floatitems");
             vNode.SetAttribute("count", FFloatItems.Count.ToString());
-            for (int i = 0; i < FFloatItems.Count - 1; i++)
+            for (int i = 0; i < FFloatItems.Count; i++)
             {
                 XmlElement vFloatItemNode = aNode.OwnerDocument.CreateElement("floatitem");
                 FFloatItems[i].ToXml(vFloatItemNode);
@@ -350,7 +350,7 @@ namespace HC.View
             for (int i = 0; i <= vItemsNode.ChildNodes.Count - 1; i++)
             {
                 vNode = vItemsNode.ChildNodes[i] as XmlElement;
-                HCCustomFloatItem vFloatItem = CreateFloatItemByStyle(int.Parse(aNode.Attributes["sno"].Value));
+                HCCustomFloatItem vFloatItem = CreateFloatItemByStyle(int.Parse(vNode.Attributes["style"].Value));
                 vFloatItem.ParseXml(vNode);
                 FFloatItems.Add(vFloatItem);
             }
@@ -595,8 +595,9 @@ namespace HC.View
 
                 if (vFloatItem.PageIndex == aPageIndex)
                 {
-                    vFloatItem.DrawRect = HC.Bounds(vFloatItem.Left, vFloatItem.Top, vFloatItem.Width, vFloatItem.Height);
-                    vFloatItem.DrawRect.Offset(aDataDrawLeft, aDataDrawTop - aVOffset);  // 将数据起始位置映射到绘制位置
+                    vFloatItem.DrawRect = HC.Bounds(vFloatItem.Left + aDataDrawLeft,  // 将数据起始位置映射到绘制位置
+                        vFloatItem.Top + aDataDrawTop - aVOffset, vFloatItem.Width, vFloatItem.Height);
+
                     vFloatItem.PaintTo(this.Style, vFloatItem.DrawRect, aDataDrawTop, 0,
                         0, 0, aCanvas, aPaintInfo);
                 }

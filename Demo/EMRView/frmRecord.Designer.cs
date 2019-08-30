@@ -91,6 +91,7 @@
             this.视图ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mniViewFilm = new System.Windows.Forms.ToolStripMenuItem();
             this.mniViewPage = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniInputHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.btnSave = new System.Windows.Forms.ToolStripButton();
             this.btnPrint = new System.Windows.Forms.ToolStripButton();
             this.btnUndo = new System.Windows.Forms.ToolStripButton();
@@ -106,6 +107,11 @@
             this.mniEditItem = new System.Windows.Forms.ToolStripMenuItem();
             this.日期时间ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mniInsertLine = new System.Windows.Forms.ToolStripMenuItem();
+            this.形状ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniShapeLine = new System.Windows.Forms.ToolStripMenuItem();
+            this.条码ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniBarCode = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniQRCode = new System.Windows.Forms.ToolStripMenuItem();
             this.mniPageBreak = new System.Windows.Forms.ToolStripMenuItem();
             this.mniSection = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
@@ -154,7 +160,6 @@
             this.btnPrintCurLine = new System.Windows.Forms.ToolStripButton();
             this.btnPrintSelect = new System.Windows.Forms.ToolStripButton();
             this.pnlView = new System.Windows.Forms.Panel();
-            this.mniInputHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.pmView.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.tlbEditTool.SuspendLayout();
@@ -556,54 +561,54 @@
             // mniOpen
             // 
             this.mniOpen.Name = "mniOpen";
-            this.mniOpen.Size = new System.Drawing.Size(180, 22);
+            this.mniOpen.Size = new System.Drawing.Size(124, 22);
             this.mniOpen.Text = "打开";
             this.mniOpen.Click += new System.EventHandler(this.mniOpen_Click);
             // 
             // mniClear
             // 
             this.mniClear.Name = "mniClear";
-            this.mniClear.Size = new System.Drawing.Size(180, 22);
+            this.mniClear.Size = new System.Drawing.Size(124, 22);
             this.mniClear.Text = "清空";
             this.mniClear.Click += new System.EventHandler(this.mniClear_Click);
             // 
             // toolStripSeparator5
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator5.Size = new System.Drawing.Size(121, 6);
             // 
             // mniSave
             // 
             this.mniSave.Name = "mniSave";
-            this.mniSave.Size = new System.Drawing.Size(180, 22);
+            this.mniSave.Size = new System.Drawing.Size(124, 22);
             this.mniSave.Text = "保存";
             this.mniSave.Click += new System.EventHandler(this.mniSave_Click);
             // 
             // mniSaveAs
             // 
             this.mniSaveAs.Name = "mniSaveAs";
-            this.mniSaveAs.Size = new System.Drawing.Size(180, 22);
+            this.mniSaveAs.Size = new System.Drawing.Size(124, 22);
             this.mniSaveAs.Text = "另存为";
             this.mniSaveAs.Click += new System.EventHandler(this.mniSaveAs_Click);
             // 
             // mniSaveStructure
             // 
             this.mniSaveStructure.Name = "mniSaveStructure";
-            this.mniSaveStructure.Size = new System.Drawing.Size(180, 22);
+            this.mniSaveStructure.Size = new System.Drawing.Size(124, 22);
             this.mniSaveStructure.Text = "保存结构";
             this.mniSaveStructure.Click += new System.EventHandler(this.mniSaveStructure_Click);
             // 
             // mniHideTrace
             // 
             this.mniHideTrace.Name = "mniHideTrace";
-            this.mniHideTrace.Size = new System.Drawing.Size(180, 22);
+            this.mniHideTrace.Size = new System.Drawing.Size(124, 22);
             this.mniHideTrace.Text = "显示痕迹";
             this.mniHideTrace.Click += new System.EventHandler(this.mniHideTrace_Click);
             // 
             // toolStripSeparator7
             // 
             this.toolStripSeparator7.Name = "toolStripSeparator7";
-            this.toolStripSeparator7.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator7.Size = new System.Drawing.Size(121, 6);
             // 
             // mniPrint
             // 
@@ -613,7 +618,7 @@
             this.mniPrintCurLine,
             this.mniPrintSelect});
             this.mniPrint.Name = "mniPrint";
-            this.mniPrint.Size = new System.Drawing.Size(180, 22);
+            this.mniPrint.Size = new System.Drawing.Size(124, 22);
             this.mniPrint.Text = "打印";
             // 
             // mniFastPrint
@@ -646,7 +651,7 @@
             // mniPageSet
             // 
             this.mniPageSet.Name = "mniPageSet";
-            this.mniPageSet.Size = new System.Drawing.Size(180, 22);
+            this.mniPageSet.Size = new System.Drawing.Size(124, 22);
             this.mniPageSet.Text = "页面设置";
             this.mniPageSet.Click += new System.EventHandler(this.mniPageSet_Click);
             // 
@@ -656,7 +661,7 @@
             this.mniViewFilm,
             this.mniViewPage});
             this.视图ToolStripMenuItem.Name = "视图ToolStripMenuItem";
-            this.视图ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.视图ToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
             this.视图ToolStripMenuItem.Text = "视图";
             // 
             // mniViewFilm
@@ -672,6 +677,13 @@
             this.mniViewPage.Size = new System.Drawing.Size(100, 22);
             this.mniViewPage.Text = "页面";
             this.mniViewPage.Click += new System.EventHandler(this.MniViewPage_Click);
+            // 
+            // mniInputHelp
+            // 
+            this.mniInputHelp.Name = "mniInputHelp";
+            this.mniInputHelp.Size = new System.Drawing.Size(124, 22);
+            this.mniInputHelp.Text = "辅助输入";
+            this.mniInputHelp.Click += new System.EventHandler(this.MniInputHelp_Click);
             // 
             // btnSave
             // 
@@ -732,6 +744,8 @@
             this.mniInsertGif,
             this.控件ToolStripMenuItem1,
             this.mniInsertLine,
+            this.形状ToolStripMenuItem,
+            this.条码ToolStripMenuItem,
             this.mniPageBreak,
             this.mniSection,
             this.toolStripSeparator6,
@@ -746,21 +760,21 @@
             // mniInsertTable
             // 
             this.mniInsertTable.Name = "mniInsertTable";
-            this.mniInsertTable.Size = new System.Drawing.Size(124, 22);
+            this.mniInsertTable.Size = new System.Drawing.Size(180, 22);
             this.mniInsertTable.Text = "表格";
             this.mniInsertTable.Click += new System.EventHandler(this.mniInsertTable_Click);
             // 
             // mniInsertImage
             // 
             this.mniInsertImage.Name = "mniInsertImage";
-            this.mniInsertImage.Size = new System.Drawing.Size(124, 22);
+            this.mniInsertImage.Size = new System.Drawing.Size(180, 22);
             this.mniInsertImage.Text = "图片";
             this.mniInsertImage.Click += new System.EventHandler(this.mniInsertImage_Click);
             // 
             // mniInsertGif
             // 
             this.mniInsertGif.Name = "mniInsertGif";
-            this.mniInsertGif.Size = new System.Drawing.Size(124, 22);
+            this.mniInsertGif.Size = new System.Drawing.Size(180, 22);
             this.mniInsertGif.Text = "GIF动画";
             this.mniInsertGif.Click += new System.EventHandler(this.mniInsertGif_Click);
             // 
@@ -772,7 +786,7 @@
             this.mniEditItem,
             this.日期时间ToolStripMenuItem});
             this.控件ToolStripMenuItem1.Name = "控件ToolStripMenuItem1";
-            this.控件ToolStripMenuItem1.Size = new System.Drawing.Size(124, 22);
+            this.控件ToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
             this.控件ToolStripMenuItem1.Text = "控件";
             // 
             // mniCombobox
@@ -805,28 +819,66 @@
             // mniInsertLine
             // 
             this.mniInsertLine.Name = "mniInsertLine";
-            this.mniInsertLine.Size = new System.Drawing.Size(124, 22);
+            this.mniInsertLine.Size = new System.Drawing.Size(180, 22);
             this.mniInsertLine.Text = "横线";
             this.mniInsertLine.Click += new System.EventHandler(this.mniInsertLine_Click);
+            // 
+            // 形状ToolStripMenuItem
+            // 
+            this.形状ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mniShapeLine});
+            this.形状ToolStripMenuItem.Name = "形状ToolStripMenuItem";
+            this.形状ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.形状ToolStripMenuItem.Text = "形状";
+            // 
+            // mniShapeLine
+            // 
+            this.mniShapeLine.Name = "mniShapeLine";
+            this.mniShapeLine.Size = new System.Drawing.Size(100, 22);
+            this.mniShapeLine.Text = "直线";
+            this.mniShapeLine.Click += new System.EventHandler(this.MniShapeLine_Click);
+            // 
+            // 条码ToolStripMenuItem
+            // 
+            this.条码ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mniBarCode,
+            this.mniQRCode});
+            this.条码ToolStripMenuItem.Name = "条码ToolStripMenuItem";
+            this.条码ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.条码ToolStripMenuItem.Text = "条码";
+            // 
+            // mniBarCode
+            // 
+            this.mniBarCode.Name = "mniBarCode";
+            this.mniBarCode.Size = new System.Drawing.Size(180, 22);
+            this.mniBarCode.Text = "一维码";
+            this.mniBarCode.Click += new System.EventHandler(this.MniBarCode_Click);
+            // 
+            // mniQRCode
+            // 
+            this.mniQRCode.Name = "mniQRCode";
+            this.mniQRCode.Size = new System.Drawing.Size(180, 22);
+            this.mniQRCode.Text = "二维码";
+            this.mniQRCode.Click += new System.EventHandler(this.MniQRCode_Click);
             // 
             // mniPageBreak
             // 
             this.mniPageBreak.Name = "mniPageBreak";
-            this.mniPageBreak.Size = new System.Drawing.Size(124, 22);
+            this.mniPageBreak.Size = new System.Drawing.Size(180, 22);
             this.mniPageBreak.Text = "分页";
             this.mniPageBreak.Click += new System.EventHandler(this.mniPageBreak_Click);
             // 
             // mniSection
             // 
             this.mniSection.Name = "mniSection";
-            this.mniSection.Size = new System.Drawing.Size(124, 22);
+            this.mniSection.Size = new System.Drawing.Size(180, 22);
             this.mniSection.Text = "分节";
             this.mniSection.Click += new System.EventHandler(this.mniSection_Click);
             // 
             // toolStripSeparator6
             // 
             this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(121, 6);
+            this.toolStripSeparator6.Size = new System.Drawing.Size(177, 6);
             // 
             // 医学公式ToolStripMenuItem1
             // 
@@ -835,7 +887,7 @@
             this.mniTooth,
             this.mniFangJiao});
             this.医学公式ToolStripMenuItem1.Name = "医学公式ToolStripMenuItem1";
-            this.医学公式ToolStripMenuItem1.Size = new System.Drawing.Size(124, 22);
+            this.医学公式ToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
             this.医学公式ToolStripMenuItem1.Text = "医学公式";
             // 
             // mniYuejing
@@ -862,7 +914,7 @@
             // mniInsertDeItem
             // 
             this.mniInsertDeItem.Name = "mniInsertDeItem";
-            this.mniInsertDeItem.Size = new System.Drawing.Size(124, 22);
+            this.mniInsertDeItem.Size = new System.Drawing.Size(180, 22);
             this.mniInsertDeItem.Text = "数据元";
             this.mniInsertDeItem.Click += new System.EventHandler(this.mniInsertDeItem_Click);
             // 
@@ -1237,13 +1289,6 @@
             this.pnlView.Size = new System.Drawing.Size(920, 440);
             this.pnlView.TabIndex = 8;
             // 
-            // mniInputHelp
-            // 
-            this.mniInputHelp.Name = "mniInputHelp";
-            this.mniInputHelp.Size = new System.Drawing.Size(180, 22);
-            this.mniInputHelp.Text = "辅助输入";
-            this.mniInputHelp.Click += new System.EventHandler(this.MniInputHelp_Click);
-            // 
             // frmRecord
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1396,5 +1441,10 @@
         private System.Windows.Forms.ToolStripMenuItem mniViewFilm;
         private System.Windows.Forms.ToolStripMenuItem mniViewPage;
         private System.Windows.Forms.ToolStripMenuItem mniInputHelp;
+        private System.Windows.Forms.ToolStripMenuItem 形状ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem mniShapeLine;
+        private System.Windows.Forms.ToolStripMenuItem 条码ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem mniBarCode;
+        private System.Windows.Forms.ToolStripMenuItem mniQRCode;
     }
 }

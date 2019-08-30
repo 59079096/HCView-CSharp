@@ -846,23 +846,23 @@ namespace HC.View
                                 continue;
                             }
                             else
-                                if (y < FDrawItems[vi].Rect.Top)
-                                {
-                                    vEndDItemNo = vi - 1;  // 中间位置上一个
-                                    continue;
-                                }
-                                else
-                                {
-                                    vStartDItemNo = vi;  // 正好是中间位置的
-                                    break;
-                                }
+                            if (y < FDrawItems[vi].Rect.Top)
+                            {
+                                vEndDItemNo = vi - 1;  // 中间位置上一个
+                                continue;
+                            }
+                            else
+                            {
+                                vStartDItemNo = vi;  // 正好是中间位置的
+                                break;
+                            }
                         }
                         else  // 相差1
                         {
-                            if (y > FDrawItems[vEndDItemNo].Rect.Bottom)
+                            if (y >= FDrawItems[vEndDItemNo].Rect.Bottom)
                                 vStartDItemNo = vEndDItemNo;
                             else
-                                if (y >= FDrawItems[vEndDItemNo].Rect.Top)
+                                if (y > FDrawItems[vEndDItemNo].Rect.Top)
                                     vStartDItemNo = vEndDItemNo;
 
                             //else 不处理即第一个
