@@ -602,7 +602,7 @@ namespace HC.View
 
         protected override HCUndoList GetUndoList()
         {
-            if (OperStates.Contain(HCOperState.hosLoading))
+            if (this.Loading)
                 return null;
             else
                 return base.GetUndoList();

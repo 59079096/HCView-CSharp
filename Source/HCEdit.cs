@@ -26,7 +26,7 @@ namespace HC.View
         private EventHandler FOnChange;
         private EventHandler FOnCaretChange = null;
         private StyleItemEventHandler FOnCreateStyleItem = null;
-        private DataItemNotifyEventHandler FOnInsertItem = null, FOnRemoveItem = null;
+        private DataItemEventHandler FOnInsertItem = null, FOnRemoveItem = null;
 
         private int GetViewWidth()
         {

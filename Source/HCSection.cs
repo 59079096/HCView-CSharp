@@ -62,7 +62,9 @@ namespace HC.View
     public delegate void SectionDrawItemPaintEventHandler(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
         int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo);
 
-    public delegate void SectionDataItemNotifyEventHandler(object sender, HCCustomData aData, HCCustomItem aItem);
+    public delegate void SectionDataItemEventHandler(object sender, HCCustomData aData, HCCustomItem aItem);
+
+    public delegate bool SectionDataItemFunEvent(object sender, HCCustomData aData, HCCustomItem aItem);
 
     public delegate void SectionDrawItemAnnotateEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
         HCDataAnnotate aDataAnnotate);
@@ -114,9 +116,10 @@ namespace HC.View
 
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
 
-        SectionDataItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
+        SectionDataItemEventHandler FOnInsertItem, FOnRemoveItem;
+        SectionDataItemFunEvent FOnSaveItem, FOnDeleteItem;
         SectionDataItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
-        DataItemEventHandler FOnItemResize;
+        DataItemNoEventHandler FOnItemResize;
         EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
         StyleItemEventHandler FOnCreateItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
@@ -221,6 +224,22 @@ namespace HC.View
         {
             if (FOnRemoveItem != null)
                 FOnRemoveItem(this, aData, aItem);
+        }
+
+        private bool DoDataSaveItem(HCCustomData aData, HCCustomItem aItem)
+        {
+            if (FOnSaveItem != null)
+                return FOnSaveItem(this, aData, aItem);
+            else
+                return true;
+        }
+
+        private bool DoDataDeleteItem(HCCustomData aData, HCCustomItem aItem)
+        {
+            if (FOnDeleteItem != null)
+                return FOnDeleteItem(this, aData, aItem);
+            else
+                return true;
         }
 
         private void DoDataItemMouseDown(HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
@@ -663,6 +682,8 @@ namespace HC.View
             aData.Width = vWidth;
             aData.OnInsertItem = DoDataInsertItem;
             aData.OnRemoveItem = DoDataRemoveItem;
+            aData.OnSaveItem = DoDataSaveItem;
+            aData.OnDeleteItem = DoDataDeleteItem;
             aData.OnItemResized = DoDataItemResized;
             aData.OnItemMouseDown = DoDataItemMouseDown;
             aData.OnItemMouseUp = DoDataItemMouseUp;
@@ -2332,6 +2353,16 @@ namespace HC.View
             return ActiveDataChangeByAction(vEvent);
         }
 
+        public bool TableApplyContentAlign(HCContentAlign aAlign)
+        {
+            HCFunction vEvent = delegate ()
+            {
+                return FActiveData.TableApplyContentAlign(aAlign);
+            };
+
+            return ActiveDataChangeByAction(vEvent);
+        }
+
         public void ReFormatActiveParagraph()
         {
             HCFunction vEvent = delegate()
@@ -2818,19 +2849,25 @@ namespace HC.View
             set { FOnCheckUpdateInfo = value; }
         }
 
-        public SectionDataItemNotifyEventHandler OnInsertItem
+        public SectionDataItemEventHandler OnInsertItem
         {
             get { return FOnInsertItem; }
             set { FOnInsertItem = value; }
         }
 
-        public SectionDataItemNotifyEventHandler OnRemoveItem
+        public SectionDataItemEventHandler OnRemoveItem
         {
             get { return FOnRemoveItem; }
             set { FOnRemoveItem = value; }
         }
 
-        public DataItemEventHandler OnItemResize
+        public SectionDataItemFunEvent OnSaveItem
+        {
+            get { return FOnSaveItem; }
+            set { FOnSaveItem = value; }
+        }
+
+        public DataItemNoEventHandler OnItemResize
         {
             get { return FOnItemResize; }
             set { FOnItemResize = value; }
@@ -2918,6 +2955,12 @@ namespace HC.View
         {
             get { return FOnCreateItem; }
             set { FOnCreateItem = value; }
+        }
+
+        public SectionDataItemFunEvent OnDeleteItem
+        {
+            get { return FOnDeleteItem; }
+            set { FOnDeleteItem = value; }
         }
 
         public StyleItemEventHandler OnCreateItemByStyle

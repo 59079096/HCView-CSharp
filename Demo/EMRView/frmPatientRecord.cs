@@ -112,6 +112,11 @@ namespace EMRView
                 (aItem as DeCombobox).OnPopupItem = DoRecordDeComboboxGetItem;
         }
 
+        private bool DoDeItemPopup(DeItem aDeItem)
+        {
+            return true;
+        }
+
         private void DoTraverseItem(HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
         {
             if (!(aData.Items[aItemNo] is DeItem))
@@ -540,6 +545,7 @@ namespace EMRView
             aFrmRecord.OnChangedSwitch = DoRecordChangedSwitch;
             aFrmRecord.OnReadOnlySwitch = DoRecordReadOnlySwitch;
             aFrmRecord.OnInsertDeItem = DoInsertDeItem;
+            aFrmRecord.OnDeItemPopup = DoDeItemPopup;
             aFrmRecord.Tag = aRecordInfo;
 
             aPage.Controls.Add(aFrmRecord);

@@ -21,7 +21,6 @@ using System.Xml;
 namespace HC.View
 {
     public delegate bool InsertProcEventHandler(HCCustomItem aItem);
-    public delegate void DataItemEventHandler(HCCustomData aData, int aItemNo);
     public delegate void ItemMouseEventHandler(HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e);
 
     public class HCRichData : HCUndoData
@@ -45,9 +44,10 @@ namespace HC.View
             FSelectSeekOffset;  // 选中操作时的游标
     
         private bool FReadOnly, FSelecting, FDraging;
-        private DataItemEventHandler FOnItemResized;
+        private DataItemNoEventHandler FOnItemResized;
         private ItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         private EventHandler FOnCreateItem;  // 新建了Item(目前主要是为了打字和用中文输入法输入英文时痕迹的处理)
+        private DataItemFunEventHandler FOnDeleteItem;
 
         private bool SelectByMouseDownShift(ref int AMouseDownItemNo, ref int AMouseDownItemOffset)
         {
@@ -504,7 +504,11 @@ namespace HC.View
 
         protected virtual bool CanDeleteItem(int aItemNo)
         {
-            return CanEdit();
+            bool vResult = CanEdit();
+            if (vResult && (FOnDeleteItem != null))
+                vResult = FOnDeleteItem(this, this.Items[aItemNo]);
+
+            return vResult;
         }
 
         /// <summary> 用于从流加载完Items后，检查不合格的Item并删除 </summary>
@@ -1642,6 +1646,8 @@ namespace HC.View
                     vFormatLastItemNo = -1;
                 }
 
+                int vItemCountAct = 0;  // 实际插入的数量
+                int vIgnoreCount = 0;  // 忽略掉的数据
                 Undo_New();
 
                 int vStyleNo = HCStyle.Null;
@@ -1657,7 +1663,7 @@ namespace HC.View
                         if (vItem.StyleNo > HCStyle.Null)
                             vItem.StyleNo = Style.GetStyleNo(aStyle.TextStyles[vItem.StyleNo], true);
 
-                        if (Style.OperStates.Contain(HCOperState.hosPasting))
+                        if (Style.States.Contain(HCState.hosPasting))
                             vItem.ParaNo = vCaretParaNo;
                         else
                             vItem.ParaNo = Style.GetParaNo(aStyle.ParaStyles[vItem.ParaNo], true);
@@ -1669,9 +1675,10 @@ namespace HC.View
 
                         vItem.ParaNo = vCaretParaNo;
                     }
+
                     if (i == 0)  // 插入的第一个Item
                     {
-                        if (vInsertBefor)
+                        if (vInsertBefor)  // 第一个在某Item最前面插入(粘贴)
                         {
                             vItem.ParaFirst = Items[vInsPos].ParaFirst;
 
@@ -1684,12 +1691,20 @@ namespace HC.View
                         else
                             vItem.ParaFirst = false;
                     }
+                    else  // 插入非第一个Item
+                    if (!vItem.ParaFirst && MergeItemText(Items[vInsPos + i - 1 - vIgnoreCount], vItem))  // 和插入位置前一个能合并，有些不允许复制的粘贴时会造成前后可合并
+                    {
+                        vIgnoreCount++;
+                        vItem.Dispose();
+                        continue;
+                    }
 
-                    Items.Insert(vInsPos + i, vItem);
-                    UndoAction_InsertItem(vInsPos + i, 0);
+                    Items.Insert(vInsPos + i - vIgnoreCount, vItem);
+                    UndoAction_InsertItem(vInsPos + i - vIgnoreCount, 0);
+                    vItemCountAct++;
                 }
 
-                vItemCount = CheckInsertItemCount(vInsPos, vInsPos + vItemCount - 1);  // 检查插入的Item是否合格并删除不合格
+                vItemCount = CheckInsertItemCount(vInsPos, vInsPos + vItemCountAct - 1);  // 检查插入的Item是否合格并删除不合格
 
                 int vInsetLastNo = vInsPos + vItemCount - 1;  // 光标在最后一个Item
                 int vCaretOffse = GetItemOffsetAfter(vInsetLastNo);  // 最后一个Item后面
@@ -2473,14 +2488,15 @@ namespace HC.View
             {
                 SelectInfo.StartItemNo = vUpItemNo;
                 SelectInfo.StartItemOffset = vUpItemOffset;
+                CaretDrawItemNo = vDrawItemNo;
             }
             else
             {
                 SelectInfo.StartItemNo = FMouseMoveItemNo;
                 SelectInfo.StartItemOffset = FMouseMoveItemOffset;
+                CaretDrawItemNo = FMouseMoveDrawItemNo;
             }
 
-            CaretDrawItemNo = vDrawItemNo;
             Style.UpdateInfoRePaint();
 
             if (!FMouseDownReCaret)
@@ -5373,6 +5389,20 @@ namespace HC.View
             return TableInsertRC(vEvent);
         }
 
+        public bool TableApplyContentAlign(HCContentAlign aAlign)
+        {
+            if (!CanEdit())
+                return false;
+
+            InsertProcEventHandler vEvent = delegate (HCCustomItem AItem)
+            {
+                (AItem as HCTableItem).ApplyContentAlign(aAlign);
+                return true;
+            };
+
+            return TableInsertRC(vEvent);
+        }
+
         public void ReAdaptActiveItem()
         {
             if (!CanEdit())
@@ -5508,7 +5538,7 @@ namespace HC.View
             get { return FSelecting; }
         }
 
-        public DataItemEventHandler OnItemResized
+        public DataItemNoEventHandler OnItemResized
         {
             get { return FOnItemResized; }
             set { FOnItemResized = value; }
@@ -5530,6 +5560,12 @@ namespace HC.View
         {
             get { return FOnCreateItem; }
             set { FOnCreateItem = value; }
+        }
+
+        public DataItemFunEventHandler OnDeleteItem
+        {
+            get { return FOnDeleteItem; }
+            set { FOnDeleteItem = value; }
         }
     }
 }

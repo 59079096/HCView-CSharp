@@ -89,7 +89,9 @@ namespace HC.View
         }
     }
 
-    public delegate void DataItemNotifyEventHandler(HCCustomData aData, HCCustomItem aItem);
+    public delegate void DataItemEventHandler(HCCustomData aData, HCCustomItem aItem);
+    public delegate bool DataItemFunEventHandler(HCCustomData aData, HCCustomItem aItem);
+    public delegate void DataItemNoEventHandler(HCCustomData aData, int aItemNo);
 
     public delegate void DrawItemPaintEventHandler(HCCustomData aData, int aItemNo,
       int aDrawItemNo, RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight,
@@ -109,10 +111,11 @@ namespace HC.View
         HCDrawItems FDrawItems;
         SelectInfo FSelectInfo;
         HashSet<DrawOption> FDrawOptions;
-        HCOperStates FOperStates;
+        bool FLoading;
         int FCaretDrawItemNo;  // 当前Item光标处的DrawItem限定其只在相关的光标处理中使用(解决同一Item分行后Offset为行尾时不能区分是上行尾还是下行始)
 
-        DataItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
+        DataItemEventHandler FOnInsertItem, FOnRemoveItem;
+        DataItemFunEventHandler FOnSaveItem;
         GetUndoListEventHandler FOnGetUndoList;
         EventHandler FOnCurParaNoChange;
         DrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
@@ -460,6 +463,8 @@ namespace HC.View
                         }
                     }
                     else
+                    if ((FSelectInfo.StartItemOffset > 0)  // 在Item上
+                        && (FSelectInfo.StartItemOffset < FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Length))
                     {
                         FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
                     }
@@ -548,6 +553,14 @@ namespace HC.View
                 return null;
         }
 
+        protected virtual bool DoSaveItem(HCCustomItem aItem)
+        {
+            if (FOnSaveItem != null)
+                return FOnSaveItem(this, aItem);
+            else
+                return true;
+        }
+
         protected virtual void DoInsertItem(HCCustomItem aItem)
         {
             if (FOnInsertItem != null)
@@ -600,20 +613,20 @@ namespace HC.View
             Clear();
         }
 
-        protected HCOperStates OperStates
+        protected bool Loading
         {
-            get { return FOperStates; }
+            get { return FLoading; }
         }
 
         public HCCustomData(HCStyle aStyle)
         {
             FStyle = aStyle;
-            FOperStates = new HCOperStates();
             FDrawItems = new HCDrawItems();
             FItems = new HCItems();
             FItems.OnInsertItem += DoInsertItem;
             FItems.OnRemoveItem += DoRemoveItem;
 
+            FLoading = false;
             FCurStyleNo = 0;
             FCurParaNo = 0;
             FCaretDrawItemNo = -1;
@@ -1681,7 +1694,7 @@ namespace HC.View
             return Result;
         }
 
-        /// <summary> 获取选中内容是否在同一个DItem中 </summary>
+        /// <summary> 获取选中内容是否在同一个DrawItem中 </summary>
         /// <returns></returns>
         public bool SelectInSameDItem()
         {
@@ -2371,33 +2384,54 @@ namespace HC.View
             byte[] vBuffer = System.BitConverter.GetBytes(vBegPos);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位，便于越过
 
-            int vi = aEndItemNo - aStartItemNo + 1;
-            vBuffer = System.BitConverter.GetBytes(vi);
+            int vCount = aEndItemNo - aStartItemNo + 1;
+            vBuffer = System.BitConverter.GetBytes(vCount);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 数量
 
-            if (vi > 0)
+            int vCountAct = 0;
+            if (vCount > 0)
             {
                 if (aStartItemNo != aEndItemNo)
                 {
-                    FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, FItems[aStartItemNo].Length);
+                    if (DoSaveItem(FItems[aStartItemNo]))
+                    {
+                        FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, FItems[aStartItemNo].Length);
+                        vCountAct++;
+                    }
+
                     for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
-                        FItems[i].SaveToStream(aStream);
+                    {
+                        if (DoSaveItem(FItems[i]))
+                        {
+                            FItems[i].SaveToStream(aStream);
+                            vCountAct++;
+                        }
+                    }
 
-                    FItems[aEndItemNo].SaveToStream(aStream, 0, aEndOffset);
-
+                    if (DoSaveItem(FItems[aEndItemNo]))
+                    {
+                        FItems[aEndItemNo].SaveToStream(aStream, 0, aEndOffset);
+                        vCountAct++;
+                    }
                 }
                 else
+                if (DoSaveItem(FItems[aStartItemNo]))
+                {
                     FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, aEndOffset);
-
+                    vCountAct++;
+                }
             }
             //
             Int64 vEndPos = aStream.Position;
-
             aStream.Position = vBegPos;
-
             vBegPos = vEndPos - vBegPos - Marshal.SizeOf(vBegPos);
             vBuffer = System.BitConverter.GetBytes(vBegPos);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 当前页数据大小
+            if (vCount != vCountAct)  // 实际数量
+            {
+                vBuffer = System.BitConverter.GetBytes(vCountAct);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+            }
 
             aStream.Position = vEndPos;
         }
@@ -2492,14 +2526,14 @@ namespace HC.View
 
         public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
-            FOperStates.Include(HCOperState.hosLoading);
+            FLoading = true;
             try
             {
                 DoLoadFromStream(aStream, aStyle, aFileVersion);
             }
             finally
             {
-                FOperStates.Exclude(HCOperState.hosLoading);
+                FLoading = false;
             }
         }
 
@@ -2623,16 +2657,22 @@ namespace HC.View
             set { FOnDrawItemPaintContent = value; }
         }
 
-        public DataItemNotifyEventHandler OnInsertItem
+        public DataItemEventHandler OnInsertItem
         {
             get { return FOnInsertItem; }
             set { FOnInsertItem = value; }
         }
 
-        public DataItemNotifyEventHandler OnRemoveItem
+        public DataItemEventHandler OnRemoveItem
         {
             get { return FOnRemoveItem; }
             set { FOnRemoveItem = value; }
+        }
+
+        public DataItemFunEventHandler OnSaveItem
+        {
+            get { return FOnSaveItem; }
+            set { FOnSaveItem = value; }
         }
     }
 }

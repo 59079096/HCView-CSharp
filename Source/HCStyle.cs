@@ -42,11 +42,11 @@ namespace HC.View
 
     public class HCStateDictionary : HCObject
     {
-        public HCOperState State;
+        public HCState State;
         public int Count;
     }
 
-    public class HCOperStates : HCObject
+    public class HCStates : HCObject
     {
         private List<HCStateDictionary> FStates;
         
@@ -55,7 +55,7 @@ namespace HC.View
             FStates.RemoveAt(aIndex);
         }
 
-        private int GetStateIndex(HCOperState aState)
+        private int GetStateIndex(HCState aState)
         {
             for (int i = 0; i < FStates.Count; i++)
             {
@@ -66,17 +66,17 @@ namespace HC.View
             return -1;
         }
 
-        public HCOperStates()
+        public HCStates()
         {
             FStates = new List<HCStateDictionary>();
         }
 
-        ~HCOperStates()
+        ~HCStates()
         {
 
         }
 
-        public void Include(HCOperState aState)
+        public void Include(HCState aState)
         {
             int vIndex = GetStateIndex(aState);
             if (vIndex >= 0)
@@ -90,7 +90,7 @@ namespace HC.View
             }
         }
 
-        public void Exclude(HCOperState aState)
+        public void Exclude(HCState aState)
         {
             int vIndex = GetStateIndex(aState);
             if (vIndex >= 0)
@@ -102,7 +102,7 @@ namespace HC.View
             }
         }
 
-        public bool Contain(HCOperState aState)
+        public bool Contain(HCState aState)
         {
             return GetStateIndex(aState) >= 0;
         }
@@ -121,7 +121,7 @@ namespace HC.View
         private UpdateInfo FUpdateInfo;
         private bool FShowParaLastMark;  // 是否显示换行符
         private int FHtmlFileTempName;
-        private HCOperStates FOperStates;  // 全局操作状态
+        private HCStates FStates;  // 全局操作状态
 
         private InvalidateRectEventHandler FOnInvalidateRect;
 
@@ -166,7 +166,7 @@ namespace HC.View
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
             FLineSpaceMin = 8;
             FShowParaLastMark = true;
-            FOperStates = new HCOperStates();
+            FStates = new HCStates();
             FUpdateInfo = new UpdateInfo();
             FTextStyles = new List<HCTextStyle>();
             FParaStyles = new List<HCParaStyle>();
@@ -194,7 +194,7 @@ namespace HC.View
             //FTextStyles.Free;
             //FParaStyles.Free;
             FUpdateInfo.Dispose();
-            FOperStates.Dispose();
+            FStates.Dispose();
         }
         
         public void Initialize()
@@ -526,9 +526,9 @@ namespace HC.View
             set { SetShowParaLastMark(value); }
         }
 
-        public HCOperStates OperStates
+        public HCStates States
         {
-            get { return FOperStates; }
+            get { return FStates; }
         }
 
         public InvalidateRectEventHandler OnInvalidateRect

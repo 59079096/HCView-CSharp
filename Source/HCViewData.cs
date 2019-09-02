@@ -273,7 +273,7 @@ namespace HC.View
         protected override int CheckInsertItemCount(int aStartNo, int  aEndNo)
         {
             int Result = base.CheckInsertItemCount(aStartNo, aEndNo);
-            
+            return Result;  // 目前的稳定性应该不会出现不匹配的问题了
             // 检查加载或粘贴等从流插入Items不匹配的域起始结束标识并删除
             int vDelCount = 0;
             for (int i = aStartNo; i <= aEndNo; i++)  // 从前往后找没有插入起始标识的域，删除单独的域结束标识
@@ -731,7 +731,7 @@ namespace HC.View
             Undo_GroupBegin(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             try
             {
-                this.Style.OperStates.Include(HCOperState.hosBatchInsert);
+                this.Style.States.Include(HCState.hosBatchInsert);
                 try
                 {
                     // 插入头
@@ -760,7 +760,7 @@ namespace HC.View
                 }
                 finally
                 {
-                    this.Style.OperStates.Exclude(HCOperState.hosBatchInsert);
+                    this.Style.States.Exclude(HCState.hosBatchInsert);
                 }
             }
             finally

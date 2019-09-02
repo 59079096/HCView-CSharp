@@ -19,7 +19,7 @@ using System.Drawing;
 
 namespace EMRView
 {
-    public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, DeItem aItem);
+    public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, HCCustomItem aItem);
     public class HCEmrView : HCEmrViewIH
     {
         private bool FDesignMode;
@@ -31,7 +31,7 @@ namespace EMRView
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
 
-        private void DoSyncDeItem(object sender, HCCustomData aData, DeItem aItem)
+        private void DoSyncDeItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnSyncDeItem != null)
                 FOnSyncDeItem(sender, aData, aItem);
@@ -47,34 +47,36 @@ namespace EMRView
             {
                 if (vDeItem.IsElement)
                 {
-                    if (vDeItem.MouseIn || vDeItem.Active)
+                    if (vDeItem.OutOfRang)
                     {
-                        if (vDeItem.IsSelectPart || vDeItem.IsSelectComplate)
-                        {
-
-                        }
-                        else
-                        {
-                            if (vDeItem[DeProp.Name] != vDeItem.Text)
-                                aCanvas.Brush.Color = FDeDoneColor;
-                            else  // 没填写过
-                                aCanvas.Brush.Color = FDeUnDoneColor;
-
-                            aCanvas.FillRect(aDrawRect);
-                        }
+                        aCanvas.Brush.Color = Color.Red;
+                        aCanvas.FillRect(aDrawRect);
                     }
-                    else  // 不是数据元
-                    if (FDesignMode)
+                    else
+                    if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入和光标在其中
+                    {
+                        if (vDeItem[DeProp.Name] != vDeItem.Text)  // 已经填写过了
+                            aCanvas.Brush.Color = FDeDoneColor;
+                        else  // 没填写过
+                            aCanvas.Brush.Color = FDeUnDoneColor;
+
+                        aCanvas.FillRect(aDrawRect);
+                    }
+                    else  // 静态
+                    if (FDesignMode)  // 设计模式
                     {
                         aCanvas.Brush.Color = HC.View.HC.clBtnFace;
                         aCanvas.FillRect(aDrawRect);
                     }
                 }
                 else  // 不是数据元
-                if (FDesignMode && vDeItem.EditProtect)
+                if (FDesignMode || vDeItem.MouseIn || vDeItem.Active)
                 {
-                    aCanvas.Brush.Color = HC.View.HC.clBtnFace;
-                    aCanvas.FillRect(aDrawRect);
+                    if (vDeItem.EditProtect || vDeItem.CopyProtect)
+                    {
+                        aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                        aCanvas.FillRect(aDrawRect);
+                    }
                 }
             }
 
@@ -184,7 +186,7 @@ namespace EMRView
         /// <param name="e"></param>
         protected override void DoSectionCreateItem(object sender, EventArgs e)
         {
-            if ((!Style.OperStates.Contain(HCOperState.hosLoading)) && FTrace)
+            if ((!Style.States.Contain(HCState.hosLoading)) && FTrace)
                 (sender as DeItem).StyleEx = StyleExtra.cseAdd;
 
             base.DoSectionCreateItem(sender, e);
@@ -210,6 +212,9 @@ namespace EMRView
                 DeItem vDeItem = aItem as DeItem;
                 vDeItem.OnPaintBKG = DoDeItemPaintBKG;
 
+                //if (aData.Style.States.Contain(HCState.hosPasting))
+                //    DoPasteItem();
+
                 if (vDeItem.StyleEx != StyleExtra.cseNone)
                 {
                     FTraceCount++;
@@ -218,8 +223,14 @@ namespace EMRView
                         this.AnnotatePre.Visible = true;
                 }
 
-                DoSyncDeItem(sender, aData, vDeItem);
+                DoSyncDeItem(sender, aData, aItem);
             }
+            else
+            if (aItem is DeEdit)
+                DoSyncDeItem(sender, aData, aItem);
+            else
+            if (aItem is DeCombobox)
+                DoSyncDeItem(sender, aData, aItem);
 
             base.DoSectionInsertItem(sender, aData, aItem);
         }
@@ -247,6 +258,21 @@ namespace EMRView
             base.DoSectionRemoveItem(sender, aData, aItem);
         }
 
+        protected override bool DoSectionSaveItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        {
+            bool vResult = base.DoSectionSaveItem(sender, aData, aItem);
+            if (Style.States.Contain(HCState.hosCopying))  // 非设计模式、复制保存
+            {
+                if ((aItem is DeGroup) && (!FDesignMode))
+                    vResult = false;
+                else
+                if (aItem is DeItem)
+                    vResult = !(aItem as DeItem).CopyProtect;  // 是否禁止复制
+            }
+
+            return vResult;
+        }
+
         /// <summary> 指定的节当前是否可编辑 </summary>
         /// <param name="sender">文档节</param>
         /// <returns>True：可编辑，False：不可编辑</returns>
@@ -257,6 +283,15 @@ namespace EMRView
                 return !((vViewData.Items[vViewData.ActiveDomain.BeginNo] as DeGroup).ReadOnly);
             else
                 return true;
+        }
+
+        protected override bool DoSectionDeleteItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        {
+            bool vResult = base.DoSectionDeleteItem(sender, aData, aItem);
+            if ((aItem is DeGroup) && (!FDesignMode))  // 设计模式不允许删除数据组
+                vResult = false;
+
+            return vResult;
         }
 
         /// <summary> 按键按下 </summary>

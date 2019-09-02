@@ -56,7 +56,8 @@ namespace HC.View
             FOnSectionCurParaNoChange, FOnSectionActivePageChange;
         private StyleItemEventHandler FOnSectionCreateStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
-        private SectionDataItemNotifyEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
+        private SectionDataItemEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
+        private SectionDataItemFunEvent FOnSectionSaveItem, FOnSectionDeleteItem;
         private SectionDrawItemPaintEventHandler FOnSectionDrawItemPaintAfter, FOnSectionDrawItemPaintBefor;
 
         private SectionPaintEventHandler FOnSectionPaintHeader, FOnSectionPaintFooter, FOnSectionPaintPage,
@@ -469,10 +470,12 @@ namespace HC.View
             Result.OnChangeTopLevelData = DoSectionChangeTopLevelData;
             Result.OnCheckUpdateInfo = DoSectionDataCheckUpdateInfo;
             Result.OnCreateItem = DoSectionCreateItem;
+            Result.OnDeleteItem = DoSectionDeleteItem;
             Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
             Result.OnCanEdit = DoSectionCanEdit;
             Result.OnInsertItem = DoSectionInsertItem;
             Result.OnRemoveItem = DoSectionRemoveItem;
+            Result.OnSaveItem = DoSectionSaveItem;
             Result.OnItemMouseDown = DoSectionItemMouseDown;
             Result.OnItemMouseUp = DoSectionItemMouseUp;
             Result.OnItemResize = DoSectionItemResize;
@@ -825,7 +828,11 @@ namespace HC.View
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            //base.OnPaint(e);
+            if (DesignMode)
+            {
+                base.OnPaint(e);
+                return;
+            }
 
             GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FDataBmpCanvas.Handle, 0, 0, GDI.SRCCOPY);
 
@@ -889,6 +896,14 @@ namespace HC.View
                 FOnSectionCreateItem(this, null);
         }
 
+        protected virtual bool DoSectionDeleteItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        {
+            if (FOnSectionDeleteItem != null)
+                return FOnSectionDeleteItem(sender, aData, aItem);
+            else
+                return true;
+        }
+
         protected virtual HCCustomItem DoSectionCreateStyleItem(HCCustomData AData, int AStyleNo)
         {
             if (FOnSectionCreateStyleItem != null)
@@ -907,6 +922,14 @@ namespace HC.View
         {
             if (FOnSectionRemoveItem != null)
                 FOnSectionRemoveItem(sender, aData, aItem);
+        }
+
+        protected virtual bool DoSectionSaveItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        {
+            if (FOnSectionSaveItem != null)
+                return FOnSectionSaveItem(sender, aData, aItem);
+            else
+                return true;
         }
 
         protected virtual bool DoSectionCanEdit(object sender)
@@ -1867,87 +1890,93 @@ namespace HC.View
         {
             if (ActiveSection.SelectExists())
             {
-                //Clipboard.Clear();
-                
-                MemoryStream vStream = new MemoryStream();
+                FStyle.States.Include(HCState.hosCopying);
                 try
                 {
-                    HC._SaveFileFormatAndVersion(vStream);  // 保存文件格式和版本
-                    DoCopyDataBefor(vStream);  // 通知保存事件
-
-                    HashSet<SectionArea> vSaveParts = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-                    FStyle.SaveToStream(vStream);
-                    this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
-
-                    //IDataObject vDataObj = new DataObject();
-                    //vDataObj.SetData(HC.HC_EXT, vStream);
-                    //vDataObj.SetData(DataFormats.Text, this.ActiveSectionTopLevelData().SaveSelectToText());  // 文本格式
-                    //Clipboard.SetDataObject(vDataObj);
-
-                    byte[] vBuffer = new byte[0];
-                    IntPtr vMemExt = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, (int)vStream.Length);
+                    MemoryStream vStream = new MemoryStream();
                     try
                     {
-                        if (vMemExt == IntPtr.Zero)
-                            throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
-                        IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMemExt);
+                        HC._SaveFileFormatAndVersion(vStream);  // 保存文件格式和版本
+                        DoCopyDataBefor(vStream);  // 通知保存事件
+
+                        HashSet<SectionArea> vSaveParts = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
+                        FStyle.SaveToStream(vStream);
+                        this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
+
+                        //IDataObject vDataObj = new DataObject();
+                        //vDataObj.SetData(HC.HC_EXT, vStream);
+                        //vDataObj.SetData(DataFormats.Text, this.ActiveSectionTopLevelData().SaveSelectToText());  // 文本格式
+                        //Clipboard.SetDataObject(vDataObj);
+
+                        byte[] vBuffer = new byte[0];
+                        IntPtr vMemExt = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, (int)vStream.Length);
                         try
                         {
-                            vStream.Position = 0;
-                            vBuffer = vStream.ToArray();
-                            System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
-                            //Kernel.CopyMemory(vPtr, vStream.ToArray(), (int)vStream.Length);
+                            if (vMemExt == IntPtr.Zero)
+                                throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
+                            IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMemExt);
+                            try
+                            {
+                                vStream.Position = 0;
+                                vBuffer = vStream.ToArray();
+                                System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
+                                //Kernel.CopyMemory(vPtr, vStream.ToArray(), (int)vStream.Length);
+                            }
+                            finally
+                            {
+                                Kernel.GlobalUnlock(vMemExt);
+                            }
+                        }
+                        catch
+                        {
+                            Kernel.GlobalFree(vMemExt);
+                            return;
+                        }
+
+                        vBuffer = System.Text.Encoding.Unicode.GetBytes(this.ActiveSectionTopLevelData().SaveSelectToText());
+                        IntPtr vMem = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, vBuffer.Length + 1);
+                        try
+                        {
+                            if (vMem == IntPtr.Zero)
+                                throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
+
+                            IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMem);
+                            try
+                            {
+                                System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
+                            }
+                            finally
+                            {
+                                Kernel.GlobalUnlock(vMem);
+                            }
+                        }
+                        catch
+                        {
+                            Kernel.GlobalFree(vMem);
+                            return;
+                        }
+
+                        User.OpenClipboard(IntPtr.Zero);
+                        try
+                        {
+                            User.EmptyClipboard();
+                            User.SetClipboardData(FHCExtFormat.Id, vMemExt);
+                            User.SetClipboardData(User.CF_TEXT, vMem);  // 文本格式
                         }
                         finally
                         {
-                            Kernel.GlobalUnlock(vMemExt);
+                            User.CloseClipboard();
                         }
-                    }
-                    catch
-                    {
-                        Kernel.GlobalFree(vMemExt);
-                        return;
-                    }
-
-                    vBuffer = System.Text.Encoding.Unicode.GetBytes(this.ActiveSectionTopLevelData().SaveSelectToText());
-                    IntPtr vMem = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, vBuffer.Length + 1);
-                    try
-                    {
-                        if (vMem == IntPtr.Zero)
-                            throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
-
-                        IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMem);
-                        try
-                        {
-                            System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
-                        }
-                        finally
-                        {
-                            Kernel.GlobalUnlock(vMem);
-                        }
-                    }
-                    catch
-                    {
-                        Kernel.GlobalFree(vMem);
-                        return;
-                    }
-
-                    User.OpenClipboard(IntPtr.Zero);
-                    try
-                    {
-                        User.EmptyClipboard();
-                        User.SetClipboardData(FHCExtFormat.Id, vMemExt);
-                        User.SetClipboardData(User.CF_TEXT, vMem);  // 文本格式
                     }
                     finally
                     {
-                        User.CloseClipboard();
+                        vStream.Close();
+                        vStream.Dispose();
                     }
                 }
                 finally
                 {
-                    vStream.Close();
-                    vStream.Dispose();
+                    FStyle.States.Exclude(HCState.hosCopying);
                 }
             }
         }
@@ -1983,14 +2012,14 @@ namespace HC.View
                         this.BeginUpdate();
                         try
                         {
-                            FStyle.OperStates.Include(HCOperState.hosPasting);
+                            FStyle.States.Include(HCState.hosPasting);
                             try
                             {
                                 ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
                             }
                             finally
                             {
-                                FStyle.OperStates.Exclude(HCOperState.hosPasting);
+                                FStyle.States.Exclude(HCState.hosPasting);
                             }
                         }
                         finally
@@ -2235,7 +2264,7 @@ namespace HC.View
                 GDI.BitBlt(FDC, 0, 0, FViewWidth, FViewHeight, FDataBmpCanvas.Handle, 0, 0, GDI.SRCCOPY);
 
                 User.InvalidateRect(this.Handle, ref aRect, 0);  // 只更新变动区域，防止闪烁，解决BitBlt光标滞留问题
-                //User.UpdateWindow(this.Handle);
+                User.UpdateWindow(this.Handle);  // 滚动条拖动时更新滚动条拖块
             }
         }
 
@@ -2568,7 +2597,7 @@ namespace HC.View
                     FUndoList.Enable = false;
                     this.Clear();
 
-                    FStyle.OperStates.Include(HCOperState.hosLoading);
+                    FStyle.States.Include(HCState.hosLoading);
                     try
                     {
                         aStream.Position = 0;
@@ -2590,7 +2619,7 @@ namespace HC.View
                     }
                     finally
                     {
-                        FStyle.OperStates.Exclude(HCOperState.hosLoading);
+                        FStyle.States.Exclude(HCState.hosLoading);
                     }
 
                     DoViewResize();
@@ -2664,7 +2693,7 @@ namespace HC.View
                         string vVersion = vXml.DocumentElement.Attributes["ver"].Value;
                         byte vLang = byte.Parse(vXml.DocumentElement.Attributes["lang"].Value);
 
-                        FStyle.OperStates.Include(HCOperState.hosLoading);
+                        FStyle.States.Include(HCState.hosLoading);
                         try
                         {
                             for (int i = 0; i <= vXml.DocumentElement.ChildNodes.Count - 1; i++)
@@ -2689,7 +2718,7 @@ namespace HC.View
                         }
                         finally
                         {
-                            FStyle.OperStates.Exclude(HCOperState.hosLoading);
+                            FStyle.States.Exclude(HCState.hosLoading);
                         }
 
                         DoViewResize();
@@ -2900,7 +2929,7 @@ namespace HC.View
             List<int> vPages = new List<int>();
             for (int i = 0; i < PageCount; i++)
             {
-                if ((i & 1) != 1)  // 偶数序号是奇数页
+                if (!HC.IsOdd(i))  // 偶数序号是奇数页
                     vPages.Add(i);
             }
 
@@ -2912,7 +2941,7 @@ namespace HC.View
             List<int> vPages = new List<int>();
             for (int i = 0; i < PageCount; i++)
             {
-                if ((i & 1) == 1)  // 奇数序号是偶数页
+                if (HC.IsOdd(i))  // 奇数序号是偶数页
                     vPages.Add(i);
             }
 
@@ -3201,6 +3230,11 @@ namespace HC.View
             return ActiveSection.MergeTableSelectCells();
         }
 
+        public bool TableApplyContentAlign(HCContentAlign aAlign)
+        {
+            return ActiveSection.TableApplyContentAlign(aAlign);
+        }
+
         /// <summary> 撤销 </summary>
         public void Undo()
         {
@@ -3473,17 +3507,23 @@ namespace HC.View
         }
 
         /// <summary> 节有新的Item插入时触发 </summary>
-        public SectionDataItemNotifyEventHandler OnSectionItemInsert
+        public SectionDataItemEventHandler OnSectionItemInsert
         {
             get { return FOnSectionInsertItem; }
             set { FOnSectionInsertItem = value; }
         }
 
         /// <summary> 节有新的Item删除时触发 </summary>
-        public SectionDataItemNotifyEventHandler OnSectionRemoveItem
+        public SectionDataItemEventHandler OnSectionRemoveItem
         {
             get { return FOnSectionRemoveItem; }
             set { FOnSectionRemoveItem = value; }
+        }
+
+        public SectionDataItemFunEvent OnSectionSaveItem
+        {
+            get { return FOnSectionSaveItem; }
+            set { FOnSectionSaveItem = value; }
         }
 
         /// <summary> Item绘制开始前触发 </summary>

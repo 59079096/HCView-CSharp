@@ -35,12 +35,14 @@
             this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.label1 = new System.Windows.Forms.Label();
             this.btnSave = new System.Windows.Forms.Button();
+            this.cbxCanCopy = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProperty)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.cbxCanCopy);
             this.panel1.Controls.Add(this.cbxCanEdit);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
@@ -103,6 +105,16 @@
             this.btnSave.UseVisualStyleBackColor = true;
             this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
+            // cbxCanCopy
+            // 
+            this.cbxCanCopy.AutoSize = true;
+            this.cbxCanCopy.Location = new System.Drawing.Point(124, 6);
+            this.cbxCanCopy.Name = "cbxCanCopy";
+            this.cbxCanCopy.Size = new System.Drawing.Size(72, 16);
+            this.cbxCanCopy.TabIndex = 1;
+            this.cbxCanCopy.Text = "允许复制";
+            this.cbxCanCopy.UseVisualStyleBackColor = true;
+            // 
             // frmDeProperty
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -133,5 +145,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn value;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.CheckBox cbxCanCopy;
     }
 }

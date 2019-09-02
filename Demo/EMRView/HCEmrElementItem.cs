@@ -125,7 +125,11 @@ namespace EMRView
     /// <summary> 电子病历数据元对象 </summary>
     public sealed class DeItem : EmrTextItem  // 不可继承
     {
-        private bool FMouseIn, FEditProtect;
+        private bool 
+            FMouseIn,
+            FOutOfRang,  // 值不在正常范围内
+            FEditProtect,  // 编辑保护，不允许删除、手动录入
+            FCopyProtect; // 复制保护，不允许复制
         private StyleExtra FStyleEx;
         private Dictionary<string, string> FPropertys;
         private DePaintBKGHandler FOnPaintBKG;
@@ -178,6 +182,8 @@ namespace EMRView
         {
             FPropertys = new Dictionary<string,string>();
             FEditProtect = false;
+            FCopyProtect = false;
+            FOutOfRang = false;
             FMouseIn = false;
         }
 
@@ -217,6 +223,9 @@ namespace EMRView
         {
             base.Assign(source);
             FStyleEx = (source as DeItem).StyleEx;
+            FEditProtect = (source as DeItem).EditProtect;
+            FCopyProtect = (source as DeItem).CopyProtect;
+            FOutOfRang = (source as DeItem).OutOfRang;
             string vS = DeProp.GetPropertyString((source as DeItem).Propertys);
             DeProp.SetPropertyString(vS, FPropertys);
         }
@@ -230,6 +239,7 @@ namespace EMRView
                 Result = ((this[DeProp.Index] == vDeItem[DeProp.Index])
                     && (this.FStyleEx == vDeItem.StyleEx)
                     && (FEditProtect == vDeItem.FEditProtect)
+                    && (FCopyProtect == vDeItem.CopyProtect)
                     && (this[DeProp.Trace] == vDeItem[DeProp.Trace]));
             }
 
@@ -275,6 +285,13 @@ namespace EMRView
             byte vByte = 0;
             if (FEditProtect)
                 vByte = (byte)(vByte | (1 << 7));
+
+            if (FOutOfRang)
+                vByte = (byte)(vByte | (1 << 6));
+
+            if (FCopyProtect)
+                vByte = (byte)(vByte | (1 << 5));
+
             aStream.WriteByte(vByte);
 
             vByte = (byte)FStyleEx;
@@ -288,8 +305,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
-            
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
+            FOutOfRang = HC.View.HC.IsOdd(vByte >> 6);
+            FCopyProtect = HC.View.HC.IsOdd(vByte >> 5);
+
             vByte = (byte)aStream.ReadByte();
             FStyleEx = (StyleExtra)vByte;
 
@@ -304,6 +323,12 @@ namespace EMRView
             if (FEditProtect)
                 aNode.SetAttribute("editprotect", "1");
 
+            if (FOutOfRang)
+                aNode.SetAttribute("outofrang", "1");
+
+            if (FCopyProtect)
+                aNode.SetAttribute("copyprotect", "1");
+
             aNode.SetAttribute("styleex", ((byte)FStyleEx).ToString());
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
@@ -312,6 +337,8 @@ namespace EMRView
         {
             base.ParseXml(aNode);
             FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            FOutOfRang = aNode.GetAttribute("outofrang") == "1";
+            FCopyProtect = aNode.GetAttribute("copyprotect") == "1";
 
             byte vByte = 0;
             bool vHasValue = byte.TryParse(aNode.GetAttribute("styleex"), out vByte);
@@ -350,6 +377,18 @@ namespace EMRView
         {
             get { return FEditProtect; }
             set { FEditProtect = value; }
+        }
+
+        public bool CopyProtect
+        {
+            get { return FCopyProtect; }
+            set { FCopyProtect = value; }
+        }
+
+        public bool OutOfRang
+        {
+            get { return FOutOfRang; }
+            set { FOutOfRang = value; }
         }
 
         public Dictionary<string, string> Propertys

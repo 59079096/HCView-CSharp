@@ -99,6 +99,12 @@ namespace EMRView
         public frmRecordPop()
         {
             InitializeComponent();
+
+            this.ShowInTaskbar = false;
+            tabPop.SizeMode = TabSizeMode.Fixed;
+            tabPop.ItemSize = new Size(0, 1);
+            cbbDate.SelectedIndex = 3;
+            cbbTime.SelectedIndex = 3;
         }
 
         #region 子方法
@@ -221,10 +227,24 @@ namespace EMRView
                 this.Height = 200;
             }
 
+            System.Drawing.Rectangle vRect = Screen.GetWorkingArea(this);
+            if (aPopupPt.X + Width > vRect.Right)
+                aPopupPt.X = vRect.Right - Width;
+
+            if (aPopupPt.Y + Height > vRect.Bottom)
+                aPopupPt.Y = vRect.Bottom - Height;
+
+            if (aPopupPt.X < vRect.Left)
+                aPopupPt.X = vRect.Left;
+
+            if (aPopupPt.Y < vRect.Top)
+                aPopupPt.Y = vRect.Top;
+
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(aPopupPt.X, aPopupPt.Y);
 
             this.Show();
+            //User.ShowWindow(this.Handle, User.SW_SHOWNOACTIVATE);
 
             if (FFrmtp == DeFrmtp.Number)
                 tbxValue.Focus();
@@ -240,15 +260,6 @@ namespace EMRView
         {
             get { return FOnSetActiveItemExtra; }
             set { FOnSetActiveItemExtra = value; }
-        }
-
-        private void frmRecordPop_Load(object sender, EventArgs e)
-        {
-            this.ShowInTaskbar = false;
-            tabPop.SizeMode = TabSizeMode.Fixed;
-            tabPop.ItemSize = new Size(0, 1);
-            cbbDate.SelectedIndex = 3;
-            cbbTime.SelectedIndex = 3;
         }
 
         private void btnDomainOk_Click(object sender, EventArgs e)
@@ -340,17 +351,8 @@ namespace EMRView
 
         private void frmRecordPop_Deactivate(object sender, EventArgs e)
         {
-            this.Close();
-        }
-
-        private void frmRecordPop_Leave(object sender, EventArgs e)
-        {
-            this.Close();
-        }
-
-        private void frmRecordPop_Shown(object sender, EventArgs e)
-        {
-            this.Focus();
+            //this.Close();
+            User.ShowWindow(this.Handle, User.SW_HIDE);
         }
 
         private string ConversionValueByUnit(string aValue, string aOldUnit, string aNewUnit)
@@ -367,6 +369,12 @@ namespace EMRView
         private void CbbUnit_DropDown(object sender, EventArgs e)
         {
             FOldUnit = cbbUnit.Text;
+        }
+
+        private void FrmRecordPop_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+                User.ShowWindow(this.Handle, User.SW_HIDE);
         }
 
         private void btnCE_Click(object sender, EventArgs e)

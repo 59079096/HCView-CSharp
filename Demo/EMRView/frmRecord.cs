@@ -25,6 +25,8 @@ namespace EMRView
     public delegate void DeItemInsertEventHandler(HCEmrView aEmrView, HCSection aSection,
         HCCustomData aData, HCCustomItem aItem);
 
+    public delegate bool DeItemPopupEventHandler(DeItem aDeItem);
+
     public partial class frmRecord : Form
     {
         private int FMouseDownTick;
@@ -33,6 +35,7 @@ namespace EMRView
         private EventHandler FOnSave, FOnSaveStructure, FOnChangedSwitch, FOnReadOnlySwitch;
         private DeItemInsertEventHandler FOnInsertDeItem;
         private DeItemSetTextEventHandler FOnSetDeItemText;
+        private DeItemPopupEventHandler FOnDeItemPopup;
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
@@ -539,6 +542,14 @@ namespace EMRView
             cbxPrintFooter.Visible = value;
         }
 
+        protected bool DoDeItemPopup(DeItem aDeItem)
+        {
+            if (FOnDeItemPopup != null)
+                return FOnDeItemPopup(aDeItem);
+            else
+                return true;
+        }
+
         protected void DoEmrViewMouseDown(object sender, MouseEventArgs e)
         {
             PopupFormClose(this, null);
@@ -592,7 +603,8 @@ namespace EMRView
                             vPt.Offset(FEmrView.Left, FEmrView.Top);
                             HC.Win32.User.ClientToScreen(FEmrView.Handle, ref vPt);
 
-                            PopupForm().PopupDeItem(vDeItem, vPt);
+                            if (DoDeItemPopup(vDeItem))
+                                PopupForm().PopupDeItem(vDeItem, vPt);
                         }
                     }
                 }
@@ -844,6 +856,12 @@ namespace EMRView
             set { FOnSetDeItemText = value; }
         }
 
+        public DeItemPopupEventHandler OnDeItemPopup
+        {
+            get { return FOnDeItemPopup; }
+            set { FOnDeItemPopup = value; }
+        }
+
         public bool PrintToolVisible
         {
             get { return tlbPrint.Visible; }
@@ -911,6 +929,7 @@ namespace EMRView
 
             mniDeItem.Visible = false;
             mniDeleteProtect.Visible = false;
+            mniCopyProtect.Visible = false;
 
             if (vTopItem is DeItem)
             {
@@ -924,15 +943,28 @@ namespace EMRView
                 {
                     if (vTopData.SelectExists())
                     {
-                        mniDeleteProtect.Text = "只读";
+                        mniDeleteProtect.Text = "运行时不可编辑";
                         mniDeleteProtect.Visible = true;
+
+                        mniCopyProtect.Text = "运行时不可复制";
+                        mniCopyProtect.Visible = true;
                     }
                     else
+                    {
                         if ((vTopItem as DeItem).EditProtect)
-                        {
-                            mniDeleteProtect.Text = "取消只读";
-                            mniDeleteProtect.Visible = true;
-                        }
+                            mniDeleteProtect.Text = "运行时可编辑";
+                        else
+                            mniDeleteProtect.Text = "运行时不可编辑";
+
+                        mniDeleteProtect.Visible = true;
+
+                        if ((vTopItem as DeItem).CopyProtect)
+                            mniCopyProtect.Text = "运行时可复制";
+                        else
+                            mniCopyProtect.Text = "运行时不可复制";
+
+                        mniCopyProtect.Visible = true;
+                    }
                 }
             }
 
@@ -974,11 +1006,8 @@ namespace EMRView
             else
             {
                 DeItem vDeItem = vTopData.GetActiveItem() as DeItem;
-                if (vDeItem.EditProtect)
-                {
-                    vDeItem.EditProtect = false;
-                    FEmrView.ReAdaptActiveItem();
-                }
+                vDeItem.EditProtect = !vDeItem.EditProtect;
+                FEmrView.ReAdaptActiveItem();
             }
         }
 
@@ -1264,6 +1293,71 @@ namespace EMRView
             string vS = "HCView使用了DelphiZXingQRCode二维码控件";
             HCQRCodeItem vQRCode = new HCQRCodeItem(FEmrView.ActiveSectionTopLevelData(), vS);
             FEmrView.InsertItem(vQRCode);
+        }
+
+        private void MniCopyProtect_Click(object sender, EventArgs e)
+        {
+            HCCustomData vTopData = FEmrView.ActiveSectionTopLevelData();
+
+            if (vTopData.SelectExists())
+            {
+                string vS = vTopData.GetSelectText();
+                vS = vS.Replace("\n", "").Replace("\t", "").Replace("\r", "");
+                DeItem vDeItem = FEmrView.NewDeItem(vS);
+                vDeItem.CopyProtect = true;
+                FEmrView.InsertDeItem(vDeItem);
+            }
+            else
+            {
+                DeItem vDeItem = vTopData.GetActiveItem() as DeItem;
+                vDeItem.CopyProtect = !vDeItem.CopyProtect;
+                FEmrView.ReAdaptActiveItem();
+            }
+        }
+
+        private void MniCellVTHL_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaTopLeft);
+        }
+
+        private void MniCellVTHM_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaTopCenter);
+        }
+
+        private void MniCellVTHR_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaTopRight);
+        }
+
+        private void MniCellVMHL_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaCenterLeft);
+        }
+
+        private void MniCellVMHM_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaCenterCenter);
+        }
+
+        private void MniCellVMHR_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaCenterRight);
+        }
+
+        private void MniCellVBHL_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaBottomLeft);
+        }
+
+        private void MniCellVBHM_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaBottomCenter);
+        }
+
+        private void MniCellVBHR_Click(object sender, EventArgs e)
+        {
+            FEmrView.TableApplyContentAlign(HCContentAlign.tcaBottomRight);
         }
 
         private void mniHideTrace_Click(object sender, EventArgs e)

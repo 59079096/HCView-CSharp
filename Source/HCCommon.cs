@@ -810,7 +810,8 @@ namespace HC.View
 
         public static bool IsOdd(int n)
         {
-            return (n % 2 == 1) ? true : false;
+            //return (n % 2 == 1) ? true : false;
+            return (n & 1) == 1 ? true : false;
         }
 
         public static void OffsetRect(ref RECT aRect, int x, int y)
@@ -868,9 +869,10 @@ namespace HC.View
         tcaCenterRight, tcaBottomLeft, tcaBottomCenter, tcaBottomRight
     }
 
-    public enum HCOperState : byte
+    public enum HCState : byte
     {
         hosLoading,  // 文档加载
+        hosCopying,  // 复制
         hosPasting,  // 粘贴
         hosBatchInsert  // 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确
     }

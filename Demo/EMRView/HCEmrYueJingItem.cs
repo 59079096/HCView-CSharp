@@ -18,6 +18,45 @@ namespace EMRView
 {
     public class EmrYueJingItem : HCExpressItem
     {
+        private string GetMenarcheAge()
+        {
+            return this.LeftText;
+        }
+
+        private void SetMenarcheAge(string value)
+        {
+            this.LeftText = value;
+        }
+
+        private string GetMenstrualDuration()
+        {
+            return this.TopText;
+        }
+        private void SetMenstrualDuration(string value)
+        {
+            this.TopText = value;
+        }
+
+        private string GetMenstrualCycle()
+        {
+            return this.BottomText;
+        }
+
+        private void SetMenstrualCycle(string value)
+        {
+            this.BottomText = value;
+        }
+
+        private string GetMenstrualPause()
+        {
+            return this.RightText;
+        }
+
+        private void SetMenstrualPause(string value)
+        {
+            this.RightText = value;
+        }
+
         public EmrYueJingItem(HCCustomData aOwnerData, string aLeftText, string aTopText, string aRightText, string aBottomText)
             : base(aOwnerData, aLeftText, aTopText, aRightText, aBottomText)
         {
@@ -42,6 +81,34 @@ namespace EMRView
                 LeftText = aNode.Attributes["lefttext"].Value;
                 RightText = aNode.Attributes["righttext"].Value;
             }
+        }
+
+        /// <summary> 初潮年龄 </summary>
+        public string MenarcheAge
+        {
+            get { return GetMenarcheAge(); }
+            set { SetMenarcheAge(value); }
+        }
+
+        /// <summary> 月经持续天数 </summary>
+        public string MenstrualDuration
+        {
+            get { return GetMenstrualDuration(); }
+            set { SetMenstrualDuration(value); }
+        }
+
+        /// <summary> 月经周期 </summary>
+        public string MenstrualCycle
+        {
+            get { return GetMenstrualCycle(); }
+            set { SetMenstrualCycle(value); }
+        }
+
+        /// <summary> 绝经年龄 </summary>
+        public string MenstrualPause
+        {
+            get { return GetMenstrualPause(); }
+            set { SetMenstrualPause(value); }
         }
     }
 }

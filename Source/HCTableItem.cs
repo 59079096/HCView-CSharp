@@ -153,6 +153,8 @@ namespace HC.View
         {
             aCellData.OnInsertItem = (OwnerData as HCViewData).OnInsertItem;
             aCellData.OnRemoveItem = (OwnerData as HCViewData).OnRemoveItem;
+            aCellData.OnSaveItem = OwnerData.OnSaveItem;
+            aCellData.OnDeleteItem = (OwnerData as HCRichData).OnDeleteItem;
             aCellData.OnItemMouseDown = (OwnerData as HCViewData).OnItemMouseDown;
             aCellData.OnItemMouseUp = (OwnerData as HCViewData).OnItemMouseUp;
 
@@ -3528,10 +3530,32 @@ namespace HC.View
             if (this.IsSelectComplate)
                 throw new Exception("保存选中内容出错，表格不应该由内部处理全选中的保存！");
             else
+            if (FSelectCellRang.EditCell())
             {
                 HCCustomData vCellData = GetActiveData();
                 if (vCellData != null)
                     vCellData.SaveSelectToStream(aStream);
+            }
+            else
+            if (FSelectCellRang.SelectExists())  // 多选单元格
+            {
+                HCTableCellData vData = new HCTableCellData(OwnerData.Style);
+                vData.BeginFormat();
+                vData.OnSaveItem = OwnerData.OnSaveItem;
+
+                HCCustomData vCellData = null;
+                for (int vRow = FSelectCellRang.StartRow; vRow <= FSelectCellRang.EndRow; vRow++)
+                {
+                    for (int vCol = FSelectCellRang.StartCol; vCol <= FSelectCellRang.EndCol; vCol++)
+                    {
+                        vCellData = FRows[vRow][vCol].CellData;
+                        if (vCellData != null)
+                            vData.AddData(vCellData);
+                    }
+                }
+
+                vData.SaveToStream(aStream);
+                vData.Dispose();
             }
         }
 
