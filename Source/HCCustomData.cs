@@ -2451,23 +2451,35 @@ namespace HC.View
             {
                 if (aStartItemNo != aEndItemNo)
                 {
-                    if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
-                        Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, FItems[aStartItemNo].Length - aStartOffset);
-                    else
-                        Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();
+                    if (DoSaveItem(FItems[aStartItemNo]))
+                    {
+                        if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
+                            Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, FItems[aStartItemNo].Length - aStartOffset);
+                        else
+                            Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();
+                    }
 
                     for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
-                        Result = Result + FItems[i].Text;
+                    {
+                        if (DoSaveItem(FItems[i]))
+                            Result = Result + FItems[i].Text;
+                    }
 
-                    if (FItems[aEndItemNo].StyleNo > HCStyle.Null)
-                        Result = Result + (FItems[aEndItemNo] as HCTextItem).SubString(1, aEndOffset);
-                    else
-                        Result = (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
+                    if (DoSaveItem(FItems[aEndItemNo]))
+                    {
+                        if (FItems[aEndItemNo].StyleNo > HCStyle.Null)
+                            Result = Result + (FItems[aEndItemNo] as HCTextItem).SubString(1, aEndOffset);
+                        else
+                            Result = (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
+                    }
                 }
                 else  // 选中在同一Item
                 {
-                    if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
-                        Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, aEndOffset - aStartOffset);
+                    if (DoSaveItem(FItems[aStartItemNo]))
+                    {
+                        if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
+                            Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, aEndOffset - aStartOffset);
+                    }
                 }
             }
 
