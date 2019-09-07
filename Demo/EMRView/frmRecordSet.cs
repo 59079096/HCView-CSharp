@@ -43,43 +43,57 @@ namespace EMRView
 
         private void BtnShow_Click(object sender, EventArgs e)
         {
-            FRecord.EmrView.Clear();
-            FRecord.EmrView.PageNoFormat = tbxPageNoFmt.Text;
-            FRecord.EmrView.HideTrace = !cbxShowTrace.Checked;
-            if (cbxPageBlankTip.Checked)
-                FRecord.EmrView.PageBlankTip = tbxPageBlankTip.Text;
-            else
-                FRecord.EmrView.PageBlankTip = "";
-
-            bool vFirst = true;
-            for (int i = 0; i < dgvRecord.RowCount; i++)
+            FRecord.EmrView.BeginUpdate();
+            try
             {
-                if ((dgvRecord.Rows[i].Cells[0].Value != null) && (bool.Parse(dgvRecord.Rows[i].Cells[0].Value.ToString())))
+                FRecord.EmrView.ReadOnly = false;  // 防止多次加载上一次只读影响下一次加载
+                FRecord.EmrView.HideTrace = false;  // 默认为不显示痕迹
+                FRecord.EmrView.Clear();
+                FRecord.EmrView.PageNoFormat = tbxPageNoFmt.Text;
+
+                if (cbxPageBlankTip.Checked)
+                    FRecord.EmrView.PageBlankTip = tbxPageBlankTip.Text;
+                else
+                    FRecord.EmrView.PageBlankTip = "";
+
+                bool vFirst = true;
+                for (int i = 0; i < dgvRecord.RowCount; i++)
                 {
-                    using (MemoryStream vStream = new MemoryStream())
+                    if ((dgvRecord.Rows[i].Cells[0].Value != null) && (bool.Parse(dgvRecord.Rows[i].Cells[0].Value.ToString())))
                     {
-                        emrMSDB.DB.GetRecordContent(int.Parse(dgvRecord.Rows[i].Cells[4].Value.ToString()), vStream);
-                        vStream.Position = 0;
+                        using (MemoryStream vStream = new MemoryStream())
+                        {
+                            emrMSDB.DB.GetRecordContent(int.Parse(dgvRecord.Rows[i].Cells[4].Value.ToString()), vStream);
+                            vStream.Position = 0;
 
-                        if (vFirst)
-                        {
-                            FRecord.EmrView.LoadFromStream(vStream);
-                            FRecord.EmrView.Sections[0].PageNoFrom = int.Parse(tbxPageNo.Text);
-                            vFirst = false;
-                        }
-                        else
-                        {
-                            FRecord.EmrView.ActiveSection.ActiveData.SelectLastItemAfterWithCaret();
-                            if ((dgvRecord.Rows[i].Cells[1].Value != null) &&(bool.Parse(dgvRecord.Rows[i].Cells[1].Value.ToString())))
-                                FRecord.EmrView.InsertPageBreak();
+                            if (vFirst)
+                            {
+                                FRecord.EmrView.LoadFromStream(vStream);
+                                FRecord.EmrView.Sections[0].PageNoFrom = int.Parse(tbxPageNo.Text);
+                                vFirst = false;
+                            }
                             else
-                                FRecord.EmrView.InsertBreak();
+                            {
+                                FRecord.EmrView.ActiveSection.ActiveData.SelectLastItemAfterWithCaret();
+                                if ((dgvRecord.Rows[i].Cells[1].Value != null) && (bool.Parse(dgvRecord.Rows[i].Cells[1].Value.ToString())))
+                                    FRecord.EmrView.InsertPageBreak();
+                                else
+                                    FRecord.EmrView.InsertBreak();
 
-                            FRecord.EmrView.ApplyParaAlignHorz(HC.View.ParaAlignHorz.pahLeft);
-                            FRecord.EmrView.InsertStream(vStream);
+                                FRecord.EmrView.ApplyParaAlignHorz(HC.View.ParaAlignHorz.pahLeft);
+                                FRecord.EmrView.InsertStream(vStream);
+                            }
                         }
                     }
                 }
+
+                FRecord.HideTrace = !cbxShowTrace.Checked;
+                if (!FRecord.EmrView.ReadOnly)
+                    FRecord.EmrView.ReadOnly = true;
+            }
+            finally
+            {
+                FRecord.EmrView.EndUpdate();
             }
         }
 
@@ -87,12 +101,32 @@ namespace EMRView
         {
             FRecord = new frmRecord();
             FRecord.PrintToolVisible = true;
+            FRecord.EditToolVisible = false;
             FRecord.TopLevel = false;
             this.pnlRecord.Controls.Add(FRecord);
             FRecord.Dock = DockStyle.Fill;
             FRecord.Show();
 
             tbxPageNoFmt.Text = FRecord.EmrView.PageNoFormat;
+        }
+
+        private void CbxShowTrace_CheckedChanged(object sender, EventArgs e)
+        {
+            FRecord.HideTrace = !FRecord.EmrView.HideTrace;
+        }
+
+        private void CbxPageBlankTip_CheckedChanged(object sender, EventArgs e)
+        {
+            if (cbxPageBlankTip.Checked)
+                FRecord.EmrView.PageBlankTip = tbxPageBlankTip.Text;
+            else
+                FRecord.EmrView.PageBlankTip = "";
+        }
+
+        private void TbxPageBlankTip_TextChanged(object sender, EventArgs e)
+        {
+            if (cbxPageBlankTip.Checked)
+                FRecord.EmrView.PageBlankTip = tbxPageBlankTip.Text;
         }
     }
 }

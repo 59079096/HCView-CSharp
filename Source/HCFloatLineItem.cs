@@ -31,6 +31,23 @@ namespace HC.View
         private POINT FLeftTop;
         private HCShapeLine FShapeLine;
 
+        private POINT GetShapeLeftTop()
+        {
+            POINT vResult = new POINT();
+
+            if (FShapeLine.StartPt.X < FShapeLine.EndPt.X)
+                vResult.X = FShapeLine.StartPt.X;
+            else
+                vResult.X = FShapeLine.EndPt.X;
+
+            if (FShapeLine.StartPt.Y < FShapeLine.EndPt.Y)
+                vResult.Y = FShapeLine.StartPt.Y;
+            else
+                vResult.Y = FShapeLine.EndPt.Y;
+
+            return vResult;
+        }
+
         protected override void SetActive(bool value)
         {
             base.SetActive(value);
@@ -39,7 +56,7 @@ namespace HC.View
 
         public HCFloatLineItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
-            this.StyleNo = (byte)HCShapeStyle.hssLine;
+            this.StyleNo = HCStyle.FloatLine;
             Width = 100;
             Height = 70;
             FShapeLine = new HCShapeLine(new POINT(0, 0), new POINT(Width, Height));
@@ -62,24 +79,19 @@ namespace HC.View
             Active = FShapeLine.ActiveObj != HCShapeLineObj.sloNone;
             if (Active)
             {
-                this.Resizing = (e.Button == MouseButtons.Left) 
-                        && ((FShapeLine.ActiveObj == HCShapeLineObj.sloStart) || (FShapeLine.ActiveObj == HCShapeLineObj.sloEnd));
-
-                if (this.Resizing)
+                if (e.Button == MouseButtons.Left)
                 {
-                    this.FResizeX = e.X;
-                    this.FResizeY = e.Y;
+                    this.Resizing = ((FShapeLine.ActiveObj == HCShapeLineObj.sloStart) || (FShapeLine.ActiveObj == HCShapeLineObj.sloEnd));
 
-                    // 缩放前的Rect的LeftTop
-                    if (FShapeLine.StartPt.X < FShapeLine.EndPt.X)
-                        FLeftTop.X = FShapeLine.StartPt.X;
+                    if (this.Resizing)
+                    {
+                        this.FResizeX = e.X;
+                        this.FResizeY = e.Y;
+                        FLeftTop = GetShapeLeftTop();  // 缩放前的Rect的LeftTop
+                    }
                     else
-                        FLeftTop.X = FShapeLine.EndPt.X;
-
-                    if (FShapeLine.StartPt.Y < FShapeLine.EndPt.Y)
-                        FLeftTop.Y = FShapeLine.StartPt.Y;
-                    else
-                        FLeftTop.Y = FShapeLine.EndPt.Y;
+                    if (FShapeLine.ActiveObj == HCShapeLineObj.sloLine)
+                        FLeftTop = GetShapeLeftTop();  // 移动前的Rect的LeftTop
                 }
             }
 
@@ -104,36 +116,29 @@ namespace HC.View
             return vResult;
         }
 
+        private void _CalcNewLeftTop()
+        {
+            POINT vNewLeftTop = GetShapeLeftTop(); // 缩放后的Rect的LeftTop
+            this.Left = this.Left + vNewLeftTop.X - FLeftTop.X;
+            this.Top = this.Top + vNewLeftTop.Y - FLeftTop.Y;
+            // 线的点坐标以新LeftTop为原点
+            FShapeLine.StartPt = new POINT(FShapeLine.StartPt.X - vNewLeftTop.X, FShapeLine.StartPt.Y - vNewLeftTop.Y);
+            FShapeLine.EndPt = new POINT(FShapeLine.EndPt.X - vNewLeftTop.X, FShapeLine.EndPt.Y - vNewLeftTop.Y);
+        }
+
         public override bool MouseUp(MouseEventArgs e)
         {
             if (this.Resizing)
             {
                 this.Resizing = false;
-                POINT vNewLeftTop = new POINT();
-                
-                // 缩放后的Rect的LeftTop
-                if (FShapeLine.StartPt.X < FShapeLine.EndPt.X)
-                    vNewLeftTop.X = FShapeLine.StartPt.X;
-                else
-                    vNewLeftTop.X = FShapeLine.EndPt.X;
-
-                if (FShapeLine.StartPt.Y < FShapeLine.EndPt.Y)
-                    vNewLeftTop.Y = FShapeLine.StartPt.Y;
-                else
-                    vNewLeftTop.Y = FShapeLine.EndPt.Y;
-            
-                vNewLeftTop.X = vNewLeftTop.X - FLeftTop.X;
-                vNewLeftTop.Y = vNewLeftTop.Y - FLeftTop.Y;
-                
-                this.Left = this.Left + vNewLeftTop.X;
-                this.Top = this.Top + vNewLeftTop.Y;
-                // 线的点坐标以新LeftTop为原点
-                FShapeLine.StartPt.Offset(-vNewLeftTop.X, -vNewLeftTop.Y);
-                FShapeLine.EndPt.Offset(-vNewLeftTop.X, -vNewLeftTop.Y);
+                _CalcNewLeftTop();  // 计算新的LeftTop
 
                 this.Width = Math.Abs(FShapeLine.EndPt.X - FShapeLine.StartPt.X);
                 this.Height = Math.Abs(FShapeLine.EndPt.Y - FShapeLine.StartPt.Y);
             }
+            else
+            if (FShapeLine.ActiveObj == HCShapeLineObj.sloLine)
+                _CalcNewLeftTop();  // 计算新的LeftTop
 
             return FShapeLine.MouseUp(e);
         }

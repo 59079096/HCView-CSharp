@@ -110,10 +110,13 @@ namespace HC.View
             // 2.5 使用unicode字符集保存文档以便支持藏文等
             // 2.6 文件保存时直接使用TItemOptions集合变量的值，不再单独判断成员存储
             // 2.7 浮动直线改为ShapeLine
-            HC_FileVersion = "2.7";
+            //2.8 浮动Item都使用HCStyle的样式定义(负数)，这样便于统一按Item处理遍历等操作
+            //2.9 浮动Item保存PageIndex，原因见 20190906001
+
+            HC_FileVersion = "2.9";
 
         public const ushort
-            HC_FileVersionInt = 27;
+            HC_FileVersionInt = 29;
 
         public static ushort SwapBytes(ushort aValue)
         {

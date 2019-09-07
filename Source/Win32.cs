@@ -62,7 +62,7 @@ namespace HC.Win32
         }
 	}
 
-    [StructLayout(LayoutKind.Sequential)]//È·±£MoveToEx×Ö¶ÎË³Ðò
+    [StructLayout(LayoutKind.Sequential)]
 	public struct POINT 
 	{
 		public int X;

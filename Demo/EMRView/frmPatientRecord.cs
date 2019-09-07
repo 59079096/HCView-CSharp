@@ -71,7 +71,8 @@ namespace EMRView
                     PrepareSyncData(vRecordInfo.DesID);
 
                     // 赋值模板加载时替换数据元内容的方法
-                    vFrmRecord.EmrView.OnSyncDeItem = DoSyncDeItem;  
+                    vFrmRecord.EmrView.OnSyncDeItem = DoSyncDeItem;
+                    vFrmRecord.EmrView.OnSyncDeFloatItem = DoSyncDeFloatItem;
                     try
                     {
                         vFrmRecord.EmrView.BeginUpdate();
@@ -264,51 +265,92 @@ namespace EMRView
                 return "";
         }
 
+        private string GetDeItemValueTry(string aDeIndex)
+        {
+            DataRow[] vDataRows = FDataElementSetMacro.Select("ObjID=" + aDeIndex);
+            if (vDataRows.Length == 1)  // 有此数据元的替换信息
+            {
+                switch (vDataRows[0]["MacroType"].ToString())
+                {
+                    case "1":  // 患者信息(客户端处理)
+                        return EMR.GetValueAsString(PatientInfo.FieldByName(vDataRows[0]["Macro"].ToString()));
+
+                    case "2":  // 用户信息(客户端处理)
+                        return EMR.GetValueAsString(UserInfo.FieldByName(vDataRows[0]["Macro"].ToString()));
+
+                    case "3":  // 病历信息(服务端处理)
+                        return GetDeValueFromStruct(PatientInfo.PatID, int.Parse(vDataRows[0]["Macro"].ToString()), aDeIndex);
+
+                    case "4":  // 环境信息(服务端，如当前时间等)
+                        return EMR.GetValueAsString(FServerInfo.FieldByName(vDataRows[0]["Macro"].ToString()));
+
+                    case "5":  // SQL脚本(服务端处理)
+                        return GetMarcoSqlResult(aDeIndex, vDataRows[0]["Macro"].ToString());
+
+                    default:
+                        break;
+                }
+            }
+
+            return "";
+        }
+
         private void DoSyncDeItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
+            string vsResult = "";
+            string vDeIndex = "";
+
             if (aItem is DeItem)
             {
                 DeItem vDeItem = aItem as DeItem;
                 if (vDeItem.IsElement)
                 {
-                    string vDeIndex = vDeItem[DeProp.Index];
+                    vDeIndex = vDeItem[DeProp.Index];
                     if (vDeIndex != "")
                     {
-                        DataRow[] vDataRows = FDataElementSetMacro.Select("ObjID=" + vDeIndex);
-                        if (vDataRows.Length == 1)  // 有此数据元的替换信息
-                        {
-                            string vsResult = "";
-
-                            switch (vDataRows[0]["MacroType"].ToString())
-                            {
-                                case "1":  // 患者信息(客户端处理)
-                                    vsResult = EMR.GetValueAsString(PatientInfo.FieldByName(vDataRows[0]["Macro"].ToString()));
-                                    break;
-
-                                case "2":  // 用户信息(客户端处理)
-                                    vsResult = EMR.GetValueAsString(UserInfo.FieldByName(vDataRows[0]["Macro"].ToString()));
-                                    break;
-
-                                case "3":  // 病历信息(服务端处理)
-                                    vsResult = GetDeValueFromStruct(PatientInfo.PatID, int.Parse(vDataRows[0]["Macro"].ToString()), vDeItem[DeProp.Index]);
-                                    break;
-
-                                case "4":  // 环境信息(服务端，如当前时间等)
-                                    vsResult = EMR.GetValueAsString(FServerInfo.FieldByName(vDataRows[0]["Macro"].ToString()));
-                                    break;
-
-                                case "5":  // SQL脚本(服务端处理)
-                                    vsResult = GetMarcoSqlResult(vDeIndex, vDataRows[0]["Macro"].ToString());
-                                    break;
-
-                                default:
-                                    break;
-                            }
-
-                            if (vsResult != "")
-                                vDeItem.Text = vsResult;
-                        }
+                        vsResult = GetDeItemValueTry(vDeIndex);
+                        if (vsResult != "")
+                            vDeItem.Text = vsResult;
                     }
+                }
+            }
+            else
+            if (aItem is DeEdit)
+            {
+                vDeIndex = (aItem as DeEdit)[DeProp.Index];
+                if (vDeIndex != "")
+                {
+                    vsResult = GetDeItemValueTry(vDeIndex);
+                    if (vsResult != "")
+                        (aItem as DeEdit).Text = vsResult;
+                }
+            }
+            else
+            if (aItem is DeCombobox)
+            {
+                vDeIndex = (aItem as DeCombobox)[DeProp.Index];
+                if (vDeIndex != "")
+                {
+                    vsResult = GetDeItemValueTry(vDeIndex);
+                    if (vsResult != "")
+                        (aItem as DeCombobox).Text = vsResult;
+                }
+            }
+        }
+
+        private void DoSyncDeFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
+        {
+            string vDeIndex = "";
+            string vsResult = "";
+
+            if (aItem is DeFloatBarCodeItem)
+            {
+                vDeIndex = (aItem as DeFloatBarCodeItem)[DeProp.Index];
+                if (vDeIndex != "")
+                {
+                    vsResult = GetDeItemValueTry(vDeIndex);
+                    if (vsResult != "")
+                        (aItem as DeFloatBarCodeItem).Text = vsResult;
                 }
             }
         }

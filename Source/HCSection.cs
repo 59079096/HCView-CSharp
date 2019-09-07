@@ -64,6 +64,8 @@ namespace HC.View
 
     public delegate void SectionDataItemEventHandler(object sender, HCCustomData aData, HCCustomItem aItem);
 
+    public delegate void SectionDataFloatItemEventHandler(object sender, HCSectionData aData, HCCustomFloatItem aItem);
+
     public delegate bool SectionDataItemFunEvent(object sender, HCCustomData aData, HCCustomItem aItem);
 
     public delegate void SectionDrawItemAnnotateEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
@@ -115,13 +117,14 @@ namespace HC.View
         SectionDrawItemAnnotateEventHandler FOnDrawItemAnnotate;
 
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
-
+        SectionDataFloatItemEventHandler FOnInsertFloatItem;
         SectionDataItemEventHandler FOnInsertItem, FOnRemoveItem;
         SectionDataItemFunEvent FOnSaveItem, FOnDeleteItem;
         SectionDataItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         DataItemNoEventHandler FOnItemResize;
         EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
         StyleItemEventHandler FOnCreateItemByStyle;
+        FloatStyleItemEventHandler FOnCreateFloatItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
         GetUndoListEventHandler FOnGetUndoList;
 
@@ -214,6 +217,11 @@ namespace HC.View
                 FOnDrawItemAnnotate(this, aData, aDrawItemNo, aDrawRect, aDataAnnotate);
         }
 
+        private void DoDataInsertFloatItem(HCSectionData aData, HCCustomFloatItem aItem)
+        {
+            if (FOnInsertFloatItem != null)
+                FOnInsertFloatItem(this, aData, aItem);
+        }
         private void DoDataInsertItem(HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnInsertItem != null)
@@ -285,6 +293,14 @@ namespace HC.View
         {
             if (FOnCreateItemByStyle != null)
                 return FOnCreateItemByStyle(aData, aStyleNo);
+            else
+                return null;
+        }
+
+        private HCCustomFloatItem DoDataCreateFloatStyleItem(HCSectionData aData, int aStyleNo)
+        {
+            if (FOnCreateFloatItemByStyle != null)
+                return FOnCreateFloatItemByStyle(aData, aStyleNo);
             else
                 return null;
         }
@@ -680,6 +696,7 @@ namespace HC.View
         protected void SetDataProperty(int vWidth, HCSectionData aData)
         {
             aData.Width = vWidth;
+            aData.OnInsertFloatItem = DoDataInsertFloatItem;
             aData.OnInsertItem = DoDataInsertItem;
             aData.OnRemoveItem = DoDataRemoveItem;
             aData.OnSaveItem = DoDataSaveItem;
@@ -688,6 +705,7 @@ namespace HC.View
             aData.OnItemMouseDown = DoDataItemMouseDown;
             aData.OnItemMouseUp = DoDataItemMouseUp;
             aData.OnCreateItemByStyle = DoDataCreateStyleItem;
+            aData.OnCreateFloatItemByStyle = DoDataCreateFloatStyleItem;
             aData.OnCanEdit = DoDataCanEdit;
             aData.OnCreateItem = DoDataCreateItem;
             aData.OnReadOnlySwitch = DoDataReadOnlySwitch;
@@ -2849,6 +2867,12 @@ namespace HC.View
             set { FOnCheckUpdateInfo = value; }
         }
 
+        public SectionDataFloatItemEventHandler OnInsertFloatItem
+        {
+            get { return FOnInsertFloatItem; }
+            set { FOnInsertFloatItem = value; }
+        }
+
         public SectionDataItemEventHandler OnInsertItem
         {
             get { return FOnInsertItem; }
@@ -2967,6 +2991,12 @@ namespace HC.View
         {
             get { return FOnCreateItemByStyle; }
             set { FOnCreateItemByStyle = value; }
+        }
+
+        public FloatStyleItemEventHandler OnCreateFloatItemByStyle
+        {
+            get { return FOnCreateFloatItemByStyle; }
+            set { FOnCreateFloatItemByStyle = value; }
         }
 
         public OnCanEditEventHandler OnCanEdit

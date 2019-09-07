@@ -157,7 +157,7 @@ namespace EMRView
                     tbxValue.SelectAll();
 
                 cbbUnit.Items.Clear();
-                string[] vStrings = vDeUnit.Split(new string[] { "," }, StringSplitOptions.None);
+                string[] vStrings = vDeUnit.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < vStrings.Length; i++)
                 {
                     cbbUnit.Items.Add(vStrings[i]);

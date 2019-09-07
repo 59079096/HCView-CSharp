@@ -16,6 +16,7 @@ using System.Text;
 using HC.Win32;
 using System.IO;
 using System.Xml;
+using System.Windows.Forms;
 
 namespace HC.View
 {
@@ -23,6 +24,12 @@ namespace HC.View
     {
         private int FLeft, FTop, FPageIndex;
         private RECT FDrawRect;
+        private POINT FMousePt;
+
+        public HCCustomFloatItem() : base()
+        {
+
+        }
 
         public HCCustomFloatItem(HCCustomData aOwnerData)
             : base(aOwnerData)
@@ -49,9 +56,52 @@ namespace HC.View
             Height = (source as HCCustomFloatItem).Height;
         }
 
+        public override bool MouseDown(MouseEventArgs e)
+        {
+            bool vResult = base.MouseDown(e);
+            if (!this.Resizing)
+                FMousePt = new POINT(e.X, e.Y);
+
+            return vResult;
+        }
+
+        public override bool MouseMove(MouseEventArgs e)
+        {
+            bool vResult = base.MouseMove(e);
+            if ((!this.Resizing) && (e.Button == MouseButtons.Left))
+            {
+                FLeft += e.X - FMousePt.X;
+                FTop += e.Y - FMousePt.Y;
+            }
+
+            return vResult;
+        }
+
+        public override bool MouseUp(MouseEventArgs e)
+        {
+            bool vResult = false;
+
+            if (this.Resizing)
+            {
+                this.Resizing = false;
+
+                if ((this.ResizeWidth < 1) || (this.ResizeHeight < 1))
+                    return vResult;
+
+                Width = this.ResizeWidth;
+                Height = this.ResizeHeight;
+                vResult = true;
+            }
+
+            return vResult;
+        }
+
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
+                aCanvas, aPaintInfo);
+
             if (this.Active)
                 aCanvas.DrawFocuseRect(FDrawRect);
         }
@@ -71,6 +121,9 @@ namespace HC.View
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(Height);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            vBuffer = BitConverter.GetBytes(FPageIndex);
             aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
@@ -93,6 +146,13 @@ namespace HC.View
             vBuffer = BitConverter.GetBytes(Height);
             aStream.Read(vBuffer, 0, vBuffer.Length);
             Height = BitConverter.ToInt32(vBuffer, 0);
+
+            if (aFileVersion > 28)
+            {
+                vBuffer = BitConverter.GetBytes(FPageIndex);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FPageIndex = BitConverter.ToInt32(vBuffer, 0);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -102,6 +162,7 @@ namespace HC.View
             aNode.SetAttribute("top", FTop.ToString());
             aNode.SetAttribute("width", Width.ToString());
             aNode.SetAttribute("height", Height.ToString());
+            aNode.SetAttribute("pageindex", FPageIndex.ToString());
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -111,6 +172,7 @@ namespace HC.View
             FTop = int.Parse(aNode.Attributes["top"].Value);
             Width = int.Parse(aNode.Attributes["width"].Value);
             Height = int.Parse(aNode.Attributes["height"].Value);
+            FPageIndex = int.Parse(aNode.Attributes["pageindex"].Value);
         }
 
         public RECT DrawRect
@@ -135,6 +197,43 @@ namespace HC.View
         {
             get { return FPageIndex; }
             set { FPageIndex = value; }
+        }
+    }
+
+    public delegate void FloatItemNotifyEventHandler(HCCustomFloatItem aItem);
+
+    public class HCFloatItems : HCList<HCCustomFloatItem>
+    {
+        private FloatItemNotifyEventHandler FOnInsertItem, FOnRemoveItem;
+
+        private void HCItems_OnInsert(object sender, NListEventArgs<HCCustomFloatItem> e)
+        {
+            if (FOnInsertItem != null)
+                FOnInsertItem(e.Item);
+        }
+
+        private void HCItems_OnRemove(object sender, NListEventArgs<HCCustomFloatItem> e)
+        {
+            if (FOnRemoveItem != null)
+                FOnRemoveItem(e.Item);
+        }
+
+        public HCFloatItems()
+        {
+            this.OnInsert += new EventHandler<NListEventArgs<HCCustomFloatItem>>(HCItems_OnInsert);
+            this.OnDelete += new EventHandler<NListEventArgs<HCCustomFloatItem>>(HCItems_OnRemove);
+        }
+
+        public FloatItemNotifyEventHandler OnInsertItem
+        {
+            get { return FOnInsertItem; }
+            set { FOnInsertItem = value; }
+        }
+
+        public FloatItemNotifyEventHandler OnRemoveItem
+        {
+            get { return FOnRemoveItem; }
+            set { FOnRemoveItem = value; }
         }
     }
 }

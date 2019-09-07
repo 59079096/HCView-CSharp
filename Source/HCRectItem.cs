@@ -1028,6 +1028,11 @@ namespace HC.View
             get { return FResizeRect; }
         }
 
+        public HCResizeRectItem() : base()
+        {
+
+        }
+
         public HCResizeRectItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             FCanResize = true;

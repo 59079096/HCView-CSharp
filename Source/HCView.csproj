@@ -62,6 +62,7 @@
     <Compile Include="HCEditItem.cs" />
     <Compile Include="HCExpressItem.cs" />
     <Compile Include="HCCustomFloatItem.cs" />
+    <Compile Include="HCFloatBarCodeItem.cs" />
     <Compile Include="HCFloatLineItem.cs" />
     <Compile Include="HCFormatData.cs" />
     <Compile Include="HCFractionItem.cs" />

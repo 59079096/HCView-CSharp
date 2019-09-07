@@ -1454,12 +1454,12 @@ namespace HC.View
                 return FDrawItems[vDrawItemNo];
         }
 
-        public int GetActiveItemNo()
+        public virtual int GetActiveItemNo()
         {
             return FSelectInfo.StartItemNo;
         }
 
-        public HCCustomItem GetActiveItem()
+        public virtual HCCustomItem GetActiveItem()
         {
             int vItemNo = GetActiveItemNo();
             if (vItemNo < 0)

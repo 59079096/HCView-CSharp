@@ -988,4 +988,100 @@ namespace EMRView
             set { SetValue(aKey, value); }
         }
     }
+
+    public class DeFloatBarCodeItem : HCFloatBarCodeItem
+    {
+        private bool FEditProtect;
+        private Dictionary<string, string> FPropertys;
+
+        private string GetValue(string key)
+        {
+            return FPropertys[key];
+        }
+
+        private void SetValue(string key, string value)
+        {
+            FPropertys[key] = value;
+        }
+
+        public DeFloatBarCodeItem(HCCustomData aOwnerData) : base(aOwnerData)
+        {
+            FPropertys = new Dictionary<string, string>();
+        }
+
+        ~DeFloatBarCodeItem()
+        {
+
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            string vS = DeProp.GetPropertyString((source as DeEdit).Propertys);
+            DeProp.SetPropertyString(vS, FPropertys);
+        }
+
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStream(aStream, aStart, aEnd);
+
+            byte vByte = 0;
+            if (FEditProtect)
+                vByte = (byte)(vByte | (1 << 7));
+            aStream.WriteByte(vByte);
+
+            HC.View.HC.HCSaveTextToStream(aStream, DeProp.GetPropertyString(FPropertys));
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+
+            byte vByte = (byte)aStream.ReadByte();
+            FEditProtect = (vByte >> 7) == 1;
+
+            string vS = "";
+            HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+            DeProp.SetPropertyString(vS, FPropertys);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+        }
+
+        public void ToJson(string aJsonObj)
+        {
+
+        }
+
+        public void ParseJson(string aJsonObj)
+        {
+
+        }
+
+        public bool EditProtect
+        {
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
+        }
+    }
 }

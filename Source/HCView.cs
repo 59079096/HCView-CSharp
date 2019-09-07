@@ -55,6 +55,7 @@ namespace HC.View
         private EventHandler FOnCaretChange, FOnVerScroll, FOnHorScroll, FOnSectionCreateItem, FOnSectionReadOnlySwitch,
             FOnSectionCurParaNoChange, FOnSectionActivePageChange;
         private StyleItemEventHandler FOnSectionCreateStyleItem;
+        private FloatStyleItemEventHandler FOnSectionCreateFloatStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
         private SectionDataItemEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
         private SectionDataItemFunEvent FOnSectionSaveItem, FOnSectionDeleteItem;
@@ -472,10 +473,12 @@ namespace HC.View
             Result.OnCreateItem = DoSectionCreateItem;
             Result.OnDeleteItem = DoSectionDeleteItem;
             Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
+            Result.OnCreateFloatItemByStyle = DoSectionCreateFloatStyleItem;
             Result.OnCanEdit = DoSectionCanEdit;
             Result.OnInsertItem = DoSectionInsertItem;
             Result.OnRemoveItem = DoSectionRemoveItem;
             Result.OnSaveItem = DoSectionSaveItem;
+            Result.OnInsertFloatItem = DoSectionInsertFloatItem;
             Result.OnItemMouseDown = DoSectionItemMouseDown;
             Result.OnItemMouseUp = DoSectionItemMouseUp;
             Result.OnItemResize = DoSectionItemResize;
@@ -910,6 +913,20 @@ namespace HC.View
                 return FOnSectionCreateStyleItem(AData, AStyleNo);
             else
                 return null;
+        }
+
+        protected virtual HCCustomFloatItem DoSectionCreateFloatStyleItem(HCSectionData aData, int aStyleNo)
+        {
+            if (FOnSectionCreateFloatStyleItem != null)
+                return FOnSectionCreateFloatStyleItem(aData, aStyleNo);
+            else
+                return null;
+        }
+
+        protected virtual void DoSectionInsertFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
+        {
+            if (FOnSectionInsertItem != null)
+                FOnSectionInsertItem(sender, aData, aItem);
         }
 
         protected virtual void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
@@ -3671,6 +3688,13 @@ namespace HC.View
         {
             get { return FOnSectionCreateStyleItem; }
             set { FOnSectionCreateStyleItem = value; }
+        }
+
+        /// <summary> 创建指定样式的FloatItem时触发 </summary>
+        public FloatStyleItemEventHandler OnSectionCreateFloatStyleItem
+        {
+            get { return FOnSectionCreateFloatStyleItem; }
+            set { FOnSectionCreateFloatStyleItem = value; }
         }
 
         /// <summary> 当编辑只读状态的Data时触发 </summary>

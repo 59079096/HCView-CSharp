@@ -67,7 +67,7 @@
             this.cbbDTFormat = new System.Windows.Forms.ComboBox();
             this.label8 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.btnOK = new System.Windows.Forms.Button();
+            this.btnSave = new System.Windows.Forms.Button();
             this.pnlSize.SuspendLayout();
             this.pnlEdit.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvEdit)).BeginInit();
@@ -450,22 +450,22 @@
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.btnOK);
+            this.panel1.Controls.Add(this.btnSave);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 655);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(304, 32);
             this.panel1.TabIndex = 7;
             // 
-            // btnOK
+            // btnSave
             // 
-            this.btnOK.Location = new System.Drawing.Point(115, 5);
-            this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(75, 23);
-            this.btnOK.TabIndex = 7;
-            this.btnOK.Text = "确定";
-            this.btnOK.UseVisualStyleBackColor = true;
-            this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
+            this.btnSave.Location = new System.Drawing.Point(115, 5);
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(75, 23);
+            this.btnSave.TabIndex = 7;
+            this.btnSave.Text = "保存";
+            this.btnSave.UseVisualStyleBackColor = true;
+            this.btnSave.Click += new System.EventHandler(this.btnOK_Click);
             // 
             // frmDeControlProperty
             // 
@@ -483,6 +483,8 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmDeControlProperty";
+            this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "ControlItem属性";
             this.pnlSize.ResumeLayout(false);
             this.pnlSize.PerformLayout();
@@ -544,6 +546,6 @@
         private System.Windows.Forms.ComboBox cbbDTFormat;
         private System.Windows.Forms.ListBox lstCombobox;
         private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Button btnOK;
+        private System.Windows.Forms.Button btnSave;
     }
 }

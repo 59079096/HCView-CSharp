@@ -25,34 +25,35 @@ namespace HC.View
             FImageToolBar.ActiveIndex = 0;
         }
 
-        private void SetActiveItem(HCCustomItem Value)
+        private void SetActiveItem(HCCustomItem value)
         {
             // MouseDown里会触发重绘，此时ToolBar并未确定显示，处理ToolBar的Visible属性
             // 会重新触发重绘，重绘是通过DoImageToolBarUpdateView(Rect)，需要先计算区域参数
             // 然后触发UpdateView，所以需要提前计算ToolBar的坐标vPt位置
-            if (FActiveItem != Value)
+            if (FActiveItem != value)
             {
                 if (FActiveItem is HCTableItem)
                     FTableToolBar.Visible = false;
                 else
                 if (FActiveItem is HCImageItem)
                     FImageToolBar.Visible = false;
-                if (Value.Active)
+
+                if ((value != null) && (value.Active))
                 {
                     POINT vPt;
 
-                    if (Value is HCTableItem)
+                    if (value is HCTableItem)
                     {
-                        FActiveItem = Value;
+                        FActiveItem = value;
                         vPt = this.GetActiveDrawItemViewCoord();
                         FTableToolBar.Left = vPt.X;
                         FTableToolBar.Top = vPt.Y - FTableToolBar.Height + FToolOffset;
                         // FTableToolBar.Visible = true; 暂时没有不显示
                     }
                     else
-                    if (Value is HCImageItem)
+                    if (value is HCImageItem)
                     {
-                        FActiveItem = Value;
+                        FActiveItem = value;
                         (FActiveItem as HCImageItem).ShapeManager.OnStructOver = DoImageShapeStructOver;
                         vPt = this.GetActiveDrawItemViewCoord();
                         FImageToolBar.Left = vPt.X;

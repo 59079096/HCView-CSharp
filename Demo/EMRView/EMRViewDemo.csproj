@@ -57,6 +57,12 @@
     <Compile Include="frmDataElementDomain.Designer.cs">
       <DependentUpon>frmDataElementDomain.cs</DependentUpon>
     </Compile>
+    <Compile Include="frmDeFloatItemProperty.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDeFloatItemProperty.Designer.cs">
+      <DependentUpon>frmDeFloatItemProperty.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmDeInfo.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -230,6 +236,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="frmDeControlProperty.resx">
       <DependentUpon>frmDeControlProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDeFloatItemProperty.resx">
+      <DependentUpon>frmDeFloatItemProperty.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmDeInfo.resx">
       <DependentUpon>frmDeInfo.cs</DependentUpon>

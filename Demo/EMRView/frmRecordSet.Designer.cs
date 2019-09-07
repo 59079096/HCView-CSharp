@@ -102,6 +102,7 @@
             this.tbxPageBlankTip.Size = new System.Drawing.Size(215, 21);
             this.tbxPageBlankTip.TabIndex = 9;
             this.tbxPageBlankTip.Text = "--------本页以下内容空白--------";
+            this.tbxPageBlankTip.TextChanged += new System.EventHandler(this.TbxPageBlankTip_TextChanged);
             // 
             // tbxPageNo
             // 
@@ -127,6 +128,7 @@
             this.cbxPageBlankTip.TabIndex = 6;
             this.cbxPageBlankTip.Text = "另起页时上一页添加结束语句";
             this.cbxPageBlankTip.UseVisualStyleBackColor = true;
+            this.cbxPageBlankTip.CheckedChanged += new System.EventHandler(this.CbxPageBlankTip_CheckedChanged);
             // 
             // btnShow
             // 
@@ -147,6 +149,7 @@
             this.cbxShowTrace.TabIndex = 4;
             this.cbxShowTrace.Text = "显示痕迹";
             this.cbxShowTrace.UseVisualStyleBackColor = true;
+            this.cbxShowTrace.CheckedChanged += new System.EventHandler(this.CbxShowTrace_CheckedChanged);
             // 
             // dgvRecord
             // 

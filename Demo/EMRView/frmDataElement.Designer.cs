@@ -55,6 +55,7 @@
             this.mniInsertAsCheckBox = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.mniRefresh = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniInsertAsFloatBarCode = new System.Windows.Forms.ToolStripMenuItem();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDE)).BeginInit();
             this.pmde.SuspendLayout();
@@ -173,10 +174,11 @@
             this.mniInsertAsDateTime,
             this.mniInsertAsRadioGroup,
             this.mniInsertAsCheckBox,
+            this.mniInsertAsFloatBarCode,
             this.toolStripSeparator4,
             this.mniRefresh});
             this.pmde.Name = "pmde";
-            this.pmde.Size = new System.Drawing.Size(196, 286);
+            this.pmde.Size = new System.Drawing.Size(196, 330);
             this.pmde.Opening += new System.ComponentModel.CancelEventHandler(this.Pmde_Opening);
             // 
             // mniNew
@@ -278,6 +280,13 @@
             this.mniRefresh.Text = "刷新";
             this.mniRefresh.Click += new System.EventHandler(this.MniRefresh_Click);
             // 
+            // mniInsertAsFloatBarCode
+            // 
+            this.mniInsertAsFloatBarCode.Name = "mniInsertAsFloatBarCode";
+            this.mniInsertAsFloatBarCode.Size = new System.Drawing.Size(195, 22);
+            this.mniInsertAsFloatBarCode.Text = "插入(浮动一维码)";
+            this.mniInsertAsFloatBarCode.Click += new System.EventHandler(this.MniInsertAsFloatBarCode_Click);
+            // 
             // frmDataElement
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -327,5 +336,6 @@
         private System.Windows.Forms.ToolStripMenuItem mniInsertAsCheckBox;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
         private System.Windows.Forms.ToolStripMenuItem mniRefresh;
+        private System.Windows.Forms.ToolStripMenuItem mniInsertAsFloatBarCode;
     }
 }

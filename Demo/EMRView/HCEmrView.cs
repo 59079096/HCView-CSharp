@@ -20,6 +20,7 @@ using System.Drawing;
 namespace EMRView
 {
     public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, HCCustomItem aItem);
+    public delegate void SyncDeFloatItemEventHandler(object sender, HCSectionData aData, HCCustomFloatItem aItem);
     public class HCEmrView : HCEmrViewIH
     {
         private bool FDesignMode;
@@ -30,11 +31,27 @@ namespace EMRView
         private string FPageBlankTip;
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
+        private SyncDeFloatItemEventHandler FOnSyncDeFloatItem;
+
+        private void SetPageBlankTip(string value)
+        {
+            if (FPageBlankTip != value)
+            {
+                FPageBlankTip = value;
+                this.UpdateView();
+            }
+        }
 
         private void DoSyncDeItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnSyncDeItem != null)
                 FOnSyncDeItem(sender, aData, aItem);
+        }
+
+        private void DoSyncDeFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
+        {
+            if (FOnSyncDeFloatItem != null)
+                FOnSyncDeFloatItem(sender, aData, aItem);
         }
 
         private void DoDeItemPaintBKG(object sender, HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo)
@@ -181,6 +198,19 @@ namespace EMRView
             return Result;
         }
 
+        protected override HCCustomFloatItem DoSectionCreateFloatStyleItem(HCSectionData aData, int aStyleNo)
+        {
+            return HCEmrViewLite.CreateEmrFloatStyleItem(aData, aStyleNo);
+        }
+
+        protected override void DoSectionInsertFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
+        {
+            if (aItem is DeFloatBarCodeItem)
+                DoSyncDeFloatItem(sender, aData, aItem);
+
+            base.DoSectionInsertFloatItem(sender, aData, aItem);
+        }
+
         /// <summary> 当有新Item创建完成后触发的事件 </summary>
         /// <param name="sender">Item所属的文档节</param>
         /// <param name="e"></param>
@@ -302,6 +332,9 @@ namespace EMRView
             {
                 if (HC.View.HC.IsKeyDownEdit(e.KeyValue))
                 {
+                    if (CanNotEdit())
+                        return;
+
                     string vText = "";
                     string vCurTrace = "";
                     int vStyleNo = HCStyle.Null;
@@ -320,7 +353,54 @@ namespace EMRView
 
                     if (vData.Items[vData.SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
                     {
-                        base.OnKeyDown(e);
+                        if (vData.SelectInfo.StartItemOffset == HC.View.HC.OffsetBefor)  // 在最前面
+                        {
+                            if (e.KeyCode == Keys.Back)  // 回删
+                            {
+                                if (vData.SelectInfo.StartItemNo == 0)
+                                    return;  // 第一个最前面则不处理
+                                else  // 不是第一个最前面
+                                {
+                                    vData.SelectInfo.StartItemNo = vData.SelectInfo.StartItemNo - 1;
+                                    vData.SelectInfo.StartItemOffset = vData.Items[vData.SelectInfo.StartItemNo].Length;
+                                    this.OnKeyDown(e);
+                                }
+                            }
+                            else
+                            if (e.KeyCode == Keys.Delete)  // 后删
+                            {
+                                vData.SelectInfo.StartItemOffset = HC.View.HC.OffsetAfter;
+                                //this.OnKeyDown(e);
+                            }
+                            else
+                                base.OnKeyDown(e);
+                        }
+                        else
+                        if (vData.SelectInfo.StartItemOffset == HC.View.HC.OffsetAfter)  // 在最后面
+                        {
+                            if (e.KeyCode == Keys.Back)
+                            {
+                                vData.SelectInfo.StartItemOffset = HC.View.HC.OffsetBefor;
+                                //this.OnKeyDown(e);
+                            }
+                            else
+                            if (e.KeyCode == Keys.Delete)
+                            {
+                                if (vData.SelectInfo.StartItemNo == vData.Items.Count - 1)
+                                    return;
+                                else
+                                {
+                                    vData.SelectInfo.StartItemNo = vData.SelectInfo.StartItemNo + 1;
+                                    vData.SelectInfo.StartItemOffset = 0;
+                                    this.OnKeyDown(e);
+                                }
+                            }
+                            else
+                                base.OnKeyDown(e);
+                        }
+                        else
+                            base.OnKeyDown(e);
+
                         return;
                     }
 
@@ -811,7 +891,7 @@ namespace EMRView
         public string PageBlankTip
         {
             get { return FPageBlankTip; }
-            set { FPageBlankTip = value; }
+            set { SetPageBlankTip(value); }
         }
 
         /// <summary> 当编辑只读状态的Data时触发 </summary>
@@ -826,6 +906,12 @@ namespace EMRView
         {
             get { return FOnSyncDeItem; }
             set { FOnSyncDeItem = value; }
+        }
+
+        public SyncDeFloatItemEventHandler OnSyncDeFloatItem
+        {
+            get { return FOnSyncDeFloatItem; }
+            set { FOnSyncDeFloatItem = value; }
         }
     }
 }

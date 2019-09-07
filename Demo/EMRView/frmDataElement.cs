@@ -24,7 +24,7 @@ namespace EMRView
     {
         private EventHandler FOnSelectChange, FOnInsertAsDeItem, FOnInsertAsDeGroup, FOnInsertAsDeEdit,
             FOnInsertAsDeCombobox, FOnInsertAsDeDateTime, FOnInsertAsDeRadioGroup,
-            FOnInsertAsDeCheckBox;
+            FOnInsertAsDeCheckBox, FOnInsertAsDeFloatBarCode;
 
         public frmDataElement()
         {
@@ -263,6 +263,15 @@ namespace EMRView
             }
         }
 
+        private void MniInsertAsFloatBarCode_Click(object sender, EventArgs e)
+        {
+            if (dgvDE.SelectedRows.Count > 0)
+            {
+                if (FOnInsertAsDeFloatBarCode != null)
+                    FOnInsertAsDeFloatBarCode(sender, e);
+            }
+        }
+
         private void DgvDE_SelectionChanged(object sender, EventArgs e)
         {
             if (FOnSelectChange != null)
@@ -291,6 +300,7 @@ namespace EMRView
             mniInsertAsDateTime.Visible = (FOnInsertAsDeDateTime != null) && (dgvDE.SelectedRows.Count > 0);
             mniInsertAsRadioGroup.Visible = (FOnInsertAsDeRadioGroup != null) && (dgvDE.SelectedRows.Count > 0);
             mniInsertAsCheckBox.Visible = (FOnInsertAsDeCheckBox != null) && (dgvDE.SelectedRows.Count > 0);
+            mniInsertAsFloatBarCode.Visible = (FOnInsertAsDeFloatBarCode != null) && (dgvDE.SelectedRows.Count > 0);
         }
 
         public EventHandler OnInsertAsDeItem
@@ -333,6 +343,12 @@ namespace EMRView
         {
             get { return FOnInsertAsDeCheckBox; }
             set { FOnInsertAsDeCheckBox = value; }
+        }
+
+        public EventHandler OnInsertAsDeFloatBarCode
+        {
+            get { return FOnInsertAsDeFloatBarCode; }
+            set { FOnInsertAsDeFloatBarCode = value; }
         }
     }
 }

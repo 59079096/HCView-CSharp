@@ -763,6 +763,20 @@ namespace EMRView
             return vRadioGroup;
         }
 
+        public DeFloatBarCodeItem InsertDeFloatBarCode(string aIndex, string aName)
+        {
+            if (aIndex == "")
+            {
+                MessageBox.Show("要插入的FloatBarCode索引不能为空！！");
+                return null;
+            }
+
+            DeFloatBarCodeItem vResult = new DeFloatBarCodeItem(FEmrView.ActiveSection.ActiveData);
+            vResult[DeProp.Index] = aIndex;
+            FEmrView.InsertFloatItem(vResult);
+            return vResult;
+        }
+
         /// <summary> 插入一个数据元(CheckBox形式) </summary>
         public DeCheckBox InsertDeCheckBox(string aIndex, string aName)
         {
@@ -868,9 +882,33 @@ namespace EMRView
             set { SetPrintToolVisible(value); }
         }
 
+        public bool EditToolVisible
+        {
+            get { return tlbEditTool.Visible; }
+            set { tlbEditTool.Visible = value; }
+        }
+
+        public bool HideTrace
+        {
+            get { return FEmrView.HideTrace; }
+            set { SetHideTrace(value); }
+        }
         private void pmView_Opening(object sender, CancelEventArgs e)
         {
             HCCustomData vActiveData = FEmrView.ActiveSection.ActiveData;
+            HCCustomFloatItem vActiveFloatItem = (vActiveData as HCSectionData).GetActiveFloatItem();
+            if (vActiveFloatItem != null)
+            {
+                for (int i = 0; i < pmView.Items.Count; i++)
+                    pmView.Items[i].Visible = false;
+
+                mniFloatItemProperty.Visible = true;
+                return;
+            }
+            else
+                mniFloatItemProperty.Visible = false;
+
+
             HCCustomItem vActiveItem = vActiveData.GetActiveItem();
 
             HCCustomData vTopData = null;
@@ -1360,12 +1398,21 @@ namespace EMRView
             FEmrView.TableApplyContentAlign(HCContentAlign.tcaBottomRight);
         }
 
+        private void MniFloatBarCode_Click(object sender, EventArgs e)
+        {
+            DeFloatBarCodeItem vFloatBarCodeItem = new DeFloatBarCodeItem(FEmrView.ActiveSection.ActiveData);
+            FEmrView.InsertFloatItem(vFloatBarCodeItem);
+        }
+
+        private void MniFloatItemProperty_Click(object sender, EventArgs e)
+        {
+            frmDeFloatItemProperty vfrmFloatItemProperty = new frmDeFloatItemProperty();
+            vfrmFloatItemProperty.SetHCView(FEmrView);
+        }
+
         private void mniHideTrace_Click(object sender, EventArgs e)
         {
-            if (FEmrView.HideTrace)
-                SetHideTrace(false);
-            else
-                SetHideTrace(true);
+            SetHideTrace(!FEmrView.HideTrace);
         }
 
         private void btnFile_DropDownOpened(object sender, EventArgs e)

@@ -22,23 +22,42 @@ namespace HC.View
 {
     public delegate POINT GetScreenCoordEventHandler(int x, int y);
 
+    public delegate HCCustomFloatItem FloatStyleItemEventHandler(HCSectionData aData, int aStyleNo);
+    public delegate void DataFloatItemEventHandler(HCSectionData aData, HCCustomFloatItem aItem);
+
     public class HCSectionData : HCViewData
     {
         private EventHandler FOnReadOnlySwitch;
         private GetScreenCoordEventHandler FOnGetScreenCoord;
+        private FloatStyleItemEventHandler FOnCreateFloatItemByStyle;
+        private DataFloatItemEventHandler FOnInsertFloatItem;
 
-        private List<HCCustomFloatItem> FFloatItems;  // THCItems支持Add时控制暂时不用
+        private HCFloatItems FFloatItems;  // THCItems支持Add时控制暂时不用
         int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex;
 
         private HCCustomFloatItem CreateFloatItemByStyle(int aStyleNo)
         {
             HCCustomFloatItem Result = null;
-            if (aStyleNo == (byte)HCShapeStyle.hssLine)
+
+            if (FOnCreateFloatItemByStyle != null)
+                Result = FOnCreateFloatItemByStyle(this, aStyleNo);
+
+            if (Result == null)
             {
-                Result = new HCFloatLineItem(this);
+                switch (aStyleNo)
+                {
+                    case HCStyle.FloatLine:
+                        Result = new HCFloatLineItem(this);
+                        break;
+
+                    case HCStyle.FloatBarCode:
+                        Result = new HCFloatBarCodeItem(this);
+                        break;
+
+                    default:
+                        throw new Exception("未找到类型 " + aStyleNo.ToString() + " 对应的创建FloatItem代码！");
+                }
             }
-            else
-                throw new Exception("未找到类型 " + aStyleNo.ToString() + " 对应的创建FloatItem代码！");
 
             return Result;
         }
@@ -62,12 +81,10 @@ namespace HC.View
             return Result;
         }
 
-        private HCCustomFloatItem GetActiveFloatItem()
+        private void DoInsertFloatItem(HCCustomFloatItem aItem)
         {
-            if (FFloatItemIndex < 0)
-                return null;
-            else
-                return FFloatItems[FFloatItemIndex];
+            if (FOnInsertFloatItem != null)
+                FOnInsertFloatItem(this, aItem);
         }
 
         protected override void SetReadOnly(bool value)
@@ -100,7 +117,11 @@ namespace HC.View
                     aStream.Read(vBuffer, 0, vBuffer.Length);
                     vStyleNo = BitConverter.ToInt32(vBuffer, 0);
 
-                    vFloatItem = CreateFloatItemByStyle(vStyleNo);
+                    if ((aFileVersion < 28) && (vStyleNo == (byte)HCShapeStyle.hssLine))
+                        vFloatItem = new HCFloatLineItem(this);
+                    else
+                        vFloatItem = CreateFloatItemByStyle(vStyleNo);
+
                     vFloatItem.LoadFromStream(aStream, aStyle, aFileVersion);
                     FFloatItems.Add(vFloatItem);
 
@@ -109,9 +130,15 @@ namespace HC.View
             }
         }
 
+        protected void UndoAction_FloatItemMirror(int aItemNo)
+        {
+
+        }
+
         public HCSectionData(HCStyle aStyle) : base(aStyle)
         {
-            FFloatItems = new List<HCCustomFloatItem>();
+            FFloatItems = new HCFloatItems();
+            FFloatItems.OnInsertItem += DoInsertFloatItem;
             FFloatItemIndex = -1;
             FMouseDownIndex = -1;
             FMouseMoveIndex = -1;
@@ -205,10 +232,15 @@ namespace HC.View
 
             if (FMouseDownIndex >= 0)
             {
+                Undo_New();
+                UndoAction_FloatItemMirror(FMouseDownIndex);
+
                 HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
                     e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
                 vResult = vFloatItem.MouseUp(vMouseArgs);
+                if (vResult)
+                    Style.UpdateInfoRePaint();
             }
 
             return vResult;
@@ -286,6 +318,44 @@ namespace HC.View
                 return FOnGetScreenCoord(x, y);
             else
                 return new POINT();
+        }
+
+        public void TraverseFloatItem(HCItemTraverse aTraverse)
+        {
+            if (aTraverse != null)
+            {
+                for (int i = 0; i < FFloatItems.Count; i++)
+                {
+                    if (aTraverse.Stop)
+                        return;
+
+                    aTraverse.Process(this, i, aTraverse.Tag, ref aTraverse.Stop);
+                }
+            }
+        }
+
+        public override int GetActiveItemNo()
+        {
+            if (FFloatItemIndex < 0)
+                return base.GetActiveItemNo();
+            else
+                return -1;
+        }
+
+        public override HCCustomItem GetActiveItem()
+        {
+            if (FFloatItemIndex < 0)
+                return base.GetActiveItem();
+            else
+                return null;
+        }
+
+        public HCCustomFloatItem GetActiveFloatItem()
+        {
+            if (FFloatItemIndex < 0)
+                return null;
+            else
+                return FFloatItems[FFloatItemIndex];
         }
 
         /// <summary> 插入浮动Item </summary>
@@ -386,7 +456,7 @@ namespace HC.View
             get { return GetActiveFloatItem(); }
         }
 
-        public List<HCCustomFloatItem> FloatItems
+        public HCFloatItems FloatItems
         {
             get { return FFloatItems; }
         }
@@ -401,6 +471,18 @@ namespace HC.View
         {
             get { return FOnGetScreenCoord; }
             set { FOnGetScreenCoord = value; }
+        }
+
+        public FloatStyleItemEventHandler OnCreateFloatItemByStyle
+        {
+            get { return FOnCreateFloatItemByStyle; }
+            set { FOnCreateFloatItemByStyle = value; }
+        }
+
+        public DataFloatItemEventHandler OnInsertFloatItem
+        {
+            get { return FOnInsertFloatItem; }
+            set { FOnInsertFloatItem = value; }
         }
     }
 

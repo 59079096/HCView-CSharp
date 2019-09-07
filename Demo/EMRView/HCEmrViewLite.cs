@@ -61,5 +61,17 @@ namespace EMRView
                     return null;
             }
         }
+
+        public static HCCustomFloatItem CreateEmrFloatStyleItem(HCSectionData aData, int aStyleNo)
+        {
+            switch (aStyleNo)
+            {
+                case HCStyle.FloatBarCode:
+                    return new DeFloatBarCodeItem(aData);
+
+                default:
+                    return null;
+            }
+        }
     }
 }

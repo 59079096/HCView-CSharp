@@ -500,7 +500,7 @@ namespace HC.View
         {
             base.DoLoadFromStream(aStream, aStyle, aFileVersion);
 
-            if (aFileVersion > 22)
+            if (CanEdit() && (aFileVersion > 22))
             {
                 ushort vAnnCount = 0;
                 byte[] vBuffer = BitConverter.GetBytes(vAnnCount);

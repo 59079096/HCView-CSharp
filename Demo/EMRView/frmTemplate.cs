@@ -168,6 +168,16 @@ namespace EMRView
             InsertDataElementAs(vEvent);
         }
 
+        private void DoDEInsertAsFloatBarCode(object sender, EventArgs e)
+        {
+            InsertAsProc vEvent = delegate (frmRecord frmRecord)
+            {
+                frmRecord.InsertDeFloatBarCode(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+            };
+
+            InsertDataElementAs(vEvent);
+        }
+
         private void frm_Template_Load(object sender, EventArgs e)
         {
             ShowTemplateDeSet();  // 获取并显示模板数据集信息
@@ -194,6 +204,7 @@ namespace EMRView
             frmDataElement.OnInsertAsDeDateTime = DoDEInsertAsDeDateTime;
             frmDataElement.OnInsertAsDeRadioGroup = DoDEInsertAsDeRadioGroup;
             frmDataElement.OnInsertAsDeCheckBox = DoDEInsertAsDeCheckBox;
+            frmDataElement.OnInsertAsDeFloatBarCode = DoDEInsertAsFloatBarCode;
             frmDataElement.Show();
         }
 
