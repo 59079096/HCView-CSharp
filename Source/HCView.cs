@@ -1951,7 +1951,7 @@ namespace HC.View
                         }
 
                         vBuffer = System.Text.Encoding.Unicode.GetBytes(this.ActiveSectionTopLevelData().SaveSelectToText());
-                        IntPtr vMem = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, vBuffer.Length + 1);
+                        IntPtr vMem = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, vBuffer.Length + 2);
                         try
                         {
                             if (vMem == IntPtr.Zero)
@@ -1978,7 +1978,7 @@ namespace HC.View
                         {
                             User.EmptyClipboard();
                             User.SetClipboardData(FHCExtFormat.Id, vMemExt);
-                            User.SetClipboardData(User.CF_TEXT, vMem);  // 文本格式
+                            User.SetClipboardData(User.CF_UNICODETEXT, vMem);  // 文本格式
                         }
                         finally
                         {

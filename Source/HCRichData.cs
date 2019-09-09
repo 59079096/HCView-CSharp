@@ -4106,6 +4106,7 @@ namespace HC.View
                         SelectInfo.StartItemNo = vCurItemNo + 1;
                         SelectInfo.StartItemOffset = 0;
                         vCurItem = GetActiveItem();
+                        CaretDrawItemNo = Items[SelectInfo.StartItemNo].FirstDItemNo;
 
                         KeyDown(e);
                         return;
