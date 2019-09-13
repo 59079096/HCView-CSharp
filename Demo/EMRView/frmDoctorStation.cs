@@ -41,6 +41,7 @@ namespace EMRView
             FUserInfo = new UserInfo();
             FUserInfo.ID = "jt";
             FUserInfo.Name = "张医";
+            EMR.ServerParam = new ServerParam();
 
             LoadPatientList();
         }

@@ -21,6 +21,7 @@ namespace EMRView
 {
     public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, HCCustomItem aItem);
     public delegate void SyncDeFloatItemEventHandler(object sender, HCSectionData aData, HCCustomFloatItem aItem);
+    public delegate bool HCCopyPasteStreamEventHandler(Stream aStream);
     public class HCEmrView : HCEmrViewIH
     {
         private bool FDesignMode;
@@ -32,6 +33,8 @@ namespace EMRView
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
         private SyncDeFloatItemEventHandler FOnSyncDeFloatItem;
+        private HCCopyPasteEventHandler FOnCopyRequest, FOnPasteRequest;
+        private HCCopyPasteStreamEventHandler FOnCopyAsStream, FOnPasteFromStream;
 
         private void SetPageBlankTip(string value)
         {
@@ -589,6 +592,42 @@ namespace EMRView
                 return base.DoInsertText(aText);
         }
 
+        /// <summary> 复制前，便于控制是否允许复制 </summary>
+        protected override bool DoCopyRequest(int aFormat)
+        {
+            if (FOnCopyRequest != null)
+                return FOnCopyRequest(aFormat);
+            else
+                return base.DoCopyRequest(aFormat);
+        }
+
+        /// <summary> 粘贴前，便于控制是否允许粘贴 </summary>
+        protected override bool DoPasteRequest(int aFormat)
+        {
+            if (FOnPasteRequest != null)
+                return FOnPasteRequest(aFormat);
+            else
+                return base.DoPasteRequest(aFormat);
+        }
+
+        /// <summary> 复制前，便于订制特征数据如内容来源 </summary>
+        protected override void DoCopyAsStream(Stream aStream)
+        {
+            if (FOnCopyAsStream != null)
+                FOnCopyAsStream(aStream);
+            else
+                base.DoCopyAsStream(aStream);
+        }
+
+        /// <summary> 复制前，便于订制特征数据如内容来源 </summary>
+        protected override bool DoPasteFormatStream(Stream aStream)
+        {
+            if (FOnPasteFromStream != null)
+                return FOnPasteFromStream(aStream);
+            else
+                return base.DoPasteFormatStream(aStream);
+        }
+
         #region 子方法，绘制当前页以下空白的提示
         private void DrawBlankTip_(int aLeft, int aTop, int aRight, int aDataDrawBottom, HCCanvas aCanvas)
         {
@@ -899,6 +938,32 @@ namespace EMRView
         {
             get { return FOnCanNotEdit; }
             set { FOnCanNotEdit = value; }
+        }
+
+        /// <summary> 复制内容前触发 </summary>
+        public HCCopyPasteEventHandler OnCopyRequest
+        {
+            get { return FOnCopyRequest; }
+            set { FOnCopyRequest = value; }
+        }
+
+        /// <summary> 粘贴内容前触发 </summary>
+        public HCCopyPasteEventHandler OnPasteRequest
+        {
+            get { return FOnPasteRequest; }
+            set { FOnPasteRequest = value; }
+        }
+
+        public HCCopyPasteStreamEventHandler OnCopyAsStream
+        {
+            get { return FOnCopyAsStream; }
+            set { FOnCopyAsStream = value; }
+        }
+
+        public HCCopyPasteStreamEventHandler OnPasteFromStream
+        {
+            get { return FOnPasteFromStream; }
+            set { FOnPasteFromStream = value; }
         }
 
         /// <summary> 数据元需要同步内容时触发 </summary>

@@ -118,6 +118,13 @@ namespace HC.View
         public const ushort
             HC_FileVersionInt = 29;
 
+        private static DataFormats.Format hcExtFormat = null;
+        public static DataFormats.Format HCExtFormat
+        {
+            get { return hcExtFormat; }
+            set { hcExtFormat = value; }
+        }
+
         public static ushort SwapBytes(ushort aValue)
         {
             return (ushort)((aValue >> 8) | ((ushort)(aValue << 8)));

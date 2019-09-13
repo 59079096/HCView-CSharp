@@ -876,6 +876,33 @@ namespace EMRView
             set { FOnDeItemPopup = value; }
         }
 
+
+        /// <summary> 复制内容前触发 </summary>
+        public HCCopyPasteEventHandler OnCopyRequest
+        {
+            get { return FEmrView.OnCopyRequest; }
+            set { FEmrView.OnCopyRequest = value; }
+        }
+
+        /// <summary> 粘贴内容前触发 </summary>
+        public HCCopyPasteEventHandler OnPasteRequest
+        {
+            get { return FEmrView.OnPasteRequest; }
+            set { FEmrView.OnPasteRequest = value; }
+        }
+
+        public HCCopyPasteStreamEventHandler OnCopyAsStream
+        {
+            get { return FEmrView.OnCopyAsStream; }
+            set { FEmrView.OnCopyAsStream = value; }
+        }
+
+        public HCCopyPasteStreamEventHandler OnPasteFromStream
+        {
+            get { return FEmrView.OnPasteFromStream; }
+            set { FEmrView.OnPasteFromStream = value; }
+        }
+
         public bool PrintToolVisible
         {
             get { return tlbPrint.Visible; }

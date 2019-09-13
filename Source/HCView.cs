@@ -25,6 +25,7 @@ namespace HC.View
     public delegate void LoadSectionProcHandler(ushort AFileVersion);
 
     public delegate void PaintEventHandler(HCCanvas aCanvas, PaintInfo aPaintInfo);
+    public delegate bool HCCopyPasteEventHandler(int aFormat);
 
     // HCView必需是第一个类
     public class HCView : UserControl
@@ -51,7 +52,6 @@ namespace HC.View
 
         private HCViewModel FViewModel;  // 界面显示模式：页面、Web
         private HCCaret FCaret;
-        private DataFormats.Format FHCExtFormat;
         private EventHandler FOnCaretChange, FOnVerScroll, FOnHorScroll, FOnSectionCreateItem, FOnSectionReadOnlySwitch,
             FOnSectionCurParaNoChange, FOnSectionActivePageChange;
         private StyleItemEventHandler FOnSectionCreateStyleItem;
@@ -971,8 +971,26 @@ namespace HC.View
             return ActiveSection.InsertText(aText);
         }
 
+        /// <summary> 复制前，便于控制是否允许复制 </summary>
+        protected virtual bool DoCopyRequest(int aFormat)
+        {
+            return true;
+        }
+
+        /// <summary> 粘贴前，便于控制是否允许粘贴 </summary>
+        protected virtual bool DoPasteRequest(int aFormat)
+        {
+            return true;
+        }
+
         /// <summary> 复制前，便于订制特征数据如内容来源 </summary>
-        protected virtual void DoCopyDataBefor(Stream AStream) { }
+        protected virtual void DoCopyAsStream(Stream aStream) { }
+
+        /// <summary> 粘贴前，便于确认订制特征数据如内容来源 </summary>
+        protected virtual bool DoPasteFormatStream(Stream aStream)
+        {
+            return true;
+        }
 
         /// <summary> 视图绘制开始 </summary>
         protected virtual void DoPaintViewBefor(HCCanvas aCanvas, PaintInfo aPaintInfo)
@@ -987,9 +1005,6 @@ namespace HC.View
             if (FOnPaintViewAfter != null)
                 FOnPaintViewAfter(aCanvas, aPaintInfo);
         }
-
-        /// <summary> 粘贴前，便于确认订制特征数据如内容来源 </summary>
-        protected virtual void DoPasteDataBefor(Stream AStream, ushort AVersion) { }
 
         /// <summary> 保存文档前触发事件，便于订制特征数据 </summary>
         protected virtual void DoSaveStreamBefor(Stream AStream) { }
@@ -1364,7 +1379,7 @@ namespace HC.View
             HCUnitConversion.Initialization();
             //this.DoubleBuffered = true;
             Create();  // 便于子类在构造函数前执行
-            FHCExtFormat = DataFormats.GetFormat(HC.HC_EXT);
+            HC.HCExtFormat = DataFormats.GetFormat(HC.HC_EXT);
             SetStyle(ControlStyles.Selectable, true);  // 可接收焦点
             this.BackColor = Color.FromArgb(82, 89, 107);
 
@@ -1914,7 +1929,7 @@ namespace HC.View
                     try
                     {
                         HC._SaveFileFormatAndVersion(vStream);  // 保存文件格式和版本
-                        DoCopyDataBefor(vStream);  // 通知保存事件
+                        DoCopyAsStream(vStream);  // 通知保存事件
 
                         HashSet<SectionArea> vSaveParts = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
                         FStyle.SaveToStream(vStream);
@@ -1926,41 +1941,18 @@ namespace HC.View
                         //Clipboard.SetDataObject(vDataObj);
 
                         byte[] vBuffer = new byte[0];
-                        IntPtr vMemExt = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, (int)vStream.Length);
+                        IntPtr vMem = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, (int)vStream.Length);
                         try
                         {
-                            if (vMemExt == IntPtr.Zero)
+                            if (vMem == IntPtr.Zero)
                                 throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
-                            IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMemExt);
+                            IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMem);
                             try
                             {
                                 vStream.Position = 0;
                                 vBuffer = vStream.ToArray();
                                 System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
                                 //Kernel.CopyMemory(vPtr, vStream.ToArray(), (int)vStream.Length);
-                            }
-                            finally
-                            {
-                                Kernel.GlobalUnlock(vMemExt);
-                            }
-                        }
-                        catch
-                        {
-                            Kernel.GlobalFree(vMemExt);
-                            return;
-                        }
-
-                        vBuffer = System.Text.Encoding.Unicode.GetBytes(this.ActiveSectionTopLevelData().SaveSelectToText());
-                        IntPtr vMem = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, vBuffer.Length + 2);
-                        try
-                        {
-                            if (vMem == IntPtr.Zero)
-                                throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
-
-                            IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMem);
-                            try
-                            {
-                                System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
                             }
                             finally
                             {
@@ -1973,12 +1965,39 @@ namespace HC.View
                             return;
                         }
 
+                        vBuffer = System.Text.Encoding.Unicode.GetBytes(this.ActiveSectionTopLevelData().SaveSelectToText());
+                        IntPtr vMemText = (IntPtr)Kernel.GlobalAlloc(Kernel.GMEM_MOVEABLE | Kernel.GMEM_DDESHARE, vBuffer.Length + 2);
+                        try
+                        {
+                            if (vMemText == IntPtr.Zero)
+                                throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
+
+                            IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMemText);
+                            try
+                            {
+                                System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
+                            }
+                            finally
+                            {
+                                Kernel.GlobalUnlock(vMemText);
+                            }
+                        }
+                        catch
+                        {
+                            Kernel.GlobalFree(vMemText);
+                            return;
+                        }
+
                         User.OpenClipboard(IntPtr.Zero);
                         try
                         {
                             User.EmptyClipboard();
-                            User.SetClipboardData(FHCExtFormat.Id, vMemExt);
-                            User.SetClipboardData(User.CF_UNICODETEXT, vMem);  // 文本格式
+
+                            if (DoCopyRequest(HC.HCExtFormat.Id))
+                                User.SetClipboardData(HC.HCExtFormat.Id, vMem);  // HC格式
+
+                            if (DoCopyRequest(User.CF_UNICODETEXT))
+                                User.SetClipboardData(User.CF_UNICODETEXT, vMemText);  // 文本格式
                         }
                         finally
                         {
@@ -2001,7 +2020,8 @@ namespace HC.View
         /// <summary> 复制选中内容为文本 </summary>
         public void CopyAsText()
         {
-            Clipboard.SetText(this.ActiveSectionTopLevelData().SaveSelectToText());  // 文本格式
+            if (DoCopyRequest(User.CF_UNICODETEXT))
+                Clipboard.SetText(this.ActiveSectionTopLevelData().SaveSelectToText());  // 文本格式
         }
 
         /// <summary> 粘贴剪贴板中的内容 </summary>
@@ -2010,7 +2030,7 @@ namespace HC.View
             IDataObject vIData = Clipboard.GetDataObject();
             //string[] vFormats = vIData.GetFormats();
 
-            if (vIData.GetDataPresent(HC.HC_EXT))
+            if (vIData.GetDataPresent(HC.HC_EXT) && DoPasteRequest(HC.HCExtFormat.Id))
             {
                 MemoryStream vStream = (MemoryStream)vIData.GetData(HC.HC_EXT);
                 try
@@ -2021,7 +2041,9 @@ namespace HC.View
 
                     vStream.Position = 0;
                     HC._LoadFileFormatAndVersion(vStream, ref vFileFormat, ref vFileVersion, ref vLang);  // 文件格式和版本
-                    DoPasteDataBefor(vStream, vFileVersion);
+                    if (!DoPasteFormatStream(vStream))
+                        return;
+
                     HCStyle vStyle = new HCStyle();
                     try
                     {
@@ -2056,10 +2078,13 @@ namespace HC.View
                 }
             }
             else
-            if (vIData.GetDataPresent(DataFormats.Text))
+            if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                 InsertText(Clipboard.GetText());
             else
-            if (vIData.GetDataPresent(DataFormats.Bitmap))
+            if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_UNICODETEXT))
+                InsertText(Clipboard.GetText());
+            else
+            if (vIData.GetDataPresent(DataFormats.Bitmap) && DoPasteRequest(User.CF_BITMAP))
             {
                 Image vImage = (Image)vIData.GetData(typeof(Bitmap));
 

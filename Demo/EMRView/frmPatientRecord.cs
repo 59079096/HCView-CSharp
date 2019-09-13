@@ -19,6 +19,7 @@ using System.IO;
 using HC.View;
 using System.Xml;
 using System.Data.SqlClient;
+using HC.Win32;
 
 namespace EMRView
 {
@@ -525,6 +526,53 @@ namespace EMRView
             }
         }
 
+        private bool DoRecordCopyRequest(int aFormat)
+        {
+            if (aFormat == HC.View.HC.HCExtFormat.Id)  // 复制为HC格式
+                return true;
+            else  // 不是复制为HC格式
+            if (EMR.ServerParam.PasteOutSide)  // 允许复制到外面
+                return true;
+
+            return false;
+        }
+
+        private bool DoRecordPasteRequest(int aFormat)
+        {
+            if (aFormat == HC.View.HC.HCExtFormat.Id)  // 粘贴HC格式
+                return true;  // 允许，具体是来源于哪个患者的数据在DoPasteDataBefor中判断
+            else
+            if (EMR.ServerParam.PasteDifferent)  // 允许不同患者之间粘贴数据
+                return true;
+
+            return false;
+        }
+
+        private bool DoRecordCopyAsStream(Stream aStream)
+        {
+            if (!EMR.ServerParam.PasteDifferent)  // 不允许不同患者之间粘贴数据
+                HC.View.HC.HCSaveTextToStream(aStream, PatientInfo.PatID);  // 写入患者PatID
+
+            return true;
+        }
+
+        private bool DoRecordPasteFromStream(Stream aStream)
+        {
+            if (!EMR.ServerParam.PasteDifferent)  // 不允许不同患者之间粘贴数据
+            {
+                string vPatID = "";
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vPatID, HC.View.HC.HC_FileVersionInt);
+                if (vPatID == PatientInfo.PatID)
+                    return true;
+                else
+                    MessageBox.Show("您要粘贴的内容来源于其他患者，当前系统禁止粘贴不同患者之间的病历！");
+            }
+            else
+                return true;
+
+            return false;
+        }
+
         private frmRecord GetActiveRecord()
         {
             if (tabRecord.SelectedIndex >= 0)
@@ -588,6 +636,12 @@ namespace EMRView
             aFrmRecord.OnReadOnlySwitch = DoRecordReadOnlySwitch;
             aFrmRecord.OnInsertDeItem = DoInsertDeItem;
             aFrmRecord.OnDeItemPopup = DoDeItemPopup;
+
+            aFrmRecord.OnCopyRequest = DoRecordCopyRequest;
+            aFrmRecord.OnPasteRequest = DoRecordPasteRequest;
+            aFrmRecord.OnCopyAsStream = DoRecordCopyAsStream;
+            aFrmRecord.OnPasteFromStream = DoRecordPasteFromStream;
+
             aFrmRecord.Tag = aRecordInfo;
 
             aPage.Controls.Add(aFrmRecord);

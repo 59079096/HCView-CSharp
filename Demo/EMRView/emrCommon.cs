@@ -79,6 +79,20 @@ namespace EMRView
                 }
             }
         }
+
+        private static ServerParam serverParam = null;
+        public static ServerParam ServerParam
+        {
+            get { return serverParam; }
+            set { serverParam = value; }
+        }
+    }
+
+    public class ServerParam : Object
+    {
+        public string Hospital = "";
+        public bool PasteDifferent = true;  // 是否允许不同患者之间粘贴复制的内容
+        public bool PasteOutSide = true;  // 是否允许病历内容粘贴到其他程序中
     }
 
     public class CustomUserInfo : Object
