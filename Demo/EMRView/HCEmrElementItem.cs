@@ -7,14 +7,13 @@
 { 交流。                                                }
 {                                                       }
 {*******************************************************/
+using HC.View;
+using HC.Win32;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using HC.View;
-using System.IO;
 using System.Drawing;
-using HC.Win32;
+using System.IO;
+using System.Linq;
 using System.Xml;
 
 namespace EMRView

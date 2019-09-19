@@ -170,7 +170,10 @@ namespace EMRView
         public const string Sql_GetDomainItemContent = "SELECT Content FROM Comm_DomainContent WHERE DItemID = {0}";
         public const string Sql_GetDataSetRecord = "SELECT rec.ID, rec.Name, cnt.content FROM Inch_RecordInfo rec LEFT JOIN Comm_DataElementSet cdes ON rec.desID = cdes.id LEFT JOIN Inch_RecordContent cnt ON rec.ID = cnt.rid WHERE PatID = {0} AND VisitID = {1} AND cdes.pid = {2}";
         public const string Sql_GetPatientHisInchInfo = "SELECT PI.Patient_ID AS PatID, PI.Visit_ID AS VisitID, PI.INP_NO AS InpNo, PI.Name, SX.Name AS Sex, PI.AgeYear AS Age, BedNo, PI.IN_Dept_DT as InDate, Dept.ID AS DeptID, Dept.Name AS DeptName FROM Inch_Patient PI LEFT JOIN Comm_Dept Dept ON PI.DeptID = Dept.ID LEFT JOIN Comm_Dic_Sex SX ON PI.SexCode = SX.Code WHERE PI.InflagID = 0 AND PI.Patient_ID = '{0}' AND PI.Visit_ID <> {1}";
-        
+        public const string Sql_GetDeScript = "SELECT ID, CSharp FROM Comm_DataElementScript WHERE deid = {0}";
+        public const string Sql_SaveDeScript = "INSERT INTO Comm_DataElementScript deid, CSharp VALUES ({0}, '{1}')";
+        public const string Sql_UpdateDeScript = "UPDATE Comm_DataElementScript SET CSharp = '{0}' WHERE deid = {1}";
+
         #region 数据库操作
         /// <summary>
         /// 通过SQL查询数据
@@ -361,6 +364,33 @@ namespace EMRView
         public DataTable GetPatientHisInchInfo(string aPatientID, int aVisitID)
         {
             return FDB.GetData(string.Format(Sql_GetPatientHisInchInfo, aPatientID, aVisitID));
+        }
+
+        public bool HasDeScript(int deid)
+        {
+            DataTable dt = FDB.GetData(string.Format(Sql_GetDeScript, deid));
+            return dt.Rows.Count == 1;
+        }
+
+        public string GetDeScript(int deid)
+        {
+            DataTable dt = FDB.GetData(string.Format(Sql_GetDeScript, deid));
+            if (dt.Rows.Count > 0)
+                return dt.Rows[0]["CSharp"].ToString();
+            else
+                return "";
+        }
+
+        public bool SaveDeScript(int deid, string script)
+        {
+            string sql = string.Format(Sql_SaveDeScript, deid, script);
+            return FDB.ExecSql(sql);
+        }
+
+        public bool UpdateDeScript(int deid, string script)
+        {
+            string sql = string.Format(Sql_UpdateDeScript, script, deid);
+            return FDB.ExecSql(sql);
         }
 
         public bool GetInchRecordSignature(int aRecordID)

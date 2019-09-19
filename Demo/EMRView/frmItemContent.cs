@@ -7,18 +7,14 @@
 { 交流。                                                }
 {                                                       }
 {*******************************************************/
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using HC.View;
-using System.IO;
-using System.Data.SqlClient;
 using HC.Win32;
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
 
 namespace EMRView
 {

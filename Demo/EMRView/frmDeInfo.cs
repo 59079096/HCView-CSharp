@@ -1,22 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿/*******************************************************}
+{                                                       }
+{         基于HCView的电子病历程序  作者：荆通          }
+{                                                       }
+{ 此代码仅做学习交流使用，不可用于商业目的，由此引发的  }
+{ 后果请使用者承担，加入QQ群 649023932 来获取更多的技术 }
+{ 交流。                                                }
+{                                                       }
+{*******************************************************/
+using System;
 using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace EMRView
 {
     public partial class frmDeInfo : Form
     {
+        private frmScriptIDE frmScriptIDE;
         private int FDeID;
 
         public frmDeInfo()
         {
             InitializeComponent();
             this.ShowInTaskbar = false;
+            frmScriptIDE = new frmScriptIDE();
+            frmScriptIDE.TopLevel = false;
+            frmScriptIDE.FormBorderStyle = FormBorderStyle.None;
+            frmScriptIDE.Dock = DockStyle.Fill;
+            frmScriptIDE.OnSave = DoSaveScript;
+            frmScriptIDE.OnCompile = DoCompileScript;
+            frmScriptIDE.Show();
+            pnlScript.Controls.Add(frmScriptIDE);
         }
 
         #region 子方法
@@ -25,25 +38,25 @@ namespace EMRView
             if (aFrmtp == DeFrmtp.Radio)
                 return "单选";
             else
-                if (aFrmtp == DeFrmtp.Multiselect)
-                    return "多选";
-                else
-                    if (aFrmtp == DeFrmtp.Number)
-                        return "数值";
-                    else
-                        if (aFrmtp == DeFrmtp.String)
-                            return "文本";
-                        else
-                            if (aFrmtp == DeFrmtp.Date)
-                                return "日期";
-                            else
-                                if (aFrmtp == DeFrmtp.Time)
-                                    return "时间";
-                                else
-                                    if (aFrmtp == DeFrmtp.DateTime)
-                                        return "日期时间";
-                                    else
-                                        return "";
+            if (aFrmtp == DeFrmtp.Multiselect)
+                return "多选";
+            else
+            if (aFrmtp == DeFrmtp.Number)
+                return "数值";
+            else
+            if (aFrmtp == DeFrmtp.String)
+                return "文本";
+            else
+            if (aFrmtp == DeFrmtp.Date)
+                return "日期";
+            else
+            if (aFrmtp == DeFrmtp.Time)
+                return "时间";
+            else
+            if (aFrmtp == DeFrmtp.DateTime)
+                return "日期时间";
+            else
+                return "";
         }
 
         private string GetFrmtp(string aText)
@@ -51,31 +64,32 @@ namespace EMRView
             if (aText == "单选")
                 return DeFrmtp.Radio;
             else
-                if (aText == "多选")
-                    return DeFrmtp.Multiselect;
-                else
-                    if (aText == "数值")
-                        return DeFrmtp.Number;
-                    else
-                        if (aText == "文本")
-                            return DeFrmtp.String;
-                        else
-                            if (aText == "日期")
-                                return DeFrmtp.Date;
-                            else
-                                if (aText == "时间")
-                                    return DeFrmtp.Time;
-                                else
-                                    if (aText == "日期时间")
-                                        return DeFrmtp.DateTime;
-                                    else
-                                        return "";
+            if (aText == "多选")
+                return DeFrmtp.Multiselect;
+            else
+            if (aText == "数值")
+                return DeFrmtp.Number;
+            else
+            if (aText == "文本")
+                return DeFrmtp.String;
+            else
+            if (aText == "日期")
+                return DeFrmtp.Date;
+            else
+            if (aText == "时间")
+                return DeFrmtp.Time;
+            else
+            if (aText == "日期时间")
+                return DeFrmtp.DateTime;
+            else
+                return "";
         }
         #endregion
 
         public void SetDeID(int aDeID)
         {
             FDeID = aDeID;
+            frmScriptIDE.ClearScript();
 
             if (FDeID > 0)  // 修改
             {
@@ -94,6 +108,8 @@ namespace EMRView
                     cbbFrmtp.SelectedIndex = cbbFrmtp.Items.IndexOf(GetFrmtpText(dt.Rows[0]["frmtp"].ToString()));
                     tbxDomainID.Text = dt.Rows[0]["domainid"].ToString();
                 }
+
+                frmScriptIDE.Script = emrMSDB.DB.GetDeScript(int.Parse(FDeID.ToString()));
             }
             else
                 this.Text = "新建数据元";
@@ -134,6 +150,33 @@ namespace EMRView
         {
             btnSave_Click(sender, e);
             this.DialogResult = System.Windows.Forms.DialogResult.OK;
+        }
+
+        private void DoSaveScript(object sender, EventArgs e)
+        {
+            if (emrMSDB.DB.HasDeScript(FDeID))  // 修改
+            {
+                if (emrMSDB.DB.UpdateDeScript(FDeID, frmScriptIDE.Script))
+                    MessageBox.Show("保存数据元脚本信息成功！");
+            }
+            else
+            {
+                if (emrMSDB.DB.SaveDeScript(FDeID, frmScriptIDE.Script))
+                    MessageBox.Show("保存数据元脚本信息成功！");
+            }
+        }
+
+        private void DoCompileScript(object sender, EventArgs e)
+        {
+            frmScriptIDE.ClearDebugInfo();
+            emrCompiler compiler = new emrCompiler();
+            if (!compiler.CompileScript(frmScriptIDE.Script))
+            {
+                frmScriptIDE.AddError(compiler.ErrorMessage);
+                frmScriptIDE.SetDebugCaption("Message：错误");
+            }
+            else
+                frmScriptIDE.SetDebugCaption("Message：编译通过");
         }
     }
 }

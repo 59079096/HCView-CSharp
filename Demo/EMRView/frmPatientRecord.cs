@@ -25,6 +25,11 @@ namespace EMRView
 {
     public partial class frmPatientRecord : Form
     {
+        private ServerInfo FServerInfo = new ServerInfo();
+        private DataTable FDataElementSetMacro;
+        private List<StructDoc> FStructDocs = new List<StructDoc>();
+        private emrCompiler FCompiler = new emrCompiler();
+
         private void frmPatientRecord_Load(object sender, EventArgs e)
         {
             this.Text = PatientInfo.BedNo + "床，" + PatientInfo.Name;
@@ -103,15 +108,24 @@ namespace EMRView
                 tabRecord.SelectedTab = vPage;
             }
         }
-
-        private ServerInfo FServerInfo = new ServerInfo();
-        private DataTable FDataElementSetMacro;
-        private List<StructDoc> FStructDocs = new List<StructDoc>();
                     
         private void DoInsertDeItem(HCEmrView aEmrView, HCSection aSection, HCCustomData aData, HCCustomItem aItem)
         {
             if (aItem is DeCombobox)
                 (aItem as DeCombobox).OnPopupItem = DoRecordDeComboboxGetItem;
+        }
+
+        private void DoSetDeItemText(object sender, DeItem deItem, ref string text, ref bool cancel)
+        {
+            // 获取和此数据元相关的脚本
+            string script = emrMSDB.DB.GetDeScript(int.Parse(deItem[DeProp.Index]));
+
+            if (script == "")
+                return;
+            
+            if (!FCompiler.RunScript(script, deItem, PatientInfo, ((sender as frmRecord).Tag as RecordInfo), ref text, ref cancel))
+                MessageBox.Show("当前数据元有控制脚本，但运行错误，原因：\r\n"
+                    + FCompiler.ErrorMessage);
         }
 
         private bool DoDeItemPopup(DeItem aDeItem)
@@ -635,6 +649,7 @@ namespace EMRView
             aFrmRecord.OnChangedSwitch = DoRecordChangedSwitch;
             aFrmRecord.OnReadOnlySwitch = DoRecordReadOnlySwitch;
             aFrmRecord.OnInsertDeItem = DoInsertDeItem;
+            aFrmRecord.OnSetDeItemText = DoSetDeItemText;
             aFrmRecord.OnDeItemPopup = DoDeItemPopup;
 
             aFrmRecord.OnCopyRequest = DoRecordCopyRequest;

@@ -563,6 +563,8 @@ namespace HC.View
 
         protected void DoPenChanged(object sender, EventArgs e)
         {
+            FBrush.Style = HCBrushStyle.bsClear;  // 防止虚线时干扰
+
             GDI.SelectObject(FHandle, Pen.Handle);
 
             switch (FPen.Mode)

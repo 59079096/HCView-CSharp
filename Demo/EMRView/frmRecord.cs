@@ -331,10 +331,10 @@ namespace EMRView
                 FEmrView.OnSectionPaintPaperBefor = DoPaintPaperBefor;
                 FEmrView.ContextMenuStrip = this.pmView;
                 //
-                this.pnlView.Controls.Add(FEmrView);
-                //FEmrView.Parent = this;
+                this.Controls.Add(FEmrView);
                 FEmrView.Dock = DockStyle.Fill;
                 FEmrView.Show();
+                FEmrView.BringToFront();
             }
         }
 

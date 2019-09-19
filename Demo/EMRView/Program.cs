@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace EMRView
@@ -23,6 +24,7 @@ namespace EMRView
         static void Main()
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandleException);  // 全局异常捕获
+            //AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);  // 动态指定程序集目录
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new frmDoctorStation());
@@ -32,5 +34,18 @@ namespace EMRView
         {
             MessageBox.Show(e.ExceptionObject.ToString());
         }
+
+        //private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        //{
+        //    string vPath = "";
+        //    string vAssembly = args.Name.Substring(0, args.Name.IndexOf(","));
+        //    if (vAssembly == "ICSharpCode.AvalonEdit")
+        //        vPath = AppDomain.CurrentDomain.BaseDirectory + "SharpCode\\ICSharpCode.AvalonEdit.dll";
+        //    else
+        //    if (vAssembly == "ICSharpCode.CodeCompletion")
+        //        vPath = AppDomain.CurrentDomain.BaseDirectory + "SharpCode\\ICSharpCode.CodeCompletion.dll";
+
+        //    return string.IsNullOrWhiteSpace(vPath) ? null : Assembly.LoadFrom(vPath);
+        //}
     }
 }
