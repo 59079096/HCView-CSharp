@@ -2899,9 +2899,11 @@ namespace HC.View
 
                 vPrinter.PrintPage += (sender, e) =>
                 {
+                    //e.Graphics.PageUnit = GraphicsUnit.Point;
+
                     if (vPrintCanvas.Graphics == null)
                         vPrintCanvas.Graphics = e.Graphics;
-            
+
                     // 根据页码获取起始节和结束节
                     vSectionIndex = GetSectionPageIndexByPageIndex(vPrintPageIndex, ref vFirstPageIndex);
                     if (vPaintInfo.SectionIndex != vSectionIndex)
@@ -2928,7 +2930,7 @@ namespace HC.View
 
                         vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
                         vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
-                        
+
                         vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
                         vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
                     }
@@ -2938,7 +2940,7 @@ namespace HC.View
                     {
                         vPaintInfo.PageIndex = aPages[i];
 
-                        FSections[vSectionIndex].PaintPaper(vFirstPageIndex, 
+                        FSections[vSectionIndex].PaintPaper(vFirstPageIndex,
                             vPrintOffsetX, vPrintOffsetY, vPrintCanvas, vPaintInfo);
                     }
                     finally

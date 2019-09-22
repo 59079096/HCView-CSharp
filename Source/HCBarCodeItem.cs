@@ -23,10 +23,15 @@ namespace HC.View
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom,
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            using (Image vBitmap = SharpZXingBarCode.Create(FText, 3, Width, Height))
+            using (Image vImage = SharpZXingBarCode.Create(FText, 3, Width, Height))
             {
-                if (vBitmap != null)
-                    aCanvas.StretchDraw(aDrawRect, vBitmap);
+                if (vImage != null)
+                {
+                    if (aPaintInfo.Print)
+                        aCanvas.StretchPrintDrawImage(aDrawRect, vImage);
+                    else
+                        aCanvas.StretchDraw(aDrawRect, vImage);
+                }
             }
             // 绘制一维码
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,

@@ -50,19 +50,7 @@ namespace HC.View
             int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (aPaintInfo.Print)
-            {
-                SIZE vSize = new SIZE();
-                GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vSize);
-                try
-                {
-                    aCanvas.StretchDraw(aDrawRect, FImage);
-                }
-                finally
-                {
-                    GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.GetScaleX(aPaintInfo.WindowWidth),
-                      aPaintInfo.GetScaleY(aPaintInfo.WindowHeight), ref vSize);
-                }
-            }
+                aCanvas.StretchPrintDrawBitmap(aDrawRect, FImage);
             else
                 aCanvas.StretchDraw(aDrawRect, FImage);
 

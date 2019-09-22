@@ -921,15 +921,15 @@ namespace HC.View
                             break;
                     }
                 
-                aPaintInfo.TopItems.Add(this);
-            }
+                    aPaintInfo.TopItems.Add(this);
+                }
 
-            // 绘制缩放拖动提示锚点
-            aCanvas.Brush.Color = Color.Gray;
-            aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Top, GripSize, GripSize));
-            aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Top, GripSize, GripSize));
-            aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Bottom - GripSize, GripSize, GripSize));
-            aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Bottom - GripSize, GripSize, GripSize));
+                // 绘制缩放拖动提示锚点
+                aCanvas.Brush.Color = Color.Gray;
+                aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Top, GripSize, GripSize));
+                aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Top, GripSize, GripSize));
+                aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Bottom - GripSize, GripSize, GripSize));
+                aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Bottom - GripSize, GripSize, GripSize));
             }
         }
 

@@ -35,10 +35,15 @@ namespace HC.View
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
 
-            using (Image vBitmap = SharpZXingQRCode.Create(FText, Width, Height))
+            using (Image vImage = SharpZXingQRCode.Create(FText, Width, Height))
             {
-                if (vBitmap != null)
-                    aCanvas.StretchDraw(aDrawRect, vBitmap);
+                if (vImage != null)
+                {
+                    if (aPaintInfo.Print)
+                        aCanvas.StretchPrintDrawImage(aDrawRect, vImage);
+                    else
+                        aCanvas.StretchDraw(aDrawRect, vImage);
+                }
             }
             // 绘制二维码
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,

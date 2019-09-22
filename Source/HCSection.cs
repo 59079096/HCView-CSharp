@@ -1789,10 +1789,10 @@ namespace HC.View
                     vPageDrawBottom, 0, aCanvas, aPaintInfo);
 
                 FPage.PaintFloatItems(aPageIndex, vPageDrawLeft,  // 当前页绘制到的Left
-                vPageDrawTop,     // 当前页绘制到的Top
-                GetPageDataFmtTop(aPageIndex),  // 指定从哪个位置开始的数据绘制到页数据起始位置
-                aCanvas,
-                aPaintInfo);
+                    vPageDrawTop,     // 当前页绘制到的Top
+                    GetPageDataFmtTop(aPageIndex),  // 指定从哪个位置开始的数据绘制到页数据起始位置
+                    aCanvas,
+                    aPaintInfo);
             }
             finally
             {

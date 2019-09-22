@@ -44,7 +44,14 @@ namespace HC.View
             using (Image vBitmap = SharpZXingBarCode.Create(FText, 3, Width, Height))
             {
                 if (vBitmap != null)
-                    aCanvas.StretchDraw(aDrawRect, vBitmap);
+                {
+                    if (aPaintInfo.Print)
+                    {
+                        aCanvas.StretchPrintDrawImage(aDrawRect, vBitmap);
+                    }
+                    else
+                        aCanvas.StretchDraw(aDrawRect, vBitmap);
+                }
             }
             // 绘制一维码
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,

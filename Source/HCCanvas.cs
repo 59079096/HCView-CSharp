@@ -836,6 +836,36 @@ namespace HC.View
             }
         }
 
+        public void StretchPrintDrawImage(RECT rect, Image image)
+        {
+            using (Bitmap bitmap = new Bitmap(image))
+            {
+                StretchPrintDrawBitmap(rect, bitmap);
+            }
+        }
+
+        public void StretchPrintDrawBitmap(RECT rect, Bitmap bitmap)
+        {
+            using (Graphics srcgraphics = Graphics.FromImage(bitmap))
+            {
+                IntPtr vImageHDC = srcgraphics.GetHdc();
+                try
+                {
+                    IntPtr vMemDC = (IntPtr)GDI.CreateCompatibleDC(vImageHDC);
+                    IntPtr vHbitmap = bitmap.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
+                    GDI.SelectObject(vMemDC, vHbitmap);
+                    //GDI.BitBlt(aCanvas.Handle, aDrawRect.Left, aDrawRect.Top, aDrawRect.Width, aDrawRect.Height, vMemDC, 0, 0, GDI.SRCCOPY);
+                    GDI.StretchBlt(FHandle, rect.Left, rect.Top, rect.Width, rect.Height, vMemDC, 0, 0, bitmap.Width, bitmap.Height, GDI.SRCCOPY);
+                    GDI.DeleteDC(vMemDC);
+                    GDI.DeleteObject(vHbitmap);
+                }
+                finally
+                {
+                    srcgraphics.ReleaseHdc(vImageHDC);
+                }
+            }
+        }
+
         public void Draw(int x, int y, Image aImage)
         {
             using (Graphics vGraphics = Graphics.FromHdc(FHandle))
