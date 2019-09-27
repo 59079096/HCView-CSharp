@@ -89,7 +89,7 @@ namespace HC.View
                     break;
 
                 case DateTimeArea.dtaHour:
-                    GetAreaPosition("h", false, ref vIndex, ref vCount);
+                    GetAreaPosition("H", true, ref vIndex, ref vCount);  // 12、24小时制
                     break;
 
                 case DateTimeArea.dtaMinute:
@@ -533,9 +533,9 @@ namespace HC.View
         }
 
         public HCDateTimePicker(HCCustomData aOwnerData, DateTime aDateTime)
-            : base(aOwnerData, string.Format("{0:yyyy-MM-dd hh:mm:ss}", aDateTime))
+            : base(aOwnerData, string.Format("{0:yyyy-MM-dd HH:mm:ss}", aDateTime))
         {
-            FFormat = "yyyy-MM-dd hh:mm:ss";
+            FFormat = "yyyy-MM-dd HH:mm:ss";
             FDateTime = aDateTime;
             this.StyleNo = HCStyle.DateTimePicker;
             Width = 80;
@@ -566,7 +566,7 @@ namespace HC.View
             if (FFormat.Substring(0, 3) == "{0:")  // 兼容旧的
             {
                 int vLength = FFormat.IndexOf('}');
-                FFormat = Format.Substring(3, vLength - 3).Replace("SS", "ss").Replace("HH", "hh");
+                FFormat = Format.Substring(3, vLength - 3).Replace("SS", "ss");
             }
 
             double vDT = 0;

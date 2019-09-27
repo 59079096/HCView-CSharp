@@ -227,6 +227,7 @@ namespace EMRView
             FStyleEx = (source as DeItem).StyleEx;
             FEditProtect = (source as DeItem).EditProtect;
             FCopyProtect = (source as DeItem).CopyProtect;
+            FAllocValue = (source as DeItem).AllocValue;
             FOutOfRang = (source as DeItem).OutOfRang;
             string vS = DeProp.GetPropertyString((source as DeItem).Propertys);
             DeProp.SetPropertyString(vS, FPropertys);
@@ -486,13 +487,18 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public void ToJson(string aJsonObj)
@@ -584,13 +590,18 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public void ToJson(string aJsonObj)
@@ -680,13 +691,18 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public void ToJson(string aJsonObj)
@@ -777,13 +793,18 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public void ToJson(string aJsonObj)
@@ -873,13 +894,18 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public  void ToJson(string aJsonObj)
@@ -969,13 +995,18 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public void ToJson(string aJsonObj)
@@ -1037,7 +1068,8 @@ namespace EMRView
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            string vS = DeProp.GetPropertyString((source as DeEdit).Propertys);
+            FEditProtect = (source as DeFloatBarCodeItem).EditProtect;
+            string vS = DeProp.GetPropertyString((source as DeFloatBarCodeItem).Propertys);
             DeProp.SetPropertyString(vS, FPropertys);
         }
 
@@ -1068,13 +1100,18 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
             aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
         }
 
         public void ToJson(string aJsonObj)
