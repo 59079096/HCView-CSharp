@@ -23,6 +23,7 @@ namespace EMRView
         [STAThread]
         static void Main()
         {
+            Application.ThreadException += new System.Threading.ThreadExceptionEventHandler(Application_ThreadException);
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandleException);  // 全局异常捕获
             //AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);  // 动态指定程序集目录
             Application.EnableVisualStyles();
@@ -30,9 +31,14 @@ namespace EMRView
             Application.Run(new frmDoctorStation());
         }
 
+        private static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
+        {
+            MessageBox.Show("未处理的线程异常：" + e.Exception.Message);
+        }
+
         private static void CurrentDomain_UnhandleException(object sender, UnhandledExceptionEventArgs e)
         {
-            MessageBox.Show(e.ExceptionObject.ToString());
+            MessageBox.Show("未处理的异常：" + e.ExceptionObject.ToString());
         }
 
         //private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)

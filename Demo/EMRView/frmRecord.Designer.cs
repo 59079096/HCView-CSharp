@@ -610,7 +610,32 @@
             "四号",
             "小四",
             "五号",
-            "小五"});
+            "小五",
+            "六号",
+            "小六",
+            "七号",
+            "八号",
+            "5",
+            "5.5",
+            "6.5",
+            "7.5",
+            "8",
+            "9",
+            "10",
+            "10.5",
+            "11",
+            "12",
+            "14",
+            "16",
+            "18",
+            "20",
+            "22",
+            "24",
+            "26",
+            "28",
+            "36",
+            "48",
+            "72"});
             this.cbbFontSize.Name = "cbbFontSize";
             this.cbbFontSize.Size = new System.Drawing.Size(75, 25);
             this.cbbFontSize.DropDownClosed += new System.EventHandler(this.cbbFontSize_DropDownClosed);
@@ -740,7 +765,7 @@
             this.mniPrintCurLine,
             this.mniPrintSelect});
             this.mniPrint.Name = "mniPrint";
-            this.mniPrint.Size = new System.Drawing.Size(124, 22);
+            this.mniPrint.Size = new System.Drawing.Size(180, 22);
             this.mniPrint.Text = "打印";
             // 
             // mniFastPrint
@@ -753,8 +778,9 @@
             // mniPrintPreview
             // 
             this.mniPrintPreview.Name = "mniPrintPreview";
-            this.mniPrintPreview.Size = new System.Drawing.Size(136, 22);
+            this.mniPrintPreview.Size = new System.Drawing.Size(180, 22);
             this.mniPrintPreview.Text = "预览";
+            this.mniPrintPreview.Click += new System.EventHandler(this.mniPrintPreview_Click);
             // 
             // mniPrintCurLine
             // 
@@ -1200,15 +1226,16 @@
             this.mniLS150,
             this.mniLS200,
             this.mniLSFix});
+            this.btnLineSpace.Image = global::EMRView.Properties.Resources.行间距057341;
             this.btnLineSpace.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnLineSpace.Name = "btnLineSpace";
-            this.btnLineSpace.Size = new System.Drawing.Size(16, 22);
+            this.btnLineSpace.Size = new System.Drawing.Size(32, 22);
             this.btnLineSpace.Text = "行距";
             // 
             // mniLS100
             // 
             this.mniLS100.Name = "mniLS100";
-            this.mniLS100.Size = new System.Drawing.Size(112, 22);
+            this.mniLS100.Size = new System.Drawing.Size(180, 22);
             this.mniLS100.Tag = "0";
             this.mniLS100.Text = "单倍";
             this.mniLS100.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1216,7 +1243,7 @@
             // mniLS115
             // 
             this.mniLS115.Name = "mniLS115";
-            this.mniLS115.Size = new System.Drawing.Size(112, 22);
+            this.mniLS115.Size = new System.Drawing.Size(180, 22);
             this.mniLS115.Tag = "1";
             this.mniLS115.Text = "1.15倍";
             this.mniLS115.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1224,7 +1251,7 @@
             // mniLS150
             // 
             this.mniLS150.Name = "mniLS150";
-            this.mniLS150.Size = new System.Drawing.Size(112, 22);
+            this.mniLS150.Size = new System.Drawing.Size(180, 22);
             this.mniLS150.Tag = "2";
             this.mniLS150.Text = "1.5倍";
             this.mniLS150.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1232,7 +1259,7 @@
             // mniLS200
             // 
             this.mniLS200.Name = "mniLS200";
-            this.mniLS200.Size = new System.Drawing.Size(112, 22);
+            this.mniLS200.Size = new System.Drawing.Size(180, 22);
             this.mniLS200.Tag = "3";
             this.mniLS200.Text = "两倍";
             this.mniLS200.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1240,7 +1267,7 @@
             // mniLSFix
             // 
             this.mniLSFix.Name = "mniLSFix";
-            this.mniLSFix.Size = new System.Drawing.Size(112, 22);
+            this.mniLSFix.Size = new System.Drawing.Size(180, 22);
             this.mniLSFix.Tag = "4";
             this.mniLSFix.Text = "固定值";
             this.mniLSFix.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1424,6 +1451,7 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "frmRecord";
             this.Text = "病历文档";
+            this.Load += new System.EventHandler(this.frmRecord_Load);
             this.pmView.ResumeLayout(false);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();

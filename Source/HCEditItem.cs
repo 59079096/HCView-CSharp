@@ -89,14 +89,14 @@ namespace HC.View
 
             if (FBorderSides.Contains((byte)BorderSide.cbsRight))
             {
-                aCanvas.MoveTo(aDrawRect.Right, aDrawRect.Top);
-                aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
+                aCanvas.MoveTo(aDrawRect.Right - 1, aDrawRect.Top);
+                aCanvas.LineTo(aDrawRect.Right - 1, aDrawRect.Bottom);
             }
 
             if (FBorderSides.Contains((byte)BorderSide.cbsBottom))
             {
-                aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
-                aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
+                aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom - 1);
+                aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom - 1);
             }
         }
 
@@ -162,6 +162,8 @@ namespace HC.View
                     FCaretOffset = (short)FText.Length;
                     vResult = true;
                 }
+                else
+                    vResult = true;
             }
             else
             if (e.KeyCode == Keys.Right)
@@ -176,6 +178,8 @@ namespace HC.View
                     FCaretOffset = 0;
                     vResult = true;
                 }
+                else
+                    vResult = true;
             }
             else
                 vResult = true;

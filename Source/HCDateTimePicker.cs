@@ -36,15 +36,88 @@ namespace HC.View
         private string FFormat;
         private RECT FAreaRect;
         private DateTimeArea FActiveArea;
-        private string FNewYear;
-        private bool FJoinKey;
+        private string FNewYear = "";
+        private bool FJoinKey = false;
 
-        #region 未翻译完成
-        private void AppendFormat(ref RECT aRect, string aFormat)
+        private void GetAreaPosition(string aChar, bool aUpper, ref int aIndex, ref int aCount)
         {
+            bool vFind = false;
+            string vs = "";
+            aIndex = -1;
+            aCount = 0;
+            for (int i = 0; i < FFormat.Length; i++)
+            {
+                if (aUpper)
+                    vs = FFormat[i].ToString().ToUpper();
+                else
+                    vs = FFormat[i].ToString();
 
+                if (vs == aChar)  // 找到
+                {
+                    if (!vFind)
+                        vFind = true;
+
+                    if (aIndex < 0)
+                        aIndex = i;
+
+                    aCount++;
+                }
+                else
+                if (vFind)  // 在收录中出现了不相等的了
+                    return;
+            }
         }
-        #endregion
+
+        private void AppendFormat(HCCanvas aCanvas, DateTimeArea aArea, ref RECT aRect)
+        {
+            aRect.SetEmpty();
+
+            int vIndex = 0, vCount = -1;
+
+            switch (aArea)
+            {
+                case DateTimeArea.dtaYear:
+                    GetAreaPosition("y", false, ref vIndex, ref vCount);
+                    break;
+
+                case DateTimeArea.dtaMonth:
+                    GetAreaPosition("M", true, ref vIndex, ref vCount);
+                    break;
+
+                case DateTimeArea.dtaDay:
+                    GetAreaPosition("d", false, ref vIndex, ref vCount);
+                    break;
+
+                case DateTimeArea.dtaHour:
+                    GetAreaPosition("h", false, ref vIndex, ref vCount);
+                    break;
+
+                case DateTimeArea.dtaMinute:
+                    GetAreaPosition("m", false, ref vIndex, ref vCount);
+                    break;
+
+                case DateTimeArea.dtaSecond:
+                    GetAreaPosition("s", false, ref vIndex, ref vCount);
+                    break;
+            }
+
+            if (vCount > 0)
+            {
+                string vs = "";
+                if (vIndex > 0)
+                    vs = FFormat.Substring(0, vIndex);
+
+                aRect.Left = FMargin;
+                if (vs != "")
+                    aRect.Left += aCanvas.TextExtent(vs).cx;
+
+                SIZE vSize = aCanvas.TextExtent(FFormat.Substring(vIndex, vCount));
+
+                aRect.Top = (Height - vSize.cy) / 2;
+                aRect.Right = aRect.Left + vSize.cx;
+                aRect.Bottom = aRect.Top + vSize.cy;
+            }
+        }
 
         private RECT GetAreaRect(DateTimeArea aArea)
         {
@@ -60,9 +133,9 @@ namespace HC.View
             {
                 this.OwnerData.Style.TextStyles[this.TextStyleNo].ApplyStyle(vCanvas);
                 if (FFormat != "")
-                    AppendFormat(ref Result, FFormat);
-                else
-                    AppendFormat(ref Result, "C");  // 用短格式显示日期与时间
+                    AppendFormat(vCanvas, aArea, ref Result);
+                //else
+                //    AppendFormat(ref Result, "C");  // 用短格式显示日期与时间
             }
             finally
             {
@@ -104,16 +177,16 @@ namespace HC.View
             if (FDateTime != value)
             {
                 FDateTime = value;
-                this.Text = string.Format(FFormat, DateTime);
+                this.Text = string.Format("{0:" + FFormat + "}", FDateTime);
                 FAreaRect = GetAreaRect(FActiveArea);
             }
         }
 
         #region SetInputYear子方法
-        private uint Power10(byte Sqr)
+        private uint Power10(byte sqr)
         {
             uint Result = 10;
-            for (int i = 2; i <= Result; i++)
+            for (byte i = 2; i <= sqr; i++)
                 Result = Result * 10;
 
             return Result;
@@ -123,7 +196,7 @@ namespace HC.View
         {
             int Result = FDateTime.Year;
             int vYear = 1999;
-            if (!int.TryParse(aYear, out vYear))
+            if (int.TryParse(aYear, out vYear))
             {
                 if (vYear < Result)
                 {
@@ -141,7 +214,8 @@ namespace HC.View
         {
             if (FNewYear != "")
             {
-                this.DateTime = new System.DateTime(GetYear(FNewYear), FDateTime.Month, FDateTime.Day);
+                this.DateTime = new System.DateTime(GetYear(FNewYear), FDateTime.Month, FDateTime.Day,
+                    FDateTime.Hour, FDateTime.Minute, FDateTime.Second);
                 FNewYear = "";
             }
         }
@@ -151,7 +225,9 @@ namespace HC.View
             if (FFormat != value)
             {
                 FFormat = value;
-                this.Text = string.Format(FFormat, FDateTime);
+                if (FFormat.Substring(0, 3) != "{0:")  // 兼容旧的
+                    this.Text = string.Format("{0:" + FFormat + "}", FDateTime);
+
                 FAreaRect = GetAreaRect(FActiveArea);
             }
         }
@@ -191,7 +267,8 @@ namespace HC.View
 
         public override bool MouseDown(System.Windows.Forms.MouseEventArgs e)
         {
- 	         //base.MouseDown(e);
+            //return base.MouseDown(e);
+            
             this.Active = HC.PtInRect(new RECT(0, 0, Width, Height), new POINT(e.X, e.Y));
 
             DateTimeArea vArea = GetAreaAt(e.X, e.Y);
@@ -217,7 +294,7 @@ namespace HC.View
 
         public override void KeyDown(System.Windows.Forms.KeyEventArgs e)
         {
- 	         //base.KeyDown(e);
+ 	        //base.KeyDown(e);
             switch (e.KeyValue)
             {
                 case User.VK_ESCAPE:
@@ -264,24 +341,201 @@ namespace HC.View
 
         public override void KeyPress(ref char key)
         {
- 	         base.KeyPress(ref key);
+            //base.KeyPress(ref key);
+            if (this.ReadOnly)
+                return;
+
+            int vNumber = 0;
+            DateTime vDateTime = FDateTime;
+            if (FActiveArea != DateTimeArea.dtaNone)
+            {
+                if ("0123456789".IndexOf(key) >= 0)
+                {
+                    switch (FActiveArea)
+                    {
+                        case DateTimeArea.dtaYear:
+                            if (FNewYear.Length > 3)
+                                FNewYear.Remove(0, 1);
+                            FNewYear = FNewYear + key;
+                            break;
+
+                        case DateTimeArea.dtaMonth:
+                            vNumber = vDateTime.Month;  // 当前月份
+                            if (vNumber > 9)  // 当前月份已经是2位数了
+                            {
+                                if (key == '0')  // 2位月份再输入0不处理
+                                    return;
+
+                                vDateTime = new DateTime(vDateTime.Year, int.Parse(key.ToString()), vDateTime.Day, 
+                                    vDateTime.Hour, vDateTime.Minute, vDateTime.Second);
+                            }
+                            else  // 当前月份是1位数字
+                            if ((vNumber == 1) && FJoinKey)  // 当前月份是1月且是连续输入
+                            {
+                                if ("012".IndexOf(key) >= 0)  // 10, 11, 12
+                                {
+                                    vNumber = vNumber * 10 + int.Parse(key.ToString());
+                                    vDateTime = new DateTime(vDateTime.Year, vNumber, vDateTime.Day, 
+                                        vDateTime.Hour, vDateTime.Minute, vDateTime.Second);  // 直接修改为新键入
+                                }
+                            }
+                            else  // // 不是连续输入，是第1次输入
+                            {
+                                if (key == '0')  // 月份第1位是0不处理
+                                    return;
+
+                                vDateTime = new DateTime(vDateTime.Year, int.Parse(key.ToString()), vDateTime.Day, 
+                                    vDateTime.Hour, vDateTime.Minute, vDateTime.Second);  // 直接修改为新键入
+                            }
+                            break;
+
+                        case DateTimeArea.dtaDay:
+                            vNumber = vDateTime.Day;  // 当前日期
+                            if (vNumber > 9)  // 当前日期已经是2位数了
+                            {
+                                if (key == '0')  // 2位日期再输入0不处理
+                                    return;
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, int.Parse(key.ToString()), 
+                                    vDateTime.Hour, vDateTime.Minute, vDateTime.Second);  // 直接修改为新键入
+                            }
+                            else  // 当前日期是1位数字
+                            if (FJoinKey)  // 是连续输入
+                            {
+                                vNumber = vNumber * 10 + int.Parse(key.ToString());
+                                if (vNumber > DateTime.DaysInMonth(vDateTime.Year, vDateTime.Month))
+                                    vNumber = int.Parse(key.ToString());
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vNumber,
+                                    vDateTime.Hour, vDateTime.Minute, vDateTime.Second);  // 直接修改为新键入
+                            }
+                            break;
+
+                        case DateTimeArea.dtaHour:
+                            vNumber = vDateTime.Hour;  // 当前时
+                            if (vNumber > 9)  // 当前时已经2位数了
+                            {
+                                if (key == '0')
+                                    return;  // 2位时再输入0不处理
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                    vDateTime.Hour, vDateTime.Minute, vDateTime.Second);
+                            }
+                            else  // 当前时是1位数字
+                            if (FJoinKey)  // 当前时是连续输入
+                            {
+                                vNumber = vNumber * 10 + int.Parse(key.ToString());
+                                if (vNumber > 24)
+                                    vNumber = int.Parse(key.ToString());
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                    vNumber, vDateTime.Minute, vDateTime.Second);
+                            }
+                            else  // 不是连续输入，是第1次输入
+                            {
+                                if (key == '0')
+                                    return;
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                    int.Parse(key.ToString()), vDateTime.Minute, vDateTime.Second);
+                            }
+                            break;
+
+                        case DateTimeArea.dtaMinute:
+                            vNumber = vDateTime.Minute;
+                            if (vNumber > 9)  // 当前分已经是2位数了
+                            {
+                                if (key == '0')
+                                    return;  // 2位时再输入0不处理
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                    vDateTime.Hour, int.Parse(key.ToString()), vDateTime.Second);
+                            }
+                            else  // 当前分是1位数字
+                            if (FJoinKey)  // 当前分是连续输入
+                            {
+                                vNumber = vNumber * 10 + int.Parse(key.ToString());
+                                if (vNumber > 60)
+                                    vNumber = int.Parse(key.ToString());
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                    vDateTime.Hour, vNumber, vDateTime.Second);
+                            }
+                            else  // 不是连续输入，是第1次输入
+                            {
+                                if (key == '0')
+                                    return;  // 分第1位是0不处理
+
+                                vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                    vDateTime.Minute, int.Parse(key.ToString()), vDateTime.Second);
+                            }
+                            break;
+
+                        case DateTimeArea.dtaSecond:
+                            {
+                                vNumber = vDateTime.Second;  // 当前秒
+                                if (vNumber > 9)  // 当前秒已经是2位数了
+                                {
+                                    if (key == '0')
+                                        return;  // 2位时再输入0不处理
+
+                                    vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                        vDateTime.Hour, vDateTime.Minute, int.Parse(key.ToString()));
+                                }
+                                else  // 当前秒是1位数字
+                                if (FJoinKey)  // 当前秒是连续输入
+                                {
+                                    vNumber = vNumber * 10 + int.Parse(key.ToString());
+                                    if (vNumber > 60)
+                                        vNumber = int.Parse(key.ToString());
+
+                                    vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                        vDateTime.Hour, vDateTime.Minute, vNumber);
+                                }
+                                else  // 不是连续输入，是第1次输入
+                                {
+                                    if (key == '0')
+                                        return;  // 秒第1位是0不处理
+
+                                    vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
+                                        vDateTime.Hour, vDateTime.Minute, int.Parse(key.ToString()));
+                                }
+                            }
+                            break;
+
+                        case DateTimeArea.dtaMillisecond:
+                            break;
+                    }
+                }
+
+                if (FActiveArea != DateTimeArea.dtaYear)  // 除年外，其他的需要实时更新
+                {
+                    FActiveArea = GetAreaAt(FAreaRect.Left, FAreaRect.Top);
+                    if (FActiveArea != DateTimeArea.dtaNone)
+                        FAreaRect = GetAreaRect(FActiveArea);
+
+                    FJoinKey = true;
+                    SetDateTime(vDateTime);
+                }
+
+                this.OwnerData.Style.UpdateInfoRePaint();
+            }
         }
 
         public override bool InsertText(string aText)
         {
-            return false;// base.InsertText(aText);
+            return false;
         }
 
         public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
         {
- 	         //base.GetCaretInfo(ref aCaretInfo);
             aCaretInfo.Visible = false;
         }
 
         public HCDateTimePicker(HCCustomData aOwnerData, DateTime aDateTime)
-            : base(aOwnerData, string.Format("YYYY-MM-DD HH:mm:SS", aDateTime))
+            : base(aOwnerData, string.Format("{0:yyyy-MM-dd hh:mm:ss}", aDateTime))
         {
-            FFormat = "YYYY-MM-DD HH:mm:SS";
+            FFormat = "yyyy-MM-dd hh:mm:ss";
             FDateTime = aDateTime;
             this.StyleNo = HCStyle.DateTimePicker;
             Width = 80;
@@ -293,7 +547,7 @@ namespace HC.View
         {
  	        base.Assign(source);
             FFormat = (source as HCDateTimePicker).Format;
-            DateTime = (source as HCDateTimePicker).DateTime;
+            FDateTime = (source as HCDateTimePicker).DateTime;
         }
 
         public override void SaveToStream(System.IO.Stream aStream, int aStart, int aEnd)
@@ -309,6 +563,12 @@ namespace HC.View
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
             HC.HCLoadTextFromStream(aStream, ref FFormat, aFileVersion);
+            if (FFormat.Substring(0, 3) == "{0:")  // 兼容旧的
+            {
+                int vLength = FFormat.IndexOf('}');
+                FFormat = Format.Substring(3, vLength - 3).Replace("SS", "ss").Replace("HH", "hh");
+            }
+
             double vDT = 0;
             byte[] vBuffer = BitConverter.GetBytes(vDT);
             aStream.Read(vBuffer, 0, vBuffer.Length);
@@ -339,7 +599,7 @@ namespace HC.View
         public DateTime DateTime
         {
             get { return FDateTime; }
-            set { FDateTime = value; }
+            set { SetDateTime(value); }
         }
     }
 }

@@ -652,6 +652,21 @@ namespace EMRView
         protected override void DoSectionDrawItemPaintAfter(Object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, 
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
+            if (aPaintInfo.Print)  // 打印时没有填写过的数据元不打印
+            {
+                HCCustomItem vItem = aData.Items[aItemNo];
+                if (vItem.StyleNo > HCStyle.Null)
+                {
+                    DeItem vDeItem = vItem as DeItem;
+                    if (vDeItem.IsElement && !vDeItem.AllocValue)
+                    {
+                        aCanvas.Brush.Color = Color.White;
+                        aCanvas.FillRect(aDrawRect);
+                        return;
+                    }
+                }
+            }
+
             if ((!FHideTrace) && (FTraceCount > 0))  // 显示痕迹且有痕迹
             {
                 HCCustomItem vItem = aData.Items[aItemNo];

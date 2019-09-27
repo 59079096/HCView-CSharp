@@ -124,13 +124,18 @@ namespace EMRView
                 return;
             
             if (!FCompiler.RunScript(script, deItem, PatientInfo, ((sender as frmRecord).Tag as RecordInfo), ref text, ref cancel))
-                MessageBox.Show("当前数据元有控制脚本，但运行错误，原因：\r\n"
-                    + FCompiler.ErrorMessage);
+                MessageBox.Show("当前数据元有控制脚本，但运行错误，原因：\r\n" + FCompiler.ErrorMessage);
         }
 
         private bool DoDeItemPopup(DeItem aDeItem)
         {
             return true;
+        }
+
+        private void DoPrintPreview(object sender, EventArgs e)
+        {
+            frmRecordSet vFrmRecordSet = new frmRecordSet();
+            vFrmRecordSet.ShowDialog(PatientInfo.PatID, PatientInfo.VisitID, (this.GetActiveRecord().Tag as RecordInfo).ID);
         }
 
         private void DoTraverseItem(HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
@@ -325,7 +330,10 @@ namespace EMRView
                     {
                         vsResult = GetDeItemValueTry(vDeIndex);
                         if (vsResult != "")
+                        {
                             vDeItem.Text = vsResult;
+                            vDeItem.AllocValue = true;
+                        }
                     }
                 }
             }
@@ -651,6 +659,7 @@ namespace EMRView
             aFrmRecord.OnInsertDeItem = DoInsertDeItem;
             aFrmRecord.OnSetDeItemText = DoSetDeItemText;
             aFrmRecord.OnDeItemPopup = DoDeItemPopup;
+            aFrmRecord.OnPrintPreview = DoPrintPreview;
 
             aFrmRecord.OnCopyRequest = DoRecordCopyRequest;
             aFrmRecord.OnPasteRequest = DoRecordPasteRequest;
@@ -1002,7 +1011,7 @@ namespace EMRView
             }
         }
 
-        private void 预览全部病程ToolStripMenuItem_Click(object sender, EventArgs e)
+        private void mniMergeRecord_Click(object sender, EventArgs e)
         {
             frmRecordSet vFrmRecordSet = new frmRecordSet();
             vFrmRecordSet.ShowDialog(PatientInfo.PatID, PatientInfo.VisitID);

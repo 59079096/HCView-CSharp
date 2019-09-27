@@ -39,9 +39,19 @@ namespace EMRView
             InitializeComponent();
         }
 
-        public void ShowDialog(string aPatID, int aVisit)
+        public void ShowDialog(string aPatID, int aVisit, int aRecordID = -1)
         {
             GetPatientInchRecord(aPatID, aVisit);
+
+            for (int i = 0; i < dgvRecord.Rows.Count; i++)
+            {
+                if (dgvRecord.Rows[i].Cells[4].Value.ToString() == aRecordID.ToString())
+                {
+                    dgvRecord.Rows[i].Cells[0].Value = true;
+                    break;
+                }
+            }
+
             ShowDialog();
         }
 

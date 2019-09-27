@@ -2612,7 +2612,10 @@ namespace HC.View
             }
 
             if (!aQuick)
+            {
+                FUndoList.Clear();
                 DeleteUnUsedStyle(FStyle, FSections, vArea);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
+            }
 
             FStyle.SaveToStream(aStream);
             // 节数量
@@ -2680,6 +2683,7 @@ namespace HC.View
         /// <summary> 文档保存为xml格式 </summary>
         public void SaveToXml(string aFileName, System.Text.Encoding aEncoding)
         {
+            FUndoList.Clear();
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
             DeleteUnUsedStyle(FStyle, FSections, vParts);
 
@@ -2781,6 +2785,7 @@ namespace HC.View
         /// <param name="aSeparateSrc">True：图片等保存到文件夹，False以base64方式存储到页面中</param>
         public void SaveToHtml(string aFileName, bool aSeparateSrc = false)
         {
+            FUndoList.Clear();
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
             DeleteUnUsedStyle(FStyle, FSections, vParts);
 

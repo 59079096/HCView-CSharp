@@ -210,10 +210,17 @@ namespace HC.View
                 
                 case ItemProperty.uipParaNo:
                     {
+                        int vParaLastItemNo = GetParaLastItemNo(vAction.ItemNo);
                         if (aIsUndo)
-                            vItem.ParaNo = (vAction as HCItemParaUndoAction).OldParaNo;
+                        {
+                            for (int i = vAction.ItemNo; i <= vParaLastItemNo; i++)
+                                Items[i].ParaNo = (vAction as HCItemParaUndoAction).OldParaNo;
+                        }
                         else
-                            vItem.ParaNo = (vAction as HCItemParaUndoAction).NewParaNo;
+                        {
+                            for (int i = vAction.ItemNo; i <= vParaLastItemNo; i++)
+                                Items[i].ParaNo = (vAction as HCItemParaUndoAction).NewParaNo;
+                        }
                     }
                     break;
               
@@ -800,6 +807,25 @@ namespace HC.View
                     vItemAction.Offset = aOffset;
                     vItemAction.OldStyleNo = Items[aItemNo].StyleNo;
                     vItemAction.NewStyleNo = aNewStyleNo;
+
+                    vUndo.Actions.Add(vItemAction);
+                }
+            }
+        }
+
+        protected void UndoAction_ItemParaNo(int aItemNo, int aOffset, int aNewParaNo)
+        {
+            HCUndoList vUndoList = GetUndoList();
+            if ((vUndoList != null) && vUndoList.Enable)
+            {
+                HCUndo vUndo = vUndoList.Last;
+                if (vUndo != null)
+                {
+                    HCItemParaUndoAction vItemAction = new HCItemParaUndoAction();
+                    vItemAction.ItemNo = aItemNo;
+                    vItemAction.Offset = aOffset;
+                    vItemAction.OldParaNo = Items[aItemNo].ParaNo;
+                    vItemAction.NewParaNo = aNewParaNo;
 
                     vUndo.Actions.Add(vItemAction);
                 }

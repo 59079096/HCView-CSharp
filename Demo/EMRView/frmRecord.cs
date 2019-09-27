@@ -36,6 +36,7 @@ namespace EMRView
         private DeItemInsertEventHandler FOnInsertDeItem;
         private DeItemSetTextEventHandler FOnSetDeItemText;
         private DeItemPopupEventHandler FOnDeItemPopup;
+        private EventHandler FOnPrintPreview;
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
@@ -452,10 +453,16 @@ namespace EMRView
                 string vText = aText;
                 FOnSetDeItemText(this, aDeItem, ref vText, ref aCancel);
                 if (!aCancel)
+                {
                     FEmrView.SetActiveItemText(vText);
+                    aDeItem.AllocValue = true;
+                }
             }
             else
+            {
                 FEmrView.SetActiveItemText(aText);
+                aDeItem.AllocValue = true;
+            }
         }
 
         /// <summary> 设置当前数据元的内容为扩展内容 </summary>
@@ -521,6 +528,18 @@ namespace EMRView
                 frmRecordPop.Close();
         }
 
+        private void CheckPrintHeaderFooterPosition()
+        {
+            if (tlbPrint.Visible)
+            {
+                cbxPrintHeader.Top = tlbPrint.Top + 4;
+                cbxPrintHeader.BringToFront();
+
+                cbxPrintFooter.Top = tlbPrint.Top + 4;
+                cbxPrintFooter.BringToFront();
+            }
+        }
+
         private void SetPrintToolVisible(bool value)
         {
             if (value)
@@ -540,6 +559,14 @@ namespace EMRView
             tlbPrint.Visible = value;
             cbxPrintHeader.Visible = value;
             cbxPrintFooter.Visible = value;
+
+            CheckPrintHeaderFooterPosition();
+        }
+
+        private void SetEditToolVisible(bool value)
+        {
+            tlbEditTool.Visible = value;
+            CheckPrintHeaderFooterPosition();
         }
 
         protected bool DoDeItemPopup(DeItem aDeItem)
@@ -876,6 +903,12 @@ namespace EMRView
             set { FOnDeItemPopup = value; }
         }
 
+        public EventHandler OnPrintPreview
+        {
+            get { return FOnPrintPreview; }
+            set { FOnPrintPreview = value; }
+        }
+
 
         /// <summary> 复制内容前触发 </summary>
         public HCCopyPasteEventHandler OnCopyRequest
@@ -912,7 +945,7 @@ namespace EMRView
         public bool EditToolVisible
         {
             get { return tlbEditTool.Visible; }
-            set { tlbEditTool.Visible = value; }
+            set { SetEditToolVisible(value); }
         }
 
         public bool HideTrace
@@ -1435,6 +1468,17 @@ namespace EMRView
         {
             frmDeFloatItemProperty vfrmFloatItemProperty = new frmDeFloatItemProperty();
             vfrmFloatItemProperty.SetHCView(FEmrView);
+        }
+
+        private void frmRecord_Load(object sender, EventArgs e)
+        {
+            CheckPrintHeaderFooterPosition();
+        }
+
+        private void mniPrintPreview_Click(object sender, EventArgs e)
+        {
+            if (FOnPrintPreview != null)
+                FOnPrintPreview(sender, e);
         }
 
         private void mniHideTrace_Click(object sender, EventArgs e)

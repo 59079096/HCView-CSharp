@@ -1050,6 +1050,7 @@ namespace HC.View
 
             if (GetItemParaStyle(vFirstNo) != vParaNo)
             {
+                UndoAction_ItemParaNo(vFirstNo, 0, vParaNo);
                 for (int i = vFirstNo; i <= vLastNo; i++)
                     Items[i].ParaNo = vParaNo;
             }
@@ -1083,6 +1084,7 @@ namespace HC.View
             int vFormatFirstDrawItemNo = -1;
             int vFormatLastItemNo = -1;
 
+            Undo_New();
             if (SelectInfo.EndItemNo >= 0)
             {
                 vFormatFirstDrawItemNo = Items[GetParaFirstItemNo(SelectInfo.StartItemNo)].FirstDItemNo;
@@ -1096,6 +1098,11 @@ namespace HC.View
                 if ((GetItemStyle(SelectInfo.StartItemNo) < HCStyle.Null)
                 && (SelectInfo.StartItemOffset == HC.OffsetInner))
                 {
+                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
+                        UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                    else
+                        UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
                     vFormatFirstDrawItemNo = Items[SelectInfo.StartItemNo].FirstDItemNo;
                     FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
                     (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ApplySelectParaStyle(this.Style, aMatchStyle);
@@ -2400,7 +2407,11 @@ namespace HC.View
                     FSelectSeekNo = FMouseMoveItemNo;
                     FSelectSeekOffset = FMouseMoveItemOffset;
 
-                    MatchItemSelectState();  // 设置选中范围内的Item选中状态
+                    if (SelectExists())
+                        MatchItemSelectState();  // 设置选中范围内的Item选中状态
+                    else
+                        CaretDrawItemNo = FMouseMoveDrawItemNo;  // 按下上一下DrawItem最后，划选到下一个开始时，没有选中内容，要更换CaretDrawIemNo
+
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
 
@@ -3605,17 +3616,30 @@ namespace HC.View
                                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                                     Undo_New();
-                                        
-                                    UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
-                                    vCurItem.ParaFirst = false;
 
-                                    if (vCurItem.PageBreak)
+                                    if (IsEmptyLine(SelectInfo.StartItemNo - 1))  // 上一行是空行
                                     {
-                                        UndoAction_ItemPageBreak(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
-                                        vCurItem.PageBreak = false;
-                                    }
+                                        UndoAction_DeleteItem(SelectInfo.StartItemNo - 1, 0);
+                                        Items.Delete(SelectInfo.StartItemNo - 1);
 
-                                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                                        SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
+
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 1, -1);
+                                        ReSetSelectAndCaret(SelectInfo.StartItemNo, 0);
+                                    }
+                                    else
+                                    {
+                                        UndoAction_ItemParaFirst(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
+                                        vCurItem.ParaFirst = false;
+
+                                        if (vCurItem.PageBreak)
+                                        {
+                                            UndoAction_ItemPageBreak(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, false);
+                                            vCurItem.PageBreak = false;
+                                        }
+
+                                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                                    }
                                 }
                             }
                             else  // 不是段首

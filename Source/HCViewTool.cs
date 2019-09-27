@@ -335,6 +335,7 @@ namespace HC.View
                 if (FImageToolBar.Visible && ImageMouseMove(e))
                     return;
             }
+
             if (FHotToolBar != null)
             {
                 MouseEventArgs vEvent = new MouseEventArgs(e.Button, e.Clicks, e.X - FHotToolBar.Left, e.Y - FHotToolBar.Top, e.Delta);

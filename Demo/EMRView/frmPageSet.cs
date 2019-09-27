@@ -122,7 +122,7 @@ namespace EMRView
                     else
                         aHCView.ActiveSection.PaperOrientation = PaperOrientation.cpoLandscape;
 
-                    if (vIndex > 0)  // 自定义
+                    if (vIndex == 0)  // 自定义
                     {
                         if (cbxPaperOrientation.SelectedIndex == 0)  // 纵向
                         {

@@ -60,7 +60,16 @@ namespace HC.Win32
             Top -= y;
             Bottom += y;
         }
-	}
+
+        public void SetEmpty()
+        {
+            Left = 0;
+            Top = 0;
+            Right = 0;
+            Bottom = 0;
+        }
+
+    }
 
     [StructLayout(LayoutKind.Sequential)]
 	public struct POINT 
