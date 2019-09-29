@@ -29,19 +29,21 @@ namespace EMRView
             cbxAutoSize.Checked = vControlItem.AutoSize;
             tbxWidth.Text = vControlItem.Width.ToString();
             tbxHeight.Text = vControlItem.Height.ToString();
+            tbxText.Text = vControlItem.Text;
 
             pnlBorder.Visible = false;
 
             DeCheckBox vDeCheckBox = null;
             if (vControlItem is DeCheckBox)
             {
-                vDeCheckBox = vControlItem as DeCheckBox;
-                pnlEdit.Visible = false;
+                this.Text = "DeCheckBox属性";
+                vDeCheckBox = vControlItem as DeCheckBox;                
             }
 
             DeEdit vDeEdit = null;
             if (vControlItem is DeEdit)
             {
+                this.Text = "DeEdit属性";
                 vDeEdit = vControlItem as DeEdit;
                 cbxBorderLeft.Checked = vDeEdit.BorderSides.Contains((byte)BorderSide.cbsLeft);
                 cbxBorderTop.Checked = vDeEdit.BorderSides.Contains((byte)BorderSide.cbsTop);
@@ -59,12 +61,15 @@ namespace EMRView
                         dgvEdit.Rows[vRow].Cells[1].Value = keyValuePair.Value;
                         vRow++;
                     }
-                }
+                }                
             }
+            else
+                pnlEdit.Visible = false;
 
             DeCombobox vDeCombobox = null;
             if (vControlItem is DeCombobox)
             {
+                this.Text = "DeCombobox属性";
                 vDeCombobox = vControlItem as DeCombobox;
 
                 cbxBorderLeft.Checked = vDeCombobox.BorderSides.Contains((byte)BorderSide.cbsLeft);
@@ -86,7 +91,7 @@ namespace EMRView
                         dgvCombobox.Rows[vRow].Cells[1].Value = keyValuePair.Value;
                         vRow++;
                     }
-                }
+                }                
             }
             else
                 pnlCombobox.Visible = false;
@@ -94,6 +99,7 @@ namespace EMRView
             DeDateTimePicker vDeDateTimePicker = null;
             if (vControlItem is DeDateTimePicker)
             {
+                this.Text = "DeDateTime属性";
                 vDeDateTimePicker = vControlItem as DeDateTimePicker;
                 cbxBorderLeft.Checked = vDeDateTimePicker.BorderSides.Contains((byte)BorderSide.cbsLeft);
                 cbxBorderTop.Checked = vDeDateTimePicker.BorderSides.Contains((byte)BorderSide.cbsTop);
@@ -101,7 +107,7 @@ namespace EMRView
                 cbxBorderBottom.Checked = vDeDateTimePicker.BorderSides.Contains((byte)BorderSide.cbsBottom);
                 pnlBorder.Visible = true;
 
-                cbbDTFormat.Text = vDeDateTimePicker.Format;
+                cbbDTFormat.Text = vDeDateTimePicker.Format;                
             }
             else
                 pnlDateTime.Visible = false;
@@ -109,12 +115,31 @@ namespace EMRView
             DeRadioGroup vDeRadioGroup = null;
             if (vControlItem is DeRadioGroup)
             {
+                this.Text = "DeRadioGroup属性";
                 vDeRadioGroup = vControlItem as DeRadioGroup;
                 foreach (HCRadioButton vItem in vDeRadioGroup.Items)
-                    lstRadioItem.Items.Add(vItem.Text);
+                    lstRadioItem.Items.Add(vItem.Text);                
             }
             else
                 pnlRadioGroup.Visible = false;
+
+            int vHeight = 0;
+            if (pnlSize.Visible)
+                vHeight += pnlSize.Height;
+            else
+            if (pnlEdit.Visible)
+                vHeight += pnlEdit.Height;
+            else
+            if (pnlCombobox.Visible)
+                vHeight += pnlCombobox.Height;
+            else
+            if (pnlDateTime.Visible)
+                vHeight += pnlDateTime.Height;
+            else
+            if (pnlRadioGroup.Visible)
+                vHeight += pnlRadioGroup.Height;
+
+            this.Height = vHeight;
 
             this.ShowDialog();
             if (this.DialogResult == System.Windows.Forms.DialogResult.OK)
@@ -129,6 +154,9 @@ namespace EMRView
                     if (int.TryParse(tbxHeight.Text, out vValue))
                         vControlItem.Height = vValue;
                 }
+
+                if (tbxText.Text != "")
+                    vControlItem.Text = tbxText.Text;
 
                 if (vDeEdit != null)
                 {

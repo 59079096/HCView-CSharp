@@ -115,7 +115,10 @@ namespace EMRView
                 try
                 {
                     int vIndex = GetPaperInfoIndexByName(cbxPaper.Text);
-                    aHCView.ActiveSection.PaperSize = (System.Drawing.Printing.PaperKind)FPaperInfos[vIndex].Size;
+                    if (vIndex == 0)  // 自定义尺寸
+                        aHCView.ActiveSection.PaperSize = System.Drawing.Printing.PaperKind.Custom;
+                    else
+                        aHCView.ActiveSection.PaperSize = (System.Drawing.Printing.PaperKind)FPaperInfos[vIndex].Size;
 
                     if (cbxPaperOrientation.SelectedIndex == 0)  // 纵向
                         aHCView.ActiveSection.PaperOrientation = PaperOrientation.cpoPortrait;

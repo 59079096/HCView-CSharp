@@ -69,22 +69,17 @@ namespace HC.View
 
         private void SetPrintBySectionInfo(PageSettings PageSettings, int ASectionIndex)
         {
-            //PageSettings.PaperSize.Kind = (PaperKind)FSections[ASectionIndex].PaperSize;
-
-            if (PageSettings.PaperSize.Kind == PaperKind.Custom)  // 自定义纸张
+            if (FSections[ASectionIndex].PaperSize == PaperKind.Custom)
             {
-                if (FSections[ASectionIndex].PaperOrientation == PaperOrientation.cpoPortrait)
-                {
-                    PageSettings.Landscape = false;
-                    PageSettings.PaperSize.Height = (int)Math.Round(FSections[ASectionIndex].PaperHeight * 10); //纸长
-                    PageSettings.PaperSize.Width = (int)Math.Round(FSections[ASectionIndex].PaperWidth * 10);   //纸宽
-                }
-                else
-                {
-                    PageSettings.Landscape = true;
-                    PageSettings.PaperSize.Height = (int)Math.Round(FSections[ASectionIndex].PaperWidth * 10); //纸长
-                    PageSettings.PaperSize.Width = (int)Math.Round(FSections[ASectionIndex].PaperHeight * 10);   //纸宽
-                }
+                PageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom",
+                    (int)Math.Round(FSections[ASectionIndex].PaperWidth / 25.4 * 100),
+                    (int)Math.Round(FSections[ASectionIndex].PaperHeight / 25.4 * 100));
+            }
+            else
+            {
+                PageSettings.PaperSize = new System.Drawing.Printing.PaperSize(FSections[ASectionIndex].PaperSize.ToString(),
+                    (int)Math.Round(FSections[ASectionIndex].PaperWidth / 25.4 * 100),
+                    (int)Math.Round(FSections[ASectionIndex].PaperHeight / 25.4 * 100));
             }
         }
 
@@ -2902,20 +2897,22 @@ namespace HC.View
 
                 vPrintPageIndex = aPages[i];
 
+                vPrinter.QueryPageSettings += (sender, e) =>
+                {
+                    vSectionIndex = GetSectionPageIndexByPageIndex(vPrintPageIndex, ref vFirstPageIndex);
+                    if (vPaintInfo.SectionIndex != vSectionIndex)
+                        SetPrintBySectionInfo(e.PageSettings, vSectionIndex);
+                };
+
                 vPrinter.PrintPage += (sender, e) =>
                 {
-                    //e.Graphics.PageUnit = GraphicsUnit.Point;
-
                     if (vPrintCanvas.Graphics == null)
-                        vPrintCanvas.Graphics = e.Graphics;
-
-                    // 根据页码获取起始节和结束节
-                    vSectionIndex = GetSectionPageIndexByPageIndex(vPrintPageIndex, ref vFirstPageIndex);
+                        vPrintCanvas.Graphics = e.Graphics;                
+                    
                     if (vPaintInfo.SectionIndex != vSectionIndex)
                     {
                         vPaintInfo.SectionIndex = vSectionIndex;
 
-                        SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, vSectionIndex);
                         //HCPrinter.NewPage(False);
                         vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);  // 4961
                         vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);  // 7016
@@ -3016,14 +3013,17 @@ namespace HC.View
 
                 HCCanvas vPrintCanvas = new HCCanvas();
 
+                vPrinter.QueryPageSettings += (sender, e) =>
+                {
+                    SetPrintBySectionInfo(e.PageSettings, FActiveSectionIndex);
+                };
+
                 vPrinter.PrintPage += (sender, e) =>
                 {
                     vPrintCanvas.Graphics = e.Graphics;
 
                     vPaintInfo.SectionIndex = this.ActiveSectionIndex;
                     vPaintInfo.PageIndex = this.ActiveSection.ActivePageIndex;
-
-                    SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, FActiveSectionIndex);
 
                     int vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);
                     int vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);
@@ -3129,14 +3129,17 @@ namespace HC.View
 
                 HCCanvas vPrintCanvas = new HCCanvas();
 
+                vPrinter.QueryPageSettings += (sender, e) =>
+                {
+                    SetPrintBySectionInfo(e.PageSettings, FActiveSectionIndex);
+                };
+
                 vPrinter.PrintPage += (sender, e) =>
                 {
                     vPrintCanvas.Graphics = e.Graphics;
 
                     vPaintInfo.SectionIndex = this.ActiveSectionIndex;
                     vPaintInfo.PageIndex = this.ActiveSection.ActivePageIndex;
-
-                    SetPrintBySectionInfo(vPrinter.PrinterSettings.DefaultPageSettings, FActiveSectionIndex);
 
                     int vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);
                     int vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);

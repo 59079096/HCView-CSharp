@@ -66,8 +66,10 @@
             this.pnlDateTime = new System.Windows.Forms.Panel();
             this.cbbDTFormat = new System.Windows.Forms.ComboBox();
             this.label8 = new System.Windows.Forms.Label();
-            this.panel1 = new System.Windows.Forms.Panel();
+            this.pnlBottom = new System.Windows.Forms.Panel();
             this.btnSave = new System.Windows.Forms.Button();
+            this.label9 = new System.Windows.Forms.Label();
+            this.tbxText = new System.Windows.Forms.TextBox();
             this.pnlSize.SuspendLayout();
             this.pnlEdit.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvEdit)).BeginInit();
@@ -76,11 +78,13 @@
             ((System.ComponentModel.ISupportInitialize)(this.dgvCombobox)).BeginInit();
             this.pnlRadioGroup.SuspendLayout();
             this.pnlDateTime.SuspendLayout();
-            this.panel1.SuspendLayout();
+            this.pnlBottom.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlSize
             // 
+            this.pnlSize.Controls.Add(this.tbxText);
+            this.pnlSize.Controls.Add(this.label9);
             this.pnlSize.Controls.Add(this.tbxHeight);
             this.pnlSize.Controls.Add(this.tbxWidth);
             this.pnlSize.Controls.Add(this.label2);
@@ -89,7 +93,7 @@
             this.pnlSize.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlSize.Location = new System.Drawing.Point(0, 0);
             this.pnlSize.Name = "pnlSize";
-            this.pnlSize.Size = new System.Drawing.Size(304, 74);
+            this.pnlSize.Size = new System.Drawing.Size(304, 98);
             this.pnlSize.TabIndex = 0;
             // 
             // tbxHeight
@@ -139,7 +143,7 @@
             this.pnlEdit.Controls.Add(this.label3);
             this.pnlEdit.Controls.Add(this.dgvEdit);
             this.pnlEdit.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlEdit.Location = new System.Drawing.Point(0, 74);
+            this.pnlEdit.Location = new System.Drawing.Point(0, 98);
             this.pnlEdit.Name = "pnlEdit";
             this.pnlEdit.Size = new System.Drawing.Size(304, 141);
             this.pnlEdit.TabIndex = 1;
@@ -185,7 +189,7 @@
             this.pnlBorder.Controls.Add(this.cbxBorderTop);
             this.pnlBorder.Controls.Add(this.label4);
             this.pnlBorder.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlBorder.Location = new System.Drawing.Point(0, 215);
+            this.pnlBorder.Location = new System.Drawing.Point(0, 239);
             this.pnlBorder.Name = "pnlBorder";
             this.pnlBorder.Size = new System.Drawing.Size(304, 58);
             this.pnlBorder.TabIndex = 2;
@@ -250,7 +254,7 @@
             this.pnlCombobox.Controls.Add(this.label5);
             this.pnlCombobox.Controls.Add(this.dgvCombobox);
             this.pnlCombobox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlCombobox.Location = new System.Drawing.Point(0, 273);
+            this.pnlCombobox.Location = new System.Drawing.Point(0, 297);
             this.pnlCombobox.Name = "pnlCombobox";
             this.pnlCombobox.Size = new System.Drawing.Size(304, 194);
             this.pnlCombobox.TabIndex = 3;
@@ -353,7 +357,7 @@
             this.pnlRadioGroup.Controls.Add(this.tbxRadioValue);
             this.pnlRadioGroup.Controls.Add(this.label7);
             this.pnlRadioGroup.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlRadioGroup.Location = new System.Drawing.Point(0, 467);
+            this.pnlRadioGroup.Location = new System.Drawing.Point(0, 491);
             this.pnlRadioGroup.Name = "pnlRadioGroup";
             this.pnlRadioGroup.Size = new System.Drawing.Size(304, 149);
             this.pnlRadioGroup.TabIndex = 4;
@@ -419,7 +423,7 @@
             this.pnlDateTime.Controls.Add(this.cbbDTFormat);
             this.pnlDateTime.Controls.Add(this.label8);
             this.pnlDateTime.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlDateTime.Location = new System.Drawing.Point(0, 616);
+            this.pnlDateTime.Location = new System.Drawing.Point(0, 640);
             this.pnlDateTime.Name = "pnlDateTime";
             this.pnlDateTime.Size = new System.Drawing.Size(304, 39);
             this.pnlDateTime.TabIndex = 5;
@@ -436,7 +440,7 @@
             "yyyy/MM/dd"});
             this.cbbDTFormat.Location = new System.Drawing.Point(43, 10);
             this.cbbDTFormat.Name = "cbbDTFormat";
-            this.cbbDTFormat.Size = new System.Drawing.Size(97, 20);
+            this.cbbDTFormat.Size = new System.Drawing.Size(147, 20);
             this.cbbDTFormat.TabIndex = 6;
             // 
             // label8
@@ -448,14 +452,14 @@
             this.label8.TabIndex = 0;
             this.label8.Text = "格式";
             // 
-            // panel1
+            // pnlBottom
             // 
-            this.panel1.Controls.Add(this.btnSave);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(0, 655);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(304, 32);
-            this.panel1.TabIndex = 7;
+            this.pnlBottom.Controls.Add(this.btnSave);
+            this.pnlBottom.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlBottom.Location = new System.Drawing.Point(0, 679);
+            this.pnlBottom.Name = "pnlBottom";
+            this.pnlBottom.Size = new System.Drawing.Size(304, 32);
+            this.pnlBottom.TabIndex = 7;
             // 
             // btnSave
             // 
@@ -467,13 +471,29 @@
             this.btnSave.UseVisualStyleBackColor = true;
             this.btnSave.Click += new System.EventHandler(this.btnOK_Click);
             // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(18, 74);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(29, 12);
+            this.label9.TabIndex = 5;
+            this.label9.Text = "文本";
+            // 
+            // tbxText
+            // 
+            this.tbxText.Location = new System.Drawing.Point(53, 71);
+            this.tbxText.Name = "tbxText";
+            this.tbxText.Size = new System.Drawing.Size(202, 21);
+            this.tbxText.TabIndex = 6;
+            // 
             // frmDeControlProperty
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(304, 691);
-            this.Controls.Add(this.panel1);
+            this.ClientSize = new System.Drawing.Size(304, 750);
+            this.Controls.Add(this.pnlBottom);
             this.Controls.Add(this.pnlDateTime);
             this.Controls.Add(this.pnlRadioGroup);
             this.Controls.Add(this.pnlCombobox);
@@ -500,7 +520,7 @@
             this.pnlRadioGroup.PerformLayout();
             this.pnlDateTime.ResumeLayout(false);
             this.pnlDateTime.PerformLayout();
-            this.panel1.ResumeLayout(false);
+            this.pnlBottom.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -545,7 +565,9 @@
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.ComboBox cbbDTFormat;
         private System.Windows.Forms.ListBox lstCombobox;
-        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel pnlBottom;
         private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.TextBox tbxText;
+        private System.Windows.Forms.Label label9;
     }
 }
