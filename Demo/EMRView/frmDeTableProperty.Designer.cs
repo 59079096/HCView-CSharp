@@ -244,9 +244,9 @@
             // 
             // btnBorderBackColor
             // 
-            this.btnBorderBackColor.Location = new System.Drawing.Point(294, 61);
+            this.btnBorderBackColor.Location = new System.Drawing.Point(272, 61);
             this.btnBorderBackColor.Name = "btnBorderBackColor";
-            this.btnBorderBackColor.Size = new System.Drawing.Size(75, 23);
+            this.btnBorderBackColor.Size = new System.Drawing.Size(97, 23);
             this.btnBorderBackColor.TabIndex = 9;
             this.btnBorderBackColor.Text = "边框及背景色";
             this.btnBorderBackColor.UseVisualStyleBackColor = true;
@@ -255,11 +255,11 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(148, 66);
+            this.label5.Location = new System.Drawing.Point(107, 66);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(53, 12);
+            this.label5.Size = new System.Drawing.Size(89, 12);
             this.label5.TabIndex = 8;
-            this.label5.Text = "边框宽度";
+            this.label5.Text = "边框宽度(像素)";
             // 
             // tbxBorderWidth
             // 
@@ -413,6 +413,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmDeTableProperty";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "表格属性";
             this.tabTableInfo.ResumeLayout(false);
             this.tabTable.ResumeLayout(false);

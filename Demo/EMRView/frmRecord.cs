@@ -1280,12 +1280,12 @@ namespace EMRView
 
         private void mniPrintCurLine_Click(object sender, EventArgs e)
         {
-            FEmrView.PrintCurPageByActiveLine(false, false);
+            FEmrView.PrintCurPageByActiveLine(cbbPrinter.Text, false, false);
         }
 
         private void mniPrintSelect_Click(object sender, EventArgs e)
         {
-            FEmrView.PrintCurPageSelected(false, false);
+            FEmrView.PrintCurPageSelected(cbbPrinter.Text, false, false);
         }
 
         private void mniPageSet_Click(object sender, EventArgs e)
@@ -1331,14 +1331,14 @@ namespace EMRView
         {
             PrintDocument vPrinter = new PrintDocument();
             vPrinter.PrinterSettings.PrinterName = cbbPrinter.Text;
-            FEmrView.PrintCurPageByActiveLine(cbxPrintHeader.Checked, cbxPrintFooter.Checked);
+            FEmrView.PrintCurPageByActiveLine(cbbPrinter.Text, cbxPrintHeader.Checked, cbxPrintFooter.Checked);
         }
 
         private void BtnPrintSelect_Click(object sender, EventArgs e)
         {
             PrintDocument vPrinter = new PrintDocument();
             vPrinter.PrinterSettings.PrinterName = cbbPrinter.Text;
-            FEmrView.PrintCurPageSelected(cbxPrintHeader.Checked, cbxPrintFooter.Checked);
+            FEmrView.PrintCurPageSelected(cbbPrinter.Text, cbxPrintHeader.Checked, cbxPrintFooter.Checked);
         }
 
         private void BtnPrintRange_Click(object sender, EventArgs e)
@@ -1479,6 +1479,16 @@ namespace EMRView
         {
             if (FOnPrintPreview != null)
                 FOnPrintPreview(sender, e);
+        }
+
+        private void btnPrintCurLineToPage_Click(object sender, EventArgs e)
+        {
+            PrintDocument vPrinter = new PrintDocument();
+            vPrinter.PrinterSettings.PrinterName = cbbPrinter.Text;
+            FEmrView.PrintCurPageByActiveLine(cbbPrinter.Text, cbxPrintHeader.Checked, cbxPrintFooter.Checked);
+
+            if (FEmrView.ActivePageIndex < FEmrView.PageCount - 1)
+                FEmrView.Print(cbbPrinter.Text, FEmrView.ActivePageIndex + 1, FEmrView.PageCount - 1, 1);
         }
 
         private void mniHideTrace_Click(object sender, EventArgs e)

@@ -100,7 +100,9 @@
     <Compile Include="HCToolBar.cs" />
     <Compile Include="HCUnitConversion.cs" />
     <Compile Include="HCViewData.cs" />
-    <Compile Include="HCRichScrollBar.cs" />
+    <Compile Include="HCRichScrollBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="HCScrollBar.cs">
       <SubType>Component</SubType>
     </Compile>

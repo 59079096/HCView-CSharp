@@ -193,6 +193,7 @@
             this.Name = "frmTableBorderBackColor";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "边框及背景色";
+            this.Load += new System.EventHandler(this.frmTableBorderBackColor_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

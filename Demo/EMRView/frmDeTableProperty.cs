@@ -45,9 +45,9 @@ namespace EMRView
             tbxBorderWidth.Text = vTable.BorderWidth.ToString();
 
             tbxFixRowFirst.Text = (vTable.FixRow + 1).ToString();
-            tbxFixRowLast.Text = (vTable.FixRow + vTable.FixRowCount).ToString();
+            tbxFixRowLast.Text = (vTable.FixRow + 1 + vTable.FixRowCount).ToString();
             tbxFixColFirst.Text = (vTable.FixCol + 1).ToString();
-            tbxFixColLast.Text = (vTable.FixCol + vTable.FixColCount).ToString();
+            tbxFixColLast.Text = (vTable.FixCol + 1 + vTable.FixColCount).ToString();
 
             // 行
             if (vTable.SelectCellRang.StartRow >= 0)

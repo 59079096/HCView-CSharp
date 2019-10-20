@@ -38,6 +38,16 @@ namespace EMRView
         public void SetView(HCView aHCView)
         {
             cbbSpaceMode.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].LineSpaceMode;
+            switch (aHCView.Style.ParaStyles[aHCView.CurParaNo].LineSpaceMode)
+            {
+                case ParaLineSpaceMode.plsFix:
+                    tbxLineSpace.Text = string.Format("{0:0.#}", aHCView.Style.ParaStyles[aHCView.CurParaNo].LineSpace);
+                    break;
+
+                case ParaLineSpaceMode.plsMult:
+                    tbxLineSpace.Text = string.Format("{0:0.#}", aHCView.Style.ParaStyles[aHCView.CurParaNo].LineSpace);
+                    break;
+            }
             cbbAlignHorz.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignHorz;
             cbbAlignVert.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignVert;
             pnlBackColor.BackColor = aHCView.Style.ParaStyles[aHCView.CurParaNo].BackColor;
@@ -48,7 +58,15 @@ namespace EMRView
                 aHCView.BeginUpdate();
                 try
                 {
-                    aHCView.ApplyParaLineSpace((ParaLineSpaceMode)cbbSpaceMode.SelectedIndex);
+                    Single vFloat = 12;
+                    if (cbbSpaceMode.SelectedIndex > 4)
+                    {
+                        if (Single.TryParse(tbxLineSpace.Text, out vFloat))
+                            aHCView.ApplyParaLineSpace((ParaLineSpaceMode)cbbSpaceMode.SelectedIndex, vFloat);
+                    }
+                    else
+                        aHCView.ApplyParaLineSpace((ParaLineSpaceMode)cbbSpaceMode.SelectedIndex, vFloat);
+
                     aHCView.ApplyParaAlignHorz((ParaAlignHorz)cbbAlignHorz.SelectedIndex);
                     aHCView.ApplyParaAlignVert((ParaAlignVert)cbbAlignVert.SelectedIndex);
                     aHCView.ApplyParaBackColor(pnlBackColor.BackColor);
@@ -63,6 +81,31 @@ namespace EMRView
         private void btnOK_Click(object sender, EventArgs e)
         {
             this.DialogResult = System.Windows.Forms.DialogResult.OK;
+        }
+
+        private void cbbSpaceMode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cbbSpaceMode.SelectedIndex == 5)  // 固定值
+            {
+                tbxLineSpace.Text = "12";
+                tbxLineSpace.Visible = true;
+                lblUnit.Text = "磅";
+                lblUnit.Visible = true;
+            }
+            else
+            if (cbbSpaceMode.SelectedIndex == 6)  // 多倍
+            {
+                tbxLineSpace.Text = "3";
+                tbxLineSpace.Visible = true;
+                lblUnit.Text = "倍";
+                lblUnit.Visible = true;
+            }
+            else
+            {
+                tbxLineSpace.Text = "";
+                tbxLineSpace.Visible = false;
+                lblUnit.Visible = false;
+            }
         }
     }
 }

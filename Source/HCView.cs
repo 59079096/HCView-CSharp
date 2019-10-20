@@ -22,7 +22,7 @@ using System.Text;
 
 namespace HC.View
 {
-    public delegate void LoadSectionProcHandler(ushort AFileVersion);
+    public delegate void LoadSectionProcHandler(ushort aFileVersion);
 
     public delegate void PaintEventHandler(HCCanvas aCanvas, PaintInfo aPaintInfo);
     public delegate bool HCCopyPasteEventHandler(int aFormat);
@@ -67,19 +67,19 @@ namespace HC.View
 
         private EventHandler FOnChange, FOnChangedSwitch, FOnZoomChanged, FOnViewResize;
 
-        private void SetPrintBySectionInfo(PageSettings PageSettings, int ASectionIndex)
+        private void SetPrintBySectionInfo(PageSettings aPageSettings, int aSectionIndex)
         {
-            if (FSections[ASectionIndex].PaperSize == PaperKind.Custom)
+            if (FSections[aSectionIndex].PaperSize == PaperKind.Custom)
             {
-                PageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom",
-                    (int)Math.Round(FSections[ASectionIndex].PaperWidth / 25.4 * 100),
-                    (int)Math.Round(FSections[ASectionIndex].PaperHeight / 25.4 * 100));
+                aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom",
+                    (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100),
+                    (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100));
             }
             else
             {
-                PageSettings.PaperSize = new System.Drawing.Printing.PaperSize(FSections[ASectionIndex].PaperSize.ToString(),
-                    (int)Math.Round(FSections[ASectionIndex].PaperWidth / 25.4 * 100),
-                    (int)Math.Round(FSections[ASectionIndex].PaperHeight / 25.4 * 100));
+                aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize(FSections[aSectionIndex].PaperSize.ToString(),
+                    (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100),
+                    (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100));
             }
         }
 
@@ -538,7 +538,7 @@ namespace HC.View
             if (FCaret == null)
                 return;
 
-            if ((!this.Focused) || ((!Style.UpdateInfo.Draging) && ActiveSection.SelectExists()))
+            if ((!this.Focused && !Style.UpdateInfo.Draging) || ActiveSection.SelectExists())
             {
                 FCaret.Hide();
                 return;
@@ -604,23 +604,23 @@ namespace HC.View
             DoCaretChange();
         }
 
-        private void GetSectionByCrood(int X, int Y, ref int ASectionIndex)
+        private void GetSectionByCrood(int X, int Y, ref int aSectionIndex)
         {
-            ASectionIndex = -1;
+            aSectionIndex = -1;
             int vY = 0;
             for (int i = 0; i <= FSections.Count - 1; i++)
             {
                 vY = vY + FSections[i].GetFilmHeight();
                 if (vY > Y)
                 {
-                    ASectionIndex = i;
+                    aSectionIndex = i;
                     break;
                 }
             }
-            if ((ASectionIndex < 0) && (vY + FPagePadding >= Y))
-                ASectionIndex = FSections.Count - 1;
+            if ((aSectionIndex < 0) && (vY + FPagePadding >= Y))
+                aSectionIndex = FSections.Count - 1;
 
-            if (ASectionIndex < 0)
+            if (aSectionIndex < 0)
                 throw new Exception("没有获取到正确的节序号！");
         }
 
@@ -824,6 +824,35 @@ namespace HC.View
             base.OnHandleDestroyed(e);
         }
 
+        protected override void OnDragEnter(DragEventArgs drgevent)
+        {
+            base.OnDragEnter(drgevent);
+            drgevent.Effect = DragDropEffects.All;
+            FStyle.UpdateInfo.Draging = true;
+        }
+
+        protected override void OnDragLeave(EventArgs e)
+        {
+            base.OnDragLeave(e);
+            FStyle.UpdateInfo.Draging = false;
+        }
+
+        protected override void OnDragOver(DragEventArgs drgevent)
+        {
+            base.OnDragOver(drgevent);
+            Point vPt = PointToClient(new Point(drgevent.X, drgevent.Y));
+            MouseEventArgs vMouseArgs = new MouseEventArgs(MouseButtons.None, 0, vPt.X, vPt.Y, 0);
+            OnMouseMove(vMouseArgs);
+        }
+
+        protected override void OnDragDrop(DragEventArgs drgevent)
+        {
+            base.OnDragDrop(drgevent);
+            FStyle.UpdateInfo.Draging = false;
+            if (DoPasteRequest(User.CF_TEXT))
+                this.InsertText(drgevent.Data.GetData(DataFormats.Text).ToString());
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             if (DesignMode)
@@ -902,10 +931,10 @@ namespace HC.View
                 return true;
         }
 
-        protected virtual HCCustomItem DoSectionCreateStyleItem(HCCustomData AData, int AStyleNo)
+        protected virtual HCCustomItem DoSectionCreateStyleItem(HCCustomData aData, int aStyleNo)
         {
             if (FOnSectionCreateStyleItem != null)
-                return FOnSectionCreateStyleItem(AData, AStyleNo);
+                return FOnSectionCreateStyleItem(aData, aStyleNo);
             else
                 return null;
         }
@@ -1002,10 +1031,10 @@ namespace HC.View
         }
 
         /// <summary> 保存文档前触发事件，便于订制特征数据 </summary>
-        protected virtual void DoSaveStreamBefor(Stream AStream) { }
+        protected virtual void DoSaveStreamBefor(Stream aStream) { }
 
         /// <summary> 保存文档后触发事件，便于订制特征数据 </summary>
-        protected virtual void DoSaveStreamAfter(Stream AStream)
+        protected virtual void DoSaveStreamAfter(Stream aStream)
         {
             //SetIsChanged(false);
         }
@@ -1414,6 +1443,7 @@ namespace HC.View
             FHScrollBar.Orientation = Orientation.oriHorizontal;
             FHScrollBar.OnScroll = DoHorScroll;
 
+            this.AllowDrop = true;
             this.Controls.Add(FHScrollBar);
             this.Controls.Add(FVScrollBar);
             this.ResumeLayout();
@@ -1435,7 +1465,7 @@ namespace HC.View
         }
 
         /// <summary> 删除不使用的文本样式 </summary>
-        public static void DeleteUnUsedStyle(HCStyle aStyle, List<HCSection> aSections, HashSet<SectionArea> AParts)  //  = (saHeader, saPage, saFooter)
+        public static void DeleteUnUsedStyle(HCStyle aStyle, List<HCSection> aSections, HashSet<SectionArea> aParts)  //  = (saHeader, saPage, saFooter)
         {
             for (int i = 0; i <= aStyle.TextStyles.Count - 1; i++)
             {
@@ -1450,7 +1480,7 @@ namespace HC.View
             }
 
             for (int i = 0; i <= aSections.Count - 1; i++)
-                aSections[i].MarkStyleUsed(true, AParts);
+                aSections[i].MarkStyleUsed(true, aParts);
             
             int vUnCount = 0;
             for (int i = 0; i <= aStyle.TextStyles.Count - 1; i++)
@@ -1473,7 +1503,7 @@ namespace HC.View
             HCCustomData vData = null;
             for (int i = 0; i <= aSections.Count - 1; i++)
             {
-                aSections[i].MarkStyleUsed(false, AParts);
+                aSections[i].MarkStyleUsed(false, aParts);
 
                 vData = aSections[i].ActiveData.GetTopLevelData();
                 if (vData.CurStyleNo > HCStyle.Null)
@@ -1710,9 +1740,9 @@ namespace HC.View
         }
 
         /// <summary> 插入一个Item </summary>
-        public bool InsertItem(HCCustomItem AItem)
+        public bool InsertItem(HCCustomItem aItem)
         {
-            return ActiveSection.InsertItem(AItem);
+            return ActiveSection.InsertItem(aItem);
         }
 
         /// <summary> 在指定的位置插入一个Item </summary>
@@ -1767,15 +1797,15 @@ namespace HC.View
         }
 
         /// <summary> 当前表格选中行下面插入行 </summary>
-        public bool ActiveTableInsertRowAfter(byte ARowCount)
+        public bool ActiveTableInsertRowAfter(byte aRowCount)
         {
-            return ActiveSection.ActiveTableInsertRowAfter(ARowCount);
+            return ActiveSection.ActiveTableInsertRowAfter(aRowCount);
         }
 
         /// <summary> 当前表格选中行上面插入行 </summary>
-        public bool ActiveTableInsertRowBefor(byte ARowCount)
+        public bool ActiveTableInsertRowBefor(byte aRowCount)
         {
-            return ActiveSection.ActiveTableInsertRowBefor(ARowCount);
+            return ActiveSection.ActiveTableInsertRowBefor(aRowCount);
         }
 
         /// <summary> 当前表格删除选中的行 </summary>
@@ -1797,15 +1827,15 @@ namespace HC.View
         }
 
         /// <summary> 当前表格选中列左侧插入列 </summary>
-        public bool ActiveTableInsertColBefor(byte AColCount)
+        public bool ActiveTableInsertColBefor(byte aColCount)
         {
-            return ActiveSection.ActiveTableInsertColBefor(AColCount);
+            return ActiveSection.ActiveTableInsertColBefor(aColCount);
         }
 
         /// <summary> 当前表格选中列右侧插入列 </summary>
-        public bool ActiveTableInsertColAfter(byte AColCount)
+        public bool ActiveTableInsertColAfter(byte aColCount)
         {
-            return ActiveSection.ActiveTableInsertColAfter(AColCount);
+            return ActiveSection.ActiveTableInsertColAfter(aColCount);
         }
 
         /// <summary> 当前表格删除选中的列 </summary>
@@ -1815,27 +1845,27 @@ namespace HC.View
         }
 
         /// <summary> 修改当前光标所在段水平对齐方式 </summary>
-        public void ApplyParaAlignHorz(ParaAlignHorz AAlign)
+        public void ApplyParaAlignHorz(ParaAlignHorz aAlign)
         {
-            ActiveSection.ApplyParaAlignHorz(AAlign);
+            ActiveSection.ApplyParaAlignHorz(aAlign);
         }
 
         /// <summary> 修改当前光标所在段垂直对齐方式 </summary>
-        public void ApplyParaAlignVert(ParaAlignVert AAlign)
+        public void ApplyParaAlignVert(ParaAlignVert aAlign)
         {
-            ActiveSection.ApplyParaAlignVert(AAlign);
+            ActiveSection.ApplyParaAlignVert(aAlign);
         }
 
         /// <summary> 修改当前光标所在段背景色 </summary>
-        public void ApplyParaBackColor(Color AColor)
+        public void ApplyParaBackColor(Color aColor)
         {
-            ActiveSection.ApplyParaBackColor(AColor);
+            ActiveSection.ApplyParaBackColor(aColor);
         }
 
         /// <summary> 修改当前光标所在段行间距 </summary>
-        public void ApplyParaLineSpace(ParaLineSpaceMode ASpaceMode)
+        public void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode, Single aSpace = 1)
         {
-            ActiveSection.ApplyParaLineSpace(ASpaceMode);
+            ActiveSection.ApplyParaLineSpace(aSpaceMode, aSpace);
         }
 
         /// <summary> 修改当前光标所在段左缩进 </summary>
@@ -1866,33 +1896,33 @@ namespace HC.View
         }
 
         /// <summary> 修改当前选中文本的样式 </summary>
-        public void ApplyTextStyle(HCFontStyle AFontStyle)
+        public void ApplyTextStyle(HCFontStyle aFontStyle)
         {
-            ActiveSection.ApplyTextStyle(AFontStyle);
+            ActiveSection.ApplyTextStyle(aFontStyle);
         }
 
         /// <summary> 修改当前选中文本的字体 </summary>
-        public void ApplyTextFontName(string AFontName)
+        public void ApplyTextFontName(string aFontName)
         {
-            ActiveSection.ApplyTextFontName(AFontName);
+            ActiveSection.ApplyTextFontName(aFontName);
         }
 
         /// <summary> 修改当前选中文本的字号 </summary>
-        public void ApplyTextFontSize(Single AFontSize)
+        public void ApplyTextFontSize(Single aFontSize)
         {
-            ActiveSection.ApplyTextFontSize(AFontSize);
+            ActiveSection.ApplyTextFontSize(aFontSize);
         }
 
         /// <summary> 修改当前选中文本的颜色 </summary>
-        public void ApplyTextColor(Color AColor)
+        public void ApplyTextColor(Color aColor)
         {
-            ActiveSection.ApplyTextColor(AColor);
+            ActiveSection.ApplyTextColor(aColor);
         }
 
         /// <summary> 修改当前选中文本的背景颜色 </summary>
-        public void ApplyTextBackColor(Color AColor)
+        public void ApplyTextBackColor(Color aColor)
         {
-            ActiveSection.ApplyTextBackColor(AColor);
+            ActiveSection.ApplyTextBackColor(aColor);
         }
 
         /// <summary> 全选(所有节内容) </summary>
@@ -2085,12 +2115,11 @@ namespace HC.View
 
                 HCRichData vTopData = this.ActiveSectionTopLevelData() as HCRichData;
                 HCImageItem vImageItem = new HCImageItem(vTopData);
-                
+
                 vImageItem.Image = new Bitmap(vImage);
-                
+
                 vImageItem.Width = vImageItem.Image.Width;
                 vImageItem.Height = vImageItem.Image.Height;
-
 
                 vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
 
@@ -2391,15 +2420,15 @@ namespace HC.View
         }
 
         /// <summary> 返回指定节页面绘制时Left位置 </summary>
-        public int GetSectionDrawLeft(int ASectionIndex)
+        public int GetSectionDrawLeft(int aSectionIndex)
         {
             int Result = 0;
             if (FViewModel == HCViewModel.hvmFilm)
             {
                 if (FAnnotatePre.Visible)
-                    Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PaperWidthPix + HC.AnnotationWidth)) / 2, ZoomIn(FPagePadding));
+                    Result = Math.Max((FViewWidth - ZoomIn(FSections[aSectionIndex].PaperWidthPix + HC.AnnotationWidth)) / 2, ZoomIn(FPagePadding));
                 else
-                    Result = Math.Max((FViewWidth - ZoomIn(FSections[ASectionIndex].PaperWidthPix)) / 2, ZoomIn(FPagePadding));
+                    Result = Math.Max((FViewWidth - ZoomIn(FSections[aSectionIndex].PaperWidthPix)) / 2, ZoomIn(FPagePadding));
             }
 
             Result = ZoomOut(Result);
@@ -2455,10 +2484,10 @@ namespace HC.View
         }
 
         /// <summary> 格式化指定节的数据 </summary>
-        public void FormatSection(int ASectionIndex)
+        public void FormatSection(int aSectionIndex)
         {
-            FSections[ASectionIndex].FormatData();
-            FSections[ASectionIndex].BuildSectionPages(0);
+            FSections[aSectionIndex].FormatData();
+            FSections[aSectionIndex].BuildSectionPages(0);
             FStyle.UpdateInfoRePaint();
             FStyle.UpdateInfoReCaret();
 
@@ -2641,16 +2670,16 @@ namespace HC.View
                     try
                     {
                         aStream.Position = 0;
-                        LoadSectionProcHandler vEvent = delegate (ushort AFileVersion)
+                        LoadSectionProcHandler vEvent = delegate (ushort aFileVersion)
                         {
                             byte vByte = 0;
                             vByte = (byte)aStream.ReadByte();  // 节数量
                                                                // 各节数据
-                            FSections[0].LoadFromStream(aStream, FStyle, AFileVersion);
+                            FSections[0].LoadFromStream(aStream, FStyle, aFileVersion);
                             for (int i = 1; i <= vByte - 1; i++)
                             {
                                 HCSection vSection = NewDefaultSection();
-                                vSection.LoadFromStream(aStream, FStyle, AFileVersion);
+                                vSection.LoadFromStream(aStream, FStyle, aFileVersion);
                                 FSections.Add(vSection);
                             }
                         };
@@ -2843,27 +2872,27 @@ namespace HC.View
         }
 
         /// <summary> 使用指定的打印机打印所有页 </summary>
-        /// <param name="APrinter">指定打印机</param>
-        /// <param name="ACopies">打印份数</param>
+        /// <param name="aPrinter">指定打印机</param>
+        /// <param name="aCopies">打印份数</param>
         /// <returns>打印结果</returns>
-        public PrintResult Print(string APrinter, short ACopies = 1)
+        public PrintResult Print(string aPrinter, short aCopies = 1)
         {
-            return Print(APrinter, 0, PageCount - 1, ACopies);
+            return Print(aPrinter, 0, PageCount - 1, aCopies);
         }
 
         /// <summary> 使用指定的打印机打印指定页序号范围内的页 </summary>
-        /// <param name="APrinter">指定打印机</param>
-        /// <param name="AStartPageIndex">起始页序号</param>
-        /// <param name="AEndPageIndex">结束页序号</param>
-        /// <param name="ACopies">打印份数</param>
+        /// <param name="aPrinter">指定打印机</param>
+        /// <param name="aStartPageIndex">起始页序号</param>
+        /// <param name="aEndPageIndex">结束页序号</param>
+        /// <param name="aCopies">打印份数</param>
         /// <returns></returns>
-        public PrintResult Print(string APrinter, int AStartPageIndex, int AEndPageIndex, int ACopies)
+        public PrintResult Print(string aPrinter, int aStartPageIndex, int aEndPageIndex, int aCopies)
         {
-            int[] vPages = new int[AEndPageIndex - AStartPageIndex + 1];
-            for (int i = AStartPageIndex; i <= AEndPageIndex; i++)
-                vPages[i - AStartPageIndex] = i;
+            int[] vPages = new int[aEndPageIndex - aStartPageIndex + 1];
+            for (int i = aStartPageIndex; i <= aEndPageIndex; i++)
+                vPages[i - aStartPageIndex] = i;
     
-            return Print(APrinter, ACopies, vPages);
+            return Print(aPrinter, aCopies, vPages);
         }
 
         /// <summary> 使用指定的打印机打印指定页 </summary>
@@ -2995,12 +3024,21 @@ namespace HC.View
         }
 
         /// <summary> 从当前行打印当前页(仅限正文) </summary>
-        /// <param name="APrintHeader"> 是否打印页眉 </param>
-        /// <param name="APrintFooter"> 是否打印页脚 </param>
-        public PrintResult PrintCurPageByActiveLine(bool APrintHeader, bool APrintFooter)
+        /// <param name="aPrinter">指定打印机</param>
+        /// <param name="aPrintHeader"> 是否打印页眉 </param>
+        /// <param name="aPrintFooter"> 是否打印页脚 </param>
+        public PrintResult PrintCurPageByActiveLine(string aPrinter, bool aPrintHeader, bool aPrintFooter)
         {
             PrintDocument vPrinter = new PrintDocument();
             PrintResult Result = PrintResult.prError;
+
+            if (aPrinter != "")
+                vPrinter.PrinterSettings.PrinterName = aPrinter;
+
+            if (!vPrinter.PrinterSettings.IsValid)
+                return Result;
+
+            vPrinter.DocumentName = FFileName;
 
             // 取打印机打印区域相关参数
             int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
@@ -3071,7 +3109,7 @@ namespace HC.View
                         vPrintCanvas.Brush.Color = Color.White;
 
                         RECT vRect = new RECT();
-                        if (APrintHeader)
+                        if (aPrintHeader)
                             vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, 
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
                                 this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
@@ -3081,7 +3119,7 @@ namespace HC.View
                                 this.ActiveSection.GetHeaderAreaHeight() + vPt.Y);
 
                         vPrintCanvas.FillRect(vRect);
-                        if (!APrintFooter)
+                        if (!aPrintFooter)
                         {
                             vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
                                 vPrintOffsetY + this.ActiveSection.PaperHeightPix - this.ActiveSection.PaperMarginBottomPix,
@@ -3111,12 +3149,22 @@ namespace HC.View
         }
 
         /// <summary> 打印当前页指定的起始、结束Item(仅限正文) </summary>
-        /// <param name="APrintHeader"> 是否打印页眉 </param>
-        /// <param name="APrintFooter"> 是否打印页脚 </param>
-        public PrintResult PrintCurPageByItemRange(bool APrintHeader, bool  APrintFooter, int AStartItemNo, int  AStartOffset, int  AEndItemNo, int  AEndOffset)
+        /// <param name="aPrinter">指定打印机</param>
+        /// <param name="aPrintHeader"> 是否打印页眉 </param>
+        /// <param name="aPrintFooter"> 是否打印页脚 </param>
+        public PrintResult PrintCurPageByItemRange(string aPrinter, bool aPrintHeader, bool aPrintFooter, 
+            int aStartItemNo, int aStartOffset, int aEndItemNo, int aEndOffset)
         {
             PrintDocument vPrinter = new PrintDocument();
             PrintResult Result = PrintResult.prError;
+
+            if (aPrinter != "")
+                vPrinter.PrinterSettings.PrinterName = aPrinter;
+
+            if (!vPrinter.PrinterSettings.IsValid)
+                return Result;
+
+            vPrinter.DocumentName = FFileName;
 
             // 取打印机打印区域相关参数
             int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
@@ -3175,7 +3223,7 @@ namespace HC.View
                         if (this.ActiveSection.ActiveData == this.ActiveSection.Page)
                         {
                             vData = this.ActiveSection.ActiveData;
-                            vDrawItemNo = vData.GetDrawItemNoByOffset(AStartItemNo, AStartOffset);
+                            vDrawItemNo = vData.GetDrawItemNoByOffset(aStartItemNo, aStartOffset);
                             vPt = vData.DrawItems[vDrawItemNo].Rect.TopLeft();
                             vPt.Y = vPt.Y - ActiveSection.GetPageDataFmtTop(this.ActiveSection.ActivePageIndex);
                         }
@@ -3192,7 +3240,7 @@ namespace HC.View
                         vPrintCanvas.Brush.Color = Color.White;
 
                         RECT vRect = new RECT();
-                        if (APrintHeader)
+                        if (aPrintHeader)
                             vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
                                 this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
@@ -3205,25 +3253,25 @@ namespace HC.View
                         
                         vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, 
                             vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y,
-                            vData.DrawItems[vDrawItemNo].Rect.Left + vData.GetDrawItemOffsetWidth(vDrawItemNo, AStartOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
+                            vData.DrawItems[vDrawItemNo].Rect.Left + vData.GetDrawItemOffsetWidth(vDrawItemNo, aStartOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
                             vData.DrawItems[vDrawItemNo].Rect.Height);
 
                         vPrintCanvas.FillRect(vRect);
 
                         //
-                        vDrawItemNo = vData.GetDrawItemNoByOffset(AEndItemNo, AEndOffset);
+                        vDrawItemNo = vData.GetDrawItemNoByOffset(aEndItemNo, aEndOffset);
                         vPt = vData.DrawItems[vDrawItemNo].Rect.TopLeft();
                         vPt.Y = vPt.Y - ActiveSection.GetPageDataFmtTop(this.ActiveSection.ActivePageIndex);
 
                         vRect = new RECT(vPrintOffsetX + vMarginLeft + vData.DrawItems[vDrawItemNo].Rect.Left +
-                            vData.GetDrawItemOffsetWidth(vDrawItemNo, AEndOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
+                            vData.GetDrawItemOffsetWidth(vDrawItemNo, aEndOffset - vData.DrawItems[vDrawItemNo].CharOffs + 1),
                             vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y,
                             vPrintOffsetX + this.ActiveSection.PaperWidthPix - vMarginRight,
                             vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height);
                         
                         vPrintCanvas.FillRect(vRect);
 
-                        if (!APrintFooter)
+                        if (!aPrintFooter)
                         {
                             vRect = new RECT(vPrintOffsetX + vMarginLeft, 
                                 vPrintOffsetY + + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height,
@@ -3262,12 +3310,13 @@ namespace HC.View
         }
 
         /// <summary> 打印当前页选中的起始、结束Item(仅限正文) </summary>
-        /// <param name="APrintHeader"> 是否打印页眉 </param>
-        /// <param name="APrintFooter"> 是否打印页脚 </param>
-        public PrintResult PrintCurPageSelected(bool APrintHeader, bool  APrintFooter)
+        /// <param name="aPrinter">指定打印机</param>
+        /// <param name="aPrintHeader"> 是否打印页眉 </param>
+        /// <param name="aPrintFooter"> 是否打印页脚 </param>
+        public PrintResult PrintCurPageSelected(string aPrinter, bool aPrintHeader, bool aPrintFooter)
         {
             if (this.ActiveSection.ActiveData.SelectExists(false))
-                return PrintCurPageByItemRange(APrintHeader, APrintFooter,
+                return PrintCurPageByItemRange(aPrinter, aPrintHeader, aPrintFooter,
                     this.ActiveSection.ActiveData.SelectInfo.StartItemNo,
                     this.ActiveSection.ActiveData.SelectInfo.StartItemOffset,
                     this.ActiveSection.ActiveData.SelectInfo.EndItemNo,
@@ -3340,13 +3389,13 @@ namespace HC.View
         }
 
         /// <summary> 当前位置开始查找指定的内容 </summary>
-        /// <param name="AKeyword">要查找的关键字</param>
-        /// <param name="AForward">True：向前，False：向后</param>
-        /// <param name="AMatchCase">True：区分大小写，False：不区分大小写</param>
+        /// <param name="aKeyword">要查找的关键字</param>
+        /// <param name="aForward">True：向前，False：向后</param>
+        /// <param name="aMatchCase">True：区分大小写，False：不区分大小写</param>
         /// <returns>True：找到</returns>
-        public bool Search(string AKeyword, bool AForward = false, bool AMatchCase = false)
+        public bool Search(string aKeyword, bool aForward = false, bool aMatchCase = false)
         {
-            bool Result = this.ActiveSection.Search(AKeyword, AForward, AMatchCase);
+            bool Result = this.ActiveSection.Search(aKeyword, aForward, aMatchCase);
             if (Result)
             {
                 POINT vPt = GetActiveDrawItemViewCoord();  // 返回光标处DrawItem相对当前页显示的窗体坐标，有选中时，以选中结束位置的DrawItem格式化坐标
@@ -3402,7 +3451,7 @@ namespace HC.View
         }
 
         /// <summary> 替换已经通过查找选中的内容 </summary>
-        /// <param name="AText">要替换为的内容</param>
+        /// <param name="aText">要替换为的内容</param>
         /// <returns>是否替换成功</returns>
         public bool Replace(string aText)
         {
@@ -4102,5 +4151,4 @@ namespace HC.View
             set { FOnUpdateView = value; }
         }
     }
-
 }

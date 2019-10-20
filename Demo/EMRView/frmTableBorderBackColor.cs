@@ -151,5 +151,10 @@ namespace EMRView
             vDlg.ShowDialog();
             pnlBackColor.BackColor = vDlg.Color;
         }
+
+        private void frmTableBorderBackColor_Load(object sender, EventArgs e)
+        {
+            cbbRang.SelectedIndex = 0;
+        }
     }
 }

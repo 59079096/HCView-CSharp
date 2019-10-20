@@ -47,6 +47,8 @@
             this.btnOK = new System.Windows.Forms.Button();
             this.pnlBackColor = new System.Windows.Forms.Panel();
             this.btnSelectColor = new System.Windows.Forms.Button();
+            this.lblUnit = new System.Windows.Forms.Label();
+            this.tbxLineSpace = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // cbbSpaceMode
@@ -55,13 +57,17 @@
             this.cbbSpaceMode.FormattingEnabled = true;
             this.cbbSpaceMode.Items.AddRange(new object[] {
             "单倍",
+            "1.15倍",
             "1.5倍",
             "2倍",
-            "固定值"});
+            "最小值",
+            "固定值",
+            "多倍"});
             this.cbbSpaceMode.Location = new System.Drawing.Point(84, 11);
             this.cbbSpaceMode.Name = "cbbSpaceMode";
             this.cbbSpaceMode.Size = new System.Drawing.Size(77, 20);
             this.cbbSpaceMode.TabIndex = 0;
+            this.cbbSpaceMode.SelectedIndexChanged += new System.EventHandler(this.cbbSpaceMode_SelectedIndexChanged);
             // 
             // cbbAlignHorz
             // 
@@ -127,7 +133,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(176, 14);
+            this.label2.Location = new System.Drawing.Point(176, 78);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(41, 12);
             this.label2.TabIndex = 7;
@@ -217,14 +223,14 @@
             // 
             // pnlBackColor
             // 
-            this.pnlBackColor.Location = new System.Drawing.Point(232, 12);
+            this.pnlBackColor.Location = new System.Drawing.Point(232, 75);
             this.pnlBackColor.Name = "pnlBackColor";
             this.pnlBackColor.Size = new System.Drawing.Size(35, 18);
             this.pnlBackColor.TabIndex = 18;
             // 
             // btnSelectColor
             // 
-            this.btnSelectColor.Location = new System.Drawing.Point(268, 9);
+            this.btnSelectColor.Location = new System.Drawing.Point(268, 72);
             this.btnSelectColor.Name = "btnSelectColor";
             this.btnSelectColor.Size = new System.Drawing.Size(41, 23);
             this.btnSelectColor.TabIndex = 19;
@@ -232,11 +238,29 @@
             this.btnSelectColor.UseVisualStyleBackColor = true;
             this.btnSelectColor.Click += new System.EventHandler(this.btnSelectColor_Click);
             // 
+            // lblUnit
+            // 
+            this.lblUnit.AutoSize = true;
+            this.lblUnit.Location = new System.Drawing.Point(290, 15);
+            this.lblUnit.Name = "lblUnit";
+            this.lblUnit.Size = new System.Drawing.Size(17, 12);
+            this.lblUnit.TabIndex = 23;
+            this.lblUnit.Text = "磅";
+            // 
+            // tbxLineSpace
+            // 
+            this.tbxLineSpace.Location = new System.Drawing.Point(178, 10);
+            this.tbxLineSpace.Name = "tbxLineSpace";
+            this.tbxLineSpace.Size = new System.Drawing.Size(106, 21);
+            this.tbxLineSpace.TabIndex = 24;
+            // 
             // frmParagraph
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(334, 181);
+            this.Controls.Add(this.tbxLineSpace);
+            this.Controls.Add(this.lblUnit);
             this.Controls.Add(this.btnSelectColor);
             this.Controls.Add(this.pnlBackColor);
             this.Controls.Add(this.btnOK);
@@ -259,6 +283,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmParagraph";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "段落属性设置";
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -286,5 +311,7 @@
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.Panel pnlBackColor;
         private System.Windows.Forms.Button btnSelectColor;
+        private System.Windows.Forms.Label lblUnit;
+        private System.Windows.Forms.TextBox tbxLineSpace;
     }
 }

@@ -787,6 +787,108 @@ namespace EMRView
             return Result;
         }
 
+        /// <summary>
+        /// 获取指定数据元的文本内容
+        /// </summary>
+        /// <param name="aDeIndex"></param>
+        /// <returns></returns>
+        public bool GetDeItemText(string aDeIndex, ref string aText)
+        {
+            return GetDeItemProperty(aDeIndex, "Text", ref aText);
+        }
+
+        /// <summary>
+        /// 获取指定数据元指定属性值
+        /// </summary>
+        /// <param name="aDeIndex"></param>
+        /// <param name="aPropName"></param>
+        /// <param name="aPropValue"></param>
+        /// <returns></returns>
+        public bool GetDeItemProperty(string aDeIndex, string aPropName, ref string aPropValue)
+        {            
+            bool vResult = false;
+            HCItemTraverse vItemTraverse = new HCItemTraverse();  // 准备存放遍历信息的对象
+            vItemTraverse.Areas.Add(SectionArea.saHeader);
+            vItemTraverse.Areas.Add(SectionArea.saPage);  // 遍历正文中的信息
+            vItemTraverse.Areas.Add(SectionArea.saFooter);
+
+            HCCustomItem vItem;
+            string vText = "";
+            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+            {
+                vItem = aData.Items[aItemNo];
+                if ((vItem is DeItem) && (vItem as DeItem)[DeProp.Index] == aDeIndex)
+                {
+                    if (aPropName == "Text")
+                        vText = vItem.Text;
+                    else
+                        vText = (vItem as DeItem)[aPropName];
+
+                    vResult = true;
+                    aStop = true;
+                }
+            };
+
+            vItemTraverse.Process = vTraveEvent;  // 遍历到每一个文本对象是触发的事件
+            this.TraverseItem(vItemTraverse);  // 开始遍历
+
+            if (vResult)
+                aPropValue = vText;
+
+            return vResult;            
+        }
+
+        /// <summary>
+        /// 设置指定数据元的值
+        /// </summary>
+        /// <param name="aDeIndex"></param>
+        /// <param name="aText"></param>
+        /// <returns>是否设置成功</returns>
+        public bool SetDeItemText(string aDeIndex, string aText)
+        {
+            return SetDeItemProperty(aDeIndex, "Text", aText);
+        }
+
+        /// <summary>
+        /// 设置指定数据元指定属性的值
+        /// </summary>
+        /// <param name="aDeIndex"></param>
+        /// <param name="aPropName"></param>
+        /// <param name="aPropValue"></param>
+        /// <returns>是否设置成功</returns>
+        public bool SetDeItemProperty(string aDeIndex, string aPropName, string aPropValue)
+        {
+            bool vResult = false;
+            HCItemTraverse vItemTraverse = new HCItemTraverse();  // 准备存放遍历信息的对象
+            vItemTraverse.Areas.Add(SectionArea.saHeader);
+            vItemTraverse.Areas.Add(SectionArea.saPage);  // 遍历正文中的信息
+            vItemTraverse.Areas.Add(SectionArea.saFooter);
+
+            HCCustomItem vItem;
+            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+            {
+                vItem = aData.Items[aItemNo];
+                if ((vItem is DeItem) && (vItem as DeItem)[DeProp.Index] == aDeIndex)
+                {
+                    if (aPropName == "Text")
+                        vItem.Text = aPropValue;
+                    else
+                        (vItem as DeItem)[aPropName] = aPropValue;
+
+                    vResult = true;
+                    //aStop = true;
+                }
+            };
+
+            vItemTraverse.Process = vTraveEvent;  // 遍历到每一个文本对象是触发的事件
+            this.TraverseItem(vItemTraverse);  // 开始遍历
+
+            if (vResult && (aPropName == "Text"))
+                this.FormatData();
+
+            return vResult;
+        }
+
         /// <summary> 直接设置当前数据元的值为扩展内容 </summary>
 		/// <param name="aStream">扩展内容流</param>
         public void SetActiveItemExtra(Stream aStream)

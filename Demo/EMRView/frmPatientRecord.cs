@@ -946,6 +946,9 @@ namespace EMRView
 
                 frmRecord vFrmRecord = GetPageRecord(vPageIndex);
                 vFrmRecord.EmrView.ReadOnly = false;
+                // 下面2行可实现只有正文可修改
+                //vFrmRecord.EmrView.ActiveSection.Header.ReadOnly = true;
+                //vFrmRecord.EmrView.ActiveSection.Footer.ReadOnly = true;
                 vFrmRecord.EmrView.UpdateView();
 
                 try

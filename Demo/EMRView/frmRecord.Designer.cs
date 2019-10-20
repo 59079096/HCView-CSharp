@@ -173,6 +173,7 @@
             this.mniEven = new System.Windows.Forms.ToolStripMenuItem();
             this.btnPrintRange = new System.Windows.Forms.ToolStripButton();
             this.btnPrintCurLine = new System.Windows.Forms.ToolStripButton();
+            this.btnPrintCurLineToPage = new System.Windows.Forms.ToolStripButton();
             this.btnPrintSelect = new System.Windows.Forms.ToolStripButton();
             this.pmView.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -541,7 +542,7 @@
             this.tssDeInfo});
             this.statusStrip1.Location = new System.Drawing.Point(0, 490);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(920, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(973, 22);
             this.statusStrip1.TabIndex = 6;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -678,7 +679,7 @@
             this.btnLineSpace});
             this.tlbEditTool.Location = new System.Drawing.Point(0, 0);
             this.tlbEditTool.Name = "tlbEditTool";
-            this.tlbEditTool.Size = new System.Drawing.Size(920, 25);
+            this.tlbEditTool.Size = new System.Drawing.Size(973, 25);
             this.tlbEditTool.TabIndex = 4;
             this.tlbEditTool.Text = "toolStrip1";
             // 
@@ -765,7 +766,7 @@
             this.mniPrintCurLine,
             this.mniPrintSelect});
             this.mniPrint.Name = "mniPrint";
-            this.mniPrint.Size = new System.Drawing.Size(180, 22);
+            this.mniPrint.Size = new System.Drawing.Size(124, 22);
             this.mniPrint.Text = "打印";
             // 
             // mniFastPrint
@@ -778,7 +779,7 @@
             // mniPrintPreview
             // 
             this.mniPrintPreview.Name = "mniPrintPreview";
-            this.mniPrintPreview.Size = new System.Drawing.Size(180, 22);
+            this.mniPrintPreview.Size = new System.Drawing.Size(136, 22);
             this.mniPrintPreview.Text = "预览";
             this.mniPrintPreview.Click += new System.EventHandler(this.mniPrintPreview_Click);
             // 
@@ -1235,7 +1236,7 @@
             // mniLS100
             // 
             this.mniLS100.Name = "mniLS100";
-            this.mniLS100.Size = new System.Drawing.Size(180, 22);
+            this.mniLS100.Size = new System.Drawing.Size(112, 22);
             this.mniLS100.Tag = "0";
             this.mniLS100.Text = "单倍";
             this.mniLS100.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1243,7 +1244,7 @@
             // mniLS115
             // 
             this.mniLS115.Name = "mniLS115";
-            this.mniLS115.Size = new System.Drawing.Size(180, 22);
+            this.mniLS115.Size = new System.Drawing.Size(112, 22);
             this.mniLS115.Tag = "1";
             this.mniLS115.Text = "1.15倍";
             this.mniLS115.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1251,7 +1252,7 @@
             // mniLS150
             // 
             this.mniLS150.Name = "mniLS150";
-            this.mniLS150.Size = new System.Drawing.Size(180, 22);
+            this.mniLS150.Size = new System.Drawing.Size(112, 22);
             this.mniLS150.Tag = "2";
             this.mniLS150.Text = "1.5倍";
             this.mniLS150.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1259,7 +1260,7 @@
             // mniLS200
             // 
             this.mniLS200.Name = "mniLS200";
-            this.mniLS200.Size = new System.Drawing.Size(180, 22);
+            this.mniLS200.Size = new System.Drawing.Size(112, 22);
             this.mniLS200.Tag = "3";
             this.mniLS200.Text = "两倍";
             this.mniLS200.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1267,7 +1268,7 @@
             // mniLSFix
             // 
             this.mniLSFix.Name = "mniLSFix";
-            this.mniLSFix.Size = new System.Drawing.Size(180, 22);
+            this.mniLSFix.Size = new System.Drawing.Size(112, 22);
             this.mniLSFix.Tag = "4";
             this.mniLSFix.Text = "固定值";
             this.mniLSFix.Click += new System.EventHandler(this.mniLS100_Click);
@@ -1365,10 +1366,11 @@
             this.toolStripSeparator10,
             this.toolStripLabel4,
             this.btnPrintCurLine,
+            this.btnPrintCurLineToPage,
             this.btnPrintSelect});
             this.tlbPrint.Location = new System.Drawing.Point(0, 25);
             this.tlbPrint.Name = "tlbPrint";
-            this.tlbPrint.Size = new System.Drawing.Size(920, 25);
+            this.tlbPrint.Size = new System.Drawing.Size(973, 25);
             this.tlbPrint.TabIndex = 0;
             this.tlbPrint.Text = "toolStrip1";
             // 
@@ -1428,6 +1430,16 @@
             this.btnPrintCurLine.Text = "当前行";
             this.btnPrintCurLine.Click += new System.EventHandler(this.BtnPrintCurLine_Click);
             // 
+            // btnPrintCurLineToPage
+            // 
+            this.btnPrintCurLineToPage.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnPrintCurLineToPage.Image = ((System.Drawing.Image)(resources.GetObject("btnPrintCurLineToPage.Image")));
+            this.btnPrintCurLineToPage.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnPrintCurLineToPage.Name = "btnPrintCurLineToPage";
+            this.btnPrintCurLineToPage.Size = new System.Drawing.Size(96, 22);
+            this.btnPrintCurLineToPage.Text = "当前行及后续页";
+            this.btnPrintCurLineToPage.Click += new System.EventHandler(this.btnPrintCurLineToPage_Click);
+            // 
             // btnPrintSelect
             // 
             this.btnPrintSelect.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
@@ -1442,7 +1454,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(920, 512);
+            this.ClientSize = new System.Drawing.Size(973, 512);
             this.Controls.Add(this.cbxPrintFooter);
             this.Controls.Add(this.cbxPrintHeader);
             this.Controls.Add(this.tlbPrint);
@@ -1609,5 +1621,6 @@
         private System.Windows.Forms.ToolStripMenuItem mniCellVBHR;
         private System.Windows.Forms.ToolStripMenuItem mniFloatBarCode;
         private System.Windows.Forms.ToolStripMenuItem mniFloatItemProperty;
+        private System.Windows.Forms.ToolStripButton btnPrintCurLineToPage;
     }
 }
