@@ -261,21 +261,41 @@ namespace HC.View
     public class ParaLineSpaceMatch : HCParaMatch
     {
         private ParaLineSpaceMode FSpaceMode;
+        private Single FSpace;
 
         protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
         {
-            return aParaStyle.LineSpaceMode == FSpaceMode;
+            bool vResult = FSpaceMode == aParaStyle.LineSpaceMode;
+            if (vResult)
+            {
+                if (FSpaceMode == ParaLineSpaceMode.plsFix)
+                    return FSpace == aParaStyle.LineSpace;
+                else
+                if (FSpaceMode == ParaLineSpaceMode.plsMult)
+                    return FSpace == aParaStyle.LineSpace;
+                else
+                    return true;
+            }
+
+            return false;
         }
 
         protected override void DoMatchNewPara(HCParaStyle aParaStyle)
         {
             aParaStyle.LineSpaceMode = FSpaceMode;
+            aParaStyle.LineSpace = FSpace;
         }
 
         public ParaLineSpaceMode SpaceMode
         {
             get { return FSpaceMode; }
             set { FSpaceMode = value; }
+        }
+
+        public Single Space
+        {
+            get { return FSpace; }
+            set { FSpace = value; }
         }
     }
 

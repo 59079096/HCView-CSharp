@@ -378,10 +378,11 @@ namespace HC.View
         {
             if (FBorderWidth != value)
             {
-                if (value > FCellVPadding * 2)
-                    FBorderWidth = (byte)(FCellVPadding * 2 - 1);
-                else
+                //if (value > FCellVPadding * 2)
+                //    FBorderWidth = (byte)(FCellVPadding * 2 - 1);
+                //else
                     FBorderWidth = value;
+                FLastChangeFormated = false;
             }
         }
 
@@ -1261,6 +1262,9 @@ namespace HC.View
                         HC.GCursor = Cursors.HSplit;
             }
 
+            if (OwnerData.Style.UpdateInfo.Draging)
+                FSelectCellRang.SetStart(FMouseMoveRow, FMouseMoveCol);
+
             return vResult;
         }
 
@@ -1352,6 +1356,7 @@ namespace HC.View
                     }
                 }
 
+                FLastChangeFormated = false;
                 Resizing = false;
                 HC.GCursor = Cursors.Default;
                 OwnerData.Style.UpdateInfoRePaint();
@@ -2162,11 +2167,6 @@ namespace HC.View
         protected int GetColWidth(int aIndex)
         {
             return FColWidths[aIndex];
-        }
-
-        protected void SetColWidth(int aIndex, int aWidth)
-        {
-            FColWidths[aIndex] = aWidth;
         }
 
         protected bool InsertCol(int aCol, int aCount)
@@ -3249,7 +3249,7 @@ namespace HC.View
                 CalcRowCellHeight(vR);  // 以行中所有无行合并操作列中最大高度更新其他列
             }
 
-            FLastChangeFormated = false;
+            FLastChangeFormated = true;
 
             CalcMergeRowHeightFrom(0);
 
@@ -3492,6 +3492,8 @@ namespace HC.View
             byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
+            aStream.WriteByte(FBorderWidth);
+
             vBuffer = BitConverter.GetBytes(FRows.Count);  // 行数
             aStream.Write(vBuffer, 0, vBuffer.Length);
             
@@ -3567,6 +3569,9 @@ namespace HC.View
             byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FBorderVisible = BitConverter.ToBoolean(vBuffer, 0);
+
+            if (aFileVersion > 29)
+                FBorderWidth = (byte)aStream.ReadByte();
             
             int vRowCount = 0;
             vBuffer = BitConverter.GetBytes(vRowCount);
@@ -4746,6 +4751,17 @@ namespace HC.View
         public int ColWidth(int aIndex)
         {
             return GetColWidth(aIndex);
+        }
+
+        public void SetColWidth(int aCol, int aWidth)
+        {
+            FColWidths[aCol] = aWidth;
+            for (int vR = 0; vR < this.RowCount; vR++)
+            {
+                this[vR, aCol].Width = aWidth;
+                if (this[vR, aCol].CellData != null)
+                    this[vR, aCol].CellData.Width = aWidth - FCellHPadding - FCellHPadding;
+            }
         }
 
         public HCTableRows Rows

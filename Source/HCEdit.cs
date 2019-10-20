@@ -822,9 +822,9 @@ namespace HC.View
         }
 
         /// <summary> 修改当前光标所在段行间距 </summary>
-        public void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode)
+        public void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode, Single aSpace = 1)
         {
-            FData.ApplyParaLineSpace(aSpaceMode);
+            FData.ApplyParaLineSpace(aSpaceMode, aSpace);
             CheckUpdateInfo();
         }
 

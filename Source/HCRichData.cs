@@ -395,93 +395,6 @@ namespace HC.View
             return (FSelectSeekNo == SelectInfo.StartItemNo) && (FSelectSeekOffset == SelectInfo.StartItemOffset);
         }
 
-        protected override HCCustomItem CreateItemByStyle(int aStyleNo)
-        {
-            HCCustomItem Result = null;
-            if (aStyleNo < HCStyle.Null)
-            {
-                switch (aStyleNo)
-                {
-                    case HCStyle.Image:
-                        Result = new HCImageItem(this, 0, 0);
-                        break;
-
-                    case HCStyle.Table:
-                        Result = new HCTableItem(this, 1, 1, 1);
-                        break;
-
-                    case HCStyle.Tab:
-                        Result = new HCTabItem(this, 0, 0);
-                        break;
-
-                    case HCStyle.Line:
-                        Result = new HCLineItem(this, 1, 1);
-                        break;
-
-                    case HCStyle.Express:
-                        Result = new HCExpressItem(this, "", "", "", "");
-                        break;
-
-                    case HCStyle.Domain:
-                        Result = CreateDefaultDomainItem();
-                        break;
-
-                    case HCStyle.CheckBox:
-                        Result = new HCCheckBoxItem(this, "勾选框", false);
-                        break;
-
-                    case HCStyle.Gif:
-                        Result = new HCGifItem(this, 1, 1);
-                        break;
-
-                    case HCStyle.Edit:
-                        Result = new HCEditItem(this, "");
-                        break;
-
-                    case HCStyle.Combobox:
-                        Result = new HCComboboxItem(this, "");
-                        break;
-
-                    case HCStyle.QRCode:
-                        Result = new HCQRCodeItem(this, "");
-                        break;
-
-                    case HCStyle.BarCode:
-                        Result = new HCBarCodeItem(this, "");
-                        break;
-
-                    case HCStyle.Fraction:
-                        Result = new HCFractionItem(this, "", "");
-                        break;
-
-                    case HCStyle.DateTimePicker:
-                        Result = new HCDateTimePicker(this, DateTime.Now);
-                        break;
-
-                    case HCStyle.RadioGroup:
-                        Result = new HCRadioGroup(this);
-                        break;
-
-                    case HCStyle.SupSubScript:
-                        Result = new HCSupSubScriptItem(this, "", "");
-                        break;
-
-                    default:
-                        throw new Exception("未找到类型 " + aStyleNo.ToString() + " 对应的创建Item代码！");
-                }
-            }
-            else
-            {
-                Result = CreateDefaultTextItem();
-                Result.StyleNo = aStyleNo;
-            }
-
-            if (FOnCreateItem != null)
-                FOnCreateItem(Result, null);
-
-            return Result;
-        }
-
         protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             if (!CanEdit())
@@ -621,6 +534,93 @@ namespace HC.View
             FReadOnly = false;
             InitializeField();
             SetEmptyData();
+        }
+
+        public override HCCustomItem CreateItemByStyle(int aStyleNo)
+        {
+            HCCustomItem Result = null;
+            if (aStyleNo < HCStyle.Null)
+            {
+                switch (aStyleNo)
+                {
+                    case HCStyle.Image:
+                        Result = new HCImageItem(this, 0, 0);
+                        break;
+
+                    case HCStyle.Table:
+                        Result = new HCTableItem(this, 1, 1, 1);
+                        break;
+
+                    case HCStyle.Tab:
+                        Result = new HCTabItem(this, 0, 0);
+                        break;
+
+                    case HCStyle.Line:
+                        Result = new HCLineItem(this, 1, 1);
+                        break;
+
+                    case HCStyle.Express:
+                        Result = new HCExpressItem(this, "", "", "", "");
+                        break;
+
+                    case HCStyle.Domain:
+                        Result = CreateDefaultDomainItem();
+                        break;
+
+                    case HCStyle.CheckBox:
+                        Result = new HCCheckBoxItem(this, "勾选框", false);
+                        break;
+
+                    case HCStyle.Gif:
+                        Result = new HCGifItem(this, 1, 1);
+                        break;
+
+                    case HCStyle.Edit:
+                        Result = new HCEditItem(this, "");
+                        break;
+
+                    case HCStyle.Combobox:
+                        Result = new HCComboboxItem(this, "");
+                        break;
+
+                    case HCStyle.QRCode:
+                        Result = new HCQRCodeItem(this, "");
+                        break;
+
+                    case HCStyle.BarCode:
+                        Result = new HCBarCodeItem(this, "");
+                        break;
+
+                    case HCStyle.Fraction:
+                        Result = new HCFractionItem(this, "", "");
+                        break;
+
+                    case HCStyle.DateTimePicker:
+                        Result = new HCDateTimePicker(this, DateTime.Now);
+                        break;
+
+                    case HCStyle.RadioGroup:
+                        Result = new HCRadioGroup(this);
+                        break;
+
+                    case HCStyle.SupSubScript:
+                        Result = new HCSupSubScriptItem(this, "", "");
+                        break;
+
+                    default:
+                        throw new Exception("未找到类型 " + aStyleNo.ToString() + " 对应的创建Item代码！");
+                }
+            }
+            else
+            {
+                Result = CreateDefaultTextItem();
+                Result.StyleNo = aStyleNo;
+            }
+
+            if (FOnCreateItem != null)
+                FOnCreateItem(Result, null);
+
+            return Result;
         }
 
         public override void Clear()
@@ -1840,13 +1840,20 @@ namespace HC.View
 
             DeleteSelected();
 
-            aItem.ParaNo = CurParaNo;
+            if (aItem.ParaNo > this.Style.ParaStyles.Count - 1)
+                aItem.ParaNo = CurParaNo;
 
-            if (IsEmptyData() && (!aItem.ParaFirst))
+            if (!aItem.ParaFirst)  // 不是段首
             {
-                Undo_New();
-                Result = EmptyDataInsertItem(aItem);
-                return Result;
+                if (IsEmptyData())  // 空数据
+                {
+                    Undo_New();
+                    Result = EmptyDataInsertItem(aItem);
+                    CurParaNo = aItem.ParaNo;
+                    return Result;
+                }
+                else  // 随其后
+                    aItem.ParaNo = CurParaNo;
             }
 
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
@@ -1954,12 +1961,20 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            aItem.ParaNo = CurParaNo;
+            if (aItem.ParaNo > this.Style.ParaStyles.Count - 1)
+                aItem.ParaNo = CurParaNo;
 
-            if (IsEmptyData() && (!aItem.ParaFirst))
+            if (!aItem.ParaFirst)  // 不是段首
             {
-                Undo_New();
-                return EmptyDataInsertItem(aItem);
+                if (IsEmptyData())  // 空数据
+                {
+                    Undo_New();
+                    bool vRe = EmptyDataInsertItem(aItem);
+                    CurParaNo = aItem.ParaNo;
+                    return vRe;
+                }
+                else  // 随其后
+                    aItem.ParaNo = CurParaNo;
             }
 
             int vIncCount = 0, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
@@ -2372,6 +2387,8 @@ namespace HC.View
 
                 FMouseMoveItemNo = vMouseMoveItemNo;
                 FMouseMoveItemOffset = vMouseMoveItemOffset;
+                SelectInfo.StartItemNo = vMouseMoveItemNo;
+                SelectInfo.StartItemOffset = vMouseMoveItemOffset;
                 FMouseMoveRestrain = vRestrain;
                 CaretDrawItemNo = FMouseMoveDrawItemNo;
 

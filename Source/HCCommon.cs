@@ -112,11 +112,12 @@ namespace HC.View
             // 2.7 浮动直线改为ShapeLine
             //2.8 浮动Item都使用HCStyle的样式定义(负数)，这样便于统一按Item处理遍历等操作
             //2.9 浮动Item保存PageIndex，原因见 20190906001
-
-            HC_FileVersion = "2.9";
+            //3.0 表格增加边框宽度的存储
+            //3.1 增加行间距 最小值、固定值、多倍的存储
+            HC_FileVersion = "3.1";
 
         public const ushort
-            HC_FileVersionInt = 29;
+            HC_FileVersionInt = 31;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat

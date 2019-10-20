@@ -97,14 +97,14 @@ namespace HC.View
                 Style.ApplyTempStyle(AItem.StyleNo);
                 FLastFormatParaNo = AItem.ParaNo;
                 FItemFormatHeight = CalculateLineHeight(Style.TempCanvas,
-                    Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo].LineSpaceMode);
+                    Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo]);
             }
             else
             if (FLastFormatParaNo != AItem.ParaNo)
             {
                 FLastFormatParaNo = AItem.ParaNo;
                 FItemFormatHeight = CalculateLineHeight(Style.TempCanvas,
-                    Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo].LineSpaceMode);
+                    Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo]);
             }
         }
 
@@ -1037,8 +1037,8 @@ namespace HC.View
 
             if (SelectInfo.StartItemNo >= 0)
             {
-                if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
-                    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ReFormatActiveItem();
+                //if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+                //    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ReFormatActiveItem();
 
                 int vFirstDrawItemNo = -1, vLastItemNo = -1;
                 GetFormatRange(ref vFirstDrawItemNo, ref vLastItemNo);

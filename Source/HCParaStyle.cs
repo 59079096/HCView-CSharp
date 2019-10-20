@@ -39,12 +39,13 @@ namespace HC.View
 
     public enum ParaLineSpaceMode : byte
     {
-        pls100 = 0, pls115 = 1, pls150 = 2, pls200 = 3, plsFix = 4
+        pls100 = 0, pls115 = 1, pls150 = 2, pls200 = 3, plsMin = 4, plsFix = 5, plsMult = 6
     }
 
     public class HCParaStyle : HCObject
     {
         private ParaLineSpaceMode FLineSpaceMode;
+        private Single FLineSpace;
 
         // 单位像素
         private int FFirstIndentPix,// 首行缩进
@@ -60,7 +61,7 @@ namespace HC.View
         private ParaAlignHorz FAlignHorz;
         private ParaAlignVert FAlignVert;
 
-protected void SetFirstIndent(Single value)
+        protected void SetFirstIndent(Single value)
         {
             if (FFirstIndent != value)
             {
@@ -96,6 +97,7 @@ protected void SetFirstIndent(Single value)
             LeftIndent = 0;
             RightIndent = 0;
             FLineSpaceMode = ParaLineSpaceMode.pls100;
+            FLineSpace = 1;
             FBackColor = Color.Silver;
             FAlignHorz = ParaAlignHorz.pahJustify;
             FAlignVert = ParaAlignVert.pavCenter;
@@ -109,6 +111,7 @@ protected void SetFirstIndent(Single value)
         public bool EqualsEx(HCParaStyle aSource)
         {
             return (FLineSpaceMode == aSource.LineSpaceMode)
+                && (FLineSpace == aSource.LineSpace)
                 && (FFirstIndent == aSource.FirstIndent)
                 && (FLeftIndent == aSource.LeftIndent)
                 && (FRightIndent == aSource.RightIndent)
@@ -120,6 +123,7 @@ protected void SetFirstIndent(Single value)
         public void AssignEx(HCParaStyle aSource)
         {
             FLineSpaceMode = aSource.LineSpaceMode;
+            FLineSpace = aSource.LineSpace;
             FirstIndent = aSource.FirstIndent;
             LeftIndent = aSource.LeftIndent;
             RightIndent = aSource.RightIndent;
@@ -133,7 +137,10 @@ protected void SetFirstIndent(Single value)
             byte vByte = (byte)FLineSpaceMode;
             aStream.WriteByte(vByte);
 
-            byte[] vBuffer = BitConverter.GetBytes(FFirstIndent);
+            byte[] vBuffer = BitConverter.GetBytes(FLineSpace);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            vBuffer = BitConverter.GetBytes(FFirstIndent);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FLeftIndent);
@@ -167,6 +174,16 @@ protected void SetFirstIndent(Single value)
                 vByte = (byte)aStream.ReadByte();
                 FLineSpaceMode = (ParaLineSpaceMode)vByte;
             }
+
+            if (aFileVersion > 30)
+            {
+                vBuffer = BitConverter.GetBytes(FLineSpace);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FLineSpace = BitConverter.ToSingle(vBuffer, 0);
+            }
+            else
+            if (FLineSpaceMode == ParaLineSpaceMode.plsFix)  // 旧版本统一按12pt处理
+                FLineSpace = 12;
 
             if (aFileVersion < 22)
             {
@@ -274,8 +291,17 @@ protected void SetFirstIndent(Single value)
                 case ParaLineSpaceMode.pls200:
                     return "200";
 
-                default:
+                case ParaLineSpaceMode.plsMin:
+                    return "min";
+
+                case ParaLineSpaceMode.plsMult:
+                    return "mult";
+
+                case ParaLineSpaceMode.plsFix:
                     return "fix";
+
+                default:
+                    return "100";
             }
         }
 
@@ -345,6 +371,12 @@ protected void SetFirstIndent(Single value)
             if (aNode.Attributes["spacemode"].Value == "200")
                 FLineSpaceMode = ParaLineSpaceMode.pls200;
             else
+            if (aNode.Attributes["spacemode"].Value == "min")
+                FLineSpaceMode = ParaLineSpaceMode.plsMin;
+            else
+            if (aNode.Attributes["spacemode"].Value == "mult")
+                FLineSpaceMode = ParaLineSpaceMode.plsMult;
+            else
             if (aNode.Attributes["spacemode"].Value == "fix")
                 FLineSpaceMode = ParaLineSpaceMode.plsFix;
 
@@ -379,6 +411,12 @@ protected void SetFirstIndent(Single value)
         {
             get { return FLineSpaceMode; }
             set { FLineSpaceMode = value; }
+        }
+
+        public Single LineSpace
+        {
+            get { return FLineSpace; }
+            set { FLineSpace = value; }
         }
 
         public Single FirstIndent 

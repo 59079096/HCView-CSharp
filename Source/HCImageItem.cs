@@ -198,7 +198,7 @@ namespace HC.View
             {
                 using (Bitmap bitmap = new Bitmap(FImage))  // 解决GDI+ 中发生一般性错误，因为该文件仍保留锁定对于对象的生存期
                 {
-                    bitmap.Save(vImgStream, FImage.RawFormat);  // System.Drawing.Imaging.ImageFormat.Bmp);
+                    bitmap.Save(vImgStream, ImageFormat.Bmp);
                 }
 
                 // write bitmap data size

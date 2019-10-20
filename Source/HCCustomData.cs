@@ -185,11 +185,6 @@ namespace HC.View
             }
         }
 
-        protected virtual HCCustomItem CreateItemByStyle(int aStyleNo)
-        {
-            return null;
-        }
-
         protected bool MergeItemText(HCCustomItem aDestItem, HCCustomItem aSrcItem)
         {
             bool Result = aDestItem.CanConcatItems(aSrcItem);
@@ -472,13 +467,19 @@ namespace HC.View
             }
         }
 
-        protected int CalculateLineHeight(HCCanvas aCanvas, HCTextStyle aTextStyle, ParaLineSpaceMode aLineSpaceMode)
+        protected int CalculateLineHeight(HCCanvas aCanvas, HCTextStyle aTextStyle, HCParaStyle aParaStyle)
         {
             int Result = aTextStyle.FontHeight;// THCStyle.GetFontHeight(ACanvas);  // 行高
-            if (aLineSpaceMode == ParaLineSpaceMode.plsFix)
-            {
-                Result = Result + FStyle.LineSpaceMin;
+            if (aParaStyle.LineSpaceMode == ParaLineSpaceMode.plsMin)
                 return Result;
+
+            if (aParaStyle.LineSpaceMode == ParaLineSpaceMode.plsFix)
+            {
+                int vH = HCUnitConversion.MillimeterToPixY(aParaStyle.LineSpace * 0.3527f);
+                if (vH < Result)
+                    return Result;
+                else
+                    return vH;
             }
 
             ushort vAscent = 0, vDescent = 0;
@@ -503,7 +504,7 @@ namespace HC.View
                     vAscent = (ushort)(vAscent + vLeading);
                     vDescent = (ushort)(vDescent + vOtherLeading);
                     Result = vAscent + vDescent;
-                    switch (aLineSpaceMode)
+                    switch (aParaStyle.LineSpaceMode)
                     {
                         case ParaLineSpaceMode.pls115: 
                             Result = Result + (int)Math.Truncate(3 * Result / 20f);
@@ -516,13 +517,17 @@ namespace HC.View
                         case ParaLineSpaceMode.pls200: 
                             Result = Result * 2;
                             break;
+
+                        case ParaLineSpaceMode.plsMult:
+                            Result = (int)Math.Truncate(Result * aParaStyle.LineSpace);
+                            break;
                     }
                 }
             }
             else
             {
                 TEXTMETRICW vTextMetric = aTextStyle.TextMetric;
-                switch (aLineSpaceMode)
+                switch (aParaStyle.LineSpaceMode)
                 {
                     case ParaLineSpaceMode.pls100: 
                         Result = Result + vTextMetric.tmExternalLeading; // Round(vTextMetric.tmHeight * 0.2);
@@ -538,6 +543,10 @@ namespace HC.View
 
                     case ParaLineSpaceMode.pls200: 
                         Result = Result + vTextMetric.tmExternalLeading + vTextMetric.tmHeight + vTextMetric.tmExternalLeading;
+                        break;
+
+                    case ParaLineSpaceMode.plsMult:
+                        Result = Result + vTextMetric.tmExternalLeading + (int)Math.Round((vTextMetric.tmHeight + vTextMetric.tmExternalLeading) * aParaStyle.LineSpace);
                         break;
                 }
             }
@@ -726,6 +735,11 @@ namespace HC.View
             HCCustomItem Result = t.GetConstructor(vTypes).Invoke(vobj) as HCCustomItem;
             Result.ParaNo = FCurParaNo;
             return Result;
+        }
+
+        public virtual HCCustomItem CreateItemByStyle(int aStyleNo)
+        {
+            return null;
         }
 
         public virtual void GetCaretInfo(int aItemNo, int aOffset, ref HCCaretInfo aCaretInfo)
@@ -1831,10 +1845,11 @@ namespace HC.View
             ApplySelectParaStyle(vMatchStyle);
         }
 
-        public virtual void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode)
+        public virtual void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode, Single aSpace)
         {
             ParaLineSpaceMatch vMatchStyle = new ParaLineSpaceMatch();
             vMatchStyle.SpaceMode = aSpaceMode;
+            vMatchStyle.Space = aSpace;
             ApplySelectParaStyle(vMatchStyle);
         }
 
@@ -2309,9 +2324,9 @@ namespace HC.View
                 //HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
                 //try
                 //{
-                Result = (int)CalculateLineHeight(FStyle.LineHeightCanvas,
+                Result = CalculateLineHeight(FStyle.LineHeightCanvas,
                     FStyle.TextStyles[GetDrawItemStyle(aDrawNo)],
-                    FStyle.ParaStyles[GetDrawItemParaStyle(aDrawNo)].LineSpaceMode);
+                    FStyle.ParaStyles[GetDrawItemParaStyle(aDrawNo)]);
                 //}
                 //finally
                 //{

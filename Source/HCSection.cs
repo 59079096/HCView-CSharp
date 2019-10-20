@@ -1311,11 +1311,11 @@ namespace HC.View
             ActiveDataChangeByAction(vEvent);
         }
 
-        public void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode)
+        public void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode, Single aSpace)
         {
             HCFunction vEvent = delegate()
             {
-                FActiveData.ApplyParaLineSpace(aSpaceMode);
+                FActiveData.ApplyParaLineSpace(aSpaceMode, aSpace);
                 return true;
             };
 

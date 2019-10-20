@@ -232,19 +232,6 @@ namespace HC.View
             }
         }
 
-        protected override HCCustomItem CreateItemByStyle(int aStyleNo)
-        {
-            HCCustomItem Result = null;
-
-            if (FOnCreateItemByStyle != null)
-                Result = FOnCreateItemByStyle(this, aStyleNo);
-
-            if (Result == null)
-                Result = base.CreateItemByStyle(aStyleNo);
-
-            return Result;
-        }
-
         protected override bool CanDeleteItem(int aItemNo)
         {
             bool Result = base.CanDeleteItem(aItemNo);
@@ -461,6 +448,18 @@ namespace HC.View
             //FDomainStartDeletes.Free;
         }
 
+        public override HCCustomItem CreateItemByStyle(int aStyleNo)
+        {
+            HCCustomItem Result = null;
+
+            if (FOnCreateItemByStyle != null)
+                Result = FOnCreateItemByStyle(this, aStyleNo);
+
+            if (Result == null)
+                Result = base.CreateItemByStyle(aStyleNo);
+
+            return Result;
+        }
         public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawRight, int aDataDrawBottom, 
             int aDataScreenTop, int aDataScreenBottom, int aVOffset, int aFristDItemNo, int aLastDItemNo,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
