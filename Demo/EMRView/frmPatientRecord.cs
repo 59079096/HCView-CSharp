@@ -494,6 +494,8 @@ namespace EMRView
                         MessageBox.Show("保存病历失败，请重试！\n" + emrMSDB.DB.ErrMsg);
                 }
             }
+            // 病历导出为图片
+            //vFrmRecord.SaveToImage(@"c:\", vRecordInfo.ID.ToString() + "_" + vRecordInfo.DesID.ToString());
         }
 
         private void DoSaveRecordStructure(object sender, EventArgs e)

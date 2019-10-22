@@ -35,7 +35,18 @@ namespace HC.View
 
         public HCTabItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
         {
-            
+            StyleNo = HCStyle.Tab;
+            aOwnerData.Style.ApplyTempStyle(TextStyleNo);
+            SIZE vSize = aOwnerData.Style.TempCanvas.TextExtent("汉字");
+            if (aWidth > 0)
+                Width = aWidth;
+            else
+                Width = vSize.cx;
+
+            if (aHeight > 0)
+                Height = aHeight;
+            else
+                Height = vSize.cy;
         }
 
         public override bool JustifySplit()

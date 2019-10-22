@@ -75,6 +75,7 @@
             this.tabTableInfo.Controls.Add(this.tabRow);
             this.tabTableInfo.Controls.Add(this.tabCell);
             this.tabTableInfo.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tabTableInfo.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             this.tabTableInfo.Location = new System.Drawing.Point(0, 0);
             this.tabTableInfo.Name = "tabTableInfo";
             this.tabTableInfo.SelectedIndex = 0;
@@ -415,6 +416,7 @@
             this.Name = "frmDeTableProperty";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "表格属性";
+            this.Load += new System.EventHandler(this.frmDeTableProperty_Load);
             this.tabTableInfo.ResumeLayout(false);
             this.tabTable.ResumeLayout(false);
             this.tabTable.PerformLayout();

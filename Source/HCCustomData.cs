@@ -1421,7 +1421,11 @@ namespace HC.View
 
         public int GetActiveDrawItemNo()
         {
+            if (FCaretDrawItemNo >= 0)
+                return FCaretDrawItemNo;
+
             int Result = -1;
+
             if (FSelectInfo.StartItemNo < 0)
             {
 

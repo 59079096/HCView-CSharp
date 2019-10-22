@@ -181,5 +181,12 @@ namespace EMRView
             frmTableBorderBackColor vFrmBorderBackColor = new frmTableBorderBackColor();
             vFrmBorderBackColor.SetView(FHCView);
         }
+
+        private void frmDeTableProperty_Load(object sender, EventArgs e)
+        {
+            //IntPtr HIme = Imm.ImmGetContext(this.tabTableInfo.Handle);
+            //Imm.ImmSetOpenStatus(HIme, true);
+            tabTableInfo.ImeMode = ImeMode.OnHalf;
+        }
     }
 }

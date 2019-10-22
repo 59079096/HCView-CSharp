@@ -19,6 +19,7 @@ using System.IO;
 using System.Xml;
 using System.Reflection;
 using System.Text;
+using System.Drawing.Imaging;
 
 namespace HC.View
 {
@@ -371,7 +372,7 @@ namespace HC.View
                 FAnnotatePre.PaintDrawAnnotate(sender, aRect, aCanvas, aPaintInfo);
 
             // HCView广告信息，如介意可以删掉
-            if ((FViewModel == HCViewModel.hvmFilm) && ((sender as HCSection).PagePadding > 10))
+            if (!aPaintInfo.Print && (FViewModel == HCViewModel.hvmFilm) && ((sender as HCSection).PagePadding > 10))
             {
                 aCanvas.Brush.Style = HCBrushStyle.bsClear;
 
@@ -2103,6 +2104,13 @@ namespace HC.View
                 }
             }
             else
+            if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
+            {
+                string vs = vIData.GetData(DataFormats.Rtf).ToString();
+                HCRtfRW vRtfRW = new HCRtfRW();
+                vRtfRW.InsertString(this, vs);
+            }
+            else
             if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                 InsertText(Clipboard.GetText());
             else
@@ -2567,6 +2575,118 @@ namespace HC.View
                 vResult = vResult + HC.sLineBreak + FSections[i].SaveToText();
 
             return vResult;
+        }
+
+        /// <summary>
+        /// 将文档每一页保存为图片
+        /// </summary>
+        /// <param name="aPath">图片路径</param>
+        /// <param name="aPrefix">图片名称前缀</param>
+        /// <param name="aImageType">图片格式如 BMP, JPG, PNG</param>
+        public void SaveToImage(string aPath, string aPrefix, string aImageType, bool aOnePaper = true)
+        {
+            HCCanvas vBmpCanvas = new HCCanvas();
+            SectionPaintInfo vPaintInfo = new SectionPaintInfo();
+            try
+            {
+                vPaintInfo.ScaleX = 1;
+                vPaintInfo.ScaleY = 1;
+                vPaintInfo.Zoom = 1;
+                vPaintInfo.Print = true;
+                vPaintInfo.ViewModel = HCViewModel.hvmFilm;
+
+                int vWidth = 0, vHeight = 0;
+                if (aOnePaper)
+                {
+                    for (int i = 0; i < FSections.Count; i++)
+                    {
+                        vHeight = vHeight + FSections[i].PaperHeightPix * FSections[i].PageCount;
+                        if (vWidth < FSections[i].PaperWidthPix)
+                            vWidth = FSections[i].PaperWidthPix;
+                    }
+
+                    vPaintInfo.WindowWidth = vWidth;
+                    vPaintInfo.WindowHeight = vHeight;
+
+                    using (Bitmap vBmp = new Bitmap(vWidth, vHeight))
+                    {
+                        vBmpCanvas.Graphics = Graphics.FromImage(vBmp);
+
+                        int vSectionIndex = 0, vSectionPageIndex = 0, vTop = 0;
+                        for (int i = 0; i < this.PageCount; i++)
+                        {
+                            vSectionIndex = GetSectionPageIndexByPageIndex(i, ref vSectionPageIndex);
+                            //vWidth = FSections[vSectionIndex].PaperWidthPix;
+                            vHeight = FSections[vSectionIndex].PaperHeightPix;
+
+                            vBmpCanvas.Brush.Color = Color.White;
+                            vBmpCanvas.FillRect(new RECT(0, vTop, vWidth, vTop + vHeight));
+
+                            ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vBmpCanvas);
+                            try
+                            {
+                                FSections[vSectionIndex].PaintPaper(vSectionPageIndex, 0, vTop, vBmpCanvas, vPaintInfo);
+                                vTop = vTop + vHeight;
+                            }
+                            finally
+                            {
+                                vPaintInfo.RestoreCanvasScale(vBmpCanvas, vScaleInfo);
+                            }                            
+                        }
+
+                        vBmpCanvas.Dispose();
+                        if (aImageType == "BMP")
+                            vBmp.Save(aPath + aPrefix + ".bmp", System.Drawing.Imaging.ImageFormat.Bmp);
+                        else
+                        if (aImageType == "JPG")
+                            vBmp.Save(aPath + aPrefix + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                        else
+                            vBmp.Save(aPath + aPrefix + ".png", System.Drawing.Imaging.ImageFormat.Png);
+                    }
+                }
+                else
+                {
+                    int vSectionIndex = 0, vSectionPageIndex = 0;
+                    for (int i = 0; i < this.PageCount; i++)
+                    {
+                        vSectionIndex = GetSectionPageIndexByPageIndex(i, ref vSectionPageIndex);
+
+                        using (Bitmap vBmp = new Bitmap(FSections[vSectionIndex].PaperWidthPix, FSections[vSectionIndex].PaperHeightPix))
+                        {
+                            vBmpCanvas.Graphics = Graphics.FromImage(vBmp);
+                            vBmpCanvas.Brush.Color = Color.White;
+                            vBmpCanvas.FillRect(new RECT(0, 0, vBmp.Width, vBmp.Height));
+
+                            vPaintInfo.WindowWidth = vBmp.Width;
+                            vPaintInfo.WindowHeight = vBmp.Height;
+                            ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vBmpCanvas);
+                            try
+                            {
+                                vBmpCanvas.Brush.Color = Color.White;
+                                vBmpCanvas.FillRect(new RECT(0, 0, vBmp.Width, vBmp.Height));
+                                FSections[vSectionIndex].PaintPaper(vSectionPageIndex, 0, 0, vBmpCanvas, vPaintInfo);
+                            }
+                            finally
+                            {
+                                vPaintInfo.RestoreCanvasScale(vBmpCanvas, vScaleInfo);
+                            }
+
+                            vBmpCanvas.Dispose();
+                            if (aImageType == "BMP")
+                                vBmp.Save(aPath + aPrefix + (i + 1).ToString() + ".bmp", System.Drawing.Imaging.ImageFormat.Bmp);
+                            else
+                            if (aImageType == "JPG")
+                                vBmp.Save(aPath + aPrefix + (i + 1).ToString() + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                            else
+                                vBmp.Save(aPath + aPrefix + (i + 1).ToString() + ".png", System.Drawing.Imaging.ImageFormat.Png);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                vPaintInfo.Dispose();
+            }
         }
 
         /// <summary> 读文本到第一节正文 </summary>
@@ -3114,16 +3234,16 @@ namespace HC.View
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
                                 this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
                         else  // 不打印页眉
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
-                                vPrintOffsetY, this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight,
+                            vRect = HC.Bounds(vPrintOffsetX,// + vMarginLeft,防止页眉浮动Item在页边距中
+                                vPrintOffsetY, this.ActiveSection.PaperWidthPix,// - vMarginLeft - vMarginRight,
                                 this.ActiveSection.GetHeaderAreaHeight() + vPt.Y);
 
                         vPrintCanvas.FillRect(vRect);
                         if (!aPrintFooter)
                         {
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
+                            vRect = HC.Bounds(vPrintOffsetX,// + vMarginLeft,防止页脚浮动Item在页边距中
                                 vPrintOffsetY + this.ActiveSection.PaperHeightPix - this.ActiveSection.PaperMarginBottomPix,
-                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, 
+                                this.ActiveSection.PaperWidthPix,// - vMarginLeft - vMarginRight, 
                                 this.ActiveSection.PaperMarginBottomPix);
                             
                             vPrintCanvas.FillRect(vRect);
@@ -3245,8 +3365,9 @@ namespace HC.View
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
                                 this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
                         else  // 不打印页眉
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, vPrintOffsetY, 
-                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight,
+                            vRect = HC.Bounds(vPrintOffsetX,// + vMarginLeft, 防止页眉浮动Item在页边距中
+                                vPrintOffsetY, 
+                                this.ActiveSection.PaperWidthPix,// - vMarginLeft - vMarginRight,
                                 this.ActiveSection.GetHeaderAreaHeight() + vPt.Y);
 
                         vPrintCanvas.FillRect(vRect);
@@ -3273,9 +3394,9 @@ namespace HC.View
 
                         if (!aPrintFooter)
                         {
-                            vRect = new RECT(vPrintOffsetX + vMarginLeft, 
+                            vRect = new RECT(vPrintOffsetX,// + vMarginLeft, 防止页脚浮动Item在页边距中
                                 vPrintOffsetY + + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height,
-                                vPrintOffsetX + this.ActiveSection.PaperWidthPix - vMarginRight,
+                                vPrintOffsetX + this.ActiveSection.PaperWidthPix,// - vMarginRight,
                                 vPrintOffsetY + this.ActiveSection.PaperHeightPix);
 
                             vPrintCanvas.FillRect(vRect);

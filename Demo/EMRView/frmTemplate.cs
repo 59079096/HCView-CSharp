@@ -280,6 +280,12 @@ namespace EMRView
                 using (MemoryStream vSM = new MemoryStream())
                 {
                     emrMSDB.DB.GetTemplateContent(vTempID, vSM);
+                    //using (FileStream vfs = new FileStream(@"c:\问题模板.hcf", FileMode.Create))
+                    //{
+                    //    byte[] vBytes = vSM.GetBuffer();
+                    //    vfs.Write(vBytes, 0, vBytes.Length);
+                    //    vfs.Close();
+                    //}
 
                     vFrmRecord = new frmRecord();
                     vFrmRecord.EmrView.DesignModeEx = true;

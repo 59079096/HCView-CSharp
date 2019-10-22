@@ -31,6 +31,11 @@
             this.tabPop = new System.Windows.Forms.TabControl();
             this.tabDomain = new System.Windows.Forms.TabPage();
             this.dgvDomain = new System.Windows.Forms.DataGridView();
+            this.Key = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.panel1 = new System.Windows.Forms.Panel();
             this.btnDomainOk = new System.Windows.Forms.Button();
             this.tbxSpliter = new System.Windows.Forms.TextBox();
@@ -83,11 +88,6 @@
             this.panel3 = new System.Windows.Forms.Panel();
             this.btnDateTimeOk = new System.Windows.Forms.Button();
             this.btnNow = new System.Windows.Forms.Button();
-            this.Key = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.tabPop.SuspendLayout();
             this.tabDomain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDomain)).BeginInit();
@@ -152,6 +152,40 @@
             this.dgvDomain.Size = new System.Drawing.Size(245, 404);
             this.dgvDomain.TabIndex = 2;
             this.dgvDomain.DoubleClick += new System.EventHandler(this.dgvDomain_DoubleClick);
+            // 
+            // Key
+            // 
+            this.Key.HeaderText = "值";
+            this.Key.Name = "Key";
+            this.Key.ReadOnly = true;
+            // 
+            // value
+            // 
+            this.value.HeaderText = "编码";
+            this.value.Name = "value";
+            this.value.ReadOnly = true;
+            this.value.Width = 40;
+            // 
+            // Column1
+            // 
+            this.Column1.HeaderText = "ID";
+            this.Column1.Name = "Column1";
+            this.Column1.ReadOnly = true;
+            this.Column1.Width = 30;
+            // 
+            // Column2
+            // 
+            this.Column2.HeaderText = "拼音";
+            this.Column2.Name = "Column2";
+            this.Column2.ReadOnly = true;
+            this.Column2.Width = 35;
+            // 
+            // Column3
+            // 
+            this.Column3.HeaderText = "扩展";
+            this.Column3.Name = "Column3";
+            this.Column3.ReadOnly = true;
+            this.Column3.Width = 35;
             // 
             // panel1
             // 
@@ -730,40 +764,6 @@
             this.btnNow.UseVisualStyleBackColor = true;
             this.btnNow.Click += new System.EventHandler(this.btnNow_Click);
             // 
-            // Key
-            // 
-            this.Key.HeaderText = "值";
-            this.Key.Name = "Key";
-            this.Key.ReadOnly = true;
-            // 
-            // value
-            // 
-            this.value.HeaderText = "编码";
-            this.value.Name = "value";
-            this.value.ReadOnly = true;
-            this.value.Width = 40;
-            // 
-            // Column1
-            // 
-            this.Column1.HeaderText = "ID";
-            this.Column1.Name = "Column1";
-            this.Column1.ReadOnly = true;
-            this.Column1.Width = 30;
-            // 
-            // Column2
-            // 
-            this.Column2.HeaderText = "拼音";
-            this.Column2.Name = "Column2";
-            this.Column2.ReadOnly = true;
-            this.Column2.Width = 35;
-            // 
-            // Column3
-            // 
-            this.Column3.HeaderText = "扩展";
-            this.Column3.Name = "Column3";
-            this.Column3.ReadOnly = true;
-            this.Column3.Width = 35;
-            // 
             // frmRecordPop
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -776,6 +776,7 @@
             this.Name = "frmRecordPop";
             this.Text = "frmRecordPop";
             this.Deactivate += new System.EventHandler(this.frmRecordPop_Deactivate);
+            this.Load += new System.EventHandler(this.frmRecordPop_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FrmRecordPop_KeyDown);
             this.tabPop.ResumeLayout(false);
             this.tabDomain.ResumeLayout(false);

@@ -158,7 +158,7 @@ namespace HC.View
                     return aCellVPadding;
 
                 case HCAlignVert.cavCenter: 
-                    return (FHeight - aCellVPadding - FCellData.Height - aCellVPadding) / 2;
+                    return aCellVPadding + (FHeight - aCellVPadding - FCellData.Height - aCellVPadding) / 2;
 
                 default: 
                     return FHeight - aCellVPadding - FCellData.Height;

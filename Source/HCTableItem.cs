@@ -3385,7 +3385,7 @@ namespace HC.View
                     FRows[vDestRow][vDestCol].Height - (FCellVPadding + vCellData.Height + FCellVPadding);
                     
                 // 计算目标单元格数据起始位置
-                vDestCellDataFmtTop = vBreakRowFmtTop;  // 先分页行起始位置(上边框结束位置)
+                vDestCellDataFmtTop = vBreakRowFmtTop + FCellVPadding;  // 先分页行起始位置(上边框结束位置)
                 if (aBreakRow != vDestRow)  // 恢复到目标单元格
                     vDestCellDataFmtTop = vDestCellDataFmtTop - SrcCellDataTopDistanceToDest(aBreakRow, vDestRow);
                 //

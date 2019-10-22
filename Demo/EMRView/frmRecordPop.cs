@@ -377,6 +377,11 @@ namespace EMRView
                 User.ShowWindow(this.Handle, User.SW_HIDE);
         }
 
+        private void frmRecordPop_Load(object sender, EventArgs e)
+        {
+            tabPop.ImeMode = ImeMode.OnHalf;
+        }
+
         private void btnCE_Click(object sender, EventArgs e)
         {
             tbxValue.Text = "";

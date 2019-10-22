@@ -850,6 +850,19 @@ namespace EMRView
             FEmrView.FormatData();
         }
 
+        /// <summary>
+        /// 将文档每一页保存为图片
+        /// </summary>
+        /// <param name="aPath">图片路径</param>
+        /// <param name="aPrefix">图片名称前缀</param>
+        /// <param name="aImageType">图片格式</param>
+        public void SaveToImage(string aPath, string aPrefix, string aImageType = "PNG")
+        {
+            //if (FEmrView.TraceCount > 0)
+            //    this.HideTrace = true;  // 隐藏痕迹
+            FEmrView.SaveToImage(aPath, aPrefix, aImageType);
+        }
+
         /// <summary> 病历编辑器 </summary>
         public HCEmrView EmrView
         {
