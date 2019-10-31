@@ -30,7 +30,7 @@ namespace EMRView
             if (vIndex > 0)  // 标准纸张大小
             {
                 tbxWidth.Text = String.Format("{0:0.#}", FPaperInfos[vIndex].Width);
-                tbxHeight.Text = String.Format("{0:0.#}", FPaperInfos[vIndex].Width);
+                tbxHeight.Text = String.Format("{0:0.#}", FPaperInfos[vIndex].Height);
                 tbxWidth.ReadOnly = true;
                 tbxHeight.ReadOnly = true;
             }
@@ -132,7 +132,7 @@ namespace EMRView
                             aHCView.ActiveSection.PaperWidth = float.Parse(tbxWidth.Text);
                             aHCView.ActiveSection.PaperHeight = float.Parse(tbxHeight.Text);
                         }
-                        else
+                        else  // 横向
                         {
                             aHCView.ActiveSection.PaperWidth = float.Parse(tbxHeight.Text);
                             aHCView.ActiveSection.PaperHeight = float.Parse(tbxWidth.Text);
@@ -145,7 +145,7 @@ namespace EMRView
                             aHCView.ActiveSection.PaperWidth = FPaperInfos[vIndex].Width;
                             aHCView.ActiveSection.PaperHeight = FPaperInfos[vIndex].Height;
                         }
-                        else
+                        else  // 横向
                         {
                             aHCView.ActiveSection.PaperWidth = FPaperInfos[vIndex].Height;
                             aHCView.ActiveSection.PaperHeight = FPaperInfos[vIndex].Width;

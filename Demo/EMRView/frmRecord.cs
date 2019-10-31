@@ -1108,6 +1108,26 @@ namespace EMRView
 
             if (vTopData.SelectExists())
             {
+                for (int i = vTopData.SelectInfo.StartItemNo; i <= vTopData.SelectInfo.EndItemNo; i++)
+                {
+                    if (vTopData.Items[i].StyleNo < HCStyle.Null)
+                    {
+                        MessageBox.Show("禁止编辑只能应用于文本内容，选中内容中存在非文本对象！");
+                        return;
+                    }
+                }
+
+                if ((vTopData.SelectInfo.StartItemNo == vTopData.SelectInfo.EndItemNo)
+                    && (vTopData.SelectInfo.StartItemOffset == 0)
+                    && (vTopData.SelectInfo.EndItemOffset == vTopData.GetItemOffsetAfter(vTopData.SelectInfo.StartItemNo)))  // 在同一个Item
+                {
+                    (vTopData.Items[vTopData.SelectInfo.StartItemNo] as DeItem).EditProtect = true;
+                    return;
+                }
+
+                for (int i = vTopData.SelectInfo.StartItemNo; i <= vTopData.SelectInfo.EndItemNo; i++)
+                        (vTopData.Items[i] as DeItem).EditProtect = false;
+
                 string vS = vTopData.GetSelectText();
                 vS = vS.Replace("\n", "").Replace("\t", "").Replace("\r", "");
                 DeItem vDeItem = FEmrView.NewDeItem(vS);
@@ -1412,6 +1432,26 @@ namespace EMRView
 
             if (vTopData.SelectExists())
             {
+                for (int i = vTopData.SelectInfo.StartItemNo; i <= vTopData.SelectInfo.EndItemNo; i++)
+                {
+                    if (vTopData.Items[i].StyleNo < HCStyle.Null)
+                    {
+                        MessageBox.Show("禁止编辑只能应用于文本内容，选中内容中存在非文本对象！");
+                        return;
+                    }
+                }
+
+                if ((vTopData.SelectInfo.StartItemNo == vTopData.SelectInfo.EndItemNo)
+                    && (vTopData.SelectInfo.StartItemOffset == 0)
+                    && (vTopData.SelectInfo.EndItemOffset == vTopData.GetItemOffsetAfter(vTopData.SelectInfo.StartItemNo)))  // 在同一个Item
+                {
+                    (vTopData.Items[vTopData.SelectInfo.StartItemNo] as DeItem).EditProtect = true;
+                    return;
+                }
+
+                for (int i = vTopData.SelectInfo.StartItemNo; i <= vTopData.SelectInfo.EndItemNo; i++)
+                    (vTopData.Items[i] as DeItem).EditProtect = false;
+
                 string vS = vTopData.GetSelectText();
                 vS = vS.Replace("\n", "").Replace("\t", "").Replace("\r", "");
                 DeItem vDeItem = FEmrView.NewDeItem(vS);

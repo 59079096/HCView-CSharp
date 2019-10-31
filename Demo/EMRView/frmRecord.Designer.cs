@@ -197,14 +197,14 @@
             this.mniDeleteProtect,
             this.mniCopyProtect});
             this.pmView.Name = "pmRichEdit";
-            this.pmView.Size = new System.Drawing.Size(161, 252);
+            this.pmView.Size = new System.Drawing.Size(181, 274);
             this.pmView.Opening += new System.ComponentModel.CancelEventHandler(this.pmView_Opening);
             // 
             // mniCut
             // 
             this.mniCut.Name = "mniCut";
             this.mniCut.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X)));
-            this.mniCut.Size = new System.Drawing.Size(160, 22);
+            this.mniCut.Size = new System.Drawing.Size(180, 22);
             this.mniCut.Text = "剪切";
             this.mniCut.Click += new System.EventHandler(this.mniCut_Click);
             // 
@@ -212,7 +212,7 @@
             // 
             this.mniCopy.Name = "mniCopy";
             this.mniCopy.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C)));
-            this.mniCopy.Size = new System.Drawing.Size(160, 22);
+            this.mniCopy.Size = new System.Drawing.Size(180, 22);
             this.mniCopy.Text = "复制";
             this.mniCopy.Click += new System.EventHandler(this.mniCopy_Click);
             // 
@@ -220,7 +220,7 @@
             // 
             this.mniPaste.Name = "mniPaste";
             this.mniPaste.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V)));
-            this.mniPaste.Size = new System.Drawing.Size(160, 22);
+            this.mniPaste.Size = new System.Drawing.Size(180, 22);
             this.mniPaste.Text = "粘贴";
             this.mniPaste.Click += new System.EventHandler(this.mniPaste_Click);
             // 
@@ -246,7 +246,7 @@
             this.mniDisBorder,
             this.mniTableProperty});
             this.mniTable.Name = "mniTable";
-            this.mniTable.Size = new System.Drawing.Size(160, 22);
+            this.mniTable.Size = new System.Drawing.Size(180, 22);
             this.mniTable.Text = "表格";
             // 
             // mniInsertRowTop
@@ -452,14 +452,14 @@
             // mniPara
             // 
             this.mniPara.Name = "mniPara";
-            this.mniPara.Size = new System.Drawing.Size(160, 22);
+            this.mniPara.Size = new System.Drawing.Size(180, 22);
             this.mniPara.Text = "段落";
             this.mniPara.Click += new System.EventHandler(this.mniPara_Click);
             // 
             // mniSplit
             // 
             this.mniSplit.Name = "mniSplit";
-            this.mniSplit.Size = new System.Drawing.Size(157, 6);
+            this.mniSplit.Size = new System.Drawing.Size(177, 6);
             // 
             // mniDeItem
             // 
@@ -467,7 +467,7 @@
             this.mniDeItemProp,
             this.mniDeleteDeItem});
             this.mniDeItem.Name = "mniDeItem";
-            this.mniDeItem.Size = new System.Drawing.Size(160, 22);
+            this.mniDeItem.Size = new System.Drawing.Size(180, 22);
             this.mniDeItem.Text = "数据元";
             // 
             // mniDeItemProp
@@ -490,7 +490,7 @@
             this.mniReSync,
             this.DeleteGroup});
             this.mniDeGroup.Name = "mniDeGroup";
-            this.mniDeGroup.Size = new System.Drawing.Size(160, 22);
+            this.mniDeGroup.Size = new System.Drawing.Size(180, 22);
             this.mniDeGroup.Text = "数据组";
             // 
             // mniReSync
@@ -510,29 +510,29 @@
             // mniControlItem
             // 
             this.mniControlItem.Name = "mniControlItem";
-            this.mniControlItem.Size = new System.Drawing.Size(160, 22);
+            this.mniControlItem.Size = new System.Drawing.Size(180, 22);
             this.mniControlItem.Text = "属性";
             this.mniControlItem.Click += new System.EventHandler(this.mniControlItem_Click);
             // 
             // mniFloatItemProperty
             // 
             this.mniFloatItemProperty.Name = "mniFloatItemProperty";
-            this.mniFloatItemProperty.Size = new System.Drawing.Size(160, 22);
+            this.mniFloatItemProperty.Size = new System.Drawing.Size(180, 22);
             this.mniFloatItemProperty.Text = "浮动对象属性";
             this.mniFloatItemProperty.Click += new System.EventHandler(this.MniFloatItemProperty_Click);
             // 
             // mniDeleteProtect
             // 
             this.mniDeleteProtect.Name = "mniDeleteProtect";
-            this.mniDeleteProtect.Size = new System.Drawing.Size(160, 22);
-            this.mniDeleteProtect.Text = "运行时只读";
+            this.mniDeleteProtect.Size = new System.Drawing.Size(180, 22);
+            this.mniDeleteProtect.Text = "运行时禁止编辑";
             this.mniDeleteProtect.Click += new System.EventHandler(this.mniDeleteProtect_Click);
             // 
             // mniCopyProtect
             // 
             this.mniCopyProtect.Name = "mniCopyProtect";
-            this.mniCopyProtect.Size = new System.Drawing.Size(160, 22);
-            this.mniCopyProtect.Text = "运行时不可复制";
+            this.mniCopyProtect.Size = new System.Drawing.Size(180, 22);
+            this.mniCopyProtect.Text = "运行时禁止复制";
             this.mniCopyProtect.Click += new System.EventHandler(this.MniCopyProtect_Click);
             // 
             // statusStrip1

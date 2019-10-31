@@ -256,6 +256,21 @@ namespace HC.View
             return Result;
         }
 
+        protected override bool DoSaveItem(int aItemNo)
+        {
+            bool vResult = base.DoSaveItem(aItemNo);
+            if (vResult && this.Style.States.Contain(HCState.hosCopying))  // 复制保存
+            {
+                if (Items[aItemNo].StyleNo == HCStyle.Domain)  // 是域标识
+                {
+                    int vItemNo = GetDomainAnother(aItemNo);  // 找起始
+                    vResult = (vItemNo >= SelectInfo.StartItemNo) && (vItemNo <= SelectInfo.EndItemNo);
+                }
+            }
+
+            return vResult;
+        }
+
         /// <summary> 用于从流加载完Items后，检查不合格的Item并删除 </summary>
         protected override int CheckInsertItemCount(int aStartNo, int  aEndNo)
         {

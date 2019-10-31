@@ -839,10 +839,10 @@ namespace HC.View
     public delegate void HCProcedure();
     public delegate bool HCFunction();
 
-    public enum PaperOrientation : byte
+    public enum PaperOrientation : byte  // 纸张方向
     {
-        cpoPortrait = 0,  // 纸张方向：纵像
-        cpoLandscape = 1  //2  、横向
+        cpoPortrait = 0,  // 纵向
+        cpoLandscape = 1  // 横向
     }
 
     public enum ExpressArea : byte

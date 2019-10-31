@@ -349,6 +349,8 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmPageSet";
+            this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "页面设置";
             this.ResumeLayout(false);
             this.PerformLayout();

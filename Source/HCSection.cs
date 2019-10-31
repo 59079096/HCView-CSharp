@@ -67,6 +67,7 @@ namespace HC.View
     public delegate void SectionDataFloatItemEventHandler(object sender, HCSectionData aData, HCCustomFloatItem aItem);
 
     public delegate bool SectionDataItemFunEvent(object sender, HCCustomData aData, HCCustomItem aItem);
+    public delegate bool SectionDataItemNoFunEvent(object sender, HCCustomData aData, int aItemNo);
 
     public delegate void SectionDrawItemAnnotateEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
         HCDataAnnotate aDataAnnotate);
@@ -119,7 +120,8 @@ namespace HC.View
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
         SectionDataFloatItemEventHandler FOnInsertFloatItem;
         SectionDataItemEventHandler FOnInsertItem, FOnRemoveItem;
-        SectionDataItemFunEvent FOnSaveItem, FOnDeleteItem;
+        SectionDataItemNoFunEvent FOnSaveItem;
+        SectionDataItemFunEvent FOnDeleteItem;
         SectionDataItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         DataItemNoEventHandler FOnItemResize;
         EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
@@ -234,10 +236,10 @@ namespace HC.View
                 FOnRemoveItem(this, aData, aItem);
         }
 
-        private bool DoDataSaveItem(HCCustomData aData, HCCustomItem aItem)
+        private bool DoDataSaveItem(HCCustomData aData, int aItemNo)
         {
             if (FOnSaveItem != null)
-                return FOnSaveItem(this, aData, aItem);
+                return FOnSaveItem(this, aData, aItemNo);
             else
                 return true;
         }
@@ -2885,7 +2887,7 @@ namespace HC.View
             set { FOnRemoveItem = value; }
         }
 
-        public SectionDataItemFunEvent OnSaveItem
+        public SectionDataItemNoFunEvent OnSaveItem
         {
             get { return FOnSaveItem; }
             set { FOnSaveItem = value; }

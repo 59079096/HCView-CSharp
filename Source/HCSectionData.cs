@@ -420,7 +420,7 @@ namespace HC.View
             for (int i = 0; i <= vItemsNode.ChildNodes.Count - 1; i++)
             {
                 vNode = vItemsNode.ChildNodes[i] as XmlElement;
-                HCCustomFloatItem vFloatItem = CreateFloatItemByStyle(int.Parse(vNode.Attributes["style"].Value));
+                HCCustomFloatItem vFloatItem = CreateFloatItemByStyle(int.Parse(vNode.Attributes["sno"].Value));
                 vFloatItem.ParseXml(vNode);
                 FFloatItems.Add(vFloatItem);
             }

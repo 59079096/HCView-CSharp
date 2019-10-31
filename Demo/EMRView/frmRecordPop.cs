@@ -191,7 +191,7 @@ namespace EMRView
                 tabPop.SelectedIndex = 3;
                 this.Width = 260;
                 this.Height = 170;
-
+                btnNow_Click(null, null);
                 pnlDate.Visible = FFrmtp != DeFrmtp.Time;
                 pnlTime.Visible = FFrmtp != DeFrmtp.Date;
             }

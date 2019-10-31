@@ -75,7 +75,7 @@ namespace EMRView
                     else
                     if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入和光标在其中
                     {
-                        if (vDeItem[DeProp.Name] != vDeItem.Text)  // 已经填写过了
+                        if (vDeItem.AllocValue)  // 已经填写过了
                             aCanvas.Brush.Color = FDeDoneColor;
                         else  // 没填写过
                             aCanvas.Brush.Color = FDeUnDoneColor;
@@ -291,16 +291,16 @@ namespace EMRView
             base.DoSectionRemoveItem(sender, aData, aItem);
         }
 
-        protected override bool DoSectionSaveItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        protected override bool DoSectionSaveItem(object sender, HCCustomData aData, int aItemNo)
         {
-            bool vResult = base.DoSectionSaveItem(sender, aData, aItem);
+            bool vResult = base.DoSectionSaveItem(sender, aData, aItemNo);
             if (Style.States.Contain(HCState.hosCopying))  // 非设计模式、复制保存
             {
-                if ((aItem is DeGroup) && (!FDesignMode))
+                if ((aData.Items[aItemNo] is DeGroup) && (!FDesignMode))
                     vResult = false;
                 else
-                if (aItem is DeItem)
-                    vResult = !(aItem as DeItem).CopyProtect;  // 是否禁止复制
+                if (aData.Items[aItemNo] is DeItem)
+                    vResult = !(aData.Items[aItemNo] as DeItem).CopyProtect;  // 是否禁止复制
             }
 
             return vResult;

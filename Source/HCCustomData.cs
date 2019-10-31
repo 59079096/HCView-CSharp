@@ -92,6 +92,7 @@ namespace HC.View
     public delegate void DataItemEventHandler(HCCustomData aData, HCCustomItem aItem);
     public delegate bool DataItemFunEventHandler(HCCustomData aData, HCCustomItem aItem);
     public delegate void DataItemNoEventHandler(HCCustomData aData, int aItemNo);
+    public delegate bool DataItemNoFunEventHandler(HCCustomData aData, int aItemNo);
 
     public delegate void DrawItemPaintEventHandler(HCCustomData aData, int aItemNo,
       int aDrawItemNo, RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight,
@@ -115,7 +116,7 @@ namespace HC.View
         int FCaretDrawItemNo;  // 当前Item光标处的DrawItem限定其只在相关的光标处理中使用(解决同一Item分行后Offset为行尾时不能区分是上行尾还是下行始)
 
         DataItemEventHandler FOnInsertItem, FOnRemoveItem;
-        DataItemFunEventHandler FOnSaveItem;
+        DataItemNoFunEventHandler FOnSaveItem;
         GetUndoListEventHandler FOnGetUndoList;
         EventHandler FOnCurParaNoChange;
         DrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
@@ -562,10 +563,10 @@ namespace HC.View
                 return null;
         }
 
-        protected virtual bool DoSaveItem(HCCustomItem aItem)
+        protected virtual bool DoSaveItem(int aItemNo)
         {
             if (FOnSaveItem != null)
-                return FOnSaveItem(this, aItem);
+                return FOnSaveItem(this, aItemNo);
             else
                 return true;
         }
@@ -2412,7 +2413,7 @@ namespace HC.View
             {
                 if (aStartItemNo != aEndItemNo)
                 {
-                    if (DoSaveItem(FItems[aStartItemNo]))
+                    if (DoSaveItem(aStartItemNo))
                     {
                         FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, FItems[aStartItemNo].Length);
                         vCountAct++;
@@ -2420,21 +2421,21 @@ namespace HC.View
 
                     for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
                     {
-                        if (DoSaveItem(FItems[i]))
+                        if (DoSaveItem(i))
                         {
                             FItems[i].SaveToStream(aStream);
                             vCountAct++;
                         }
                     }
 
-                    if (DoSaveItem(FItems[aEndItemNo]))
+                    if (DoSaveItem(aEndItemNo))
                     {
                         FItems[aEndItemNo].SaveToStream(aStream, 0, aEndOffset);
                         vCountAct++;
                     }
                 }
                 else
-                if (DoSaveItem(FItems[aStartItemNo]))
+                if (DoSaveItem(aStartItemNo))
                 {
                     FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, aEndOffset);
                     vCountAct++;
@@ -2470,7 +2471,7 @@ namespace HC.View
             {
                 if (aStartItemNo != aEndItemNo)
                 {
-                    if (DoSaveItem(FItems[aStartItemNo]))
+                    if (DoSaveItem(aStartItemNo))
                     {
                         if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
                             Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, FItems[aStartItemNo].Length - aStartOffset);
@@ -2480,11 +2481,11 @@ namespace HC.View
 
                     for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
                     {
-                        if (DoSaveItem(FItems[i]))
+                        if (DoSaveItem(i))
                             Result = Result + FItems[i].Text;
                     }
 
-                    if (DoSaveItem(FItems[aEndItemNo]))
+                    if (DoSaveItem(aEndItemNo))
                     {
                         if (FItems[aEndItemNo].StyleNo > HCStyle.Null)
                             Result = Result + (FItems[aEndItemNo] as HCTextItem).SubString(1, aEndOffset);
@@ -2494,7 +2495,7 @@ namespace HC.View
                 }
                 else  // 选中在同一Item
                 {
-                    if (DoSaveItem(FItems[aStartItemNo]))
+                    if (DoSaveItem(aStartItemNo))
                     {
                         if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
                             Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, aEndOffset - aStartOffset);
@@ -2700,7 +2701,7 @@ namespace HC.View
             set { FOnRemoveItem = value; }
         }
 
-        public DataItemFunEventHandler OnSaveItem
+        public DataItemNoFunEventHandler OnSaveItem
         {
             get { return FOnSaveItem; }
             set { FOnSaveItem = value; }

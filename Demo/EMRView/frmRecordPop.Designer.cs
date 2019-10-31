@@ -651,6 +651,7 @@
             // 
             // tabDateTime
             // 
+            this.tabDateTime.Controls.Add(this.btnDateTimeOk);
             this.tabDateTime.Controls.Add(this.pnlTime);
             this.tabDateTime.Controls.Add(this.pnlDate);
             this.tabDateTime.Controls.Add(this.panel3);
@@ -685,16 +686,16 @@
             "H:mm"});
             this.cbbTime.Location = new System.Drawing.Point(132, 7);
             this.cbbTime.Name = "cbbTime";
-            this.cbbTime.Size = new System.Drawing.Size(82, 20);
+            this.cbbTime.Size = new System.Drawing.Size(97, 20);
             this.cbbTime.TabIndex = 7;
             // 
             // dtpTime
             // 
             this.dtpTime.Font = new System.Drawing.Font("宋体", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.dtpTime.Format = System.Windows.Forms.DateTimePickerFormat.Time;
-            this.dtpTime.Location = new System.Drawing.Point(42, 5);
+            this.dtpTime.Location = new System.Drawing.Point(15, 5);
             this.dtpTime.Name = "dtpTime";
-            this.dtpTime.Size = new System.Drawing.Size(87, 23);
+            this.dtpTime.Size = new System.Drawing.Size(114, 23);
             this.dtpTime.TabIndex = 6;
             // 
             // pnlDate
@@ -736,7 +737,6 @@
             // 
             // panel3
             // 
-            this.panel3.Controls.Add(this.btnDateTimeOk);
             this.panel3.Controls.Add(this.btnNow);
             this.panel3.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel3.Location = new System.Drawing.Point(3, 3);
@@ -746,7 +746,7 @@
             // 
             // btnDateTimeOk
             // 
-            this.btnDateTimeOk.Location = new System.Drawing.Point(108, 13);
+            this.btnDateTimeOk.Location = new System.Drawing.Point(157, 123);
             this.btnDateTimeOk.Name = "btnDateTimeOk";
             this.btnDateTimeOk.Size = new System.Drawing.Size(75, 23);
             this.btnDateTimeOk.TabIndex = 3;
@@ -758,7 +758,7 @@
             // 
             this.btnNow.Location = new System.Drawing.Point(14, 13);
             this.btnNow.Name = "btnNow";
-            this.btnNow.Size = new System.Drawing.Size(75, 23);
+            this.btnNow.Size = new System.Drawing.Size(215, 23);
             this.btnNow.TabIndex = 2;
             this.btnNow.Text = "当前时间";
             this.btnNow.UseVisualStyleBackColor = true;

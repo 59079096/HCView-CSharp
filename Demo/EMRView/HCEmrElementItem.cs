@@ -434,7 +434,10 @@ namespace EMRView
 
         private string GetValue(string key)
         {
-            return FPropertys[key];
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
         }
 
         private void SetValue(string key, string  value)
@@ -538,7 +541,10 @@ namespace EMRView
 
         private string GetValue(string key)
         {
-            return FPropertys[key];
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
         }
 
         private void SetValue(string key, string value)
@@ -639,7 +645,10 @@ namespace EMRView
 
         private string GetValue(string key)
         {
-            return FPropertys[key];
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
         }
 
         private void SetValue(string key, string value)
@@ -740,7 +749,10 @@ namespace EMRView
 
         private string GetValue(string key)
         {
-            return FPropertys[key];
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
         }
 
         private void SetValue(string key, string value)
@@ -842,7 +854,10 @@ namespace EMRView
 
         private string GetValue(string key)
         {
-            return FPropertys[key];
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
         }
 
         private void SetValue(string key, string value)
@@ -943,7 +958,10 @@ namespace EMRView
 
         private string GetValue(string key)
         {
-            return FPropertys[key];
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
         }
 
         private void SetValue(string key, string value)

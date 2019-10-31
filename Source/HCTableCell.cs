@@ -339,6 +339,7 @@ namespace HC.View
                 FCellData.CellHeight = FHeight;
             }
             else
+            if ((FRowSpan < 0) || (FColSpan < 0))  // 修正表格合并处理不准确造成的错误，容错打不开的情况
             {
                 FCellData.Dispose();
                 FCellData = null;

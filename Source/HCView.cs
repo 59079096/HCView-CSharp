@@ -59,7 +59,8 @@ namespace HC.View
         private FloatStyleItemEventHandler FOnSectionCreateFloatStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
         private SectionDataItemEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
-        private SectionDataItemFunEvent FOnSectionSaveItem, FOnSectionDeleteItem;
+        private SectionDataItemNoFunEvent FOnSectionSaveItem;
+        private SectionDataItemFunEvent FOnSectionDeleteItem;
         private SectionDrawItemPaintEventHandler FOnSectionDrawItemPaintAfter, FOnSectionDrawItemPaintBefor;
 
         private SectionPaintEventHandler FOnSectionPaintHeader, FOnSectionPaintFooter, FOnSectionPaintPage,
@@ -82,6 +83,12 @@ namespace HC.View
                     (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100),
                     (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100));
             }
+
+            aPageSettings.Margins.Left = 0;
+            aPageSettings.Margins.Top = 0;
+            aPageSettings.Margins.Right = 0;
+            aPageSettings.Margins.Bottom = 0;
+            //aPageSettings.Landscape = FSections[vSectionIndex].PaperOrientation == PaperOrientation.cpoLandscape;
         }
 
         private void GetViewWidth()
@@ -539,7 +546,7 @@ namespace HC.View
             if (FCaret == null)
                 return;
 
-            if ((!this.Focused && !Style.UpdateInfo.Draging) || ActiveSection.SelectExists())
+            if ((!this.Focused && !FStyle.UpdateInfo.Draging) || ActiveSection.SelectExists())
             {
                 FCaret.Hide();
                 return;
@@ -622,7 +629,7 @@ namespace HC.View
                 aSectionIndex = FSections.Count - 1;
 
             if (aSectionIndex < 0)
-                throw new Exception("没有获取到正确的节序号！");
+                aSectionIndex = 0;  // throw new Exception("没有获取到正确的节序号！"); 只一页且高度小于视口高度时点击到底部按第0节处理
         }
 
         private void SetZoom(Single Value)
@@ -966,10 +973,10 @@ namespace HC.View
                 FOnSectionRemoveItem(sender, aData, aItem);
         }
 
-        protected virtual bool DoSectionSaveItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        protected virtual bool DoSectionSaveItem(object sender, HCCustomData aData, int aItemNo)
         {
             if (FOnSectionSaveItem != null)
-                return FOnSectionSaveItem(sender, aData, aItem);
+                return FOnSectionSaveItem(sender, aData, aItemNo);
             else
                 return true;
         }
@@ -1320,7 +1327,7 @@ namespace HC.View
             if (FViewModel == HCViewModel.hvmFilm)
             {
                 vHMax = FSections[0].PaperWidthPix;
-                for (int i = 0; i <= Sections.Count - 1; i++)  //  计算节垂直总和，以及节中最宽的页宽
+                for (int i = 0; i <= FSections.Count - 1; i++)  //  计算节垂直总和，以及节中最宽的页宽
                 {
                     vVMax = vVMax + FSections[i].GetFilmHeight();
 
@@ -1333,7 +1340,7 @@ namespace HC.View
             else
             {
                 vHMax = FSections[0].GetPageWidth();
-                for (int i = 0; i <= Sections.Count - 1; i++)  //  计算节垂直总和，以及节中最宽的页宽
+                for (int i = 0; i <= FSections.Count - 1; i++)  //  计算节垂直总和，以及节中最宽的页宽
                 {
                     vVMax = vVMax + FSections[i].GetFilmHeight();
 
@@ -2167,9 +2174,9 @@ namespace HC.View
             int vLastPage = -1;
             int vPos = 0;
 
-            for (int i = 0; i <= Sections.Count - 1; i++)
+            for (int i = 0; i <= FSections.Count - 1; i++)
             {
-                for (int j = 0; j <= Sections[i].PageCount - 1; j++)
+                for (int j = 0; j <= FSections[i].PageCount - 1; j++)
                 {
                     if (FSections[i].ViewModel == HCViewModel.hvmFilm)
                         vPos = vPos + ZoomIn(FPagePadding + FSections[i].PaperHeightPix);
@@ -2194,9 +2201,9 @@ namespace HC.View
             if (FDisplayFirstSection >= 0)
             {
                 int vY = FVScrollBar.Position + FViewHeight;
-                for (int i = FDisplayFirstSection; i <= Sections.Count - 1; i++)
+                for (int i = FDisplayFirstSection; i <= FSections.Count - 1; i++)
                 {
-                    for (int j = vFirstPage; j <= Sections[i].PageCount - 1; j++)
+                    for (int j = vFirstPage; j <= FSections[i].PageCount - 1; j++)
                     {
                         if (vPos < vY)
                         {
@@ -3024,9 +3031,11 @@ namespace HC.View
     
             vPrinter.DocumentName = FFileName;
             // 取打印机打印区域相关参数
-            int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
-            int vPrintOffsetY = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginY;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);  // 37
-            
+            //int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
+            //int vPrintOffsetY = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginY;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);  // 37
+            int vPrintOffsetX = -(int)Math.Round(HCUnitConversion.PixelsPerInchX * vPrinter.PrinterSettings.DefaultPageSettings.PrintableArea.X / 100);
+            int vPrintOffsetY = -(int)Math.Round(HCUnitConversion.PixelsPerInchY * vPrinter.PrinterSettings.DefaultPageSettings.PrintableArea.Y / 100);
+
             vPrinter.PrinterSettings.Copies = (short)aCopies;
 
             SectionPaintInfo vPaintInfo = new SectionPaintInfo();
@@ -3048,6 +3057,11 @@ namespace HC.View
 
                 vPrinter.PrintPage += (sender, e) =>
                 {
+                    //int vW = (int)Math.Round(FSections[vSectionIndex].PaperWidth / 25.4 * 100);
+                    //int vH = (int)Math.Round(FSections[vSectionIndex].PaperHeight / 25.4 * 100);
+                    //int vmarg = (int)Math.Round(FSections[vSectionIndex].PaperMarginLeft / 25.4 * 100);
+                    //e.Graphics.DrawRectangle(Pens.Black, new Rectangle(vmarg, vmarg, vW - vmarg - vmarg, vH - vmarg - vmarg));
+
                     if (vPrintCanvas.Graphics == null)
                         vPrintCanvas.Graphics = e.Graphics;                
                     
@@ -3062,21 +3076,25 @@ namespace HC.View
                         if (FSections[vSectionIndex].Page.DataAnnotates.Count > 0)
                         {
                             vPaintInfo.ScaleX = (float)vPrintWidth / (FSections[vSectionIndex].PaperWidthPix + HC.AnnotationWidth);
-                            vPaintInfo.ScaleY = (float)vPrintHeight / (FSections[vSectionIndex].PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                            //vPaintInfo.ScaleY = (float)vPrintHeight / (FSections[vSectionIndex].PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                            vPaintInfo.ScaleY = vPaintInfo.ScaleX;
                             vPaintInfo.Zoom = FSections[vSectionIndex].PaperWidthPix / (FSections[vSectionIndex].PaperWidthPix + HC.AnnotationWidth);
                         }
                         else
                         {
                             vPaintInfo.ScaleX = (float)vPrintWidth / FSections[vSectionIndex].PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                            vPaintInfo.ScaleY = (float)vPrintHeight / FSections[vSectionIndex].PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                            //vPaintInfo.ScaleY = (float)vPrintHeight / FSections[vSectionIndex].PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                            vPaintInfo.ScaleY = vPaintInfo.ScaleX;
                             vPaintInfo.Zoom = 1;
                         }
 
                         vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
                         vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
 
-                        vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
-                        vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
+                        //vPrintOffsetX = -(int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
+                        //vPrintOffsetY = -(int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
+                        vPrintOffsetX = -(int)Math.Round(HCUnitConversion.PixelsPerInchX * e.PageSettings.PrintableArea.X / 100);
+                        vPrintOffsetY = -(int)Math.Round(HCUnitConversion.PixelsPerInchY * e.PageSettings.PrintableArea.Y / 100);
                     }
 
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
@@ -3091,6 +3109,8 @@ namespace HC.View
                     {
                         vPaintInfo.RestoreCanvasScale(vPrintCanvas, vScaleInfo);
                     }
+
+                    //e.Cancel = true;
 
                     if (i < aPages.Length - 1)
                     {
@@ -3154,9 +3174,11 @@ namespace HC.View
             vPrinter.DocumentName = FFileName;
 
             // 取打印机打印区域相关参数
-            int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
-            int vPrintOffsetY = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginY;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);  // 37
-            
+            //int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
+            //int vPrintOffsetY = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginY;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);  // 37
+            int vPrintOffsetX = -(int)Math.Round(HCUnitConversion.PixelsPerInchX * vPrinter.PrinterSettings.DefaultPageSettings.PrintableArea.X / 100);
+            int vPrintOffsetY = -(int)Math.Round(HCUnitConversion.PixelsPerInchY * vPrinter.PrinterSettings.DefaultPageSettings.PrintableArea.Y / 100);
+
             SectionPaintInfo vPaintInfo = new SectionPaintInfo();
             try
             {
@@ -3182,21 +3204,25 @@ namespace HC.View
                     if (this.ActiveSection.Page.DataAnnotates.Count > 0)
                     {
                         vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
-                        vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                        //vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
                         vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
                     }
                     else
                     {
                         vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                        vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                        //vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
                         vPaintInfo.Zoom = 1;
                     }
 
                     vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
                     vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
 
-                    vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
-                    vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
+                    //vPrintOffsetX = -(int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
+                    //vPrintOffsetY = -(int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
+                    vPrintOffsetX = -(int)Math.Round(HCUnitConversion.PixelsPerInchX * e.PageSettings.PrintableArea.X / 100);
+                    vPrintOffsetY = -(int)Math.Round(HCUnitConversion.PixelsPerInchY * e.PageSettings.PrintableArea.Y / 100);
 
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
@@ -3280,9 +3306,11 @@ namespace HC.View
             vPrinter.DocumentName = FFileName;
 
             // 取打印机打印区域相关参数
-            int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
-            int vPrintOffsetY = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginY;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);  // 37
-            
+            //int vPrintOffsetX = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginX;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);  // 73
+            //int vPrintOffsetY = (int)vPrinter.PrinterSettings.DefaultPageSettings.HardMarginY;  // -GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);  // 37
+            int vPrintOffsetX = -(int)Math.Round(HCUnitConversion.PixelsPerInchX * vPrinter.PrinterSettings.DefaultPageSettings.PrintableArea.X / 100);
+            int vPrintOffsetY = -(int)Math.Round(HCUnitConversion.PixelsPerInchY * vPrinter.PrinterSettings.DefaultPageSettings.PrintableArea.Y / 100);
+
             SectionPaintInfo vPaintInfo = new SectionPaintInfo();
             try
             {
@@ -3308,21 +3336,25 @@ namespace HC.View
                     if (this.ActiveSection.Page.DataAnnotates.Count > 0)
                     {
                         vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
-                        vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                        //vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
+                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
                         vPaintInfo.Zoom = this.ActiveSection.PaperWidthPix / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
                     }
                     else
                     {
                         vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
-                        vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                        //vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
+                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
                         vPaintInfo.Zoom = 1;
                     }
 
                     vPaintInfo.WindowWidth = vPrintWidth;  // FSections[vStartSection].PageWidthPix;
                     vPaintInfo.WindowHeight = vPrintHeight;  // FSections[vStartSection].PageHeightPix;
 
-                    vPrintOffsetX = (int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
-                    vPrintOffsetY = (int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
+                    //vPrintOffsetX = -(int)Math.Round(vPrintOffsetX / vPaintInfo.ScaleX);
+                    //vPrintOffsetY = -(int)Math.Round(vPrintOffsetY / vPaintInfo.ScaleY);
+                    vPrintOffsetX = -(int)Math.Round(HCUnitConversion.PixelsPerInchX * e.PageSettings.PrintableArea.X / 100);
+                    vPrintOffsetY = -(int)Math.Round(HCUnitConversion.PixelsPerInchY * e.PageSettings.PrintableArea.Y / 100);
 
                     ScaleInfo vScaleInfo = vPaintInfo.ScaleCanvas(vPrintCanvas);
                     try
@@ -3735,7 +3767,7 @@ namespace HC.View
             set { FOnSectionRemoveItem = value; }
         }
 
-        public SectionDataItemFunEvent OnSectionSaveItem
+        public SectionDataItemNoFunEvent OnSectionSaveItem
         {
             get { return FOnSectionSaveItem; }
             set { FOnSectionSaveItem = value; }
