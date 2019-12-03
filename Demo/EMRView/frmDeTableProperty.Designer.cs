@@ -258,9 +258,9 @@
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(107, 66);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(89, 12);
+            this.label5.Size = new System.Drawing.Size(77, 12);
             this.label5.TabIndex = 8;
-            this.label5.Text = "边框宽度(像素)";
+            this.label5.Text = "边框宽度(磅)";
             // 
             // tbxBorderWidth
             // 

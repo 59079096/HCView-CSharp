@@ -51,6 +51,7 @@ namespace EMRView
             cbbAlignHorz.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignHorz;
             cbbAlignVert.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignVert;
             pnlBackColor.BackColor = aHCView.Style.ParaStyles[aHCView.CurParaNo].BackColor;
+            cbxBreakRough.Checked = aHCView.Style.ParaStyles[aHCView.CurParaNo].BreakRough;
 
             this.ShowDialog();
             if (this.DialogResult == System.Windows.Forms.DialogResult.OK)
@@ -70,6 +71,7 @@ namespace EMRView
                     aHCView.ApplyParaAlignHorz((ParaAlignHorz)cbbAlignHorz.SelectedIndex);
                     aHCView.ApplyParaAlignVert((ParaAlignVert)cbbAlignVert.SelectedIndex);
                     aHCView.ApplyParaBackColor(pnlBackColor.BackColor);
+                    aHCView.ApplyParaBreakRough(cbxBreakRough.Checked);
                 }
                 finally
                 {

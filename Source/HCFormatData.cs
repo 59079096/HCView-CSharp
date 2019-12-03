@@ -421,11 +421,15 @@ namespace HC.View
         /// 获取字符串排版时截断到下一行的位置
         /// </summary>
         /// <param name="aText"></param>
+        /// <param name="aBreakRough">是否粗暴截断</param>
         /// <param name="aPos">在第X个后面断开 X > 0</param>
-        private void FindLineBreak(string aText, int aStartPos, ref int aPos)
+        private void FindLineBreak(string aText, bool aBreakRough, int aStartPos, ref int aPos)
         {
             GetHeadTailBreak(aText, ref aPos);  // 根据行首、尾的约束条件找APos不符合时应该在哪一个位置并重新赋值给APos
             if (aPos < 1)
+                return;
+
+            if (aBreakRough)
                 return;
 
             CharType vPosCharType = HC.GetUnicodeCharType((ushort)(aText[aPos - 1]));  // 当前类型
@@ -457,7 +461,7 @@ namespace HC.View
         }
 
         private void DoFormatRectItemToDrawItem(HCCustomRectItem vRectItem, int aItemNo, int aFmtLeft, int aContentWidth, int aFmtRight, int aOffset,
-            bool vParaFirst, ref POINT aPos, ref RECT vRect, ref bool vLineFirst, ref int aLastDrawItemNo, ref int vRemainderWidth)
+            bool vParaFirst, HCParaStyle aParaStyle, ref POINT aPos, ref RECT vRect, ref bool vLineFirst, ref int aLastDrawItemNo, ref int vRemainderWidth)
         {
             vRectItem.FormatToDrawItem(this, aItemNo);
             int vWidth = aFmtRight - aPos.X;
@@ -523,7 +527,7 @@ namespace HC.View
         /// <param name="aBasePos">vCharWidths中对应偏移的起始位置</param>
         private void DoFormatTextItemToDrawItems(HCCustomItem vItem, int aOffset, string vText, int aCharOffset, int aPlaceWidth, int aBasePos,
             int aItemNo, int vItemLen, int aFmtLeft, int aContentWidth, int aFmtRight,
-            int[] vCharWidths, ref bool vParaFirst, ref bool vLineFirst, ref POINT aPos, ref RECT vRect,
+            int[] vCharWidths, HCParaStyle aParaStyle, ref bool vParaFirst, ref bool vLineFirst, ref POINT aPos, ref RECT vRect,
             ref int vRemainderWidth, ref int aLastDrawItemNo)
         {
             int viPlaceOffset,  // 能放下第几个字符
@@ -581,7 +585,7 @@ namespace HC.View
                     if (aCharOffset < vItemLen)
                     {
                         DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset + 1, aFmtRight - aPos.X, vCharWidths[aCharOffset - 1],
-                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths,
+                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths, aParaStyle,
                             ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     }
                 }
@@ -594,7 +598,7 @@ namespace HC.View
                         CalcItemFormatHeigh(vItem);
 
                         DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos, aItemNo, vItemLen, aFmtLeft, aContentWidth,
-                            aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
+                            aFmtRight, vCharWidths, aParaStyle, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     }
                     else  // 整体下移到下一行
                     {
@@ -604,7 +608,7 @@ namespace HC.View
                         aPos.X = aFmtLeft;
                         aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
                         DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos,
-                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths,
+                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths, aParaStyle,
                             ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     }
             }
@@ -615,7 +619,7 @@ namespace HC.View
                 else
                     viPlaceOffset = viBreakOffset - 1;  // 第viBreakOffset个字符放不下，前一个能放下
 
-                FindLineBreak(vText, aCharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
+                FindLineBreak(vText, aParaStyle.BreakRough, aCharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
 
                 if ((viPlaceOffset == 0) && (!vLineFirst))  // 能放下的都不合适放到当前行且不是行首格式化，整体下移
                 {
@@ -624,7 +628,8 @@ namespace HC.View
                     aPos.X = aFmtLeft;  // 偏移到下一行开始计算
                     aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
                     DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos, aItemNo, vItemLen,
-                        aFmtLeft, aContentWidth, aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
+                        aFmtLeft, aContentWidth, aFmtRight, vCharWidths, aParaStyle,
+                        ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                 }
                 else  // 有适合放到当前行的内容
                 {
@@ -655,8 +660,8 @@ namespace HC.View
                     if (viPlaceOffset < vItemLen)
                     {
                         DoFormatTextItemToDrawItems(vItem, aOffset, vText, viPlaceOffset + 1, aFmtRight - aPos.X, vCharWidths[viPlaceOffset - 1],
-                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths, ref vParaFirst, ref vLineFirst, ref aPos,
-                            ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
+                            aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths, aParaStyle,
+                            ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     }
                 }
             }
@@ -712,7 +717,7 @@ namespace HC.View
             {
                 vRectItem = vItem as HCCustomRectItem;
                 DoFormatRectItemToDrawItem(vRectItem, aItemNo, aFmtLeft, aContentWidth, aFmtRight, aOffset, 
-                    vParaFirst, ref aPos, ref vRect, ref vLineFirst, ref aLastDrawItemNo, ref vRemainderWidth);
+                    vParaFirst, vParaStyle, ref aPos, ref vRect, ref vLineFirst, ref aLastDrawItemNo, ref vRemainderWidth);
                 // 如果进入表格前是样式1，进入表格里有把Style的全局TempStyleNo改成0，表格后面
                 // 是样式0的格式化时，由于此时Data的FItemFormatHeight还是样式1的，应用样式0的
                 // StyleNo时和全局的并没有变化，并不能应用修改FItemFormatHeight，所以需要清除一下。
@@ -774,7 +779,7 @@ namespace HC.View
             
                     //SetLength(vCharWArr, 0);
                     DoFormatTextItemToDrawItems(vItem, aOffset, vText, 1, aFmtRight - aPos.X, 0, aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths,
-                        ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
+                        vParaStyle, ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
                     //SetLength(vCharWidths, 0);
                 }
             }

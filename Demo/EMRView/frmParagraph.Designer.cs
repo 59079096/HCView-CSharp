@@ -49,6 +49,7 @@
             this.btnSelectColor = new System.Windows.Forms.Button();
             this.lblUnit = new System.Windows.Forms.Label();
             this.tbxLineSpace = new System.Windows.Forms.TextBox();
+            this.cbxBreakRough = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // cbbSpaceMode
@@ -213,7 +214,7 @@
             // 
             // btnOK
             // 
-            this.btnOK.Location = new System.Drawing.Point(132, 146);
+            this.btnOK.Location = new System.Drawing.Point(132, 172);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
             this.btnOK.TabIndex = 17;
@@ -254,11 +255,22 @@
             this.tbxLineSpace.Size = new System.Drawing.Size(106, 21);
             this.tbxLineSpace.TabIndex = 24;
             // 
+            // cbxBreakRough
+            // 
+            this.cbxBreakRough.AutoSize = true;
+            this.cbxBreakRough.Location = new System.Drawing.Point(29, 134);
+            this.cbxBreakRough.Name = "cbxBreakRough";
+            this.cbxBreakRough.Size = new System.Drawing.Size(288, 16);
+            this.cbxBreakRough.TabIndex = 25;
+            this.cbxBreakRough.Text = "粗暴换行（换行时不判断相同类型字符同时换行）";
+            this.cbxBreakRough.UseVisualStyleBackColor = true;
+            // 
             // frmParagraph
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(334, 181);
+            this.ClientSize = new System.Drawing.Size(334, 207);
+            this.Controls.Add(this.cbxBreakRough);
             this.Controls.Add(this.tbxLineSpace);
             this.Controls.Add(this.lblUnit);
             this.Controls.Add(this.btnSelectColor);
@@ -313,5 +325,6 @@
         private System.Windows.Forms.Button btnSelectColor;
         private System.Windows.Forms.Label lblUnit;
         private System.Windows.Forms.TextBox tbxLineSpace;
+        private System.Windows.Forms.CheckBox cbxBreakRough;
     }
 }

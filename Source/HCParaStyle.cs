@@ -57,6 +57,7 @@ namespace HC.View
                        FLeftIndent,  // 左缩进
                        FRightIndent;  // 右缩进
 
+        private bool FBreakRough;  // 是否粗暴截断
         private Color FBackColor;
         private ParaAlignHorz FAlignHorz;
         private ParaAlignVert FAlignVert;
@@ -98,6 +99,7 @@ namespace HC.View
             RightIndent = 0;
             FLineSpaceMode = ParaLineSpaceMode.pls100;
             FLineSpace = 1;
+            FBreakRough = false;
             FBackColor = Color.Silver;
             FAlignHorz = ParaAlignHorz.pahJustify;
             FAlignVert = ParaAlignVert.pavCenter;
@@ -116,6 +118,7 @@ namespace HC.View
                 && (FLeftIndent == aSource.LeftIndent)
                 && (FRightIndent == aSource.RightIndent)
                 && (FBackColor == aSource.BackColor)
+                && (FBreakRough == aSource.BreakRough)
                 && (FAlignHorz == aSource.AlignHorz)
                 && (FAlignVert == aSource.AlignVert);
         }
@@ -128,6 +131,7 @@ namespace HC.View
             LeftIndent = aSource.LeftIndent;
             RightIndent = aSource.RightIndent;
             FBackColor = aSource.BackColor;
+            FBreakRough = aSource.BreakRough;
             FAlignHorz = aSource.AlignHorz;
             FAlignVert = aSource.AlignVert;
         }
@@ -150,6 +154,12 @@ namespace HC.View
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             HC.HCSaveColorToStream(aStream, FBackColor);  // save BackColor
+
+            vByte = 0;
+            if (FBreakRough)
+                vByte = (byte)(vByte | (1 << 7));
+
+            aStream.WriteByte(vByte);
 
             vByte = (byte)FAlignHorz;
             aStream.WriteByte(vByte);
@@ -213,9 +223,14 @@ namespace HC.View
                 FRightIndentPix = HCUnitConversion.MillimeterToPixX(FRightIndent);
             }
 
-            //
             HC.HCLoadColorFromStream(aStream, ref FBackColor);
-            //
+
+            if (aFileVersion > 31)
+            {
+                vByte = (byte)aStream.ReadByte();
+                FBreakRough = HC.IsOdd(vByte >> 7);
+            }
+            
             vByte = (byte)aStream.ReadByte();
             FAlignHorz = (ParaAlignHorz)vByte;
 
@@ -347,6 +362,9 @@ namespace HC.View
             aNode.SetAttribute("leftindent", FLeftIndent.ToString());
             aNode.SetAttribute("rightindent", FRightIndent.ToString());
             aNode.SetAttribute("bkcolor", HC.GetColorXmlRGB(FBackColor));
+            if (FBreakRough)
+                aNode.SetAttribute("breakrough", "1");
+
             aNode.SetAttribute("spacemode", GetLineSpaceModeXML_());
             aNode.SetAttribute("horz", GetHorzXML_());
             aNode.SetAttribute("vert", GetVertXML_());
@@ -358,6 +376,7 @@ namespace HC.View
             LeftIndent = float.Parse(aNode.Attributes["leftindent"].Value);
             RightIndent = float.Parse(aNode.Attributes["rightindent"].Value);
             FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
+            FBreakRough = aNode.GetAttribute("breakrough") == "1";
             //GetXMLLineSpaceMode_;
             if (aNode.Attributes["spacemode"].Value == "100")
                 FLineSpaceMode = ParaLineSpaceMode.pls100;
@@ -456,6 +475,12 @@ namespace HC.View
         {
             get { return FBackColor; }
             set { FBackColor = value; }
+        }
+
+        public bool BreakRough
+        {
+            get { return FBreakRough; }
+            set { FBreakRough = value; }
         }
 
         public ParaAlignHorz AlignHorz

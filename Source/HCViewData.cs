@@ -396,27 +396,45 @@ namespace HC.View
                 aCanvas.Pen.EndUpdate();
             }
 
-            SIZE vPt = new SIZE();
-            GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vPt);
-            try
+            if (aPaintInfo.ScaleX != 0)
             {
-                aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 4, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
-                aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
-                aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
+                SIZE vPt = new SIZE();
+                GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vPt);
+                try
+                {
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 4, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
 
-                aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right),     aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
-                aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right), aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
 
-                aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 4);
-                aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 1);
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 4);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 1);
 
-                aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 5);
-                aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom));
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 5);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom));
+                }
+                finally
+                {
+                    GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.GetScaleX(aPaintInfo.WindowWidth),
+                        aPaintInfo.GetScaleY(aPaintInfo.WindowHeight), ref vPt);
+                }
             }
-            finally
+            else
             {
-                GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.GetScaleX(aPaintInfo.WindowWidth),
-                    aPaintInfo.GetScaleY(aPaintInfo.WindowHeight), ref vPt);
+                aCanvas.MoveTo(aDrawRect.Right + 4, aDrawRect.Bottom - 8);
+                aCanvas.LineTo(aDrawRect.Right + 6, aDrawRect.Bottom - 8);
+                aCanvas.LineTo(aDrawRect.Right + 6, aDrawRect.Bottom - 3);
+
+                aCanvas.MoveTo(aDrawRect.Right, aDrawRect.Bottom - 3);
+                aCanvas.LineTo(aDrawRect.Right + 6, aDrawRect.Bottom - 3);
+
+                aCanvas.MoveTo(aDrawRect.Right + 1, aDrawRect.Bottom - 4);
+                aCanvas.LineTo(aDrawRect.Right + 1, aDrawRect.Bottom - 1);
+
+                aCanvas.MoveTo(aDrawRect.Right + 2, aDrawRect.Bottom - 5);
+                aCanvas.LineTo(aDrawRect.Right + 2, aDrawRect.Bottom);
             }
         }
         #endregion

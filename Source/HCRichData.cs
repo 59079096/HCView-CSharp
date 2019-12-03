@@ -2381,7 +2381,7 @@ namespace HC.View
             bool vRestrain = false;
             GetItemAt(e.X, e.Y, ref vMouseMoveItemNo, ref vMouseMoveItemOffset, ref FMouseMoveDrawItemNo, ref vRestrain);
 
-            if (FDraging || Style.UpdateInfo.Draging)
+            if (FDraging || Style.UpdateInfo.Draging)  // 拖拽
             {
                 HC.GCursor = Cursors.Arrow;  // crDrag
 

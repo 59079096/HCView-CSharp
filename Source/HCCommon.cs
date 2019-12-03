@@ -26,16 +26,16 @@ namespace HC.View
     {
         public const int
             /// <summary> 光标在RectItem前面 </summary>
-          OffsetBefor = 0,
+            OffsetBefor = 0,
 
-          /// <summary> 光标在RectItem区域内 </summary>
-          OffsetInner = 1,
+            /// <summary> 光标在RectItem区域内 </summary>
+            OffsetInner = 1,
 
-          /// <summary> 光标在RectItem后面 </summary>
-          OffsetAfter = 2,
+            /// <summary> 光标在RectItem后面 </summary>
+            OffsetAfter = 2,
 
-          MinRowHeight = 20,
-          MinColWidth = 20;
+            MinRowHeight = 10,
+            MinColWidth = 10;
 
         public static Color clActiveBorder = Color.FromArgb(180, 180, 180);
         public static Color clBtnFace = Color.FromArgb(0xF0, 0xF0, 0xF0);
@@ -114,10 +114,12 @@ namespace HC.View
             //2.9 浮动Item保存PageIndex，原因见 20190906001
             //3.0 表格增加边框宽度的存储
             //3.1 增加行间距 最小值、固定值、多倍的存储
-            HC_FileVersion = "3.1";
+            //3.2 表格边框改用磅为单位、段样式增加BreakRough处理截断、兼容EmrView使用TDeImageItem类处理ImageItem
+            //3.3 兼容32版本图片保存时没有按DeImageItem保存，读取时不正确的问题
+            HC_FileVersion = "3.3";
 
         public const ushort
-            HC_FileVersionInt = 31;
+            HC_FileVersionInt = 33;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -211,10 +213,10 @@ namespace HC.View
             vPenParams.lbColor = aPen.Color.ToRGB_UInt();
             vPenParams.lbHatch = 0;
 
-            if (aPen.Width != 1)
-                return (IntPtr)(GDI.ExtCreatePen(GDI.PS_GEOMETRIC | GDI.PS_ENDCAP_SQUARE, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
-            else
-                return (IntPtr)(GDI.ExtCreatePen(GDI.PS_COSMETIC | GDI.PS_ENDCAP_SQUARE, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
+            //if (aPen.Width != 1)
+                return (IntPtr)(GDI.ExtCreatePen(GDI.PS_GEOMETRIC | GDI.PS_ENDCAP_SQUARE | GDI.PS_JOIN_MITER, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
+            //else
+            //    return (IntPtr)(GDI.ExtCreatePen(GDI.PS_COSMETIC | GDI.PS_ENDCAP_SQUARE, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
         }
 
         public static int PosCharHC(Char aChar, string aStr)

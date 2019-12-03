@@ -13,10 +13,18 @@ namespace HC.View
         private HCCustomItem FActiveItem;
         private RECT FActiveItemRect;
         private int FToolOffset;
-        private HCToolBar FHotToolBar;
+        private HCToolBar FHotToolBar, FCaptureToolBar;
+        private ContextMenuStrip FTableToolMenu;
         private HCTableToolBar FTableToolBar;
         private HCImageToolBar FImageToolBar;
         private POINT FMouseViewPt;
+        private EventHandler FOnTableToolPropertyClick;
+
+        private void DoTableToolPropertyClick(object sender, EventArgs e)
+        {
+            if (FOnTableToolPropertyClick != null)
+                FOnTableToolPropertyClick(sender, e);
+        }
 
         private void DoImageShapeStructOver(object sender, EventArgs e)
         {
@@ -25,7 +33,7 @@ namespace HC.View
             FImageToolBar.ActiveIndex = 0;
         }
 
-        private void SetActiveItem(HCCustomItem value)
+        private void SetActiveToolItem(HCCustomItem value)
         {
             // MouseDown里会触发重绘，此时ToolBar并未确定显示，处理ToolBar的Visible属性
             // 会重新触发重绘，重绘是通过DoImageToolBarUpdateView(Rect)，需要先计算区域参数
@@ -40,22 +48,20 @@ namespace HC.View
 
                 if ((value != null) && (value.Active))
                 {
-                    POINT vPt;
+                    POINT vPt = this.GetTopLevelRectDrawItemViewCoord();
 
-                    if (value is HCTableItem)
+                    if ((value is HCTableItem) && (FTableToolBar.Controls.Count > 0))
                     {
                         FActiveItem = value;
-                        vPt = this.GetActiveDrawItemViewCoord();
-                        FTableToolBar.Left = vPt.X;
-                        FTableToolBar.Top = vPt.Y - FTableToolBar.Height + FToolOffset;
-                        // FTableToolBar.Visible = true; 暂时没有不显示
+                        FTableToolBar.Left = vPt.X - FTableToolBar.Width + FToolOffset;
+                        FTableToolBar.Top = vPt.Y;// - FTableToolBar.Height + FToolOffset;
+                        FTableToolBar.Visible = true;
                     }
                     else
-                    if (value is HCImageItem)
+                    if ((value is HCImageItem) && (FImageToolBar.Controls.Count > 0))
                     {
                         FActiveItem = value;
                         (FActiveItem as HCImageItem).ShapeManager.OnStructOver = DoImageShapeStructOver;
-                        vPt = this.GetActiveDrawItemViewCoord();
                         FImageToolBar.Left = vPt.X;
                         FImageToolBar.Top = vPt.Y - FImageToolBar.Height + FToolOffset;
                         FImageToolBar.Visible = true;
@@ -101,6 +107,17 @@ namespace HC.View
             }
         }
 
+        private void DoTableToolBarControlPaint(HCToolBarControl control, int left, int top, HCCanvas canvas)
+        {
+            string resName = "tool" + control.Tag.ToString();
+            Icon icon = (Icon)Resources.ResourceManager.GetObject(resName);
+            if (icon != null)
+            {
+                Bitmap vBmp = ((System.Drawing.Icon)icon).ToBitmap();
+                canvas.Draw(left + 4, top + 4, vBmp);
+            }
+        }
+
         private void DoImageToolBarUpdateView(RECT aRect, HCCanvas aCanvas)
         {
             if (this.IsHandleCreated && (FImageToolBar != null))
@@ -127,14 +144,6 @@ namespace HC.View
                 FTableToolBar.MouseDown(vEvent);
                 return true;
             }
-            else
-            //if FTableToolBar.ActiveIndex >= 0 then  // 鼠标不在表格编辑工具条上，但是点击了某个编辑按钮
-            {
-                HCTableItem vTableItem = FActiveItem as HCTableItem;
-                if (HC.PtInRect(HC.Bounds(FActiveItemRect.Left, FActiveItemRect.Top, vTableItem.Width, vTableItem.Height),
-                        new POINT(FMouseViewPt.X, FMouseViewPt.Y)))
-                    return true;
-            }
 
             return false;
         }
@@ -150,6 +159,7 @@ namespace HC.View
 
                     FHotToolBar = FTableToolBar;
                     FHotToolBar.MouseEnter();
+                    this.Cursor = Cursors.Default;
                 }
             }
             else
@@ -157,14 +167,6 @@ namespace HC.View
             {
                 FTableToolBar.MouseLeave();
                 FHotToolBar = null;
-            }
-            else
-            //if FTableToolBar.ActiveIndex > 0 then  // 第一个是指针
-            {
-                HCTableItem vTableItem = FActiveItem as HCTableItem;
-                if (HC.PtInRect(HC.Bounds(FActiveItemRect.Left, FActiveItemRect.Top, vTableItem.Width, vTableItem.Height),
-                        new POINT(FMouseViewPt.X, FMouseViewPt.Y)))
-                    return true;
             }
 
             return false;
@@ -174,18 +176,23 @@ namespace HC.View
         {
             if (PtInTableToolBar(e.X, e.Y))
             {
-                MouseEventArgs vEvent = new MouseEventArgs(e.Button, e.Clicks, e.X - FTableToolBar.Left, e.Y - FTableToolBar.Top, e.Delta);
-                FTableToolBar.MouseUp(vEvent);
+                if (FTableToolBar.ActiveIndex == 0)
+                {
+                    FTableToolBar.ActiveIndex = -1;
+                    Point vPt = new Point(FTableToolBar.Left, FTableToolBar.Top + FTableToolBar.Height);
+                    vPt = this.PointToScreen(vPt);
+                    FTableToolMenu.Show(vPt.X, vPt.Y);
+                }
+                else
+                {
+                    MouseEventArgs vEvent = new MouseEventArgs(e.Button, e.Clicks, e.X - FTableToolBar.Left, e.Y - FTableToolBar.Top, e.Delta);
+                    FTableToolBar.MouseUp(vEvent);
+                    FTableToolBar.ActiveIndex = -1;
+                }
                 return true;
             }
             else
-            //if FTableToolBar.ActiveIndex > 0 then  // 第一个是指针
-            {
-                HCTableItem vTableItem = FActiveItem as HCTableItem;
-                if (HC.PtInRect(HC.Bounds(FActiveItemRect.Left, FActiveItemRect.Top, vTableItem.Width, vTableItem.Height),
-                        new POINT(FMouseViewPt.X, FMouseViewPt.Y)))
-                    return true;
-            }
+                FTableToolBar.ActiveIndex = -1;
 
             return false;
         }
@@ -237,6 +244,7 @@ namespace HC.View
 
                     FHotToolBar = FImageToolBar;
                     FHotToolBar.MouseEnter();
+                    this.Cursor = Cursors.Default;
                 }
             }
             else
@@ -287,6 +295,8 @@ namespace HC.View
                     if (vImageItem.ShapeManager.MouseUp(vEvent))
                         return true;
                 }
+                else
+                    DoImageShapeStructOver(null, e);
             }
 
             return false;
@@ -306,20 +316,40 @@ namespace HC.View
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
+            FCaptureToolBar = null;
+
             if (!this.ReadOnly)
             {
                 if (FTableToolBar.Visible && TableMouseDown(e))
+                {
+                    FCaptureToolBar = FTableToolBar;
                     return;
+                }
 
                 if (FImageToolBar.Visible && ImageMouseDown(e))
+                {
+                    FCaptureToolBar = FImageToolBar;
                     return;
+                }
             }
 
             base.OnMouseDown(e);
 
             FTopData = this.ActiveSectionTopLevelData();
-            HCCustomItem vTopItem = this.GetTopLevelItem();
-            SetActiveItem(vTopItem);
+            HCCustomItem vTopItem = FTopData.GetActiveItem();
+            SetActiveToolItem(vTopItem);
+
+            HCCustomData vData = null;
+            while (FActiveItem == null)
+            {
+                vData = FTopData.GetRootData();
+                if (vData == FTopData)
+                    break;
+
+                FTopData = vData;
+                vTopItem = FTopData.GetActiveItem();
+                SetActiveToolItem(vTopItem);
+            }
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -328,6 +358,18 @@ namespace HC.View
             {
                 FMouseViewPt.X = ZoomOut(e.X);
                 FMouseViewPt.Y = ZoomOut(e.Y);
+
+                if (FCaptureToolBar == FTableToolBar)
+                {
+                    TableMouseMove(e);
+                    return;
+                }
+                else
+                if (FCaptureToolBar == FImageToolBar)
+                {
+                    ImageMouseMove(e);
+                    return;
+                }
 
                 if (FTableToolBar.Visible && TableMouseMove(e))
                     return;
@@ -349,6 +391,20 @@ namespace HC.View
         {
             if (!this.ReadOnly)
             {
+                if (FCaptureToolBar == FTableToolBar)
+                {
+                    FCaptureToolBar = null;
+                    TableMouseUp(e);
+                    return;
+                }
+                else
+                if (FCaptureToolBar == FImageToolBar)
+                {
+                    FCaptureToolBar = null;
+                    ImageMouseUp(e);
+                    return;
+                }
+
                 if (FTableToolBar.Visible && TableMouseUp(e))
                     return;
 
@@ -375,7 +431,10 @@ namespace HC.View
 
         private void DoContextPopup(object sender, CancelEventArgs e)
         {
-            if (FTableToolBar.Visible || FImageToolBar.Visible)
+            if (FImageToolBar.Visible && (FImageToolBar.ActiveIndex > 0))
+                e.Cancel = true;
+            
+            if (FTableToolBar.Visible && (FTableToolBar.ActiveIndex >= 0))
                 e.Cancel = true;
         }
 
@@ -385,19 +444,27 @@ namespace HC.View
             this.ContextMenuStrip.Opening += DoContextPopup;
         }
 
+        protected override void DoKillFocus()
+        {
+            base.DoKillFocus();
+            if ((FTableToolBar != null) && FTableToolBar.Visible)
+                FTableToolBar.UpdateView();
+            else
+            if ((FImageToolBar != null) && FImageToolBar.Visible)
+                FImageToolBar.UpdateView();
+        }
+
         protected override void DoCaretChange()
         {
             base.DoCaretChange();
 
-            FTableToolBar.Visible = false;
-            FImageToolBar.Visible = false;
-            if (FActiveItem is HCTableItem)
-            {
-                //(FActiveItem as THCTableItem).ShapeManager.DisActive
-            }
-            else
+            if (!(FActiveItem is HCTableItem))  // 不是表格
+                FTableToolBar.Visible = false;
+
             if (FActiveItem is HCImageItem)
                 (FActiveItem as HCImageItem).ShapeManager.DisActive();
+            else
+                FImageToolBar.Visible = false;
         }
 
         protected override void DoSectionRemoveItem(object sender, HCCustomData aData, HCCustomItem aItem)
@@ -428,7 +495,7 @@ namespace HC.View
         {
             base.DoPaintViewAfter(aCanvas, aPaintInfo);
 
-            if ((FActiveItem != null) && (!this.ReadOnly))
+            if ((FActiveItem != null) && (!this.ReadOnly) && this.Focused)
             {
                 if (FTableToolBar.Visible)
                 {
@@ -439,17 +506,20 @@ namespace HC.View
                         GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vPt);
                         try
                         {
-                            FTableToolBar.PaintTo(aCanvas, aPaintInfo.GetScaleX(FActiveItemRect.Left),
-                                aPaintInfo.GetScaleY(FActiveItemRect.Top) + FToolOffset - FTableToolBar.Height);
+                            FTableToolBar.PaintTo(aCanvas, aPaintInfo.GetScaleX(FActiveItemRect.Left - FTableToolBar.Width + FToolOffset),
+                                aPaintInfo.GetScaleY(FActiveItemRect.Top));// + FToolOffset - FTableToolBar.Height);
                         }
                         finally
-                        { 
+                        {
                             GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.GetScaleX(aPaintInfo.WindowWidth),
                                 aPaintInfo.GetScaleY(aPaintInfo.WindowHeight), ref vPt);
                         }
                     }
                     else
-                        FTableToolBar.PaintTo(aCanvas, FActiveItemRect.Left, FActiveItemRect.Top + FToolOffset - FTableToolBar.Height);
+                    {
+                        FTableToolBar.PaintTo(aCanvas, FActiveItemRect.Left - FTableToolBar.Width + FToolOffset,
+                            FActiveItemRect.Top);// - Style.LineSpaceMin / 2 + FToolOffset - FTableToolBar.Height);
+                    }
                 }
                 else
                 if (FImageToolBar.Visible)
@@ -482,13 +552,23 @@ namespace HC.View
             FActiveItem = null;
             FHotToolBar = null;
 
+            FTableToolMenu = new ContextMenuStrip();
+            ToolStripItem vMenuItem = FTableToolMenu.Items.Add("表格属性");
+            vMenuItem.Click += DoTableToolPropertyClick;
+
             FTableToolBar = new HCTableToolBar();
             FTableToolBar.OnUpdateView = DoTableToolBarUpdateView;
+            FTableToolBar.OnControlPaint = DoTableToolBarControlPaint;
 
             FImageToolBar = new HCImageToolBar();
             FImageToolBar.OnUpdateView = DoImageToolBarUpdateView;
             FImageToolBar.OnControlPaint = DoImageToolBarControlPaint;
         }
 
+        public EventHandler OnTableToolPropertyClick
+        {
+            get { return FOnTableToolPropertyClick; }
+            set { FOnTableToolPropertyClick = value; }
+        }
     }
 }

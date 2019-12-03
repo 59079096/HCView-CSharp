@@ -150,21 +150,6 @@ namespace HC.View
         private HCAlignVert FAlignVert;
         private HCBorderSides FBorderSides;
 
-        private int GetCellDataTop(byte aCellVPadding)
-        {
-            switch (FAlignVert)
-            {
-                case HCAlignVert.cavTop:
-                    return aCellVPadding;
-
-                case HCAlignVert.cavCenter: 
-                    return aCellVPadding + (FHeight - aCellVPadding - FCellData.Height - aCellVPadding) / 2;
-
-                default: 
-                    return FHeight - aCellVPadding - FCellData.Height;
-            }
-        }
-
         protected bool GetActive()
         {
             if (FCellData != null)
@@ -383,6 +368,21 @@ namespace HC.View
             {
                 FCellData.Width = FWidth;  // // 不准确的赋值，应该减去2个水平padding，加载时使用无大碍
                 FCellData.ParseXml(aNode.SelectSingleNode("items") as XmlElement);
+            }
+        }
+
+        public int GetCellDataTop(byte aCellVPadding)
+        {
+            switch (FAlignVert)
+            {
+                case HCAlignVert.cavTop:
+                    return aCellVPadding;
+
+                case HCAlignVert.cavCenter:
+                    return aCellVPadding + (FHeight - aCellVPadding - FCellData.Height - aCellVPadding) / 2;
+
+                default:
+                    return FHeight - aCellVPadding - FCellData.Height;
             }
         }
 

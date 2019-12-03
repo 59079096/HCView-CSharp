@@ -40,13 +40,17 @@ namespace HC.View
         private HCFontStyles FFontStyles;
         private Color FColor;  // 字体颜色
         private Color FBackColor;
-        private TEXTMETRICW FTextMetric;
 
-        bool FCJKFont;
-        uint FOutMetSize;
-        IntPtr FOutlineTextmetricPtr;
-        OUTLINETEXTMETRICW FOutlineTextmetric;
-        TT_HHEA FFontHeader;
+        private bool FCJKFont;
+        private uint FOutMetSize;
+        private uint FOutlineTextmetric_otmfsSelection;
+        private int FOutlineTextmetric_otmAscent;
+        private int FOutlineTextmetric_otmDescent;
+        private uint FOutlineTextmetric_otmEMSquare;
+        private Int16 FFontHeader_Ascender;
+        private Int16 FFontHeader_Descender;
+        private int FTextMetric_tmExternalLeading;
+        private int FTextMetric_tmHeight;
 
         protected void SetFamily(string value)
         {
@@ -76,17 +80,12 @@ namespace HC.View
             FFontStyles = new HCFontStyles();
             FColor = Color.Black;
             FBackColor = HC.HCTransparentColor;
-            FTextMetric = new TEXTMETRICW();
             FOutMetSize = 0;
-
-            FOutlineTextmetric = new OUTLINETEXTMETRICW();
-            FFontHeader = new TT_HHEA();
         }
 
         ~HCTextStyle()
         {
-            if (FOutMetSize > 0)
-                Marshal.FreeHGlobal(FOutlineTextmetricPtr);
+
         }
 
         private const int MS_HHEA_TAG = 0x61656868;  // MS_MAKE_TAG('h','h','e','a')
@@ -115,7 +114,10 @@ namespace HC.View
                 aCanvas.Font.EndUpdate();
             }
 
-            aCanvas.GetTextMetrics(ref FTextMetric);
+            TEXTMETRICW vTextMetric = new TEXTMETRICW();
+            aCanvas.GetTextMetrics(ref vTextMetric);
+            FTextMetric_tmExternalLeading = vTextMetric.tmExternalLeading;
+            FTextMetric_tmHeight = vTextMetric.tmHeight;
 
             FONTSIGNATURE vFontSignature = new FONTSIGNATURE();
             FFontHeight = aCanvas.TextHeight("H");
@@ -126,33 +128,47 @@ namespace HC.View
             else
                 FCJKFont = false;
 
-            if (FOutMetSize > 0)
-                Marshal.FreeHGlobal(FOutlineTextmetricPtr);
-
-
             FOutMetSize = GDI.GetOutlineTextMetrics(aCanvas.Handle, 0, IntPtr.Zero);
             if (FOutMetSize != 0)
             {
                 //FOutMetSize = (uint)Marshal.SizeOf(FOutlineTextmetric);
-                FOutlineTextmetricPtr = Marshal.AllocHGlobal((int)FOutMetSize);
-
-
-                if (GDI.GetOutlineTextMetrics(aCanvas.Handle, FOutMetSize, FOutlineTextmetricPtr) != 0)
+                IntPtr vOutlineTextmetricPtr = Marshal.AllocHGlobal((int)FOutMetSize);
+                try
                 {
-                    //FOutlineTextmetric = new OUTLINETEXTMETRICW();
-                    //FOutlineTextmetric = (OUTLINETEXTMETRICW)Marshal.PtrToStructure(FOutlineTextmetricPtr, typeof(OUTLINETEXTMETRICW));
-                    //string otmpFamilyName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFamilyName));
-                    //string otmpFaceName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFaceName)); ;
-                    //string otmpStyleName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpStyleName)); ;
-                    //string otmpFullName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFullName)); ;
-                    // 以上为参考代码
-                    //Marshal.PtrToStructure(FOutlineTextmetricPtr, FOutlineTextmetric);
-                    FOutlineTextmetric = (OUTLINETEXTMETRICW)Marshal.PtrToStructure(FOutlineTextmetricPtr, typeof(OUTLINETEXTMETRICW));
-                }                
+                    if (GDI.GetOutlineTextMetrics(aCanvas.Handle, FOutMetSize, vOutlineTextmetricPtr) != 0)
+                    {
+                        //FOutlineTextmetric = new OUTLINETEXTMETRICW();
+                        //FOutlineTextmetric = (OUTLINETEXTMETRICW)Marshal.PtrToStructure(FOutlineTextmetricPtr, typeof(OUTLINETEXTMETRICW));
+                        //string otmpFamilyName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFamilyName));
+                        //string otmpFaceName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFaceName)); ;
+                        //string otmpStyleName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpStyleName)); ;
+                        //string otmpFullName = Marshal.PtrToStringUni(new IntPtr((int)FOutlineTextmetricPtr + (int)FOutlineTextmetric.otmpFullName)); ;
+                        // 以上为参考代码
+                        //Marshal.PtrToStructure(FOutlineTextmetricPtr, FOutlineTextmetric);
+                        OUTLINETEXTMETRICW vOutlineTextmetric = (OUTLINETEXTMETRICW)Marshal.PtrToStructure(vOutlineTextmetricPtr, typeof(OUTLINETEXTMETRICW));
+                        FOutlineTextmetric_otmfsSelection = vOutlineTextmetric.otmfsSelection;
+                        FOutlineTextmetric_otmAscent = vOutlineTextmetric.otmAscent;
+                        FOutlineTextmetric_otmDescent = vOutlineTextmetric.otmDescent;
+                        FOutlineTextmetric_otmEMSquare = vOutlineTextmetric.otmEMSquare;
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(vOutlineTextmetricPtr);
+                }
             }
 
-            if ((uint)GDI.GetFontData(aCanvas.Handle, MS_HHEA_TAG, 0, ref FFontHeader, Marshal.SizeOf(FFontHeader)) == GDI.GDI_ERROR)
-                return;
+            TT_HHEA vFontHeader = new TT_HHEA();
+            if ((uint)GDI.GetFontData(aCanvas.Handle, MS_HHEA_TAG, 0, ref vFontHeader, Marshal.SizeOf(vFontHeader)) != GDI.GDI_ERROR)
+            {
+                FFontHeader_Ascender = vFontHeader.Ascender;
+                FFontHeader_Descender = vFontHeader.Descender;
+            }
+            else
+            {
+                FFontHeader_Ascender = 0;
+                FFontHeader_Descender = 0;
+            }
         }
 
         public bool EqualsEx(HCTextStyle aSource)
@@ -349,29 +365,54 @@ namespace HC.View
             }
         }
 
-        public TEXTMETRICW TextMetric
-        {
-            get { return FTextMetric; }
-        }
-
         public uint OutMetSize
         {
             get { return FOutMetSize; }
         }
 
-        public OUTLINETEXTMETRICW OutlineTextmetric
-        {
-            get { return FOutlineTextmetric; }
-        }
-
-        public TT_HHEA FontHeader
-        {
-            get { return FFontHeader; }
-        }
-
         public bool CJKFont
         {
             get { return FCJKFont; }
+        }
+
+        public uint OutlineTextmetric_otmfsSelection
+        {
+            get { return FOutlineTextmetric_otmfsSelection; }
+        }
+
+        public int OutlineTextmetric_otmAscent
+        {
+            get { return FOutlineTextmetric_otmAscent; }
+        }
+
+        public int OutlineTextmetric_otmDescent
+        {
+            get { return FOutlineTextmetric_otmDescent; }
+        }
+
+        public uint OutlineTextmetric_otmEMSquare
+        {
+            get { return FOutlineTextmetric_otmEMSquare; }
+        }
+
+        public Int16 FontHeader_Ascender
+        {
+            get { return FFontHeader_Ascender; }
+        }
+
+        public Int16 FontHeader_Descender
+        {
+            get { return FFontHeader_Descender; }
+        }
+
+        public int TextMetric_tmExternalLeading
+        {
+            get { return FTextMetric_tmExternalLeading; }
+        }
+
+        public int TextMetric_tmHeight
+        {
+            get { return FTextMetric_tmHeight; }
         }
 
         public string Family

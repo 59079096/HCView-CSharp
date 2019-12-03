@@ -57,17 +57,11 @@ namespace EMRView
                 case EMR.EMRSTYLE_FANGJIAO:
                     return new EmrFangJiaoItem(aData, "", "", "", "");
 
-                default:
-                    return null;
-            }
-        }
-
-        public static HCCustomFloatItem CreateEmrFloatStyleItem(HCSectionData aData, int aStyleNo)
-        {
-            switch (aStyleNo)
-            {
                 case HCStyle.FloatBarCode:
                     return new DeFloatBarCodeItem(aData);
+
+                case HCStyle.Image:
+                    return new DeImageItem(aData);
 
                 default:
                     return null;

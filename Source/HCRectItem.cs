@@ -59,6 +59,7 @@ namespace HC.View
             aUndoList.OnUndoNew = DoSelfUndoNew;
             aUndoList.OnUndo = DoSelfUndo;
             aUndoList.OnRedo = DoSelfRedo;
+            aUndoList.OnUndoDestroy = DoSelfUndoDestroy;
         }
 
         protected void SelfUndo_New()
@@ -93,7 +94,10 @@ namespace HC.View
         protected virtual void DoSelfUndoDestroy(HCUndo aUndo)
         {
             if (aUndo.Data != null)
+            {
                 aUndo.Data.Dispose();
+                aUndo.Data = null;
+            }
         }
 
         protected virtual HCUndo DoSelfUndoNew()
@@ -190,14 +194,24 @@ namespace HC.View
             return this;
         }
 
-        public virtual HCCustomDrawItem GetActiveDrawItem()
+        public virtual HCCustomDrawItem GetTopLevelDrawItem()
         {
             return null;
         }
 
-        public virtual POINT GetActiveDrawItemCoord()
+        public virtual POINT GetTopLevelDrawItemCoord()
         {
-            return new POINT(0, 0);
+            return new POINT(-1, -1);
+        }
+
+        public virtual HCCustomDrawItem GetTopLevelRectDrawItem()
+        {
+            return null;
+        }
+
+        public virtual POINT GetTopLevelRectDrawItemCoord()
+        {
+            return new POINT(-1, -1);
         }
 
         /// <summary> 获取指定X位置对应的Offset </summary>
@@ -333,6 +347,8 @@ namespace HC.View
         {
             return null;
         }
+
+        public virtual void FormatDirty() { }
 
         public virtual void TraverseItem(HCItemTraverse ATraverse) { }
 
@@ -977,8 +993,11 @@ namespace HC.View
 
         protected override void DoSelfUndoDestroy(HCUndo aUndo)
         {
-            if (aUndo.Data is HCSizeUndoData)
+            if ((aUndo.Data != null) && (aUndo.Data is HCSizeUndoData))
+            {
                 (aUndo.Data as HCSizeUndoData).Dispose();
+                aUndo.Data = null;
+            }
 
             base.DoSelfUndoDestroy(aUndo);
         }

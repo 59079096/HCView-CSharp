@@ -33,6 +33,7 @@
             this.新建ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.查看ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.编辑ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mniReSync = new System.Windows.Forms.ToolStripMenuItem();
             this.签名ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.删除ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -61,6 +62,7 @@
             this.新建ToolStripMenuItem,
             this.查看ToolStripMenuItem,
             this.编辑ToolStripMenuItem,
+            this.mniReSync,
             this.签名ToolStripMenuItem,
             this.删除ToolStripMenuItem,
             this.toolStripSeparator1,
@@ -68,66 +70,73 @@
             this.mniMergeRecord,
             this.导出XML结构ToolStripMenuItem});
             this.pmRecord.Name = "contextMenuStrip1";
-            this.pmRecord.Size = new System.Drawing.Size(151, 186);
+            this.pmRecord.Size = new System.Drawing.Size(181, 230);
             // 
             // 新建ToolStripMenuItem
             // 
             this.新建ToolStripMenuItem.Name = "新建ToolStripMenuItem";
-            this.新建ToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
+            this.新建ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.新建ToolStripMenuItem.Text = "新建";
             this.新建ToolStripMenuItem.Click += new System.EventHandler(this.新建ToolStripMenuItem_Click);
             // 
             // 查看ToolStripMenuItem
             // 
             this.查看ToolStripMenuItem.Name = "查看ToolStripMenuItem";
-            this.查看ToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
+            this.查看ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.查看ToolStripMenuItem.Text = "查看";
             this.查看ToolStripMenuItem.Click += new System.EventHandler(this.查看ToolStripMenuItem_Click);
             // 
             // 编辑ToolStripMenuItem
             // 
             this.编辑ToolStripMenuItem.Name = "编辑ToolStripMenuItem";
-            this.编辑ToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
+            this.编辑ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.编辑ToolStripMenuItem.Text = "编辑";
             this.编辑ToolStripMenuItem.Click += new System.EventHandler(this.编辑ToolStripMenuItem_Click);
+            // 
+            // mniReSync
+            // 
+            this.mniReSync.Name = "mniReSync";
+            this.mniReSync.Size = new System.Drawing.Size(180, 22);
+            this.mniReSync.Text = "更新全部引用";
+            this.mniReSync.Click += new System.EventHandler(this.mniReSync_Click);
             // 
             // 签名ToolStripMenuItem
             // 
             this.签名ToolStripMenuItem.Name = "签名ToolStripMenuItem";
-            this.签名ToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
+            this.签名ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.签名ToolStripMenuItem.Text = "签名";
             this.签名ToolStripMenuItem.Click += new System.EventHandler(this.签名ToolStripMenuItem_Click);
             // 
             // 删除ToolStripMenuItem
             // 
             this.删除ToolStripMenuItem.Name = "删除ToolStripMenuItem";
-            this.删除ToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
+            this.删除ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.删除ToolStripMenuItem.Text = "删除";
             this.删除ToolStripMenuItem.Click += new System.EventHandler(this.删除ToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(147, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
             // 
             // mniHisRecord
             // 
             this.mniHisRecord.Name = "mniHisRecord";
-            this.mniHisRecord.Size = new System.Drawing.Size(150, 22);
+            this.mniHisRecord.Size = new System.Drawing.Size(180, 22);
             this.mniHisRecord.Text = "历史病历";
             this.mniHisRecord.Click += new System.EventHandler(this.MniHisRecord_Click);
             // 
             // mniMergeRecord
             // 
             this.mniMergeRecord.Name = "mniMergeRecord";
-            this.mniMergeRecord.Size = new System.Drawing.Size(150, 22);
+            this.mniMergeRecord.Size = new System.Drawing.Size(180, 22);
             this.mniMergeRecord.Text = "病历打印预览";
             this.mniMergeRecord.Click += new System.EventHandler(this.mniMergeRecord_Click);
             // 
             // 导出XML结构ToolStripMenuItem
             // 
             this.导出XML结构ToolStripMenuItem.Name = "导出XML结构ToolStripMenuItem";
-            this.导出XML结构ToolStripMenuItem.Size = new System.Drawing.Size(150, 22);
+            this.导出XML结构ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.导出XML结构ToolStripMenuItem.Text = "导出XML结构";
             this.导出XML结构ToolStripMenuItem.Click += new System.EventHandler(this.导出XML结构ToolStripMenuItem_Click);
             // 
@@ -243,5 +252,6 @@
         private System.Windows.Forms.ContextMenuStrip pmpg;
         private System.Windows.Forms.ToolStripMenuItem 关闭ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem mniHisRecord;
+        private System.Windows.Forms.ToolStripMenuItem mniReSync;
     }
 }

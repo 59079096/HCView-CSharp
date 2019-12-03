@@ -320,6 +320,27 @@ namespace HC.View
         }
     }
 
+    public class ParaBreakRoughMatch : HCParaMatch
+    {
+        private bool FBreakRough;
+
+        protected override bool DoMatchCurPara(HCParaStyle aParaStyle)
+        {
+            return aParaStyle.BreakRough == FBreakRough;
+        }
+
+        protected override void DoMatchNewPara(HCParaStyle aParaStyle)
+        {
+            aParaStyle.BreakRough = FBreakRough;
+        }
+
+        public bool BreakRough
+        {
+            get { return FBreakRough; }
+            set { FBreakRough = value; }
+        }
+    }
+
     public class ParaFirstIndentMatch : HCParaMatch  // 段首行缩进匹配类
     {
         private Single FIndent;

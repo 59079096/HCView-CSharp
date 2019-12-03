@@ -35,8 +35,10 @@ namespace HC.View
     {
         [Description("胶卷视图，显示页眉、页脚")]
         hvmFilm,
-        [Description("页面视图，不显示页眉、页脚")]
-        hvmPage
+        [Description("Page视图，显示左右边距，不显示页眉、页脚")]
+        hvmPage,
+        [Description("Text视图，不显示页边距和页眉页脚")]
+        hvmEdit
     }
 
     public enum ItemOption : byte 
@@ -58,11 +60,12 @@ namespace HC.View
     {
         private bool FPrint;
         private HCViewModel FViewModel;
-        List<HCCustomItem> FTopItems;
-        int FWindowWidth, FWindowHeight;
-        Single
+        private List<HCCustomItem> FTopItems;
+        private int FWindowWidth, FWindowHeight;
+        private Single
             FScaleX, FScaleY,  // 目标画布和显示器画布dpi比例(打印机dpi和显示器dpi不一致时的缩放比例)
             FZoom;  // 视图设置的放大比例
+        public int DPI;
 
         public PaintInfo()
         {
@@ -136,6 +139,22 @@ namespace HC.View
                 {
                     aCanvas.LineTo(GetScaleX(aPoints[i].X), GetScaleY(aPoints[i].Y));
                 }
+            }
+            finally
+            {
+                GDI.SetViewportExtEx(aCanvas.Handle, (int)Math.Round(FWindowWidth * FScaleX),
+                    (int)Math.Round(FWindowHeight * FScaleY), ref size);
+            }
+        }
+
+        public void DrawNoScaleLine(HCCanvas aCanvas, int x1, int y1, int x2, int y2)
+        {
+            SIZE size = new SIZE();
+            GDI.SetViewportExtEx(aCanvas.Handle, FWindowWidth, FWindowHeight, ref size);
+            try
+            {
+                aCanvas.MoveTo(GetScaleX(x1), GetScaleY(y1));
+                aCanvas.LineTo(GetScaleX(x2), GetScaleY(y2));
             }
             finally
             {

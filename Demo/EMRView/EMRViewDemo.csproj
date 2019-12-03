@@ -415,21 +415,6 @@
     <None Include="Resources\00014.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\tool0.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\tool1.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\tool2.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\tool3.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\tool4.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

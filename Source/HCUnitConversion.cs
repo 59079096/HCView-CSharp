@@ -80,5 +80,24 @@ namespace HC.View
         {
             return (int)Math.Round(value * PixelsPerMMY);
         }
+
+        /// <summary>
+        /// 磅转像素，1磅=1/72英寸
+        /// </summary>
+        /// <param name="aPt"></param>
+        /// <param name="aDpi"></param>
+        /// <returns></returns>
+        public static int PtToPixel(Single aPt, int aDpi)
+        {
+            return (int)Math.Round(aPt / 72 * aDpi);
+        }
+
+        /// <summary>
+        /// 像素转磅
+        /// </summary>
+        public static Single PixelToPt(int aPix, int aDpi)
+        {
+            return aPix / aDpi * 72f;
+        }
     }
 }

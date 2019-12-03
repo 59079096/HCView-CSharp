@@ -20,8 +20,8 @@ using System.Drawing;
 namespace EMRView
 {
     public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, HCCustomItem aItem);
-    public delegate void SyncDeFloatItemEventHandler(object sender, HCSectionData aData, HCCustomFloatItem aItem);
     public delegate bool HCCopyPasteStreamEventHandler(Stream aStream);
+
     public class HCEmrView : HCEmrViewIH
     {
         private bool FDesignMode;
@@ -32,9 +32,11 @@ namespace EMRView
         private string FPageBlankTip;
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
-        private SyncDeFloatItemEventHandler FOnSyncDeFloatItem;
         private HCCopyPasteEventHandler FOnCopyRequest, FOnPasteRequest;
         private HCCopyPasteStreamEventHandler FOnCopyAsStream, FOnPasteFromStream;
+        // 语法检查相关事件
+        private DataItemNoEventHandler FOnSyntaxCheck;
+        private SyntaxPaintEventHandler FOnSyntaxPaint;
 
         private void SetPageBlankTip(string value)
         {
@@ -45,134 +47,17 @@ namespace EMRView
             }
         }
 
+        private void DoSyntaxCheck(HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+        {
+            //if (FOnSyntaxCheck != null) 调用前已经判断了
+            if (aData.Items[aItemNo].StyleNo > HCStyle.Null)
+                FOnSyntaxCheck(aData, aItemNo);
+        }
+
         private void DoSyncDeItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnSyncDeItem != null)
                 FOnSyncDeItem(sender, aData, aItem);
-        }
-
-        private void DoSyncDeFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
-        {
-            if (FOnSyncDeFloatItem != null)
-                FOnSyncDeFloatItem(sender, aData, aItem);
-        }
-
-        private void DoDeItemPaintBKG(object sender, HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo)
-        {
-            if (aPaintInfo.Print)
-                return;
-            
-            DeItem vDeItem = sender as DeItem;
-            if (!vDeItem.Selected())
-            {
-                if (vDeItem.IsElement)
-                {
-                    if (vDeItem.OutOfRang)
-                    {
-                        aCanvas.Brush.Color = Color.Red;
-                        aCanvas.FillRect(aDrawRect);
-                    }
-                    else
-                    if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入和光标在其中
-                    {
-                        if (vDeItem.AllocValue)  // 已经填写过了
-                            aCanvas.Brush.Color = FDeDoneColor;
-                        else  // 没填写过
-                            aCanvas.Brush.Color = FDeUnDoneColor;
-
-                        aCanvas.FillRect(aDrawRect);
-                    }
-                    else  // 静态
-                    if (FDesignMode)  // 设计模式
-                    {
-                        aCanvas.Brush.Color = HC.View.HC.clBtnFace;
-                        aCanvas.FillRect(aDrawRect);
-                    }
-                }
-                else  // 不是数据元
-                if (FDesignMode || vDeItem.MouseIn || vDeItem.Active)
-                {
-                    if (vDeItem.EditProtect || vDeItem.CopyProtect)
-                    {
-                        aCanvas.Brush.Color = HC.View.HC.clBtnFace;
-                        aCanvas.FillRect(aDrawRect);
-                    }
-                }
-            }
-
-            if (!FHideTrace)  // 显示痕迹
-            {
-                if (vDeItem.StyleEx == StyleExtra.cseDel)  // 痕迹
-                {
-                    int vTextHeight = Style.TextStyles[vDeItem.StyleNo].FontHeight;
-                    int vAlignVert = User.DT_BOTTOM;
-                    switch (Style.ParaStyles[vDeItem.ParaNo].AlignVert)
-                    {
-                        case ParaAlignVert.pavCenter:
-                            vAlignVert = User.DT_CENTER;
-                            break;
-
-                        case ParaAlignVert.pavTop:
-                            vAlignVert = User.DT_TOP;
-                            break;
-
-                        default:
-                            vAlignVert = User.DT_BOTTOM;
-                            break;
-                    }
-
-                    int vTop = aDrawRect.Top;
-                    switch (vAlignVert)
-                    {
-                        case User.DT_TOP:
-                            vTop = aDrawRect.Top;
-                            break;
-
-                        case User.DT_CENTER:
-                            vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - vTextHeight) / 2;
-                            break;
-
-                        default:
-                            vTop = aDrawRect.Bottom - vTextHeight;
-                            break;
-                    }
-
-                    // 绘制删除线
-                    aCanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        aCanvas.Pen.Style = HCPenStyle.psSolid;
-                        aCanvas.Pen.Color = Color.Red;
-                    }
-                    finally
-                    {
-                        aCanvas.Pen.EndUpdate();
-                    }
-
-                    vTop = vTop + (aDrawRect.Bottom - vTop) / 2;
-                    aCanvas.MoveTo(aDrawRect.Left, vTop - 1);
-                    aCanvas.LineTo(aDrawRect.Right, vTop - 1);
-                    aCanvas.MoveTo(aDrawRect.Left, vTop + 2);
-                    aCanvas.LineTo(aDrawRect.Right, vTop + 2);
-                }
-                else
-                if (vDeItem.StyleEx == StyleExtra.cseAdd)
-                {
-                    aCanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        aCanvas.Pen.Style = HCPenStyle.psSolid;
-                        aCanvas.Pen.Color = Color.Blue;
-                    }
-                    finally
-                    {
-                        aCanvas.Pen.EndUpdate();
-                    }
-
-                    aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
-                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
-                }
-            }
         }
 
         private void InsertEmrTraceItem(string aText)
@@ -199,19 +84,6 @@ namespace EMRView
                 FOnCanNotEdit(this, null);
 
             return Result;
-        }
-
-        protected override HCCustomFloatItem DoSectionCreateFloatStyleItem(HCSectionData aData, int aStyleNo)
-        {
-            return HCEmrViewLite.CreateEmrFloatStyleItem(aData, aStyleNo);
-        }
-
-        protected override void DoSectionInsertFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
-        {
-            if (aItem is DeFloatBarCodeItem)
-                DoSyncDeFloatItem(sender, aData, aItem);
-
-            base.DoSectionInsertFloatItem(sender, aData, aItem);
         }
 
         /// <summary> 当有新Item创建完成后触发的事件 </summary>
@@ -243,7 +115,6 @@ namespace EMRView
             if (aItem is DeItem)
             {
                 DeItem vDeItem = aItem as DeItem;
-                vDeItem.OnPaintBKG = DoDeItemPaintBKG;
 
                 //if (aData.Style.States.Contain(HCState.hosPasting))
                 //    DoPasteItem();
@@ -264,6 +135,12 @@ namespace EMRView
             else
             if (aItem is DeCombobox)
                 DoSyncDeItem(sender, aData, aItem);
+            else
+            if (aItem is DeFloatBarCodeItem)
+                DoSyncDeItem(sender, aData, aItem);
+            else
+            if (aItem is DeImageItem)
+                DoSyncDeItem(sender, aData, aItem);
 
             base.DoSectionInsertItem(sender, aData, aItem);
         }
@@ -277,7 +154,6 @@ namespace EMRView
             if (aItem is DeItem)
             {
                 DeItem vDeItem = aItem as DeItem;
-                vDeItem.OnPaintBKG = DoDeItemPaintBKG;
 
                 if (vDeItem.StyleEx != StyleExtra.cseNone)
                 {
@@ -626,6 +502,240 @@ namespace EMRView
                 return FOnPasteFromStream(aStream);
             else
                 return base.DoPasteFormatStream(aStream);
+        }
+
+        protected override void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            if (aPaintInfo.Print)
+                return;
+
+            if (!(aData.Items[aItemNo] is DeItem))
+                return;
+
+            DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+            if (!vDeItem.Selected())
+            {
+                if (vDeItem.IsElement)
+                {
+                    if (FDesignMode)  // 设计模式
+                    {
+                        if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入或光标在其中
+                        {
+                            if (vDeItem.AllocValue)  // 已经填写过了
+                                aCanvas.Brush.Color = FDeDoneColor;
+                            else  // 没填写过
+                                aCanvas.Brush.Color = FDeUnDoneColor;
+
+                            aCanvas.FillRect(aDrawRect);
+                        }
+                        else  // 静态
+                        {
+                            aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                            aCanvas.FillRect(aDrawRect);
+                        }
+                    }
+                    else  // 非设计模式
+                    {
+                        if (vDeItem.OutOfRang)  // 超范围
+                        {
+                            aCanvas.Brush.Color = Color.Red;
+                            aCanvas.FillRect(aDrawRect);
+                        }
+                        else  // 没超范围
+                        {
+                            if (!vDeItem.AllocValue)  // 没填过
+                            {
+                                aCanvas.Brush.Color = FDeUnDoneColor;
+                                aCanvas.FillRect(aDrawRect);
+                            }
+                            else  // 填过了
+                            if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入或光标在其中
+                            {
+                                aCanvas.Brush.Color = FDeDoneColor;
+                                aCanvas.FillRect(aDrawRect);
+                            }
+                        }
+                    }
+                }
+                else  // 不是数据元
+                if (FDesignMode || vDeItem.MouseIn || vDeItem.Active)
+                {
+                    if (vDeItem.EditProtect || vDeItem.CopyProtect)
+                    {
+                        aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                        aCanvas.FillRect(aDrawRect);
+                    }
+                }
+            }
+
+            if (!FHideTrace)  // 显示痕迹
+            {
+                if (vDeItem.StyleEx == StyleExtra.cseDel)  // 痕迹
+                {
+                    int vTextHeight = Style.TextStyles[vDeItem.StyleNo].FontHeight;
+                    int vAlignVert = User.DT_BOTTOM;
+                    switch (Style.ParaStyles[vDeItem.ParaNo].AlignVert)
+                    {
+                        case ParaAlignVert.pavCenter:
+                            vAlignVert = User.DT_CENTER;
+                            break;
+
+                        case ParaAlignVert.pavTop:
+                            vAlignVert = User.DT_TOP;
+                            break;
+
+                        default:
+                            vAlignVert = User.DT_BOTTOM;
+                            break;
+                    }
+
+                    int vTop = aDrawRect.Top;
+                    switch (vAlignVert)
+                    {
+                        case User.DT_TOP:
+                            vTop = aDrawRect.Top;
+                            break;
+
+                        case User.DT_CENTER:
+                            vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - vTextHeight) / 2;
+                            break;
+
+                        default:
+                            vTop = aDrawRect.Bottom - vTextHeight;
+                            break;
+                    }
+
+                    // 绘制删除线
+                    aCanvas.Pen.BeginUpdate();
+                    try
+                    {
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
+                        aCanvas.Pen.Color = Color.Red;
+                    }
+                    finally
+                    {
+                        aCanvas.Pen.EndUpdate();
+                    }
+
+                    vTop = vTop + (aDrawRect.Bottom - vTop) / 2;
+                    aCanvas.MoveTo(aDrawRect.Left, vTop - 1);
+                    aCanvas.LineTo(aDrawRect.Right, vTop - 1);
+                    aCanvas.MoveTo(aDrawRect.Left, vTop + 2);
+                    aCanvas.LineTo(aDrawRect.Right, vTop + 2);
+                }
+                else
+                if (vDeItem.StyleEx == StyleExtra.cseAdd)
+                {
+                    aCanvas.Pen.BeginUpdate();
+                    try
+                    {
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
+                        aCanvas.Pen.Color = Color.Blue;
+                    }
+                    finally
+                    {
+                        aCanvas.Pen.EndUpdate();
+                    }
+
+                    aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Bottom);
+                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom);
+                }
+            }
+        }
+
+        protected override void DoSectionDrawItemPaintContent(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect, string aDrawText,
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            if (aPaintInfo.Print)
+                return;
+
+            if (!(aData.Items[aItemNo] is DeItem))
+                return;
+
+            DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+            if ((vDeItem.SyntaxCount() > 0) && (!vDeItem.Selected()))
+            {
+                int vOffset = aData.DrawItems[aDrawItemNo].CharOffs;
+                int vOffsetEnd = aData.DrawItems[aDrawItemNo].CharOffsetEnd();
+
+                int vSyOffset = 0, vSyOffsetEnd = 0, vStart = 0, vLen;
+                RECT vRect = new RECT();
+                bool vDT = false;
+                for (int i = 0; i < vDeItem.Syntaxs.Count; i++)
+                {
+                    vSyOffset = vDeItem.Syntaxs[i].Offset;
+                    vSyOffsetEnd = vSyOffset + vDeItem.Syntaxs[i].Length - 1;
+
+                    if (vSyOffsetEnd >= vOffset)  // 此DrawItem中有语法问题
+                    {
+                        if (vSyOffsetEnd >= vOffsetEnd)  // 全部在问题中
+                        {
+                            vStart = 1;
+                            vLen = aData.DrawItems[aDrawItemNo].CharLen;
+                            vRect.Left = aClearRect.Left;
+                            vRect.Right = aClearRect.Right;
+                        }
+                        else  // 部分在问题中（结束在此DrawItme内）
+                        {
+                            if (vSyOffset > vOffset)  // 问题起始不在此DrawItem开始，问题在此DrawItem中间
+                            {
+                                vStart = vSyOffset - vOffset + 1;
+                                vLen = vDeItem.Syntaxs[i].Length;
+                                vRect.Left = aClearRect.Left //+ ACanvas.TextWidth(System.Copy(ADrawText, 1, vStart - 1));
+                                    + aData.GetDrawItemOffsetWidth(aDrawItemNo, vStart - 1, aCanvas);
+                                vRect.Right = aClearRect.Left //+ ACanvas.TextWidth(System.Copy(ADrawText, 1, vStart + vLen - 1));
+                                    + aData.GetDrawItemOffsetWidth(aDrawItemNo, vStart + vLen - 1, aCanvas);
+                            }
+                            else  // 起始不在此DrawItem中
+                            {
+                                //vStart := 1;
+                                vLen = vSyOffsetEnd - vOffset + 1;
+                                vRect.Left = aClearRect.Left;
+
+                                vRect.Right = aClearRect.Left //+ ACanvas.TextWidth(System.Copy(ADrawText, 1, vLen));
+                                  + aData.GetDrawItemOffsetWidth(aDrawItemNo, vLen, aCanvas);
+                            }
+                        }
+
+                        vRect.Top = aClearRect.Top;
+                        vRect.Bottom = aClearRect.Bottom;
+
+                        if (FOnSyntaxPaint != null)
+                            FOnSyntaxPaint(vDeItem.Syntaxs[i], vRect, aCanvas);
+                        else
+                        {
+                            switch (vDeItem.Syntaxs[i].Problem)
+                            {
+                                case EmrSyntaxProblem.espContradiction:
+                                    aCanvas.Pen.Color = Color.Red;
+                                    break;
+
+                                case EmrSyntaxProblem.espWrong:
+                                    aCanvas.Pen.Color = Color.Orange;
+                                    break;
+                            }
+
+                            vDT = false;
+                            vStart = vRect.Left;
+                            aCanvas.MoveTo(vStart, vRect.Bottom);
+                            while (vStart < vRect.Right)
+                            {
+                                vStart = vStart + 2;
+                                if (vStart > vRect.Right)
+                                    vStart = vRect.Right;
+
+                                if (!vDT)
+                                    aCanvas.LineTo(vStart, vRect.Bottom + 2);
+                                else
+                                    aCanvas.LineTo(vStart, vRect.Bottom);
+
+                                vDT = !vDT;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         #region 子方法，绘制当前页以下空白的提示
@@ -1017,6 +1127,19 @@ namespace EMRView
             aData.InsertText(aText);
         }
 
+        public void SyntaxCheck()
+        {
+            if (FOnSyntaxCheck == null)
+                return;
+
+            HCItemTraverse vItemTraverse = new HCItemTraverse();
+            vItemTraverse.Tag = 0;
+            vItemTraverse.Areas.Add(SectionArea.saPage);
+            vItemTraverse.Process = DoSyntaxCheck;
+            this.TraverseItem(vItemTraverse);
+            this.UpdateView();
+        }
+
         /// <summary> 文档是否处于设计模式 </summary>
         public bool DesignModeEx
         {
@@ -1090,10 +1213,18 @@ namespace EMRView
             set { FOnSyncDeItem = value; }
         }
 
-        public SyncDeFloatItemEventHandler OnSyncDeFloatItem
+        /// <summary> 数据元需要用语法检测器来检测时触发 </summary>
+        public DataItemNoEventHandler OnSyntaxCheck
         {
-            get { return FOnSyncDeFloatItem; }
-            set { FOnSyncDeFloatItem = value; }
+            get { return FOnSyntaxCheck; }
+            set { FOnSyntaxCheck = value; }
+        }
+
+        /// <summary> 数据元绘制语法问题时触发 </summary>
+        public SyntaxPaintEventHandler OnSyntaxPaint
+        {
+            get { return FOnSyntaxPaint; }
+            set { FOnSyntaxPaint = value; }
         }
     }
 }

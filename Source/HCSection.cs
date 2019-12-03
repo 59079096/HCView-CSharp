@@ -842,9 +842,14 @@ namespace HC.View
             return FActiveData.GetTopLevelDrawItem();
         }
 
-        public POINT GetActiveDrawItemCoord()
+        public POINT GetTopLevelDrawItemCoord()
         {
-            return FActiveData.GetActiveDrawItemCoord();
+            return FActiveData.GetTopLevelDrawItemCoord();
+        }
+
+        public POINT GetTopLevelRectDrawItemCoord()
+        {
+            return FActiveData.GetTopLevelRectDrawItemCoord();
         }
 
         /// <summary> 返回光标或选中结束位置所在页序号 </summary>
@@ -1307,6 +1312,17 @@ namespace HC.View
             HCFunction vEvent = delegate()
             {
                 FActiveData.ApplyParaBackColor(aColor);
+                return true;
+            };
+
+            ActiveDataChangeByAction(vEvent);
+        }
+
+        public void ApplyParaBreakRough(bool aRough)
+        {
+            HCFunction vEvent = delegate ()
+            {
+                FActiveData.ApplyParaBreakRough(aRough);
                 return true;
             };
 
@@ -3127,14 +3143,14 @@ namespace HC.View
             // GetXmlPaper_
             string[] vStrings = aNode.Attributes["pagesize"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
             this.PaperSize = (PaperKind)(int.Parse(vStrings[0]));
-            this.PaperWidth = int.Parse(vStrings[1]);
-            this.PaperHeight = int.Parse(vStrings[2]);
+            this.PaperWidth = Single.Parse(vStrings[1]);
+            this.PaperHeight = Single.Parse(vStrings[2]);
             // GetXmlPaperMargin_
             vStrings = aNode.Attributes["margin"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-            this.PaperMarginLeft = int.Parse(vStrings[0]);
-            this.PaperMarginTop = int.Parse(vStrings[1]);
-            this.PaperMarginRight = int.Parse(vStrings[2]);
-            this.PaperMarginBottom = int.Parse(vStrings[3]);
+            this.PaperMarginLeft = Single.Parse(vStrings[0]);
+            this.PaperMarginTop = Single.Parse(vStrings[1]);
+            this.PaperMarginRight = Single.Parse(vStrings[2]);
+            this.PaperMarginBottom = Single.Parse(vStrings[3]);
 
             Page.Width = this.GetPageWidth();
 

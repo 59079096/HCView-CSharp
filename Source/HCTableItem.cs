@@ -108,11 +108,13 @@ namespace HC.View
     public class HCTableItem : HCResizeRectItem
     {
         private byte
-            FBorderWidth,   // 边框宽度(要求不大于最小行高，否则分页计算会有问题)
+            FBorderWidthPix,   // 边框宽度(要求不大于最小行高，否则分页计算会有问题)
             FCellHPadding,  // 单元格内容水平偏移
             FCellVPadding,  // 单元格内容垂直偏移(不能大于最低的DrawItem高度，否则会影响跨页)
             FFixRowCount,   // 固定行数量
             FFixColCount;   // 固定列数量
+
+        private Single FBorderWidthPt; 
 
         sbyte FFixCol,  // 从哪列开始固定列
               FFixRow;  // 从哪行开始固定行
@@ -160,6 +162,7 @@ namespace HC.View
 
             aCellData.OnCreateItemByStyle = (OwnerData as HCViewData).OnCreateItemByStyle;      
             aCellData.OnDrawItemPaintBefor = (OwnerData as HCRichData).OnDrawItemPaintBefor;
+            aCellData.OnDrawItemPaintContent = (OwnerData as HCRichData).OnDrawItemPaintContent;
             aCellData.OnDrawItemPaintAfter = (OwnerData as HCViewData).OnDrawItemPaintAfter;
 
             aCellData.OnInsertAnnotate = (OwnerData as HCViewData).OnInsertAnnotate;
@@ -207,9 +210,9 @@ namespace HC.View
         /// <returns></returns>
         private int GetFormatHeight()
         {
-            FFormatHeight = FBorderWidth;
+            FFormatHeight = FBorderWidthPix;
             for (int i = 0; i <= RowCount - 1; i++)
-                FFormatHeight = FFormatHeight + FRows[i].Height + FBorderWidth;
+                FFormatHeight = FFormatHeight + FRows[i].Height + FBorderWidthPix;
 
             return FFormatHeight;
         }
@@ -260,10 +263,10 @@ namespace HC.View
                         {
                             vExtraHeight = FCellVPadding + FRows[vDestRow][vC].CellData.Height + FCellVPadding;  // 目标单元格除上下边框后的高度
                             FRows[vDestRow][vC].Height = vExtraHeight;  // 目标单元格除上下边框后的高度
-                            vExtraHeight = vExtraHeight - FRows[vDestRow].Height - FBorderWidth;  // “消减”自己所在行
+                            vExtraHeight = vExtraHeight - FRows[vDestRow].Height - FBorderWidthPix;  // “消减”自己所在行
 
                             for (int i = vDestRow + 1; i <= vR - 1; i++)  // 从目标下一行到此，经过各行后“消减”掉多
-                                vExtraHeight = vExtraHeight - FRows[i].FmtOffset - FRows[i].Height - FBorderWidth;
+                                vExtraHeight = vExtraHeight - FRows[i].FmtOffset - FRows[i].Height - FBorderWidthPix;
                             
                             if (vExtraHeight > FRows[vR].FmtOffset + FRows[vR].Height)
                             {
@@ -293,12 +296,12 @@ namespace HC.View
 
         private int SrcCellDataTopDistanceToDest(int aSrcRow, int aDestRow)
         {
-            int Result = FBorderWidth + FRows[aSrcRow].FmtOffset;
+            int Result = FBorderWidthPix + FRows[aSrcRow].FmtOffset;
 
             int vR = aSrcRow - 1;
             while (vR > aDestRow)
             {
-                Result += FRows[vR].Height + FBorderWidth + FRows[vR].FmtOffset;
+                Result += FRows[vR].Height + FBorderWidthPix + FRows[vR].FmtOffset;
                 vR--;
             }
 
@@ -311,14 +314,14 @@ namespace HC.View
         /// <returns></returns>
         private POINT GetCellPostion(int aRow, int aCol)
         {
-            POINT Result = new POINT(FBorderWidth, FBorderWidth);
+            POINT Result = new POINT(FBorderWidthPix, FBorderWidthPix);
 
             for (int i = 0; i <= aRow - 1; i++)
-                Result.Y = Result.Y + FRows[i].FmtOffset + FRows[i].Height + FBorderWidth;
+                Result.Y = Result.Y + FRows[i].FmtOffset + FRows[i].Height + FBorderWidthPix;
     
             Result.Y = Result.Y + FRows[aRow].FmtOffset;
             for (int i = 0; i <= aCol - 1; i++)
-                Result.X = Result.X + FColWidths[i] + FBorderWidth;
+                Result.X = Result.X + FColWidths[i] + FBorderWidthPix;
 
             return Result;
         }
@@ -374,14 +377,15 @@ namespace HC.View
             }
         }
 
-        private void SetBorderWidth(byte value)
+        private void SetBorderWidthPt(Single value)
         {
-            if (FBorderWidth != value)
+            if (FBorderWidthPt != value)
             {
                 //if (value > FCellVPadding * 2)
                 //    FBorderWidth = (byte)(FCellVPadding * 2 - 1);
                 //else
-                    FBorderWidth = value;
+                    FBorderWidthPt = value;
+                FBorderWidthPix = (byte)HCUnitConversion.PtToPixel(FBorderWidthPt, HCUnitConversion.PixelsPerInchX);
                 FLastChangeFormated = false;
             }
         }
@@ -391,8 +395,8 @@ namespace HC.View
             if (FCellVPadding != value)
             {
                 FCellVPadding = value;
-                if (FBorderWidth > FCellVPadding * 2)
-                    FBorderWidth = (byte)(FCellVPadding * 2 - 1);
+                //if (FBorderWidthPix > FCellVPadding * 2)
+                //    FBorderWidthPix = (byte)(FCellVPadding * 2 - 1);
             }
         }
 
@@ -452,13 +456,13 @@ namespace HC.View
         {
             if (vShouLian == 0)
             {
-                int vRowDataDrawTop = aDrawRect.Top + FBorderWidth - 1;  // 因为边框在ADrawRect.Top也占1像素，所以要减掉
+                int vRowDataDrawTop = aDrawRect.Top + FBorderWidthPix - 1;  // 因为边框在ADrawRect.Top也占1像素，所以要减掉
                 for (int i = 0; i <= aRow - 1; i++)
-                    vRowDataDrawTop = vRowDataDrawTop + FRows[i].FmtOffset + FRows[i].Height + FBorderWidth;
+                    vRowDataDrawTop = vRowDataDrawTop + FRows[i].FmtOffset + FRows[i].Height + FBorderWidthPix;
                 
                 if ((FRows[aRow].FmtOffset > 0) && (aRow != vFirstDrawRow))
                 {
-                    vShouLian = vRowDataDrawTop - FBorderWidth;  // 上一行底部边框位置
+                    vShouLian = vRowDataDrawTop - FBorderWidthPix;  // 上一行底部边框位置
                     return;
                 }
 
@@ -498,7 +502,7 @@ namespace HC.View
                                         vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop + vCellData.DrawItems[i - 1].Rect.Bottom);  // 上一个最下面做为截断位置
                                 }
                                 else  // 第一行就在当前页放不下
-                                    vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop - FCellVPadding - FBorderWidth);
+                                    vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop - FCellVPadding - FBorderWidthPix);
                                 
                                 break;
                             }
@@ -574,9 +578,9 @@ namespace HC.View
                 vDestCellDataDrawTop = 0, vDestRow = 0, vDestCol = 0, vDestRow2 = 0, vDestCol2 = 0, vBorderBottom = 0;
             bool vDrawCellData = false;
             int vFixHeight = GetFixRowHeight();
-            int vBorderOffs = FBorderWidth / 2;
+            int vBorderOffs = FBorderWidthPix / 2;
             bool vFirstDrawRowIsBreak = false;
-            int vCellDataDrawTop = aDrawRect.Top + FBorderWidth;  // 第1行数据绘制起始位置，因为边框在ADrawRect.Top也占1像素，所以要减掉
+            int vCellDataDrawTop = aDrawRect.Top + FBorderWidthPix;  // 第1行数据绘制起始位置，因为边框在ADrawRect.Top也占1像素，所以要减掉
             for (int vR = 0; vR <= FRows.Count - 1; vR++)
             {
                 // 不在当前屏幕范围内的不绘制(1)
@@ -593,7 +597,7 @@ namespace HC.View
 
                 if (vCellDataDrawBottom < aDataScreenTop)
                 {
-                    vCellDataDrawTop = vCellDataDrawBottom + FCellVPadding + FBorderWidth;  // 准备判断下一行是否是可显示第一行
+                    vCellDataDrawTop = vCellDataDrawBottom + FCellVPadding + FBorderWidthPix;  // 准备判断下一行是否是可显示第一行
                     continue;
                 }
 
@@ -605,7 +609,7 @@ namespace HC.View
                         vFirstDrawRowIsBreak = (FFixRow >= 0) && (vR > FFixRow + FFixRowCount - 1);
                 }
 
-                vCellDrawLeft = aDrawRect.Left + FBorderWidth;
+                vCellDrawLeft = aDrawRect.Left + FBorderWidthPix;
 
                 // 循环绘制行中各单元格数据和边框
                 vShouLian = 0;
@@ -613,7 +617,7 @@ namespace HC.View
                 {
                     if (FRows[vR][vC].ColSpan < 0)
                     {
-                        vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidth;
+                        vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidthPix;
                         continue;  // 普通单元格或合并目标单元格才有数据，否则由目标单元格处理
                     }
                     
@@ -701,8 +705,8 @@ namespace HC.View
                         bool vDrawBorder = true;
                         // 目标单元格的上边框绘制位置 vDestCellDataDrawTop本身占掉了1像素
                         // FBorderWidth + FCellVPadding = vDestCellDataDrawTop，vDestCellDataDrawTop和FCellVapdding重叠了1像素
-                        int vBorderTop = vDestCellDataDrawTop - FCellVPadding - FBorderWidth;
-                        vBorderBottom = vBorderTop + FBorderWidth // 计算边框最下端
+                        int vBorderTop = vDestCellDataDrawTop - FCellVPadding - FBorderWidthPix;
+                        vBorderBottom = vBorderTop + FBorderWidthPix // 计算边框最下端
                             + Math.Max(FRows[vR].Height, this[vDestRow, vDestCol].Height);  // 由于可能是合并目标单元格，所以用单元格高和行高最高的
                         
                         // 目标单元格底部边框超过页底部，计算收敛位置
@@ -716,7 +720,7 @@ namespace HC.View
                                 vDestRow2 = vR;  // 借用变量
                                 while (vDestRow2 <= FRows.Count - 1)  // 找显示底部边框的源
                                 {
-                                    vSrcRowBorderTop = vSrcRowBorderTop + FRows[vDestRow2].FmtOffset + FRows[vDestRow2].Height + FBorderWidth;
+                                    vSrcRowBorderTop = vSrcRowBorderTop + FRows[vDestRow2].FmtOffset + FRows[vDestRow2].Height + FBorderWidthPix;
                                     if (vSrcRowBorderTop > aDataScreenBottom)
                                     {
                                         if (vSrcRowBorderTop > aDataDrawBottom)
@@ -741,13 +745,13 @@ namespace HC.View
                                     // 移动到当前行起始位置
                                     vSrcRowBorderTop = vBorderTop;  // 借用变量，vBorderTop值是目标单元格的上边框
                                     for (int i = vDestRow; i <= vR - 1; i++)
-                                        vSrcRowBorderTop = vSrcRowBorderTop + FRows[i].Height + FBorderWidth;
+                                        vSrcRowBorderTop = vSrcRowBorderTop + FRows[i].Height + FBorderWidthPix;
 
                                     // 我是跨页后目标单元格正在此页源的第一个，我要负责目标在此页的边框
                                     vDestRow2 = vR;  // 借用变量
                                     while (vDestRow2 <= FRows.Count - 1)  // 找显示底部边框的源
                                     {
-                                        vSrcRowBorderTop = vSrcRowBorderTop + FRows[vDestRow2].Height + FBorderWidth;
+                                        vSrcRowBorderTop = vSrcRowBorderTop + FRows[vDestRow2].Height + FBorderWidthPix;
                                         if (vSrcRowBorderTop > aDataScreenBottom)
                                         {
                                             if (vSrcRowBorderTop > aDataDrawBottom)
@@ -775,7 +779,10 @@ namespace HC.View
                             aCanvas.Pen.BeginUpdate();
                             try
                             {
-                                aCanvas.Pen.Width = FBorderWidth;
+                                if (aPaintInfo.Print)
+                                    aCanvas.Pen.Width = (byte)Math.Max(1, HCUnitConversion.PtToPixel(FBorderWidthPt, aPaintInfo.DPI));
+                                else
+                                    aCanvas.Pen.Width = FBorderWidthPix;
 
                                 if (FBorderVisible)
                                 {
@@ -783,18 +790,18 @@ namespace HC.View
                                     aCanvas.Pen.Style = HCPenStyle.psSolid;
                                 }
                                 else
-                                    if (!aPaintInfo.Print)
-                                    {
-                                        aCanvas.Pen.Color = HC.clActiveBorder;
-                                        aCanvas.Pen.Style = HCPenStyle.psDot;
-                                    }
+                                if (!aPaintInfo.Print)
+                                {
+                                    aCanvas.Pen.Color = HC.clActiveBorder;
+                                    aCanvas.Pen.Style = HCPenStyle.psDot;
+                                }
                             }
                             finally
                             {
                                 aCanvas.Pen.EndUpdate();
                             }
                             
-                            int vBorderLeft = vCellDrawLeft - FBorderWidth;
+                            int vBorderLeft = vCellDrawLeft - FBorderWidthPix;
                             int vBorderRight = vCellDrawLeft + FColWidths[vC] + GetColSpanWidth(vDestRow, vDestCol);
                             
                             if ((vBorderTop < aDataScreenTop) && (aDataDrawTop >= 0))
@@ -806,38 +813,86 @@ namespace HC.View
                             {
                                 if ((vBorderTop > 0) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
                                 {
-                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);   // 左上
-                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                                    if (aPaintInfo.Print)
+                                    {
+                                        aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                            vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
+                                    }
+                                    else
+                                    {
+                                        aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);   // 左上
+                                        aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                                    }
                                 }
 
                                 if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsRight))
                                 {
-                                    aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
-                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                                    if (aPaintInfo.Print)
+                                    {
+                                        aPaintInfo.DrawNoScaleLine(aCanvas, vBorderRight + vBorderOffs, vBorderTop + vBorderOffs,
+                                            vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    }
+                                    else
+                                    {
+                                        aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                                        aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                                    }
                                 }
 
                                 if ((vBorderBottom <= aDataScreenBottom) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
                                 {
-                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);  // 左下
-                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                                    if (aPaintInfo.Print)
+                                    {
+                                        aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs,
+                                            vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 左下
+                                    }
+                                    else
+                                    {
+                                        aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);  // 左下
+                                        aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                                    }
                                 }
 
                                 if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsLeft))
                                 {
-                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
-                                    aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    if (aPaintInfo.Print)
+                                    {
+                                        aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                            vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    }
+                                    else
+                                    {
+                                        aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
+                                        aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    }
                                 }
 
                                 if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsLTRB))
                                 {
-                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
-                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    if (aPaintInfo.Print)
+                                    {
+                                        aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                            vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    }
+                                    else
+                                    {
+                                        aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
+                                        aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    }
                                 }
 
                                 if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsRTLB))
                                 {
-                                    aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
-                                    aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    if (aPaintInfo.Print)
+                                    {
+                                        aPaintInfo.DrawNoScaleLine(aCanvas, vBorderRight + vBorderOffs, vBorderTop + vBorderOffs,
+                                            vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    }
+                                    else
+                                    {
+                                        aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
+                                        aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                    }
                                 }
                             }
                             finally
@@ -872,10 +927,10 @@ namespace HC.View
                     }
                     #endregion
 
-                    vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidth;  // 同行下一列的起始Left位置
+                    vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidthPix;  // 同行下一列的起始Left位置
                 }
                     
-                vCellDataDrawTop = vCellDataDrawBottom + FCellVPadding + FBorderWidth;  // 下一行的Top位置
+                vCellDataDrawTop = vCellDataDrawBottom + FCellVPadding + FBorderWidthPix;  // 下一行的Top位置
             }
 
             if (vFirstDrawRowIsBreak)
@@ -928,7 +983,7 @@ namespace HC.View
         // 继承THCCustomItem抽象方法
         public override bool MouseDown(MouseEventArgs e)
         {
-            bool vResult = true;
+            bool vResult = base.MouseDown(e);
 
             int vMouseDownRow = -1, vMouseDownCol = -1;
             HCTableCell vCell = null;
@@ -1554,6 +1609,13 @@ namespace HC.View
             FOutSelectInto = false;
         }
 
+
+        public override void FormatDirty()
+        {
+            FLastChangeFormated = false;
+            base.FormatDirty();
+        }
+
         public override void MarkStyleUsed(bool aMark)
         {
             base.MarkStyleUsed(aMark);
@@ -1703,7 +1765,10 @@ namespace HC.View
         protected override void DoSelfUndoDestroy(HCUndo aUndo)
         {
             if (aUndo.Data is HCCellUndoData)
+            {
                 (aUndo.Data as HCCellUndoData).Dispose();
+                aUndo.Data = null;
+            }
 
             base.DoSelfUndoDestroy(aUndo);
         }
@@ -2056,7 +2121,7 @@ namespace HC.View
                         FRows[vR].Delete(vC);  // 删除列
                     }
 
-                    FColWidths[vC - 1] = FColWidths[vC - 1] + FBorderWidth + FColWidths[vC];
+                    FColWidths[vC - 1] = FColWidths[vC - 1] + FBorderWidthPix + FColWidths[vC];
                     FColWidths.RemoveAt(vC);
                 }
             }
@@ -2173,7 +2238,7 @@ namespace HC.View
         {
             // TODO : 根据各行当前列平均减少一定的宽度给要插入的列
             int viDestRow = -1, viDestCol = -1;
-            int vWidth = HC.MinColWidth - FBorderWidth;
+            int vWidth = HC.MinColWidth - FBorderWidthPix;
             for (int i = 0; i <= aCount - 1; i++)
             {
                 for (int vRow = 0; vRow <= RowCount - 1; vRow++)
@@ -2334,7 +2399,7 @@ namespace HC.View
             FCellVPadding = 2;
             FFormatHeight = 0;
             FDraging = false;
-            FBorderWidth = 1;
+            BorderWidthPt = 0.5f;
             FBorderColor = Color.Black;
             FBorderVisible = true;
             FResizeKeepWidth = false;
@@ -2346,13 +2411,13 @@ namespace HC.View
             FMulCellUndo = new HCMulCellUndo();
 
             //FWidth := FRows[0].ColCount * (MinColWidth + FBorderWidth) + FBorderWidth;
-            Height = aRowCount * (HC.MinRowHeight + FBorderWidth) + FBorderWidth;
+            Height = aRowCount * (HC.MinRowHeight + FBorderWidthPix) + FBorderWidthPix;
             FRows = new HCTableRows();
             FRows.OnRowAdd = DoRowAdd;  // 添加行时触发的事件
             FSelectCellRang = new View.SelectCellRang();
             this.InitializeMouseInfo();
             //
-            int vDataWidth = aWidth - (aColCount + 1) * FBorderWidth;
+            int vDataWidth = aWidth - (aColCount + 1) * FBorderWidthPix;
             for (int i = 0; i <= aRowCount - 1; i++)
             {
                 HCTableRow vRow = new HCTableRow(OwnerData.Style, aColCount);
@@ -2389,7 +2454,7 @@ namespace HC.View
             HCTableItem vSrcTable = source as HCTableItem;
 
             FBorderVisible = vSrcTable.BorderVisible;
-            FBorderWidth = vSrcTable.BorderWidth;
+            BorderWidthPt = vSrcTable.BorderWidthPt;
             FFixRow = vSrcTable.FixRow;
             FFixRowCount = vSrcTable.FixRowCount;
             FFixCol = vSrcTable.FixCol;
@@ -2531,28 +2596,55 @@ namespace HC.View
                 return base.GetTopLevelItem();
         }
 
-        public override HCCustomDrawItem GetActiveDrawItem()
+        public override HCCustomDrawItem GetTopLevelDrawItem()
         {
             HCTableCellData vCellData = GetActiveData() as HCTableCellData;
             if (vCellData != null)
                 return vCellData.GetTopLevelDrawItem();
             else
-                return base.GetActiveDrawItem();
+                return base.GetTopLevelDrawItem();
         }
 
-        public override POINT GetActiveDrawItemCoord()
+        public override POINT GetTopLevelDrawItemCoord()
         {
             POINT Result = new POINT(0, 0);
             HCTableCell vCell = GetEditCell();
             if (vCell != null)
             {
-                Result = vCell.CellData.GetActiveDrawItemCoord();
+                Result = vCell.CellData.GetTopLevelDrawItemCoord();
                 POINT vPt = GetCellPostion(FSelectCellRang.StartRow, FSelectCellRang.StartCol);
                 Result.X = Result.X + vPt.X + FCellHPadding;
-                Result.Y = Result.Y + vPt.Y + FCellVPadding;
+                Result.Y = Result.Y + vPt.Y + vCell.GetCellDataTop(FCellVPadding);
             }
 
             return Result;
+        }
+
+        public override HCCustomDrawItem GetTopLevelRectDrawItem()
+        {
+            HCTableCellData vCellData = GetActiveData() as HCTableCellData;
+            if (vCellData != null)
+                return vCellData.GetTopLevelRectDrawItem();
+            else
+                return base.GetTopLevelRectDrawItem();
+        }
+
+        public override POINT GetTopLevelRectDrawItemCoord()
+        {
+            POINT vResult = new POINT(-1, -1);
+            HCTableCell vCell = GetEditCell();
+            if (vCell != null)
+            {
+                POINT vPt = vCell.CellData.GetTopLevelRectDrawItemCoord();
+                if (vPt.X >= 0)
+                {
+                    vResult = GetCellPostion(FSelectCellRang.StartRow, FSelectCellRang.StartCol);
+                    vResult.X = vResult.X + vPt.X + FCellHPadding;
+                    vResult.Y = vResult.Y + vPt.Y + vCell.GetCellDataTop(FCellVPadding);
+                }
+            }
+
+            return vResult;
         }
 
         public override string GetHint()
@@ -3295,15 +3387,15 @@ namespace HC.View
             aCellMaxInc = 0;  // vCellInc的最大值
             
             // 得到起始行的Fmt起始位置
-            int vBreakRowFmtTop = aDrawItemRectTop + FBorderWidth - 1;  // 第1行排版位置(上边框线结束位置)，因为边框在ADrawItemRectTop也占1像素，所以要减掉
+            int vBreakRowFmtTop = aDrawItemRectTop + FBorderWidthPix - 1;  // 第1行排版位置(上边框线结束位置)，因为边框在ADrawItemRectTop也占1像素，所以要减掉
             for (int vR1 = 0; vR1 <= aStartRow - 1; vR1++)
-                vBreakRowFmtTop = vBreakRowFmtTop + FRows[vR1].FmtOffset + FRows[vR1].Height + FBorderWidth;  // 第i行结束位置(含下边框结束位置)
+                vBreakRowFmtTop = vBreakRowFmtTop + FRows[vR1].FmtOffset + FRows[vR1].Height + FBorderWidthPix;  // 第i行结束位置(含下边框结束位置)
             
             // 从起始行开始检测当前页是否能放完表格
             int vR = aStartRow, vBreakRowBottom = 0;
             while (vR < RowCount)  // 遍历每一行
             {
-                vBreakRowBottom = vBreakRowFmtTop + FRows[vR].FmtOffset + FRows[vR].Height + FBorderWidth;  // 第i行结束位置(含下边框结束位置)
+                vBreakRowBottom = vBreakRowFmtTop + FRows[vR].FmtOffset + FRows[vR].Height + FBorderWidthPix;  // 第i行结束位置(含下边框结束位置)
                 if (vBreakRowBottom > aPageDataFmtBottom)
                 {
                     aBreakRow = vR;  // 第i行需要处理分页
@@ -3352,7 +3444,7 @@ namespace HC.View
                     if (!vDrawItem.LineFirst)
                         continue;
 
-                    if (vDestCellDataFmtTop + vDrawItem.Rect.Bottom + FCellVPadding + FBorderWidth > aPageDataFmtBottom)
+                    if (vDestCellDataFmtTop + vDrawItem.Rect.Bottom + FCellVPadding + FBorderWidthPix > aPageDataFmtBottom)
                     {                                               // |如果FBorderWidth比行高大就不合适
                         if (i == 0)
                         {
@@ -3399,11 +3491,11 @@ namespace HC.View
                     if (! vDrawItem.LineFirst)
                         continue;
                         
-                    if (vDestCellDataFmtTop + vDrawItem.Rect.Bottom + FCellVPadding + FBorderWidth > vPageBreakBottom)
+                    if (vDestCellDataFmtTop + vDrawItem.Rect.Bottom + FCellVPadding + FBorderWidthPix > vPageBreakBottom)
                     {                                    // |如果FBorderWidth比行高大就不合适
                         // 计算分页的DrawItem向下偏移多少可在下一页全显示该DrawItem
                         vH = aPageDataFmtBottom - (vDestCellDataFmtTop + vDrawItem.Rect.Top) // 页Data底部 - 当前DrawItem在页的相对位置
-                            + FBorderWidth + FCellVPadding - 1;  // 预留出顶部边框和FCellVPadding，因为边框在APageDataFmtBottom也占1像素，所以要减掉
+                            + FBorderWidthPix + FCellVPadding - 1;  // 预留出顶部边框和FCellVPadding，因为边框在APageDataFmtBottom也占1像素，所以要减掉
                        
                         // 单元格实际增加的高度 = DrawItem分页向下偏移的距离 - 原最后一个DrawItem底部距离行底部的空白距离(不含底部的FCellVPadding)
                         if (vH > vLastDFromRowBottom)
@@ -3416,8 +3508,8 @@ namespace HC.View
                         
                         if (i > 0)
                         {
-                            if (vDestCellDataFmtTop + vCellData.DrawItems[i - 1].Rect.Bottom + FCellVPadding + FBorderWidth > vRowBreakSeat)
-                                vRowBreakSeat = vDestCellDataFmtTop + vCellData.DrawItems[i - 1].Rect.Bottom + FCellVPadding + FBorderWidth;
+                            if (vDestCellDataFmtTop + vCellData.DrawItems[i - 1].Rect.Bottom + FCellVPadding + FBorderWidthPix > vRowBreakSeat)
+                                vRowBreakSeat = vDestCellDataFmtTop + vCellData.DrawItems[i - 1].Rect.Bottom + FCellVPadding + FBorderWidthPix;
                         }
                         else  // 第一个DrawItem就放不下
                         {
@@ -3492,7 +3584,8 @@ namespace HC.View
             byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
-            aStream.WriteByte(FBorderWidth);
+            vBuffer = BitConverter.GetBytes(FBorderWidthPt);  // 边框宽度
+            aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FRows.Count);  // 行数
             aStream.Write(vBuffer, 0, vBuffer.Length);
@@ -3570,9 +3663,19 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FBorderVisible = BitConverter.ToBoolean(vBuffer, 0);
 
+            if (aFileVersion > 31)
+            {
+                vBuffer = BitConverter.GetBytes(FBorderWidthPt);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                BorderWidthPt = System.BitConverter.ToSingle(vBuffer, 0);
+            }
+            else
             if (aFileVersion > 29)
-                FBorderWidth = (byte)aStream.ReadByte();
-            
+            {
+                FBorderWidthPix = (byte)aStream.ReadByte();
+                FBorderWidthPt = Math.Min(0.5f, HCUnitConversion.PixelToPt(FBorderWidthPix, HCUnitConversion.PixelsPerInchX));
+            }
+
             int vRowCount = 0;
             vBuffer = BitConverter.GetBytes(vRowCount);
             aStream.Read(vBuffer, 0, vBuffer.Length);
@@ -3637,7 +3740,7 @@ namespace HC.View
 
         public override string ToHtml(string aPath)
         {
-            string Result = "<table border=\"" + FBorderWidth.ToString()
+            string Result = "<table border=\"" + FBorderWidthPix.ToString()
                 + "\" cellpadding=\"0\"; cellspacing=\"0\"";
             for (int vR = 0; vR <= FRows.Count - 1; vR++)
             {
@@ -3672,7 +3775,8 @@ namespace HC.View
                 vS = vS + "," + FColWidths[vC].ToString();
 
             aNode.SetAttribute("bordervisible", FBorderVisible.ToString());
-            aNode.SetAttribute("borderwidth", FBorderWidth.ToString());
+            //aNode.SetAttribute("borderwidth", FBorderWidthPix.ToString());
+            aNode.SetAttribute("borderwidthpt", string.Format("{0:0.##}", FBorderWidthPt));
             aNode.SetAttribute("row", FRows.Count.ToString());
             aNode.SetAttribute("col", FColWidths.Count.ToString());
             aNode.SetAttribute("colwidth", vS);
@@ -3692,7 +3796,15 @@ namespace HC.View
 
             base.ParseXml(aNode);
             FBorderVisible = bool.Parse(aNode.Attributes["bordervisible"].Value);
-            FBorderWidth = byte.Parse(aNode.Attributes["borderwidth"].Value);
+            if (aNode.HasAttribute("borderwidth"))
+            {
+                FBorderWidthPix = byte.Parse(aNode.Attributes["borderwidth"].Value);
+                FBorderWidthPt = Math.Min(0.5f, HCUnitConversion.PixelToPt(FBorderWidthPix, HCUnitConversion.PixelsPerInchX));
+            }
+
+            if (aNode.HasAttribute("borderwidthpt"))
+                BorderWidthPt = Single.Parse(aNode.Attributes["borderwidthpt"].Value);
+
             int vR = int.Parse(aNode.Attributes["row"].Value);
             int vC = int.Parse(aNode.Attributes["col"].Value);
 
@@ -3743,9 +3855,9 @@ namespace HC.View
 
         public int GetFormatWidth()
         {
-            int Result = FBorderWidth;
+            int Result = FBorderWidthPix;
             for (int i = 0; i <= FColWidths.Count - 1; i++)
-                Result = Result + FColWidths[i] + FBorderWidth;
+                Result = Result + FColWidths[i] + FBorderWidthPix;
 
             return Result;
         }
@@ -3785,7 +3897,7 @@ namespace HC.View
 
             if ((x < 0) || (x > Width))
             {
-                vTop = FBorderWidth;
+                vTop = FBorderWidthPix;
                 for (int i = 0; i <= RowCount - 1; i++)
                 {
                     vTop = vTop + FRows[i].FmtOffset;  // 以实际内容Top为顶位置，避免行有跨页时，在上一页底部点击选中的是下一页第一行
@@ -3805,7 +3917,7 @@ namespace HC.View
             
             // 获取是否在行或列的边框上
             // 判断是否在最上边框
-            vTop = FBorderWidth;
+            vTop = FBorderWidthPix;
             if (CheckRowBorderRang(y, vTop))
             {
                 Result.TableSite = TableSite.tsBorderTop;
@@ -3822,7 +3934,7 @@ namespace HC.View
             for (int i = 0; i <= RowCount - 1; i++)
             {
                 vTop = vTop + FRows[i].FmtOffset;  // 以实际内容Top为顶位置，避免行有跨页时，在上一页底部点击选中的是下一页第一行
-                vBottom = vTop + FRows[i].Height + FBorderWidth;
+                vBottom = vTop + FRows[i].Height + FBorderWidthPix;
                 if (CheckRowBorderRang(y, vBottom))
                 {
                     aRow = i;
@@ -3844,11 +3956,11 @@ namespace HC.View
                 return Result;
 
             // 判断是在列边框上还是列中
-            int vLeft = FBorderWidth, vRight = 0, vDestRow = -1, vDestCol = -1;
+            int vLeft = FBorderWidthPix, vRight = 0, vDestRow = -1, vDestCol = -1;
 
             for (int i = 0; i <= FColWidths.Count - 1; i++)
             {
-                vRight = vLeft + FColWidths[i] + FBorderWidth;
+                vRight = vLeft + FColWidths[i] + FBorderWidthPix;
                 GetDestCell(aRow, i, ref vDestRow, ref vDestCol);
                 if (CheckColBorderRang(x, vRight))
                 {
@@ -3917,131 +4029,180 @@ namespace HC.View
             SelectComplate();
         }
 
-        public void PaintRow(int ARow, int ALeft, int ATop, int ABottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        public void PaintRow(int aRow, int aLeft, int aTop, int aBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            int vBorderOffs = FBorderWidth / 2;
-            int vCellDrawLeft = ALeft + FBorderWidth;
-            int vCellDataDrawTop = ATop + FBorderWidth + FCellVPadding;
+            int vBorderOffs = FBorderWidthPix / 2;
+            int vCellDrawLeft = aLeft + FBorderWidthPix;
+            int vCellDataDrawTop = aTop + FBorderWidthPix + FCellVPadding;
             int vCellDrawBottom = -1, vBorderTop = -1, vBorderBottom = -1, vBorderLeft = -1, vBorderRight = -1;
             HCTableCellData vCellData = null;
             bool vDrawDefault = false;
             
-            for (int vC = 0; vC <= FRows[ARow].ColCount - 1; vC++)
+            for (int vC = 0; vC <= FRows[aRow].ColCount - 1; vC++)
             {
-                if ((FRows[ARow][vC].ColSpan < 0) || (FRows[ARow][vC].RowSpan < 0))
+                if ((FRows[aRow][vC].ColSpan < 0) || (FRows[aRow][vC].RowSpan < 0))
                 {
-                    vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidth;
+                    vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidthPix;
                     continue;  // 普通单元格或合并目标单元格才有数据，否则由目标单元格处理
                 }
 
-                vCellDrawBottom = Math.Min(ABottom,  // 数据内容屏显最下端
-                vCellDataDrawTop
-                + Math.Max(FRows[ARow].Height, FRows[ARow][vC].Height) - FCellVPadding  // 行高和有合并的单元格高中最大的
-                );
-
-                RECT vCellRect = new RECT(vCellDrawLeft, ATop + FBorderWidth, vCellDrawLeft + FRows[ARow][vC].Width, vCellDrawBottom);
-                vCellData = FRows[ARow][vC].CellData;
+                vCellDrawBottom = Math.Min(aBottom,  // 数据内容屏显最下端
+                    vCellDataDrawTop + Math.Max(FRows[aRow].Height, FRows[aRow][vC].Height) - FCellVPadding);  // 行高和有合并的单元格高中最大的
+                
+                RECT vCellRect = new RECT(vCellDrawLeft, aTop + FBorderWidthPix, vCellDrawLeft + FRows[aRow][vC].Width, vCellDrawBottom);
+                vCellData = FRows[aRow][vC].CellData;
             
-                if ((this.IsSelectComplate || vCellData.CellSelectedAll) && (!APaintInfo.Print))
+                if ((this.IsSelectComplate || vCellData.CellSelectedAll) && (!aPaintInfo.Print))
                 {
-                    ACanvas.Brush.Color = OwnerData.Style.SelColor;
-                    ACanvas.FillRect(vCellRect);
+                    aCanvas.Brush.Color = OwnerData.Style.SelColor;
+                    aCanvas.FillRect(vCellRect);
                 }
                 else  // 默认的绘制
                 {
                     vDrawDefault = true;
                     if (FOnCellPaintBK != null)
-                        FOnCellPaintBK(this, FRows[ARow][vC], vCellRect, ACanvas, APaintInfo, ref  vDrawDefault);
+                        FOnCellPaintBK(this, FRows[aRow][vC], vCellRect, aCanvas, aPaintInfo, ref  vDrawDefault);
 
                     if (vDrawDefault)
                     {
-                        if (FRows[ARow][vC].BackgroundColor != HC.HCTransparentColor)
-                            ACanvas.Brush.Color = FRows[ARow][vC].BackgroundColor;
+                        if (FRows[aRow][vC].BackgroundColor != HC.HCTransparentColor)
+                            aCanvas.Brush.Color = FRows[aRow][vC].BackgroundColor;
                         else
-                            ACanvas.Brush.Style = HCBrushStyle.bsClear;
+                            aCanvas.Brush.Style = HCBrushStyle.bsClear;
 
-                        ACanvas.FillRect(vCellRect);
+                        aCanvas.FillRect(vCellRect);
                     }
                 }
 
                 if (vCellDrawBottom - vCellDataDrawTop > FCellVPadding)
                 {
-                    FRows[ARow][vC].PaintTo(vCellDrawLeft, vCellDataDrawTop - FCellVPadding, vCellRect.Right,
-                        vCellDrawBottom, ATop, ABottom, 0, FCellHPadding, FCellVPadding, ACanvas, APaintInfo);
+                    FRows[aRow][vC].PaintTo(vCellDrawLeft, vCellDataDrawTop - FCellVPadding, vCellRect.Right,
+                        vCellDrawBottom, aTop, aBottom, 0, FCellHPadding, FCellVPadding, aCanvas, aPaintInfo);
                 }
            
                 // 绘制各单元格边框线
-                if (FBorderVisible || (!APaintInfo.Print))
+                if (FBorderVisible || (!aPaintInfo.Print))
                 {
-                    ACanvas.Pen.Width = FBorderWidth;
+                    if (aPaintInfo.Print)
+                        aCanvas.Pen.Width = (byte)Math.Max(1, HCUnitConversion.PtToPixel(FBorderWidthPt, aPaintInfo.DPI));
+                    else
+                        aCanvas.Pen.Width = FBorderWidthPix;
 
                     if (FBorderVisible)
                     {
-                        ACanvas.Pen.Color = Color.Black;
-                        ACanvas.Pen.Style = HCPenStyle.psSolid;
+                        aCanvas.Pen.Color = Color.Black;
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
                     }
                     else
-                    if (!APaintInfo.Print)
+                    if (!aPaintInfo.Print)
                     {
-                        ACanvas.Pen.Color = HC.clActiveBorder;
-                        ACanvas.Pen.Style = HCPenStyle.psDot;
+                        aCanvas.Pen.Color = HC.clActiveBorder;
+                        aCanvas.Pen.Style = HCPenStyle.psDot;
                     }
 
-                    vBorderTop = vCellDataDrawTop - FCellVPadding - FBorderWidth;
-                    vBorderBottom = vBorderTop + FBorderWidth  // 计算边框最下端
-                        + Math.Max(FRows[ARow].Height, FRows[ARow][vC].Height);  // 由于可能是合并目标单元格，所以用单元格高和行高最高的
+                    vBorderTop = vCellDataDrawTop - FCellVPadding - FBorderWidthPix;
+                    vBorderBottom = vBorderTop + FBorderWidthPix  // 计算边框最下端
+                        + Math.Max(FRows[aRow].Height, FRows[aRow][vC].Height);  // 由于可能是合并目标单元格，所以用单元格高和行高最高的
                 
-                    vBorderLeft = vCellDrawLeft - FBorderWidth;
-                    vBorderRight = vCellDrawLeft + FColWidths[vC] + GetColSpanWidth(ARow, vC);
+                    vBorderLeft = vCellDrawLeft - FBorderWidthPix;
+                    vBorderRight = vCellDrawLeft + FColWidths[vC] + GetColSpanWidth(aRow, vC);
                 
-                    IntPtr vExtPen = HC.CreateExtPen(ACanvas.Pen);  // 因为默认的画笔没有线帽的控制，新增支持线帽的画笔
-                    IntPtr vOldPen = (IntPtr)GDI.SelectObject(ACanvas.Handle, vExtPen);
+                    IntPtr vExtPen = HC.CreateExtPen(aCanvas.Pen);  // 因为默认的画笔没有线帽的控制，新增支持线帽的画笔
+                    IntPtr vOldPen = (IntPtr)GDI.SelectObject(aCanvas.Handle, vExtPen);
                     try
                     {
-                        if ((vBorderTop >= 0) && (FRows[ARow][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
+                        if ((vBorderTop >= 0) && (FRows[aRow][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
                         {
-                            ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);   // 左上
-                            ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                            if (aPaintInfo.Print)
+                            {
+                                aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                    vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
+                            }
+                            else
+                            {
+                                aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);   // 左上
+                                aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                            }
                         }
 
-                        if (FRows[ARow][vC].BorderSides.Contains((byte)BorderSide.cbsRight))
+                        if (FRows[aRow][vC].BorderSides.Contains((byte)BorderSide.cbsRight))
                         {
-                            ACanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
-                            ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                            if (aPaintInfo.Print)
+                            {
+                                aPaintInfo.DrawNoScaleLine(aCanvas, vBorderRight + vBorderOffs, vBorderTop + vBorderOffs,
+                                    vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
+                            else
+                            {
+                                aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                                aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                            }
                         }
 
-                        if ((vBorderBottom <= ABottom) && (FRows[ARow][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
+                        if ((vBorderBottom <= aBottom) && (FRows[aRow][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
                         {
-                            ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);  // 左下
-                            ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                            if (aPaintInfo.Print)
+                            {
+                                aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs,
+                                    vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
+                            else
+                            {
+                                aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);  // 左下
+                                aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                            }
                         }
 
-                        if (FRows[ARow][vC].BorderSides.Contains((byte)BorderSide.cbsLeft))
+                        if (FRows[aRow][vC].BorderSides.Contains((byte)BorderSide.cbsLeft))
                         {
-                            ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
-                            ACanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                            if (aPaintInfo.Print)
+                            {
+                                aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                    vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
+                            else
+                            {
+                                aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
+                                aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
                         }
 
-                        if (FRows[ARow][vC].BorderSides.Contains((byte)BorderSide.cbsLTRB))
+                        if (FRows[aRow][vC].BorderSides.Contains((byte)BorderSide.cbsLTRB))
                         {
-                            ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
-                            ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                            if (aPaintInfo.Print)
+                            {
+                                aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                    vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
+                            else
+                            {
+                                aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
+                                aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
                         }
 
-                        if (FRows[ARow][vC].BorderSides.Contains((byte)BorderSide.cbsRTLB))
+                        if (FRows[aRow][vC].BorderSides.Contains((byte)BorderSide.cbsRTLB))
                         {
-                            ACanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
-                            ACanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                            if (aPaintInfo.Print)
+                            {
+                                aPaintInfo.DrawNoScaleLine(aCanvas, vBorderRight + vBorderOffs, vBorderTop + vBorderOffs,
+                                    vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
+                            else
+                            {
+                                aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
+                                aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                            }
                         }
                     }
                     finally
                     {
-                        GDI.SelectObject(ACanvas.Handle, vOldPen);
+                        GDI.SelectObject(aCanvas.Handle, vOldPen);
                         GDI.DeleteObject(vExtPen);
                     }
                 }
         
-                vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidth;  // 同行下一列的起始Left位置
+                vCellDrawLeft = vCellDrawLeft + FColWidths[vC] + FBorderWidthPix;  // 同行下一列的起始Left位置
             }
         }
 
@@ -4063,7 +4224,7 @@ namespace HC.View
                 }
 
                 vH = FCellVPadding + vH + FCellVPadding;  // 增加上下边距
-                vH = Math.Max(vH, FRows[vR].Height) + FBorderWidth + FBorderWidth;
+                vH = Math.Max(vH, FRows[vR].Height) + FBorderWidthPix + FBorderWidthPix;
 
                 vRect = HC.Bounds(ALeft, vTop, Width, vH);
                 if (vRect.Top >= ABottom)
@@ -4071,125 +4232,176 @@ namespace HC.View
 
                 PaintRow(vR, vRect.Left, vRect.Top, vRect.Bottom, ACanvas, APaintInfo);
                 
-                vTop = vTop + FBorderWidth + FRows[vR].Height;
+                vTop = vTop + FBorderWidthPix + FRows[vR].Height;
             }
         }
 
-        public void PaintFixCols(int ATableDrawTop, int ALeft, int ATop, int ABottom, HCCanvas ACanvas, PaintInfo APaintInfo)
+        public void PaintFixCols(int aTableDrawTop, int aLeft, int aTop, int aBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            int vCellTop = Math.Max(ATop, ATableDrawTop) + FBorderWidth;
+            int vCellTop = Math.Max(aTop, aTableDrawTop) + FBorderWidthPix;
             for (int vR = 0; vR <= FFixRow + FFixRowCount - 1; vR++)
-                vCellTop = vCellTop + FRows[vR].FmtOffset + FRows[vR].Height + FBorderWidth;
+                vCellTop = vCellTop + FRows[vR].FmtOffset + FRows[vR].Height + FBorderWidthPix;
 
-            RECT vRect = HC.Bounds(ALeft, vCellTop, GetFixColWidth(), ABottom - vCellTop);
-            ACanvas.Brush.Color = HC.clBtnFace;
-            ACanvas.FillRect(vRect);
+            RECT vRect = HC.Bounds(aLeft, vCellTop, GetFixColWidth(), aBottom - vCellTop);
+            aCanvas.Brush.Color = HC.clBtnFace;
+            aCanvas.FillRect(vRect);
 
             int vCellBottom = 0, vCellLeft = 0, vBorderTop = 0, vBorderBottom = 0, vBorderLeft = 0, vBorderRight = 0;
 
-            int vBorderOffs = FBorderWidth / 2;
+            int vBorderOffs = FBorderWidthPix / 2;
 
-            vCellTop = ATableDrawTop + FBorderWidth;
+            vCellTop = aTableDrawTop + FBorderWidthPix;
         
             for (int vR = 0; vR <= FRows.Count - 1; vR++)
             {
                 vCellTop = vCellTop + FRows[vR].FmtOffset;
                 vCellBottom = vCellTop + FRows[vR].Height;
-                if ((vCellBottom < ATop) || (vR < FFixRow + FFixRowCount))
+                if ((vCellBottom < aTop) || (vR < FFixRow + FFixRowCount))
                 {
-                    vCellTop = vCellBottom + FBorderWidth;
+                    vCellTop = vCellBottom + FBorderWidthPix;
                     continue;
                 }
 
-                vCellLeft = ALeft + FBorderWidth;
+                vCellLeft = aLeft + FBorderWidthPix;
                 for (int vC = FFixCol; vC <= FFixCol + FFixColCount - 1; vC++)
                 {
                     vRect = new RECT(vCellLeft, vCellTop, vCellLeft + FColWidths[vC], vCellBottom);
-                    if (vRect.Top > ABottom)
+                    if (vRect.Top > aBottom)
                         break;
 
-                    if (vRect.Bottom > ABottom)
-                        vRect.Bottom = ABottom;
+                    if (vRect.Bottom > aBottom)
+                        vRect.Bottom = aBottom;
 
-                    FRows[vR][vC].PaintTo(vCellLeft, vCellTop, vRect.Right, vCellBottom, ATop, ABottom, 0,
-                    FCellHPadding, FCellVPadding, ACanvas, APaintInfo);
+                    FRows[vR][vC].PaintTo(vCellLeft, vCellTop, vRect.Right, vCellBottom, aTop, aBottom, 0,
+                    FCellHPadding, FCellVPadding, aCanvas, aPaintInfo);
 
-                    if (FBorderVisible || (!APaintInfo.Print))
+                    if (FBorderVisible || (!aPaintInfo.Print))
                     {
-                        ACanvas.Pen.Width = FBorderWidth;
+                        if (aPaintInfo.Print)
+                            aCanvas.Pen.Width = (byte)Math.Max(1, HCUnitConversion.PtToPixel(FBorderWidthPt, aPaintInfo.DPI));
+                        else
+                            aCanvas.Pen.Width = FBorderWidthPix;
                     
                         if (FBorderVisible)
                         {
-                            ACanvas.Pen.Color = Color.Black;
-                            ACanvas.Pen.Style = HCPenStyle.psSolid;
+                            aCanvas.Pen.Color = Color.Black;
+                            aCanvas.Pen.Style = HCPenStyle.psSolid;
                         }
                         else
-                        if (!APaintInfo.Print)
+                        if (!aPaintInfo.Print)
                         {
-                            ACanvas.Pen.Color = HC.clActiveBorder;
-                            ACanvas.Pen.Style = HCPenStyle.psDot;
+                            aCanvas.Pen.Color = HC.clActiveBorder;
+                            aCanvas.Pen.Style = HCPenStyle.psDot;
                         }
 
-                        vBorderTop = vCellTop - FBorderWidth;
-                        vBorderBottom = vBorderTop + FBorderWidth  // 计算边框最下端
+                        vBorderTop = vCellTop - FBorderWidthPix;
+                        vBorderBottom = vBorderTop + FBorderWidthPix  // 计算边框最下端
                             + Math.Max(FRows[vR].Height, FRows[vR][vC].Height);  // 由于可能是合并目标单元格，所以用单元格高和行高最高的
                     
-                        vBorderLeft = vCellLeft - FBorderWidth;
+                        vBorderLeft = vCellLeft - FBorderWidthPix;
                         vBorderRight = vCellLeft + FColWidths[vC] + GetColSpanWidth(vR, vC);
                     
-                        IntPtr vExtPen = HC.CreateExtPen(ACanvas.Pen);  // 因为默认的画笔没有线帽的控制，新增支持线帽的画笔
-                        IntPtr vOldPen = (IntPtr)GDI.SelectObject(ACanvas.Handle, vExtPen);
+                        IntPtr vExtPen = HC.CreateExtPen(aCanvas.Pen);  // 因为默认的画笔没有线帽的控制，新增支持线帽的画笔
+                        IntPtr vOldPen = (IntPtr)GDI.SelectObject(aCanvas.Handle, vExtPen);
                         try
                         {
                             if ((vBorderTop >= 0) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
                             {
-                                ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);   // 左上
-                                ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                                if (aPaintInfo.Print)
+                                {
+                                    aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                        vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
+                                }
+                                else
+                                {
+                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);   // 左上
+                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                                }
                             }
 
                             if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsRight))
                             {
-                                ACanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
-                                ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
-                                ACanvas.MoveTo(vBorderRight + vBorderOffs + 1, vBorderTop + vBorderOffs);  // 右上
-                                ACanvas.LineTo(vBorderRight + vBorderOffs + 1, vBorderBottom + vBorderOffs);  // 右下
+                                if (aPaintInfo.Print)
+                                {
+                                    aPaintInfo.DrawNoScaleLine(aCanvas, vBorderRight + vBorderOffs, vBorderTop + vBorderOffs,
+                                        vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
+                                else
+                                {
+                                    aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);  // 右上
+                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                                    //aCanvas.MoveTo(vBorderRight + vBorderOffs + 1, vBorderTop + vBorderOffs);  // 右上
+                                    //aCanvas.LineTo(vBorderRight + vBorderOffs + 1, vBorderBottom + vBorderOffs);  // 右下
+                                }
                             }
 
-                            if ((vBorderBottom <= ABottom) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
+                            if ((vBorderBottom <= aBottom) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
                             {
-                                ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);  // 左下
-                                ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                                if (aPaintInfo.Print)
+                                {
+                                    aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs,
+                                        vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
+                                else
+                                {
+                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);  // 左下
+                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);  // 右下
+                                }
                             }
 
                             if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsLeft))
                             {
-                                ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
-                                ACanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                if (aPaintInfo.Print)
+                                {
+                                    aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                        vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
+                                else
+                                {
+                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
+                                    aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
                             }
 
                             if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsLTRB))
                             {
-                                ACanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
-                                ACanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                if (aPaintInfo.Print)
+                                {
+                                    aPaintInfo.DrawNoScaleLine(aCanvas, vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs,
+                                        vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
+                                else
+                                {
+                                    aCanvas.MoveTo(vBorderLeft + vBorderOffs, vBorderTop + vBorderOffs);
+                                    aCanvas.LineTo(vBorderRight + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
                             }
 
                             if (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsRTLB))
                             {
-                                ACanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
-                                ACanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                if (aPaintInfo.Print)
+                                {
+                                    aPaintInfo.DrawNoScaleLine(aCanvas, vBorderRight + vBorderOffs, vBorderTop + vBorderOffs,
+                                        vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
+                                else
+                                {
+                                    aCanvas.MoveTo(vBorderRight + vBorderOffs, vBorderTop + vBorderOffs);
+                                    aCanvas.LineTo(vBorderLeft + vBorderOffs, vBorderBottom + vBorderOffs);
+                                }
                             }
                         }
                         finally
                         {
-                            GDI.SelectObject(ACanvas.Handle, vOldPen);
+                            GDI.SelectObject(aCanvas.Handle, vOldPen);
                             GDI.DeleteObject(vExtPen);
                         }
                     }
             
-                    vCellLeft = vCellLeft + FColWidths[vC] + FBorderWidth;
+                    vCellLeft = vCellLeft + FColWidths[vC] + FBorderWidthPix;
                 }
 
-                vCellTop = vCellBottom + FBorderWidth;
+                vCellTop = vCellBottom + FBorderWidthPix;
             }
         }
 
@@ -4215,7 +4427,7 @@ namespace HC.View
         {
             int Result = 0;
             for (int i = 1; i <= FRows[ARow][ACol].ColSpan; i++)
-                Result = Result + FBorderWidth + FColWidths[ACol + i];
+                Result = Result + FBorderWidthPix + FColWidths[ACol + i];
 
             return Result;
         }
@@ -4707,9 +4919,9 @@ namespace HC.View
                 return 0;
             else
             {
-                int Result = FBorderWidth;
+                int Result = FBorderWidthPix;
                 for (int vR = FFixRow; vR <= FFixRow + FFixRowCount - 1; vR++)
-                    Result = Result + FRows[vR].Height + FBorderWidth;
+                    Result = Result + FRows[vR].Height + FBorderWidthPix;
 
                 return Result;
             }
@@ -4721,9 +4933,9 @@ namespace HC.View
                 return 0;
             else
             {
-                int Result = FBorderWidth;
+                int Result = FBorderWidthPix;
                 for (int vC = FFixCol; vC <= FFixCol + FFixColCount - 1; vC++)
-                    Result = Result + FColWidths[vC] + FBorderWidth;
+                    Result = Result + FColWidths[vC] + FBorderWidthPix;
 
                 return Result;
             }
@@ -4735,9 +4947,9 @@ namespace HC.View
                 return 0;
             else
             {
-                int Result = FBorderWidth;
+                int Result = FBorderWidthPix;
                 for (int vC = 0; vC <= FFixCol - 1; vC++)
-                    Result = Result + FColWidths[vC] + FBorderWidth;
+                    Result = Result + FColWidths[vC] + FBorderWidthPix;
 
                 return Result;
             }
@@ -4790,10 +5002,10 @@ namespace HC.View
             set { FBorderVisible = value; }
         }
 
-        public byte BorderWidth
+        public Single BorderWidthPt
         {
-            get { return FBorderWidth; }
-            set { SetBorderWidth(value); }
+            get { return FBorderWidthPt; }
+            set { SetBorderWidthPt(value); }
         }
 
         public byte CellHPadding

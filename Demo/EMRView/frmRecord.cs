@@ -27,6 +27,8 @@ namespace EMRView
 
     public delegate bool DeItemPopupEventHandler(DeItem aDeItem);
 
+    public delegate string DeItemGetSyncValue(int aDesID, DeItem aDeItem);
+
     public partial class frmRecord : Form
     {
         private int FMouseDownTick;
@@ -37,6 +39,7 @@ namespace EMRView
         private DeItemSetTextEventHandler FOnSetDeItemText;
         private DeItemPopupEventHandler FOnDeItemPopup;
         private EventHandler FOnPrintPreview;
+        private DeItemGetSyncValue FOnDeItemGetSyncValue;
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
@@ -331,6 +334,7 @@ namespace EMRView
                 FEmrView.OnCanNotEdit = DoCanNotEdit;
                 FEmrView.OnSectionPaintPaperBefor = DoPaintPaperBefor;
                 FEmrView.ContextMenuStrip = this.pmView;
+                FEmrView.OnTableToolPropertyClick = mniTableProperty_Click;
                 //
                 this.Controls.Add(FEmrView);
                 FEmrView.Dock = DockStyle.Fill;
@@ -445,7 +449,7 @@ namespace EMRView
             }
         }
 
-        /// <summary> 设置当前数据元的文本内容 </summary>
+        /// <summary> 设置当前数据元的文本内容，为能提前预处理一下DeItem，所以取一下DeItem </summary>
         private void DoSetActiveDeItemText(DeItem aDeItem, string aText, ref bool aCancel)
         {
             if (FOnSetDeItemText != null)
@@ -619,7 +623,7 @@ namespace EMRView
                             return;
                         }
 
-                        POINT vPt = FEmrView.GetActiveDrawItemViewCoord();  // 得到相对EmrView的坐标
+                        POINT vPt = FEmrView.GetTopLevelDrawItemViewCoord();  // 得到相对EmrView的坐标
                         HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
                         RECT vDrawItemRect = vActiveDrawItem.Rect;
                         vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
@@ -804,6 +808,20 @@ namespace EMRView
             return vResult;
         }
 
+        public DeImageItem InsertDeImage(string aIndex, string aName)
+        {
+            if (aIndex == "")
+            {
+                MessageBox.Show("要插入的DeImage索引不能为空！！");
+                return null;
+            }
+
+            DeImageItem vResult = new DeImageItem(FEmrView.ActiveSection.ActiveData);
+            vResult[DeProp.Index] = aIndex;
+            FEmrView.InsertItem(vResult);
+            return vResult;
+        }
+
         /// <summary> 插入一个数据元(CheckBox形式) </summary>
         public DeCheckBox InsertDeCheckBox(string aIndex, string aName)
         {
@@ -838,7 +856,7 @@ namespace EMRView
                 vArea.Add(SectionArea.saPage);
             }
             else
-                if (vArea.Count == 0)
+            if (vArea.Count == 0)
                 return;
 
             HCItemTraverse vItemTraverse = new HCItemTraverse();
@@ -922,6 +940,12 @@ namespace EMRView
             set { FOnPrintPreview = value; }
         }
 
+        public DeItemGetSyncValue OnDeItemGetSyncValue
+        {
+            get { return FOnDeItemGetSyncValue; }
+            set { FOnDeItemGetSyncValue = value; }
+        }
+
 
         /// <summary> 复制内容前触发 </summary>
         public HCCopyPasteEventHandler OnCopyRequest
@@ -953,6 +977,18 @@ namespace EMRView
         {
             get { return tlbPrint.Visible; }
             set { SetPrintToolVisible(value); }
+        }
+
+        public DataItemNoEventHandler OnSyntaxCheck
+        {
+            get { return FEmrView.OnSyntaxCheck; }
+            set { FEmrView.OnSyntaxCheck = value; }
+        }
+
+        public SyntaxPaintEventHandler OnSyntaxPaint
+        {
+            get { return FEmrView.OnSyntaxPaint; }
+            set { FEmrView.OnSyntaxPaint = value; }
         }
 
         public bool EditToolVisible
@@ -1054,25 +1090,25 @@ namespace EMRView
                 {
                     if (vTopData.SelectExists())
                     {
-                        mniDeleteProtect.Text = "运行时不可编辑";
+                        mniDeleteProtect.Text = "运行时禁止编辑";
                         mniDeleteProtect.Visible = true;
 
-                        mniCopyProtect.Text = "运行时不可复制";
+                        mniCopyProtect.Text = "运行时禁止复制";
                         mniCopyProtect.Visible = true;
                     }
                     else
                     {
                         if ((vTopItem as DeItem).EditProtect)
-                            mniDeleteProtect.Text = "运行时可编辑";
+                            mniDeleteProtect.Text = "运行时允许编辑";
                         else
-                            mniDeleteProtect.Text = "运行时不可编辑";
+                            mniDeleteProtect.Text = "运行时禁止编辑";
 
                         mniDeleteProtect.Visible = true;
 
                         if ((vTopItem as DeItem).CopyProtect)
-                            mniCopyProtect.Text = "运行时可复制";
+                            mniCopyProtect.Text = "运行时允许复制";
                         else
-                            mniCopyProtect.Text = "运行时不可复制";
+                            mniCopyProtect.Text = "运行时禁止复制";
 
                         mniCopyProtect.Visible = true;
                     }
@@ -1542,6 +1578,32 @@ namespace EMRView
 
             if (FEmrView.ActivePageIndex < FEmrView.PageCount - 1)
                 FEmrView.Print(cbbPrinter.Text, FEmrView.ActivePageIndex + 1, FEmrView.PageCount - 1, 1);
+        }
+
+        private void mniReSyncDeItem_Click(object sender, EventArgs e)
+        {
+            if (FOnDeItemGetSyncValue != null)
+            {
+                HCCustomData vData = FEmrView.ActiveSectionTopLevelData();
+                DeItem vDeItem = vData.GetActiveItem() as DeItem;  // 需保证点击处是DeItem
+                string vValue = FOnDeItemGetSyncValue((this.ObjectData as RecordInfo).DesID, vDeItem);  // 取数据元的同步值
+                if (vValue != "")
+                {
+                    bool vCancel = false;
+                    this.DoSetActiveDeItemText(vDeItem, vValue, ref vCancel);
+                    vDeItem.AllocValue = true;
+                }
+            }
+        }
+
+        private void mniSyntax_Click(object sender, EventArgs e)
+        {
+            FEmrView.SyntaxCheck();
+        }
+
+        private void mniViewText_Click(object sender, EventArgs e)
+        {
+            FEmrView.ViewModel = HCViewModel.hvmEdit;
         }
 
         private void mniHideTrace_Click(object sender, EventArgs e)

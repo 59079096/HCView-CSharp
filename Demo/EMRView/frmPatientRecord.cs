@@ -26,6 +26,7 @@ namespace EMRView
     public partial class frmPatientRecord : Form
     {
         private ServerInfo FServerInfo = new ServerInfo();
+        private int FSyncDataDesID = -1;
         private DataTable FDataElementSetMacro;
         private List<StructDoc> FStructDocs = new List<StructDoc>();
         private emrCompiler FCompiler = new emrCompiler();
@@ -78,7 +79,6 @@ namespace EMRView
 
                     // 赋值模板加载时替换数据元内容的方法
                     vFrmRecord.EmrView.OnSyncDeItem = DoSyncDeItem;
-                    vFrmRecord.EmrView.OnSyncDeFloatItem = DoSyncDeFloatItem;
                     try
                     {
                         vFrmRecord.EmrView.BeginUpdate();
@@ -123,7 +123,7 @@ namespace EMRView
             if (script == "")
                 return;
             
-            if (!FCompiler.RunScript(script, deItem, PatientInfo, ((sender as frmRecord).Tag as RecordInfo), ref text, ref cancel))
+            if (!FCompiler.RunScript(script, deItem, PatientInfo, ((sender as frmRecord).ObjectData as RecordInfo), ref text, ref cancel))
                 MessageBox.Show("当前数据元有控制脚本，但运行错误，原因：\r\n" + FCompiler.ErrorMessage);
         }
 
@@ -135,7 +135,7 @@ namespace EMRView
         private void DoPrintPreview(object sender, EventArgs e)
         {
             frmRecordSet vFrmRecordSet = new frmRecordSet();
-            vFrmRecordSet.ShowDialog(PatientInfo.PatID, PatientInfo.VisitID, (this.GetActiveRecord().Tag as RecordInfo).ID);
+            vFrmRecordSet.ShowDialog(PatientInfo.PatID, PatientInfo.VisitID, (this.GetActiveRecord().ObjectData as RecordInfo).ID);
         }
 
         private void DoTraverseItem(HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
@@ -166,6 +166,20 @@ namespace EMRView
                         break;
                 }
             }
+        }
+
+        private void DoSyntaxCheck(HCCustomData aData, int aItemNo)
+        {
+            /*DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+            vDeItem.SyntaxClear();
+            string vText = vDeItem.Text;
+
+            if (PatientInfo.Sex == "男")
+            {
+                int vPos = vText.IndexOf("子宫");
+                if (vPos >= 0)
+                    vDeItem.SyntaxAdd(vPos + 1, 2);
+            }*/
         }
 
         private void PrepareSyncData(int aDesID)
@@ -287,6 +301,9 @@ namespace EMRView
 
         private string GetDeItemValueTry(string aDeIndex)
         {
+            if (FDataElementSetMacro == null)
+                return "";
+
             DataRow[] vDataRows = FDataElementSetMacro.Select("ObjID=" + aDeIndex);
             if (vDataRows.Length == 1)  // 有此数据元的替换信息
             {
@@ -310,6 +327,23 @@ namespace EMRView
                     default:
                         break;
                 }
+            }
+
+            return "";
+        }
+
+        /// <summary> 获取指定数据元同步的值 </summary>
+        /// <param name="aDeItem"></param>
+        /// <returns></returns>
+        private string DoDeItemGetSyncValue(int aDesID, DeItem aDeItem)
+        {
+            string vDeIndex = aDeItem[DeProp.Index];
+            if (vDeIndex != "")
+            {
+                if (FSyncDataDesID != aDesID)
+                    this.PrepareSyncData(aDesID);
+
+                return GetDeItemValueTry(vDeIndex);
             }
 
             return "";
@@ -359,21 +393,25 @@ namespace EMRView
                         (aItem as DeCombobox).Text = vsResult;
                 }
             }
-        }
-
-        private void DoSyncDeFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
-        {
-            string vDeIndex = "";
-            string vsResult = "";
-
+            else
             if (aItem is DeFloatBarCodeItem)
             {
                 vDeIndex = (aItem as DeFloatBarCodeItem)[DeProp.Index];
-                if (vDeIndex != "")
+                if (vDeIndex != "")  // 是数据元
                 {
                     vsResult = GetDeItemValueTry(vDeIndex);
                     if (vsResult != "")
                         (aItem as DeFloatBarCodeItem).Text = vsResult;
+                }
+            }
+            else
+            if (aItem is DeImageItem)
+            {
+                vDeIndex = (aItem as DeImageItem)[DeProp.Index];
+                if (vDeIndex != "")  // 是数据元
+                {
+                    //根据vDeIndex赋值不同的图片
+                    // (AItem as TDeImageItem).LoadFromBmpFile('');
                 }
             }
         }
@@ -426,7 +464,7 @@ namespace EMRView
                     return;
             }
 
-            RecordInfo vRecordInfo = vFrmRecord.Tag as RecordInfo;
+            RecordInfo vRecordInfo = vFrmRecord.ObjectData as RecordInfo;
 
             if (vFrmRecord.EmrView.Trace)
             {
@@ -510,7 +548,7 @@ namespace EMRView
                     return;
             }
 
-            RecordInfo vRecordInfo = vFrmRecord.Tag as RecordInfo;
+            RecordInfo vRecordInfo = vFrmRecord.ObjectData as RecordInfo;
             SaveRecordStructure(vRecordInfo.ID, vFrmRecord, false);  // 更新病历结构内容
             MessageBox.Show("更新病历 " + vRecordInfo.RecName + " 结构成功！");
         }
@@ -521,7 +559,7 @@ namespace EMRView
             {
                 if ((sender as frmRecord).Parent is TabPage)
                 {
-                    string vText = ((sender as frmRecord).Tag as RecordInfo).RecName;
+                    string vText = ((sender as frmRecord).ObjectData as RecordInfo).RecName;
 
                     if ((sender as frmRecord).EmrView.IsChanged)
                         vText = vText + "*";
@@ -638,7 +676,7 @@ namespace EMRView
                 if (aSaveChange && vFrmRecord.EmrView.IsChanged && (int.Parse(vPage.Tag.ToString()) > 0))
                 {
                     MessageBoxButtons messButton = MessageBoxButtons.OKCancel;
-                    DialogResult dr = MessageBox.Show("是否保存病历 " + (vFrmRecord.Tag as RecordInfo).RecName + "？", "确认操作", messButton);
+                    DialogResult dr = MessageBox.Show("是否保存病历 " + (vFrmRecord.ObjectData as RecordInfo).RecName + "？", "确认操作", messButton);
                     if (dr == DialogResult.OK)
                         DoSaveRecordContent(vFrmRecord, null);
                 }
@@ -662,13 +700,15 @@ namespace EMRView
             aFrmRecord.OnSetDeItemText = DoSetDeItemText;
             aFrmRecord.OnDeItemPopup = DoDeItemPopup;
             aFrmRecord.OnPrintPreview = DoPrintPreview;
+            aFrmRecord.OnDeItemGetSyncValue = DoDeItemGetSyncValue;
+            aFrmRecord.OnSyntaxCheck = DoSyntaxCheck;
 
             aFrmRecord.OnCopyRequest = DoRecordCopyRequest;
             aFrmRecord.OnPasteRequest = DoRecordPasteRequest;
             aFrmRecord.OnCopyAsStream = DoRecordCopyAsStream;
             aFrmRecord.OnPasteFromStream = DoRecordPasteFromStream;
 
-            aFrmRecord.Tag = aRecordInfo;
+            aFrmRecord.ObjectData = aRecordInfo;
 
             aPage.Controls.Add(aFrmRecord);
             aFrmRecord.Dock = DockStyle.Fill;
@@ -824,8 +864,8 @@ namespace EMRView
             vItemTraverse.Areas.Add(SectionArea.saPage);  // 遍历正文中的信息
             vItemTraverse.Process = vXmlStruct.TraverseItem;  // 遍历到每一个文本对象是触发的事件
 
-            vXmlStruct.XmlDoc.DocumentElement.SetAttribute("DesID", (aFrmRecord.Tag as RecordInfo).DesID.ToString());
-            vXmlStruct.XmlDoc.DocumentElement.SetAttribute("DocName", (aFrmRecord.Tag as RecordInfo).RecName);
+            vXmlStruct.XmlDoc.DocumentElement.SetAttribute("DesID", (aFrmRecord.ObjectData as RecordInfo).DesID.ToString());
+            vXmlStruct.XmlDoc.DocumentElement.SetAttribute("DocName", (aFrmRecord.ObjectData as RecordInfo).RecName);
 
             aFrmRecord.EmrView.TraverseItem(vItemTraverse);  // 开始遍历
             return vXmlStruct.XmlDoc;
@@ -896,9 +936,6 @@ namespace EMRView
 
         private void 查看ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
-                return;
-
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
             EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
@@ -929,9 +966,6 @@ namespace EMRView
 
         private void 编辑ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
-                return;
-
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
             EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
@@ -969,9 +1003,6 @@ namespace EMRView
 
         private void 签名ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
-                return;
-
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
             EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
@@ -991,9 +1022,6 @@ namespace EMRView
 
         private void 删除ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
-                return;
-
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
             EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
@@ -1038,9 +1066,6 @@ namespace EMRView
 
         private void 导出XML结构ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!EMR.TreeNodeIsRecord(tvRecord.SelectedNode))
-                return;
-
             int vDesPID = -1, vDesID = -1, vRecordID = -1;
             EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
 
@@ -1099,6 +1124,65 @@ namespace EMRView
             vFrmHisRecord.OnImportAsText = DoImportAsText;  // 导入病历窗体中点击导入时触发的事件
             this.AddOwnedForm(vFrmHisRecord);
             vFrmHisRecord.Show();
+        }
+
+        private void mniReSync_Click(object sender, EventArgs e)
+        {
+            int vDesPID = -1, vDesID = -1, vRecordID = -1;
+            EMR.GetNodeRecordInfo(tvRecord.SelectedNode, ref vDesPID, ref vDesID, ref vRecordID);
+
+            if (vRecordID > 0)
+            {
+                int vPageIndex = GetRecordPageIndex(vRecordID);
+                if (vPageIndex < 0)
+                {
+                    MessageBox.Show("请先打开病历并处于编辑状态！");
+                    return;
+                }
+                else
+                {
+                    tabRecord.SelectedIndex = vPageIndex;
+                    frmRecord vFrmRecord = GetPageRecord(vPageIndex);
+                    if (vFrmRecord.EmrView.ReadOnly)
+                    {
+                        MessageBox.Show("请先将病历并处于编辑状态！");
+                        return;
+                    }
+
+                    HCCustomItem vItem = null;
+                    DeItem vDeItem = null;
+                    HashSet<SectionArea> vAreas = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
+                    TraverseItemEventHandle vTraverseItemEvent = delegate (HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
+                    {
+                        vItem = aData.Items[aItemNo];
+                        if (vItem.StyleNo < HCStyle.Null)
+                            (vItem as HCCustomRectItem).FormatDirty();
+                        else
+                        if (vItem is DeItem)
+                        {
+                            vDeItem = vItem as DeItem;  // 每遍历到一个数据元
+
+                            string vValue = DoDeItemGetSyncValue(vDesID, vDeItem);  // 取数据元的同步值
+                            if (vValue != "")
+                            {
+                                vDeItem.Text = vValue;
+                                //vDeItem[DeProp.CMVVCode] = ""; 值域编码
+                                vDeItem.AllocValue = true;
+                            }
+                        }
+                    };
+
+                    vFrmRecord.EmrView.BeginUpdate();
+                    try
+                    {
+                        vFrmRecord.TraverseElement(vTraverseItemEvent, vAreas, 0);  // 遍历数据元
+                    }
+                    finally
+                    {
+                        vFrmRecord.EmrView.EndUpdate();
+                    }
+                }
+            }
         }
     }
 

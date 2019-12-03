@@ -61,7 +61,8 @@ namespace EMRView
             for (int i = 0; i < aProperty.Count; i++)
             {
                 var element = aProperty.ElementAt(i);
-                vS = vS + element.Key + "=" + element.Value + HC.View.HC.sLineBreak;
+                if (element.Key != "")
+                    vS = vS + element.Key + "=" + element.Value + HC.View.HC.sLineBreak;
             }
 
             return vS;
@@ -105,9 +106,26 @@ namespace EMRView
         public const string DateTime = "DT";
     }
 
+    public enum EmrSyntaxProblem : byte
+    {
+        espContradiction, espWrong
+    }
+
+    /// <summary> 电子病历文本语法信息对象 </summary>
+    public class EmrSyntax
+    {
+        public EmrSyntaxProblem Problem;
+        public int Offset, Length;
+    }
+
+    public delegate void SyntaxPaintEventHandler(EmrSyntax aSyntax, RECT aRect, HCCanvas aCanvas);
+
+
     /// <summary> 电子病历文本对象 </summary>
     public class EmrTextItem : HCTextItem 
     {
+        private List<EmrSyntax> FSyntaxs;
+
         public EmrTextItem() : base()
         {
 
@@ -117,9 +135,37 @@ namespace EMRView
         {
 
         }
-    }
 
-    public delegate void DePaintBKGHandler(object sender, HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo);
+        public void SyntaxAdd(int aOffset, int aLength)
+        {
+            EmrSyntax vSyntax = new EmrSyntax();
+            vSyntax.Offset = aOffset;
+            vSyntax.Length = aLength;
+            if (FSyntaxs == null)
+                FSyntaxs = new List<EmrSyntax>();
+
+            FSyntaxs.Add(vSyntax);
+        }
+
+        public void SyntaxClear()
+        {
+            if (FSyntaxs != null)
+                FSyntaxs.Clear();
+        }
+
+        public int SyntaxCount()
+        {
+            if (FSyntaxs != null)
+                return FSyntaxs.Count;
+            else
+                return 0;
+        }
+
+        public List<EmrSyntax> Syntaxs
+        {
+            get { return FSyntaxs; }
+        }
+    }
 
     /// <summary> 电子病历数据元对象 </summary>
     public sealed class DeItem : EmrTextItem  // 不可继承
@@ -133,7 +179,6 @@ namespace EMRView
 
         private StyleExtra FStyleEx;
         private Dictionary<string, string> FPropertys;
-        private DePaintBKGHandler FOnPaintBKG;
 
         private string GetValue(string key)
         {
@@ -167,16 +212,6 @@ namespace EMRView
                 else
                     base.SetText("");
             }
-        }
-
-        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
-            int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop,
-                aDataScreenBottom, aCanvas, aPaintInfo);
-
-            if (FOnPaintBKG != null)
-                FOnPaintBKG(this, aCanvas, aDrawRect, aPaintInfo);
         }
 
         public DeItem() : base()
@@ -418,12 +453,6 @@ namespace EMRView
         {
             get { return GetValue(aKey); }
             set { SetValue(aKey, value); }
-        }
-
-        public DePaintBKGHandler OnPaintBKG
-        {
-            get { return FOnPaintBKG; }
-            set { FOnPaintBKG = value; }
         }
     }
 
@@ -1106,6 +1135,124 @@ namespace EMRView
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
+
+            byte vByte = (byte)aStream.ReadByte();
+            FEditProtect = (vByte >> 7) == 1;
+
+            string vS = "";
+            HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+            DeProp.SetPropertyString(vS, FPropertys);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
+            aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            DeProp.SetPropertyString(vProp, FPropertys);
+        }
+
+        public void ToJson(string aJsonObj)
+        {
+
+        }
+
+        public void ParseJson(string aJsonObj)
+        {
+
+        }
+
+        public bool EditProtect
+        {
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
+        }
+    }
+
+    public class DeImageItem : HCImageItem
+    {
+        private bool FEditProtect;
+        private Dictionary<string, string> FPropertys;
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            FPropertys[key] = value;
+        }
+
+        protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
+            if ((this.Image.PixelFormat == System.Drawing.Imaging.PixelFormat.Undefined) && (!aPaintInfo.Print))  // 非打印状态下的空白图片
+            {
+                aCanvas.Font.Size = 12;
+                aCanvas.Font.FontStyles.InClude((byte)HCFontStyle.tsItalic);
+                aCanvas.TextOut(aDrawRect.Left + 2, aDrawRect.Top + 2, "DeIndex:" + this[DeProp.Index]);
+            }
+        }
+
+        public DeImageItem(HCCustomData aOwnerData) : base(aOwnerData)
+        {
+            FPropertys = new Dictionary<string, string>();
+        }
+
+        ~DeImageItem()
+        {
+
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FEditProtect = (source as DeFloatBarCodeItem).EditProtect;
+            string vS = DeProp.GetPropertyString((source as DeFloatBarCodeItem).Propertys);
+            DeProp.SetPropertyString(vS, FPropertys);
+        }
+
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStream(aStream, aStart, aEnd);
+
+            byte vByte = 0;
+            if (FEditProtect)
+                vByte = (byte)(vByte | (1 << 7));
+            aStream.WriteByte(vByte);
+
+            HC.View.HC.HCSaveTextToStream(aStream, DeProp.GetPropertyString(FPropertys));
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            if (aFileVersion < 33)
+                return;
 
             byte vByte = (byte)aStream.ReadByte();
             FEditProtect = (vByte >> 7) == 1;

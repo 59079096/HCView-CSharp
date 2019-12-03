@@ -11,7 +11,7 @@ namespace HC.View
     public class HCToolBarControl
     {
         private int FWidth, FHeight;
-        EventHandler FOnClick, FOnResize;
+        EventHandler FOnResize;
 
         private void DoResize()
         {
@@ -63,12 +63,6 @@ namespace HC.View
             get { return FHeight; }
             set { SetHeight(value); }
         }
-
-        public EventHandler OnClick
-        {
-            get { return FOnClick; }
-            set { FOnClick = value; }
-        }
     }
 
     public class HCCustomToolButton : HCToolBarControl
@@ -113,6 +107,7 @@ namespace HC.View
     public delegate void UpdateViewEventHandler(RECT aRect, HCCanvas aCanvase);
 
     public delegate void ToolBarControlPaintEventHandle(HCToolBarControl control, int left, int top, HCCanvas canvas);
+    public delegate void ToolBarControlClickEventHandle(HCToolBarControl control);
 
     public class HCToolBar
     {
@@ -124,6 +119,7 @@ namespace HC.View
         HCCanvas FGraphicCanvas;
         UpdateViewEventHandler FOnUpdateView;
         ToolBarControlPaintEventHandle FOnControlPaint;
+        ToolBarControlClickEventHandle FOnControlClick;
 
         private void DoControlCountChange(object sender, EventArgs e)
         {
@@ -221,8 +217,8 @@ namespace HC.View
 
         public void MouseUp(MouseEventArgs e)
         {
-            if (FHotIndex >= 0)
-                FControls[FHotIndex].OnClick(FControls[FHotIndex], null);
+            if ((FHotIndex >= 0) && (FOnControlClick != null))
+                FOnControlClick(FControls[FHotIndex]);
         }
 
         public int AddControl(HCToolBarControl aControl)
@@ -275,9 +271,6 @@ namespace HC.View
 
         public void UpdateView(RECT aRect)
         {
-            if (!FVisible)
-                return;
-
             FGraphicCanvas.Brush.Color = HC.clBtnFace;
             FGraphicCanvas.FillRect(HC.Bounds(0, 0, FGraphic.Width, FGraphic.Height));
             FGraphicCanvas.Pen.Color = Color.FromArgb(240, 240, 240);
@@ -385,20 +378,35 @@ namespace HC.View
             get { return FOnControlPaint; }
             set { FOnControlPaint = value; }
         }
+
+        public ToolBarControlClickEventHandle OnControlClick
+        {
+            get { return FOnControlClick; }
+            set { FOnControlClick = value; }
+        }
     }
 
     public class HCTableToolBar : HCToolBar
     {
+        protected override void SetVisible(bool value)
+        {
+            if (Visible != value)
+            {
+                base.SetVisible(value);
+                if (value)
+                    ActiveIndex = -1;
+            }
+        }
 
+        public HCTableToolBar() : base()
+        {
+            HCToolButton vButton = this.AddButton();
+            vButton.Tag = 9;
+        }
     }
 
     public class HCImageToolBar : HCToolBar
     {
-        private void DoButtonClick(object sender, EventArgs e)
-        {
-
-        }
-
         protected override void SetVisible(bool value)
         {
             if (Visible != value)
@@ -414,23 +422,18 @@ namespace HC.View
             // 鼠标箭头
             HCToolButton vButton = this.AddButton();
             vButton.Tag = 0;
-            vButton.OnClick = DoButtonClick;
             // 直线
             vButton = this.AddButton();
             vButton.Tag = 1;
-            vButton.OnClick = DoButtonClick;
             // 矩形
             vButton = this.AddButton();
             vButton.Tag = 2;
-            vButton.OnClick = DoButtonClick;
             // 椭圆
             vButton = this.AddButton();
             vButton.Tag = 3;
-            vButton.OnClick = DoButtonClick;
             // 多边形
             vButton = this.AddButton();
             vButton.Tag = 4;
-            vButton.OnClick = DoButtonClick;
         }
     }
 }

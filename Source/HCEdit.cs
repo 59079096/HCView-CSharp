@@ -415,6 +415,10 @@ namespace HC.View
             }
         }
 
+        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+            int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            HCCanvas aCanvas, PaintInfo aPaintInfo) { }
+
         protected virtual HCCustomItem DoDataCreateStyleItem(HCCustomData aData, int aStyleNo)
         {
             if (FOnCreateStyleItem != null)
@@ -781,6 +785,7 @@ namespace HC.View
             FData.Width = 200;
             FData.OnGetUndoList = DoGetUndoList;
             FData.OnCreateItemByStyle = DoDataCreateStyleItem;
+            FData.OnDrawItemPaintBefor = DoDrawItemPaintBefor;
             FData.OnInsertItem = DoDataInsertItem;
             FData.OnRemoveItem = DoDataRemoveItem;
 

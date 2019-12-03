@@ -29,6 +29,7 @@ namespace EMRView
         string FSnum1, FSnum2, FSmark, FOldUnit;
         double FNum1, FNum2;
         bool FFlag, FSign, FTemp, FTemplate, FConCalcValue;
+        bool FMultSelect;
         string FFrmtp;
         DeItem FDeItem;
         DataTable FDBDomain = new DataTable();
@@ -96,6 +97,30 @@ namespace EMRView
             SetValueFocus();
         }
 
+        private void SetMultSelect(bool value)
+        {
+            if (FMultSelect != value)
+            {
+                FMultSelect = value;
+                if (FMultSelect)
+                {
+                    dgvDomain.Columns[0].Width = 20;
+                    btnRM.Text = "单选";
+                }
+                else
+                {
+                    dgvDomain.Columns[0].Width = 0;
+                    btnRM.Text = "多选";
+                }
+            }
+        }
+
+        protected bool MultSelect
+        {
+            get { return FMultSelect; }
+            set { SetMultSelect(value); }
+        }
+
         public frmRecordPop()
         {
             InitializeComponent();
@@ -105,6 +130,7 @@ namespace EMRView
             tabPop.ItemSize = new Size(0, 1);
             cbbDate.SelectedIndex = 3;
             cbbTime.SelectedIndex = 3;
+            FMultSelect = false;
         }
 
         #region 子方法
@@ -114,17 +140,18 @@ namespace EMRView
 
             for (int i = 0; i < FDBDomain.Rows.Count; i++)
             {
-                dgvDomain.Rows[i].Cells[0].Value = FDBDomain.Rows[i]["devalue"];
-                dgvDomain.Rows[i].Cells[1].Value = FDBDomain.Rows[i]["code"];
-                dgvDomain.Rows[i].Cells[2].Value = FDBDomain.Rows[i]["id"];
-                dgvDomain.Rows[i].Cells[3].Value = FDBDomain.Rows[i]["py"];
-                dgvDomain.Rows[i].Cells[4].Value = "";
+                dgvDomain.Rows[i].Cells[0].Value = false;
+                dgvDomain.Rows[i].Cells[1].Value = FDBDomain.Rows[i]["devalue"];
+                dgvDomain.Rows[i].Cells[2].Value = FDBDomain.Rows[i]["code"];
+                dgvDomain.Rows[i].Cells[3].Value = FDBDomain.Rows[i]["id"];
+                dgvDomain.Rows[i].Cells[4].Value = FDBDomain.Rows[i]["py"];
+                dgvDomain.Rows[i].Cells[5].Value = "";
 
                 if (FDBDomain.Rows[i]["content"].GetType() != typeof(System.DBNull))
                 {
                     byte[] vbuffer = (byte[])FDBDomain.Rows[i]["content"];
                     if (vbuffer.Length > 0)
-                        dgvDomain.Rows[i].Cells[4].Value = "...";
+                        dgvDomain.Rows[i].Cells[5].Value = "...";
                 }
             }
         }
@@ -198,6 +225,7 @@ namespace EMRView
             else
             if ((FFrmtp == DeFrmtp.Radio) || (FFrmtp == DeFrmtp.Multiselect))  // 单、多选
             {
+                MultSelect = FFrmtp == DeFrmtp.Multiselect;
                 tbxSpliter.Clear();
 
                 if (FDBDomain.Rows.Count > 0)
@@ -267,12 +295,36 @@ namespace EMRView
             if (dgvDomain.SelectedRows.Count > 0)
             {
                 bool vCancel = false;
-                int vSelIndex = dgvDomain.SelectedRows[0].Index;
-                FDeItem[DeProp.CMVVCode] = dgvDomain.Rows[vSelIndex].Cells[1].Value.ToString();
-                if (dgvDomain.Rows[vSelIndex].Cells[4].Value.ToString() != "")
-                    SetDeItemExtraValue(dgvDomain.Rows[vSelIndex].Cells[2].Value.ToString());
-                else
-                    SetDeItemValue(dgvDomain.Rows[vSelIndex].Cells[0].Value.ToString(), ref vCancel);
+                if (FMultSelect)  // 多选
+                {
+                    string vS = "";
+                    string vDID = "";
+                    for (int i = 0; i < dgvDomain.RowCount; i++)
+                    {
+                        if (bool.Parse(dgvDomain.Rows[i].Cells[0].Value.ToString()))
+                        {
+                            vDID = vDID + dgvDomain.Rows[i].Cells[2].Value.ToString() + ",";
+                            vS = vS + dgvDomain.Rows[i].Cells[1].Value.ToString() + "；";
+                        }
+                    }
+
+                    if (vS != "")
+                    {
+                        vS = vS.Remove(vS.Length - 1, 1);
+                        vDID = vDID.Remove(vDID.Length - 1, 1);
+                        FDeItem[DeProp.CMVVCode] = vDID;
+                        SetDeItemValue(vS, ref vCancel);
+                    }
+                }
+                else  // 单选
+                {
+                    int vSelIndex = dgvDomain.SelectedRows[0].Index;
+                    FDeItem[DeProp.CMVVCode] = dgvDomain.Rows[vSelIndex].Cells[2].Value.ToString();
+                    if (dgvDomain.Rows[vSelIndex].Cells[5].Value.ToString() != "")
+                        SetDeItemExtraValue(dgvDomain.Rows[vSelIndex].Cells[3].Value.ToString());
+                    else
+                        SetDeItemValue(dgvDomain.Rows[vSelIndex].Cells[1].Value.ToString(), ref vCancel);
+                }
 
                 if (!vCancel)
                     this.Close();
@@ -380,6 +432,11 @@ namespace EMRView
         private void frmRecordPop_Load(object sender, EventArgs e)
         {
             tabPop.ImeMode = ImeMode.OnHalf;
+        }
+
+        private void btnRM_Click(object sender, EventArgs e)
+        {
+            MultSelect = !FMultSelect;
         }
 
         private void btnCE_Click(object sender, EventArgs e)

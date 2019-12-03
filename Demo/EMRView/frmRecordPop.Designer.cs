@@ -31,12 +31,8 @@
             this.tabPop = new System.Windows.Forms.TabControl();
             this.tabDomain = new System.Windows.Forms.TabPage();
             this.dgvDomain = new System.Windows.Forms.DataGridView();
-            this.Key = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.btnRM = new System.Windows.Forms.Button();
             this.btnDomainOk = new System.Windows.Forms.Button();
             this.tbxSpliter = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -79,6 +75,7 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.btnMemoOk = new System.Windows.Forms.Button();
             this.tabDateTime = new System.Windows.Forms.TabPage();
+            this.btnDateTimeOk = new System.Windows.Forms.Button();
             this.pnlTime = new System.Windows.Forms.Panel();
             this.cbbTime = new System.Windows.Forms.ComboBox();
             this.dtpTime = new System.Windows.Forms.DateTimePicker();
@@ -86,8 +83,13 @@
             this.cbbDate = new System.Windows.Forms.ComboBox();
             this.dtpDate = new System.Windows.Forms.DateTimePicker();
             this.panel3 = new System.Windows.Forms.Panel();
-            this.btnDateTimeOk = new System.Windows.Forms.Button();
             this.btnNow = new System.Windows.Forms.Button();
+            this.MR = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.Key = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Column3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.tabPop.SuspendLayout();
             this.tabDomain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDomain)).BeginInit();
@@ -136,6 +138,7 @@
             this.dgvDomain.AllowUserToResizeRows = false;
             this.dgvDomain.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvDomain.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.MR,
             this.Key,
             this.value,
             this.Column1,
@@ -145,7 +148,6 @@
             this.dgvDomain.Location = new System.Drawing.Point(3, 30);
             this.dgvDomain.MultiSelect = false;
             this.dgvDomain.Name = "dgvDomain";
-            this.dgvDomain.ReadOnly = true;
             this.dgvDomain.RowHeadersVisible = false;
             this.dgvDomain.RowTemplate.Height = 23;
             this.dgvDomain.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
@@ -153,42 +155,9 @@
             this.dgvDomain.TabIndex = 2;
             this.dgvDomain.DoubleClick += new System.EventHandler(this.dgvDomain_DoubleClick);
             // 
-            // Key
-            // 
-            this.Key.HeaderText = "值";
-            this.Key.Name = "Key";
-            this.Key.ReadOnly = true;
-            // 
-            // value
-            // 
-            this.value.HeaderText = "编码";
-            this.value.Name = "value";
-            this.value.ReadOnly = true;
-            this.value.Width = 40;
-            // 
-            // Column1
-            // 
-            this.Column1.HeaderText = "ID";
-            this.Column1.Name = "Column1";
-            this.Column1.ReadOnly = true;
-            this.Column1.Width = 30;
-            // 
-            // Column2
-            // 
-            this.Column2.HeaderText = "拼音";
-            this.Column2.Name = "Column2";
-            this.Column2.ReadOnly = true;
-            this.Column2.Width = 35;
-            // 
-            // Column3
-            // 
-            this.Column3.HeaderText = "扩展";
-            this.Column3.Name = "Column3";
-            this.Column3.ReadOnly = true;
-            this.Column3.Width = 35;
-            // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.btnRM);
             this.panel1.Controls.Add(this.btnDomainOk);
             this.panel1.Controls.Add(this.tbxSpliter);
             this.panel1.Controls.Add(this.label1);
@@ -198,11 +167,21 @@
             this.panel1.Size = new System.Drawing.Size(245, 27);
             this.panel1.TabIndex = 0;
             // 
+            // btnRM
+            // 
+            this.btnRM.Location = new System.Drawing.Point(119, 2);
+            this.btnRM.Name = "btnRM";
+            this.btnRM.Size = new System.Drawing.Size(47, 23);
+            this.btnRM.TabIndex = 3;
+            this.btnRM.Text = "多选";
+            this.btnRM.UseVisualStyleBackColor = true;
+            this.btnRM.Click += new System.EventHandler(this.btnRM_Click);
+            // 
             // btnDomainOk
             // 
-            this.btnDomainOk.Location = new System.Drawing.Point(147, 2);
+            this.btnDomainOk.Location = new System.Drawing.Point(178, 2);
             this.btnDomainOk.Name = "btnDomainOk";
-            this.btnDomainOk.Size = new System.Drawing.Size(75, 23);
+            this.btnDomainOk.Size = new System.Drawing.Size(69, 23);
             this.btnDomainOk.TabIndex = 2;
             this.btnDomainOk.Text = "确定";
             this.btnDomainOk.UseVisualStyleBackColor = true;
@@ -212,7 +191,7 @@
             // 
             this.tbxSpliter.Location = new System.Drawing.Point(36, 3);
             this.tbxSpliter.Name = "tbxSpliter";
-            this.tbxSpliter.Size = new System.Drawing.Size(100, 21);
+            this.tbxSpliter.Size = new System.Drawing.Size(79, 21);
             this.tbxSpliter.TabIndex = 1;
             // 
             // label1
@@ -663,6 +642,16 @@
             this.tabDateTime.Text = "tabDateTime";
             this.tabDateTime.UseVisualStyleBackColor = true;
             // 
+            // btnDateTimeOk
+            // 
+            this.btnDateTimeOk.Location = new System.Drawing.Point(157, 123);
+            this.btnDateTimeOk.Name = "btnDateTimeOk";
+            this.btnDateTimeOk.Size = new System.Drawing.Size(75, 23);
+            this.btnDateTimeOk.TabIndex = 3;
+            this.btnDateTimeOk.Text = "确定";
+            this.btnDateTimeOk.UseVisualStyleBackColor = true;
+            this.btnDateTimeOk.Click += new System.EventHandler(this.btnDateTimeOk_Click);
+            // 
             // pnlTime
             // 
             this.pnlTime.Controls.Add(this.cbbTime);
@@ -744,16 +733,6 @@
             this.panel3.Size = new System.Drawing.Size(245, 47);
             this.panel3.TabIndex = 6;
             // 
-            // btnDateTimeOk
-            // 
-            this.btnDateTimeOk.Location = new System.Drawing.Point(157, 123);
-            this.btnDateTimeOk.Name = "btnDateTimeOk";
-            this.btnDateTimeOk.Size = new System.Drawing.Size(75, 23);
-            this.btnDateTimeOk.TabIndex = 3;
-            this.btnDateTimeOk.Text = "确定";
-            this.btnDateTimeOk.UseVisualStyleBackColor = true;
-            this.btnDateTimeOk.Click += new System.EventHandler(this.btnDateTimeOk_Click);
-            // 
             // btnNow
             // 
             this.btnNow.Location = new System.Drawing.Point(14, 13);
@@ -763,6 +742,49 @@
             this.btnNow.Text = "当前时间";
             this.btnNow.UseVisualStyleBackColor = true;
             this.btnNow.Click += new System.EventHandler(this.btnNow_Click);
+            // 
+            // MR
+            // 
+            this.MR.HeaderText = "";
+            this.MR.MinimumWidth = 2;
+            this.MR.Name = "MR";
+            this.MR.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.MR.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
+            this.MR.Width = 2;
+            // 
+            // Key
+            // 
+            this.Key.HeaderText = "值";
+            this.Key.Name = "Key";
+            this.Key.ReadOnly = true;
+            // 
+            // value
+            // 
+            this.value.HeaderText = "编码";
+            this.value.Name = "value";
+            this.value.ReadOnly = true;
+            this.value.Width = 40;
+            // 
+            // Column1
+            // 
+            this.Column1.HeaderText = "ID";
+            this.Column1.Name = "Column1";
+            this.Column1.ReadOnly = true;
+            this.Column1.Width = 30;
+            // 
+            // Column2
+            // 
+            this.Column2.HeaderText = "拼音";
+            this.Column2.Name = "Column2";
+            this.Column2.ReadOnly = true;
+            this.Column2.Width = 35;
+            // 
+            // Column3
+            // 
+            this.Column3.HeaderText = "扩展";
+            this.Column3.Name = "Column3";
+            this.Column3.ReadOnly = true;
+            this.Column3.Width = 35;
             // 
             // frmRecordPop
             // 
@@ -855,6 +877,8 @@
         private System.Windows.Forms.Panel pnlDate;
         private System.Windows.Forms.ComboBox cbbDate;
         private System.Windows.Forms.DateTimePicker dtpDate;
+        private System.Windows.Forms.Button btnRM;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn MR;
         private System.Windows.Forms.DataGridViewTextBoxColumn Key;
         private System.Windows.Forms.DataGridViewTextBoxColumn value;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column1;

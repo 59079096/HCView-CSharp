@@ -96,13 +96,13 @@
     <Compile Include="HCRadioGroup.cs" />
     <Compile Include="HCRectItem.cs" />
     <Compile Include="HCRichData.cs" />
+    <Compile Include="HCRtfReader.cs" />
+    <Compile Include="HCRtfRW.cs" />
     <Compile Include="HCShape.cs" />
     <Compile Include="HCToolBar.cs" />
     <Compile Include="HCUnitConversion.cs" />
     <Compile Include="HCViewData.cs" />
-    <Compile Include="HCRichScrollBar.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="HCRichScrollBar.cs" />
     <Compile Include="HCScrollBar.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -168,6 +168,21 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\tool4.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\tool5.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\tool6.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\tool7.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\tool8.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\tool9.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

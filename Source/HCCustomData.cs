@@ -476,26 +476,26 @@ namespace HC.View
 
             if (aParaStyle.LineSpaceMode == ParaLineSpaceMode.plsFix)
             {
-                int vH = HCUnitConversion.MillimeterToPixY(aParaStyle.LineSpace * 0.3527f);
-                if (vH < Result)
+                int vLineSpacing = HCUnitConversion.MillimeterToPixY(aParaStyle.LineSpace * 0.3527f);
+                if (vLineSpacing < Result)
                     return Result;
                 else
-                    return vH;
+                    return vLineSpacing;
             }
 
             ushort vAscent = 0, vDescent = 0;
             if ((aTextStyle.OutMetSize > 0) && aTextStyle.CJKFont)
             {
-                if ((aTextStyle.OutlineTextmetric.otmfsSelection & 128) != 0)
+                if ((aTextStyle.OutlineTextmetric_otmfsSelection & 128) != 0)
                 {
-                    vAscent = (ushort)aTextStyle.OutlineTextmetric.otmAscent;
-                    vDescent = (ushort)(-aTextStyle.OutlineTextmetric.otmDescent);
+                    vAscent = (ushort)aTextStyle.OutlineTextmetric_otmAscent;
+                    vDescent = (ushort)(-aTextStyle.OutlineTextmetric_otmDescent);
                 }
                 else
                 {
-                    vAscent = HC.SwapBytes((ushort)aTextStyle.FontHeader.Ascender);
-                    vDescent = (ushort)(-HC.SwapBytes((ushort)aTextStyle.FontHeader.Descender)); // 基线向下
-                    Single vSizeScale = aTextStyle.Size / HCUnitConversion.FontSizeScale / aTextStyle.OutlineTextmetric.otmEMSquare;
+                    vAscent = HC.SwapBytes((ushort)aTextStyle.FontHeader_Ascender);
+                    vDescent = (ushort)(-HC.SwapBytes((ushort)aTextStyle.FontHeader_Descender)); // 基线向下
+                    Single vSizeScale = aTextStyle.Size / HCUnitConversion.FontSizeScale / aTextStyle.OutlineTextmetric_otmEMSquare;
                     vAscent = (ushort)Math.Ceiling(vAscent * vSizeScale);
                     vDescent = (ushort)Math.Ceiling(vDescent * vSizeScale);
                     int vLineSpacing = (ushort)Math.Ceiling(1.3 * (vAscent + vDescent));
@@ -527,27 +527,26 @@ namespace HC.View
             }
             else
             {
-                TEXTMETRICW vTextMetric = aTextStyle.TextMetric;
                 switch (aParaStyle.LineSpaceMode)
                 {
-                    case ParaLineSpaceMode.pls100: 
-                        Result = Result + vTextMetric.tmExternalLeading; // Round(vTextMetric.tmHeight * 0.2);
+                    case ParaLineSpaceMode.pls100:
+                        Result = Result + aTextStyle.TextMetric_tmExternalLeading; // Round(vTextMetric.tmHeight * 0.2);
                         break;
 
-                    case ParaLineSpaceMode.pls115: 
-                        Result = Result + vTextMetric.tmExternalLeading + (int)Math.Round((vTextMetric.tmHeight + vTextMetric.tmExternalLeading) * 0.15);
+                    case ParaLineSpaceMode.pls115:
+                        Result = Result + aTextStyle.TextMetric_tmExternalLeading + (int)Math.Round((aTextStyle.TextMetric_tmHeight + aTextStyle.TextMetric_tmExternalLeading) * 0.15);
                         break;
 
                     case ParaLineSpaceMode.pls150:
-                        Result = Result + vTextMetric.tmExternalLeading + (int)Math.Round((vTextMetric.tmHeight + vTextMetric.tmExternalLeading) * 0.5);
+                        Result = Result + aTextStyle.TextMetric_tmExternalLeading + (int)Math.Round((aTextStyle.TextMetric_tmHeight + aTextStyle.TextMetric_tmExternalLeading) * 0.5);
                         break;
 
-                    case ParaLineSpaceMode.pls200: 
-                        Result = Result + vTextMetric.tmExternalLeading + vTextMetric.tmHeight + vTextMetric.tmExternalLeading;
+                    case ParaLineSpaceMode.pls200:
+                        Result = Result + aTextStyle.TextMetric_tmExternalLeading + aTextStyle.TextMetric_tmHeight + aTextStyle.TextMetric_tmExternalLeading;
                         break;
 
                     case ParaLineSpaceMode.plsMult:
-                        Result = Result + vTextMetric.tmExternalLeading + (int)Math.Round((vTextMetric.tmHeight + vTextMetric.tmExternalLeading) * aParaStyle.LineSpace);
+                        Result = Result + aTextStyle.TextMetric_tmExternalLeading + (int)Math.Round((aTextStyle.TextMetric_tmHeight + aTextStyle.TextMetric_tmExternalLeading) * aParaStyle.LineSpace);
                         break;
                 }
             }
@@ -1501,14 +1500,14 @@ namespace HC.View
             HCCustomDrawItem Result = null;
             HCCustomItem vItem = GetActiveItem();
             if (vItem.StyleNo < HCStyle.Null)
-                Result = (vItem as HCCustomRectItem).GetActiveDrawItem();
+                Result = (vItem as HCCustomRectItem).GetTopLevelDrawItem();
             if (Result == null)
                 Result = GetActiveDrawItem();
 
             return Result;
         }
 
-        public POINT GetActiveDrawItemCoord()
+        public POINT GetTopLevelDrawItemCoord()
         {
             POINT Result = new POINT(0, 0);
             POINT vPt = new POINT(0, 0);
@@ -1518,13 +1517,50 @@ namespace HC.View
                 Result = vDrawItem.Rect.TopLeft();
                 HCCustomItem vItem = GetActiveItem();
                 if (vItem.StyleNo < HCStyle.Null)
-                    vPt = (vItem as HCCustomRectItem).GetActiveDrawItemCoord();
+                {
+                    vPt = (vItem as HCCustomRectItem).GetTopLevelDrawItemCoord();
+                    vPt.Y = vPt.Y + FStyle.LineSpaceMin / 2;
+                }
 
                 Result.X = Result.X + vPt.X;
                 Result.Y = Result.Y + vPt.Y;
             }
 
             return Result;
+        }
+
+        public HCCustomDrawItem GetTopLevelRectDrawItem()
+        {
+            HCCustomDrawItem vResult = null;
+
+            HCCustomItem vItem = GetActiveItem();
+            if (vItem.StyleNo < HCStyle.Null)
+            {
+                vResult = (vItem as HCCustomRectItem).GetTopLevelRectDrawItem();
+                if (vResult == null)
+                    vResult = GetActiveDrawItem();
+            }
+
+            return vResult;
+        }
+
+        public POINT GetTopLevelRectDrawItemCoord()
+        {
+            POINT vResult = new POINT(-1, -1);
+            HCCustomItem vItem = GetActiveItem();
+            if ((vItem != null) && (vItem.StyleNo < HCStyle.Null))
+            {
+                vResult = FDrawItems[vItem.FirstDItemNo].Rect.TopLeft();
+                POINT vPt = (vItem as HCCustomRectItem).GetTopLevelRectDrawItemCoord();
+                if (vPt.X >= 0)
+                {
+                    vPt.Y = vPt.Y + FStyle.LineSpaceMin / 2;
+                    vResult.X = vResult.X + vPt.X;
+                    vResult.Y = vResult.Y + vPt.Y;
+                }
+            }
+
+            return vResult;
         }
 
         /// <summary> 返回Item的文本样式 </summary>
@@ -1847,6 +1883,13 @@ namespace HC.View
         {
             ParaBackColorMatch vMatchStyle = new ParaBackColorMatch();
             vMatchStyle.BackColor = aColor;
+            ApplySelectParaStyle(vMatchStyle);
+        }
+
+        public virtual void ApplyParaBreakRough(bool aRough)
+        {
+            ParaBreakRoughMatch vMatchStyle = new ParaBreakRoughMatch();
+            vMatchStyle.BreakRough = aRough;
             ApplySelectParaStyle(vMatchStyle);
         }
 

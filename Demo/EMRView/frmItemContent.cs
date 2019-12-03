@@ -142,7 +142,7 @@ namespace EMRView
                             return;
                         }
 
-                        POINT vPt = FEmrEdit.Data.GetActiveDrawItemCoord();  // 得到相对EmrEdit的坐标
+                        POINT vPt = FEmrEdit.Data.GetTopLevelDrawItemCoord();  // 得到相对EmrEdit的坐标
                         HCCustomDrawItem vActiveDrawItem = FEmrEdit.Data.GetTopLevelDrawItem();
                         RECT vDrawItemRect = vActiveDrawItem.Rect;
                         vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);

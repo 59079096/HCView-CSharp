@@ -23,14 +23,21 @@ namespace EMRView
         private Color FDeDoneColor, FDeUnDoneColor;
         private bool FDesignMode;
 
-        private void DoDeItemPaintBKG(object sender, HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo)
+        protected override HCCustomItem DoDataCreateStyleItem(HCCustomData aData, int aStyleNo)
         {
-            if (!aPaintInfo.Print)
+            return HCEmrViewLite.CreateEmrStyleItem(aData, aStyleNo);
+        }
+
+        protected override void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo,
+            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            HCCanvas aCanvas, PaintInfo aPaintInfo)
+        {
+            if ((!aPaintInfo.Print) && (aData.Items[aItemNo] is DeItem))
             {
-                DeItem vDeItem = sender as DeItem;
-                if (vDeItem.IsElement)
+                DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+                if (vDeItem.IsElement)  // 是数据元
                 {
-                    if ((vDeItem.MouseIn) || (vDeItem.Active))
+                    if ((vDeItem.MouseIn) || (vDeItem.Active))  // 鼠标移入和光标
                     {
                         if ((vDeItem.IsSelectPart) || (vDeItem.IsSelectComplate))
                         {
@@ -38,16 +45,16 @@ namespace EMRView
                         }
                         else
                         {
-                            if (vDeItem[DeProp.Name] != vDeItem.Text)
+                            if (vDeItem[DeProp.Name] != vDeItem.Text)  // 已经填写过了
                                 aCanvas.Brush.Color = FDeDoneColor;
-                            else
+                            else  // 没填写过
                                 aCanvas.Brush.Color = FDeUnDoneColor;
 
                             aCanvas.FillRect(aDrawRect);
                         }
                     }
                 }
-                else
+                else  // 不是数据元
                 {
                     if (FDesignMode && vDeItem.EditProtect)
                     {
@@ -56,43 +63,6 @@ namespace EMRView
                     }
                 }
             }
-        }
-
-        protected override HCCustomItem DoDataCreateStyleItem(HCCustomData aData, int aStyleNo)
-        {
-            switch (aStyleNo)
-            {
-                case HCStyle.Table:
-                    return new DeTable(aData, 1, 1, 1);
-
-                case HCStyle.CheckBox:
-                    return new DeCheckBox(aData, "勾选框", false);
-
-                case HCStyle.Edit:
-                    return new DeEdit(aData, "");
-
-                case HCStyle.Combobox:
-                    return new DeCombobox(aData, "");
-
-                case HCStyle.DateTimePicker:
-                    return new DeDateTimePicker(aData, DateTime.Now);
-
-                case HCStyle.RadioGroup:
-                    return new DeRadioGroup(aData);
-
-                default:
-                    return null;
-            }
-        }
-
-        protected override void DoDataInsertItem(HCCustomData aData, HCCustomItem aItem)
-        {
-            if (aItem is DeItem)
-            {
-                (aItem as DeItem).OnPaintBKG = DoDeItemPaintBKG;
-            }
-
-            base.DoDataInsertItem(aData, aItem);
         }
 
         public HCEmrEdit()

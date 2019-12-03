@@ -42,7 +42,7 @@ namespace EMRView
             tbxCellHPadding.Text = vTable.CellHPadding.ToString();
             tbxCellVPadding.Text = vTable.CellVPadding.ToString();
             cbxBorderVisible.Checked = vTable.BorderVisible;
-            tbxBorderWidth.Text = vTable.BorderWidth.ToString();
+            tbxBorderWidth.Text = String.Format("{0:0.##}", vTable.BorderWidthPt);
 
             tbxFixRowFirst.Text = (vTable.FixRow + 1).ToString();
             tbxFixRowLast.Text = (vTable.FixRow + 1 + vTable.FixRowCount).ToString();
@@ -107,7 +107,7 @@ namespace EMRView
                     // 表格
                     vTable.CellHPadding = byte.Parse(tbxCellHPadding.Text);
                     vTable.CellVPadding = byte.Parse(tbxCellVPadding.Text);
-                    vTable.BorderWidth = byte.Parse(tbxBorderWidth.Text);
+                    vTable.BorderWidthPt = float.Parse(tbxBorderWidth.Text);
                     vTable.BorderVisible = cbxBorderVisible.Checked;
 
                     vTable.FixRow = (sbyte)(int.Parse(tbxFixRowFirst.Text, 0) - 1);
