@@ -396,7 +396,7 @@ namespace HC.View
                 aCanvas.Pen.EndUpdate();
             }
 
-            if (aPaintInfo.ScaleX != 0)
+            if (aPaintInfo.ScaleX != 1)
             {
                 SIZE vPt = new SIZE();
                 GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vPt);

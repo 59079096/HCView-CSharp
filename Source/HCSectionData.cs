@@ -430,12 +430,12 @@ namespace HC.View
             int aVOffset, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             HCCustomFloatItem vFloatItem = null;
-
+            RECT vRect;
             for (int i = 0; i <= FFloatItems.Count - 1; i++)
             {
                 vFloatItem = FFloatItems[i];
                 // 代替下面不生效的代码
-                RECT vRect = HC.Bounds(vFloatItem.Left, vFloatItem.Top, vFloatItem.Width, vFloatItem.Height);
+                vRect = HC.Bounds(vFloatItem.Left, vFloatItem.Top, vFloatItem.Width, vFloatItem.Height);
                 vRect.Offset(aDataDrawLeft, aDataDrawTop - aVOffset);  // 将数据起始位置映射到绘制位置
                 vFloatItem.DrawRect = vRect;
                 // 下面的操作vFloatItemDraw.DrawRect.Offset并不生效

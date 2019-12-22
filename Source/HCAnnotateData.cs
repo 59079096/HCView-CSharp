@@ -305,10 +305,10 @@ namespace HC.View
 
             int vFirstNo = this.DrawItems[aFirstDrawItemNo].ItemNo;
             int vLastNo = this.DrawItems[aLastDrawItemNo].ItemNo;
-
+            HCDataAnnotate vDataAnnotate;
             for (int i = 0; i <= FDataAnnotates.Count - 1; i++)
             {
-                HCDataAnnotate vDataAnnotate = FDataAnnotates[i];
+                vDataAnnotate = FDataAnnotates[i];
 
                 if (vDataAnnotate.EndItemNo < vFirstNo)  // 未进入本次查找范围
                     continue;
@@ -546,13 +546,15 @@ namespace HC.View
         {
             if ((FOnDrawItemAnnotate != null) && DrawItemOfAnnotate(aDrawItemNo, aCanvas, aClearRect))  // 当前DrawItem是某批注中的一部分
             {
+                HCDrawItemAnnotate vDrawAnnotate;
+                bool vActive;
                 for (int i = 0; i <= FDrawItemAnnotates.Count - 1; i++)
                 {
-                    HCDrawItemAnnotate vDrawAnnotate = FDrawItemAnnotates[i];
+                    vDrawAnnotate = FDrawItemAnnotates[i];
 
                     if (!aPaintInfo.Print)
                     {
-                        bool vActive = vDrawAnnotate.DataAnnotate.Equals(FHotAnnotate)
+                        vActive = vDrawAnnotate.DataAnnotate.Equals(FHotAnnotate)
                             || vDrawAnnotate.DataAnnotate.Equals(FActiveAnnotate);
 
                         if (vActive)

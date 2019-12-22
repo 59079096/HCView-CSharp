@@ -2243,6 +2243,8 @@ namespace HC.View
                         FSections[FDisplayLastSection].DisplayLastPageIndex = vLastPage;
                         break;
                     }
+
+                    vFirstPage = 0;  // 当前节没找到，下一节从0开始
                 }
 
                 if (FDisplayLastSection < 0)
@@ -2286,7 +2288,7 @@ namespace HC.View
                 if (FViewModel == HCViewModel.hvmFilm)
                     FDataBmpCanvas.Brush.Color = this.BackColor;// $00E7BE9F;
                 else
-                    FDataBmpCanvas.Brush.Color = FStyle.BackgroudColor;
+                    FDataBmpCanvas.Brush.Color = FStyle.BackgroundColor;
 
                 FDataBmpCanvas.FillRect(new RECT(0, 0, FViewWidth, FViewHeight));
                 // 因基于此计算当前页面数据起始结束，所以不能用ARect代替
@@ -4185,6 +4187,8 @@ namespace HC.View
                         }
                     }
 
+                    HCAnnotateData vData;
+                    RECT vTextRect;
                     aCanvas.Pen.Color = Color.Red;
                     for (int i = vFirst; i <= vLast; i++)  // 绘制批
                     {
@@ -4199,7 +4203,7 @@ namespace HC.View
                         else
                         {
                             vText = vDrawAnnotate.DataAnnotate.Title + ":" + vDrawAnnotate.DataAnnotate.Text;
-                            HCAnnotateData vData = vDrawAnnotate.Data as HCAnnotateData;
+                            vData = vDrawAnnotate.Data as HCAnnotateData;
 
                             if (vDrawAnnotate.DataAnnotate == vData.HotAnnotate)
                             {
@@ -4226,7 +4230,7 @@ namespace HC.View
                             aCanvas.Brush.Style = HCBrushStyle.bsClear;
 
                         aCanvas.RoundRect(vDrawAnnotate.Rect, 5, 5);  // 填充批注区域
-                        RECT vTextRect = vDrawAnnotate.Rect;
+                        vTextRect = vDrawAnnotate.Rect;
                         vTextRect.Inflate(-5, -5);
 
                         User.DrawTextEx(aCanvas.Handle, i.ToString() + vText, -1, ref vTextRect,

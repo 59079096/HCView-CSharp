@@ -487,38 +487,30 @@ namespace HC.View
         private void _FormatBreakTextDrawItem(int aItemNo, int aFmtLeft, int aFmtRight, ref int aDrawItemNo,
             ref POINT aPos, ref RECT vRect, ref int vRemainderWidth, ref bool vParaFirst)
         {
-            HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
-            try
-            {
-                HCCustomDrawItem vDrawItem = DrawItems[aDrawItemNo];
-                HCCustomItem vItemBK = Items[vDrawItem.ItemNo];
-                int vLen = vItemBK.Text.Length;
+            HCCustomDrawItem vDrawItem = DrawItems[aDrawItemNo];
+            HCCustomItem vItemBK = Items[vDrawItem.ItemNo];
+            int vLen = vItemBK.Text.Length;
 
-                CalcItemFormatHeigh(vItemBK);
+            CalcItemFormatHeigh(vItemBK);
 
-                int vWidth = Style.TempCanvas.TextWidth(vItemBK.Text[vLen - 1]);
-                // 分裂前
-                vDrawItem.CharLen = vDrawItem.CharLen - 1;
-                vDrawItem.Rect.Right = vDrawItem.Rect.Right - vWidth;
-                vRemainderWidth = aFmtRight - vDrawItem.Rect.Right;
-                FinishLine(aItemNo, aDrawItemNo, vRemainderWidth);
-                // 分裂后
-                aPos.X = aFmtLeft;
-                aPos.Y = vDrawItem.Rect.Bottom;
-                vRect.Left = aPos.X;
-                vRect.Top = aPos.Y;
-                vRect.Right = vRect.Left + vWidth;
-                vRect.Bottom = vRect.Top + FItemFormatHeight;
-                NewDrawItem(vDrawItem.ItemNo, vLen - 1, 1, vRect, false, true, ref aDrawItemNo);
-                vParaFirst = false;
-                aPos.X = vRect.Right;
+            int vWidth = Style.TempCanvas.TextWidth(vItemBK.Text[vLen - 1]);
+            // 分裂前
+            vDrawItem.CharLen = vDrawItem.CharLen - 1;
+            vDrawItem.Rect.Right = vDrawItem.Rect.Right - vWidth;
+            vRemainderWidth = aFmtRight - vDrawItem.Rect.Right;
+            FinishLine(aItemNo, aDrawItemNo, vRemainderWidth);
+            // 分裂后
+            aPos.X = aFmtLeft;
+            aPos.Y = vDrawItem.Rect.Bottom;
+            vRect.Left = aPos.X;
+            vRect.Top = aPos.Y;
+            vRect.Right = vRect.Left + vWidth;
+            vRect.Bottom = vRect.Top + FItemFormatHeight;
+            NewDrawItem(vDrawItem.ItemNo, vLen - 1, 1, vRect, false, true, ref aDrawItemNo);
+            vParaFirst = false;
+            aPos.X = vRect.Right;
 
-                vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
-            }
-            finally
-            {
-                HCStyle.DestroyStyleCanvas(vCanvas);
-            }
+            vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
         }
 
         /// <summary> 从指定偏移和指定位置开始格式化Text </summary>

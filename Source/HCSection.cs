@@ -583,8 +583,8 @@ namespace HC.View
         protected HCSectionData GetSectionDataAt(int x, int y)
         {
             int vPageIndex = GetPageIndexByFilm(y);
-            int vMarginLeft = -1, vMarginRight = -1;
-            GetPageMarginLeftAndRight(vPageIndex, ref vMarginLeft, ref vMarginRight);
+            //int vMarginLeft = -1, vMarginRight = -1;
+            //GetPageMarginLeftAndRight(vPageIndex, ref vMarginLeft, ref vMarginRight);
             // 确定点击页面显示区域
             if (x < 0)
             {
@@ -1433,11 +1433,15 @@ namespace HC.View
         private void PaintHeader(int vPaperDrawTop, int vPageDrawTop, int vPageDrawLeft, int vPageDrawRight, int vMarginLeft, int vMarginRight,
             int vHeaderAreaHeight, int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
+            int vScreenBottom = vHeaderAreaHeight + vPaperDrawTop;
+            if (vPaperDrawTop > 0)
+                vScreenBottom = vPaperDrawTop + vHeaderAreaHeight;
+
             int vHeaderDataDrawTop = vPaperDrawTop + GetHeaderPageDrawTop();
 
             FHeader.PaintData(vPageDrawLeft, vHeaderDataDrawTop, vPageDrawRight,
                 vPageDrawTop, Math.Max(vHeaderDataDrawTop, 0),
-                Math.Min(vPageDrawTop, aPaintInfo.WindowHeight), 0, aCanvas, aPaintInfo);
+                vScreenBottom, 0, aCanvas, aPaintInfo);
 
             if (FOnPaintHeader != null)
             {
@@ -1459,9 +1463,14 @@ namespace HC.View
         private void PaintFooter(int vPaperDrawBottom, int vPageDrawLeft, int vPageDrawRight, int vPageDrawBottom, int vMarginLeft,
             int vMarginRight, int aPageIndex, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            FFooter.PaintData(vPageDrawLeft, vPageDrawRight, vPageDrawBottom, vPaperDrawBottom,
-                Math.Max(vPageDrawBottom, 0), Math.Min(vPaperDrawBottom, aPaintInfo.WindowHeight),
-                0, aCanvas, aPaintInfo);
+            int vScreenBottom = aPaintInfo.WindowHeight - aPaintInfo.GetScaleY(vPageDrawBottom);
+            if (vScreenBottom > FPaper.MarginBottomPix)
+                vScreenBottom = vPaperDrawBottom;
+            else
+                vScreenBottom = aPaintInfo.WindowHeight;
+
+            FFooter.PaintData(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPaperDrawBottom,
+                Math.Max(vPageDrawBottom, 0), vPageDrawBottom + vScreenBottom, 0, aCanvas, aPaintInfo);
 
             if (FOnPaintFooter != null)
             {
@@ -1578,7 +1587,7 @@ namespace HC.View
             {
 
                 #region 非打印时填充页面背景
-                aCanvas.Brush.Color = FStyle.BackgroudColor;
+                aCanvas.Brush.Color = FStyle.BackgroundColor;
                 aCanvas.FillRect(new RECT(vPaperDrawLeft, vPaperDrawTop, Math.Min(vPaperDrawRight, vScaleWidth),  // 约束边界
                     Math.Min(vPaperDrawBottom, vScaleHeight)));
                 #endregion
@@ -1645,7 +1654,7 @@ namespace HC.View
                     #endregion
 
                     #region 页脚边距指示符
-                    if (vPageDrawBottom < aPaintInfo.WindowHeight)
+                    if (aPaintInfo.GetScaleY(vPageDrawBottom) < aPaintInfo.WindowHeight)
                     {
                         if (FActiveData == FFooter)
                         {
@@ -1689,7 +1698,24 @@ namespace HC.View
                 }
                 else
                 {
-                    if (vPageDrawBottom < aPaintInfo.WindowHeight)  // 页脚结束可显示
+                    if (vPageDrawTop > 0)  // 页眉可显示
+                    {
+                        aCanvas.Pen.BeginUpdate();
+                        try
+                        {
+                            aCanvas.Pen.Width = 1;
+                            aCanvas.Pen.Color = Color.Gray;
+                            aCanvas.Pen.Style = HCPenStyle.psDashDot;
+                        }
+                        finally
+                        {
+                            aCanvas.Pen.EndUpdate();
+                        }
+
+                        aCanvas.DrawLine(vPaperDrawLeft, vPageDrawTop, vPaperDrawRight, vPageDrawTop);
+                    }
+
+                    if (aPaintInfo.GetScaleY(vPageDrawBottom) < aPaintInfo.WindowHeight)  // 页脚结束可显示
                     {
                         aCanvas.Pen.BeginUpdate();
                         try

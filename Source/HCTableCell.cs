@@ -188,7 +188,7 @@ namespace HC.View
             FBorderSides.InClude((byte)BorderSide.cbsTop);
             FBorderSides.InClude((byte)BorderSide.cbsRight);
             FBorderSides.InClude((byte)BorderSide.cbsBottom);
-            FBackgroundColor = AStyle.BackgroudColor;
+            FBackgroundColor = AStyle.BackgroundColor;
             FRowSpan = 0;
             FColSpan = 0;
         }

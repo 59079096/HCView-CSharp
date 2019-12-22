@@ -115,7 +115,7 @@ namespace HC.View
         private HCCanvas FTempCanvas, FLineHeightCanvas;
         private int FTempStyleNo;
         private byte FLineSpaceMin;
-        private Color FSelColor, FBackgroudColor;
+        private Color FSelColor, FBackgroundColor;
         private List<HCTextStyle> FTextStyles;
         private List<HCParaStyle> FParaStyles;
         private UpdateInfo FUpdateInfo;
@@ -164,7 +164,7 @@ namespace HC.View
             FTempCanvas = CreateStyleCanvas();
             FLineHeightCanvas = CreateStyleCanvas();
             FTempStyleNo = HCStyle.Null;
-            FBackgroudColor = Color.FromArgb(255, 255, 255);
+            FBackgroundColor = Color.FromArgb(255, 255, 255);
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
             FLineSpaceMin = 8;
             FShowParaLastMark = true;
@@ -484,10 +484,10 @@ namespace HC.View
             set { FParaStyles = value; }
         }
 
-        public Color BackgroudColor
+        public Color BackgroundColor
         {
-            get { return FBackgroudColor; }
-            set { FBackgroudColor = value; }
+            get { return FBackgroundColor; }
+            set { FBackgroundColor = value; }
         }
 
         public Color SelColor
