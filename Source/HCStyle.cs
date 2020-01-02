@@ -112,10 +112,11 @@ namespace HC.View
 
     public class HCStyle : HCObject
     {
-        private HCCanvas FTempCanvas, FLineHeightCanvas;
+        private HCCanvas FTempCanvas;
         private int FTempStyleNo;
         private byte FLineSpaceMin;
         private Color FSelColor, FBackgroundColor;
+        private HCTextStyle FDefaultTextStyle;
         private List<HCTextStyle> FTextStyles;
         private List<HCParaStyle> FParaStyles;
         private UpdateInfo FUpdateInfo;
@@ -162,7 +163,6 @@ namespace HC.View
         public HCStyle()
         {
             FTempCanvas = CreateStyleCanvas();
-            FLineHeightCanvas = CreateStyleCanvas();
             FTempStyleNo = HCStyle.Null;
             FBackgroundColor = Color.FromArgb(255, 255, 255);
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
@@ -172,6 +172,7 @@ namespace HC.View
             FUpdateInfo = new UpdateInfo();
             FTextStyles = new List<HCTextStyle>();
             FParaStyles = new List<HCParaStyle>();
+            FDefaultTextStyle = new HCTextStyle();
         }
 
         public HCStyle(bool aDefTextStyle, bool aDefParaStyle) : this()
@@ -192,9 +193,6 @@ namespace HC.View
         {
             base.Dispose();
             DestroyStyleCanvas(FTempCanvas);
-            DestroyStyleCanvas(FLineHeightCanvas);
-            //FTextStyles.Free;
-            //FParaStyles.Free;
             FUpdateInfo.Dispose();
             FStates.Dispose();
         }
@@ -387,6 +385,7 @@ namespace HC.View
             Int64 vDataSize = 0;
             byte[] vBuffer = BitConverter.GetBytes(vDataSize);
             aStream.Read(vBuffer, 0, vBuffer.Length);
+            vDataSize = BitConverter.ToInt64(vBuffer, 0);
             //
             LoadParaStyles(aStream, aFileVersion);
             LoadTextStyles(aStream, aFileVersion);
@@ -472,6 +471,11 @@ namespace HC.View
                 FOnInvalidateRect(aRect);
         }
 
+        public HCTextStyle DefaultTextStyle
+        {
+            get { return FDefaultTextStyle; }
+        }
+
         public List<HCTextStyle> TextStyles
         {
             get { return FTextStyles; }
@@ -510,11 +514,6 @@ namespace HC.View
         public HCCanvas TempCanvas
         {
             get { return FTempCanvas; }
-        }
-
-        public HCCanvas LineHeightCanvas
-        {
-            get { return FLineHeightCanvas; }
         }
 
         public UpdateInfo UpdateInfo

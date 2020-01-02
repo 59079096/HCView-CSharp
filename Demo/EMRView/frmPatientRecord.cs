@@ -421,13 +421,13 @@ namespace EMRView
             for (int i = 0; i < aEmrView.Sections.Count; i++)
             {
                 HCViewData vData = aEmrView.Sections[0].Page;
-                int vIndex = vData.Items.Count - 1;
+                int vItemNo = vData.Items.Count - 1;
 
-                while (vIndex >= 0)
+                while (vItemNo >= 0)
                 {
-                    if (HCDomainItem.IsBeginMark(vData.Items[vIndex]))  // 是数据组开始位置
+                    if (HCDomainItem.IsBeginMark(vData.Items[vItemNo]))  // 是数据组开始位置
                     {
-                        string vDeGroupIndex = (vData.Items[vIndex] as DeGroup)[DeProp.Index];  // 数据组标识
+                        string vDeGroupIndex = (vData.Items[vItemNo] as DeGroup)[DeProp.Index];  // 数据组标识
                         DataRow[] vRows = FDataElementSetMacro.Select("MacroType=3 and ObjID=" + vDeGroupIndex);
                         if (vRows.Length > 0)  // 有该数据组的引用替换配置信息
                         {
@@ -442,12 +442,17 @@ namespace EMRView
                                     vText = vText + vXmlNode.ChildNodes[j].InnerText;
 
                                 if (vText != "")  // 得到不为空的节点内容并赋值给数据组
-                                    aEmrView.SetDeGroupText(vData, vIndex, vText);
+                                    aEmrView.SetDeGroupText(vData, vItemNo, vText);
                             }
                         }
+                        //else
+                        //if (vDeGroupIndex == "197")
+                        //{
+                        //    aEmrView.SetDeGroupText(vData, vItemNo, "第一条医嘱\r\n    第一条医嘱子医嘱\r\n    第一条医嘱子医嘱\r\n第二条医嘱\r\n    第二条医嘱子医嘱\r\n    第二条医嘱子医嘱");
+                        //}
                     }
 
-                    vIndex--;
+                    vItemNo--;
                 }
             }
         }
@@ -480,7 +485,7 @@ namespace EMRView
 
                 if (vRecordInfo.ID > 0)  // 修改后保存
                 {
-                    EMRView.emrMSDB.ExecCommandEventHanler vEvent = delegate(SqlCommand sqlComm)
+                    EMRView.emrMSDB.ExecCommandEventHanler vEvent = delegate (SqlCommand sqlComm)
                     {
                         sqlComm.Parameters.AddWithValue("RID", vRecordInfo.ID);
                         sqlComm.Parameters.AddWithValue("LastUserID", UserInfo.ID);
@@ -498,7 +503,7 @@ namespace EMRView
                 }
                 else  // 保存新建的病历
                 {
-                    EMRView.emrMSDB.ExecCommandEventHanler vEvent = delegate(SqlCommand sqlComm)
+                    EMRView.emrMSDB.ExecCommandEventHanler vEvent = delegate (SqlCommand sqlComm)
                     {
                         sqlComm.CommandType = CommandType.StoredProcedure;
                         sqlComm.CommandText = "CreateInchRecord";
@@ -823,6 +828,15 @@ namespace EMRView
                     frmRecord vFrmRecord = null;
 
                     NewPageAndRecord(aRecordInfo, ref vPage, ref vFrmRecord);
+
+                    // 把文件在加载到编辑器前存下来
+                    /*FileStream vStream = new FileStream(@"c:\上级查房.hcf", FileMode.CreateNew, FileAccess.Write);
+                    byte[] vBuffer = new byte[vSM.Length];
+                    vSM.Position = 0;
+                    vSM.Read(vBuffer, 0, (int)vSM.Length);
+                    vStream.Write(vBuffer, 0, vBuffer.Length);
+                    vStream.Flush();
+                    vStream.Close();*/
 
                     vFrmRecord.EmrView.LoadFromStream(vSM);
                     vFrmRecord.EmrView.ReadOnly = true;

@@ -243,7 +243,7 @@ namespace EMRView
                         + "WHERE DE.domainid = {0}", vCMV));
                 }
 
-                if (FDBDomain.Rows.Count > 0)
+                if (FDBDomain.Rows.Count > 0)  // 有选项
                     IniDomainUI();
             }
             else
@@ -254,6 +254,8 @@ namespace EMRView
                 this.Width = 260;
                 this.Height = 200;
             }
+            else  // 不认识的不处理
+                return;
 
             System.Drawing.Rectangle vRect = Screen.GetWorkingArea(this);
             if (aPopupPt.X + Width > vRect.Right)

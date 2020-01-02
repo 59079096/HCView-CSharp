@@ -844,7 +844,7 @@ namespace HC.View
             if (FOnRedo != null)
                 FOnRedo(this[ASeek]);
 
-            this[FSeek].IsUndo = true;
+            this[ASeek].IsUndo = true;
         }
 
         public void Redo()

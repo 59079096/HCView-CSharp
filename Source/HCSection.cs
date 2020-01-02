@@ -412,7 +412,7 @@ namespace HC.View
                     else
                     {
                         viTemp = GetPageHeight();
-                        if (aY > viTemp)
+                        if (aY >= viTemp)  // 20200101001 =号约束到边界内部，防止划选时判断不正确
                             aY = viTemp - 1;
                     }
                 }
@@ -603,7 +603,7 @@ namespace HC.View
                 return FActiveData;
             }
             // 边距信息，先上下，再左右
-            if (y > FPaper.HeightPix - FPaper.MarginBottomPix)
+            if (y >= FPaper.HeightPix - FPaper.MarginBottomPix)  // 20200101001 =号约束到边界内部，防止划选时判断不正确
                 return FFooter;
             // 页眉区域实际高(页眉内容高度>上边距时，取页眉内容高度)
             if (y < GetHeaderAreaHeight())

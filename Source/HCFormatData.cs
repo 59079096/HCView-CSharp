@@ -96,15 +96,13 @@ namespace HC.View
             {
                 Style.ApplyTempStyle(AItem.StyleNo);
                 FLastFormatParaNo = AItem.ParaNo;
-                FItemFormatHeight = CalculateLineHeight(Style.TempCanvas,
-                    Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo]);
+                FItemFormatHeight = CalculateLineHeight(Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo]);
             }
             else
             if (FLastFormatParaNo != AItem.ParaNo)
             {
                 FLastFormatParaNo = AItem.ParaNo;
-                FItemFormatHeight = CalculateLineHeight(Style.TempCanvas,
-                    Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo]);
+                FItemFormatHeight = CalculateLineHeight(Style.TextStyles[AItem.StyleNo], Style.ParaStyles[AItem.ParaNo]);
             }
         }
 

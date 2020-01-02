@@ -449,6 +449,12 @@ namespace HC.View
 
                 FCaretDrawItemNo = value;
 
+                if (FStyle.States.Contain(HCState.hosLoading))
+                    return;
+
+                SetCurStyleNo(FItems[FDrawItems[FCaretDrawItemNo].ItemNo].StyleNo);
+                SetCurParaNo(FItems[FDrawItems[FCaretDrawItemNo].ItemNo].ParaNo);
+
                 if ((FCaretDrawItemNo >= 0) && (FDrawItems[FCaretDrawItemNo].ItemNo != vItemNo))
                 {
                     if (FItems[FDrawItems[FCaretDrawItemNo].ItemNo].StyleNo < HCStyle.Null)
@@ -468,7 +474,7 @@ namespace HC.View
             }
         }
 
-        protected int CalculateLineHeight(HCCanvas aCanvas, HCTextStyle aTextStyle, HCParaStyle aParaStyle)
+        protected int CalculateLineHeight(HCTextStyle aTextStyle, HCParaStyle aParaStyle)
         {
             int Result = aTextStyle.FontHeight;// THCStyle.GetFontHeight(ACanvas);  // 行高
             if (aParaStyle.LineSpaceMode == ParaLineSpaceMode.plsMin)
@@ -716,7 +722,7 @@ namespace HC.View
             HCCustomItem vItem = t.GetConstructor(vTypes).Invoke(vobj) as HCCustomItem;
 
             if (FCurStyleNo < HCStyle.Null)
-                vItem.StyleNo = 0;
+                vItem.StyleNo = FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);
             else
                 vItem.StyleNo = FCurStyleNo;
 
@@ -2372,8 +2378,7 @@ namespace HC.View
                 //HCCanvas vCanvas = HCStyle.CreateStyleCanvas();
                 //try
                 //{
-                Result = CalculateLineHeight(FStyle.LineHeightCanvas,
-                    FStyle.TextStyles[GetDrawItemStyle(aDrawNo)],
+                Result = CalculateLineHeight(FStyle.TextStyles[GetDrawItemStyle(aDrawNo)],
                     FStyle.ParaStyles[GetDrawItemParaStyle(aDrawNo)]);
                 //}
                 //finally

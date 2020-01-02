@@ -18,6 +18,14 @@ namespace HC.Win32
             Bottom = aBottom;
         }
 
+        public RECT(RECT aRect)
+        {
+            this.Left = aRect.Left;
+            this.Top = aRect.Top;
+            this.Right = aRect.Right;
+            this.Bottom = aRect.Bottom;
+        }
+
         public POINT TopLeft()
         {
             return new POINT(Left, Top);

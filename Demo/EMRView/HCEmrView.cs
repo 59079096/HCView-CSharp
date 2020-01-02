@@ -833,6 +833,8 @@ namespace EMRView
             FDeDoneColor = HC.View.HC.clBtnFace;
             FDeUnDoneColor = Color.FromArgb(0xFF, 0xDD, 0x80);
             FPageBlankTip = "";// "--------本页以下空白--------";
+            this.Style.DefaultTextStyle.Size = HC.View.HC.GetFontSize("小四");
+            this.Style.DefaultTextStyle.Family = "宋体";
         }
 
         ~HCEmrView()

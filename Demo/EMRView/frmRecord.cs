@@ -612,7 +612,7 @@ namespace EMRView
                             && (vDeItem[DeProp.Index] != "")
                             && (!vDeItem.IsSelectComplate)
                             && (!vDeItem.IsSelectPart)
-                            && (Environment.TickCount - FMouseDownTick < 500)
+                            //&& (Environment.TickCount - FMouseDownTick < 500)
                         )
                     {
                         vInfo = vInfo + "元素(" + vDeItem[DeProp.Index] + ")";
@@ -1202,7 +1202,7 @@ namespace EMRView
                     if (vOpenDlg.FileName != "")
                     {
                         HCRichData vTopData = FEmrView.ActiveSectionTopLevelData() as HCRichData;
-                        HCImageItem vImageItem = new HCImageItem(vTopData);
+                        DeImageItem vImageItem = new DeImageItem(vTopData);
                         vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
                         vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
                         Application.DoEvents();
