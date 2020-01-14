@@ -32,8 +32,7 @@ namespace HC.View
 
         protected override void SetText(string value)
         {
-            if (value != "")
-                FText = value.Replace(HC.sLineBreak, "");
+            FText = value.Replace(HC.sLineBreak, "");
         }
 
         protected override string GetHyperLink()

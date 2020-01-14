@@ -2151,9 +2151,12 @@ namespace HC.View
                                   ||
                                   (vAlignHorz == ParaAlignHorz.pahScatter)  // 分散对齐
                                 )
-                                vClearRect.Inflate(-(vClearRect.Width - vRectItem.Width) / 2, 0);
+                            {
+                                if (IsLineLastDrawItem(i))
+                                    vClearRect.Offset(vClearRect.Width - vRectItem.Width, 0);
+                            }
                             else
-                                vClearRect.Width = vClearRect.Width;
+                                vClearRect.Right = vClearRect.Left + vRectItem.Width;
                         }
 
                         switch (FStyle.ParaStyles[vItem.ParaNo].AlignVert)  // 垂直对齐方式

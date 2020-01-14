@@ -737,11 +737,9 @@ namespace HC.View
                 else  // 非空Item
                 {
                     int vItemLen = vText.Length;
-                    if (vItemLen > 38347922)
-                        throw new Exception(HC.HCS_EXCEPTION_STRINGLENGTHLIMIT);
-
+                    //if (vItemLen > 38347922)
+                    //    throw new Exception(HC.HCS_EXCEPTION_STRINGLENGTHLIMIT);
                     int[] vCharWidths = new int[vItemLen];
-
                     int[] vCharWArr = null;
                     int viLen = vItemLen;
                     if (viLen > FormatTextCut)
@@ -1032,8 +1030,8 @@ namespace HC.View
 
             if (SelectInfo.StartItemNo >= 0)
             {
-                //if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
-                //    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ReFormatActiveItem();
+                if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)  // 当表格里是RadioItem修改引起大小变化时需要重新格式化
+                    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ReFormatActiveItem();
 
                 int vFirstDrawItemNo = -1, vLastItemNo = -1;
                 GetFormatRange(ref vFirstDrawItemNo, ref vLastItemNo);

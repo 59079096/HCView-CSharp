@@ -25,7 +25,7 @@ namespace HC.View
         private string FText;
         private byte FBorderWidth;
         private HCBorderSides FBorderSides;
-        private bool FMouseIn, FReadOnly;
+        private bool FMouseIn, FReadOnly, FPrintOnlyText;
         private short FCaretOffset;
 
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
@@ -68,7 +68,10 @@ namespace HC.View
             else
                 aCanvas.TextOut(aDrawRect.Left + FMargin, aDrawRect.Top + FMargin, FText);
 
-            if (FMouseIn && (!aPaintInfo.Print))
+            if (aPaintInfo.Print && FPrintOnlyText)
+                return;
+
+            if (FMouseIn)
                 aCanvas.Pen.Color = Color.Blue;
             else  // 鼠标不在其中或打印
                 aCanvas.Pen.Color = Color.Black;
@@ -312,6 +315,7 @@ namespace HC.View
             FMargin = 4;
             FCaretOffset = -1;
             Width = 50;
+            FPrintOnlyText = false;
             FBorderWidth = 1;
             FBorderSides = new HCBorderSides();
             FBorderSides.InClude((byte)BorderSide.cbsLeft);
@@ -325,6 +329,7 @@ namespace HC.View
             base.Assign(source);
             FText = (source as HCEditItem).Text;
             FReadOnly = (source as HCEditItem).ReadOnly;
+            FPrintOnlyText = (source as HCEditItem).PrintOnlyText;
             FBorderSides.Value = (source as HCEditItem).BorderSides.Value;
             FBorderWidth = (source as HCEditItem).BorderWidth;
         }
@@ -334,8 +339,14 @@ namespace HC.View
             base.SaveToStream(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FText);  // 存Text
 
-            byte[] vBuffer = BitConverter.GetBytes(FReadOnly);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
+            byte vByte = 0;
+            if (FReadOnly)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FPrintOnlyText)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
 
             aStream.WriteByte(FBorderSides.Value);
             aStream.WriteByte(FBorderWidth);
@@ -345,10 +356,21 @@ namespace HC.View
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
             HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
-            
-            byte[] vBuffer = BitConverter.GetBytes(FReadOnly);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FReadOnly = BitConverter.ToBoolean(vBuffer, 0);
+
+            if (aFileVersion > 33)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FReadOnly = HC.IsOdd(vByte >> 7);
+                FPrintOnlyText = HC.IsOdd(vByte >> 6);
+            }
+            else
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FReadOnly);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FReadOnly = BitConverter.ToBoolean(vBuffer, 0);
+                FPrintOnlyText = false;
+            }
+
 
             if (aFileVersion > 15)
             {
@@ -360,7 +382,12 @@ namespace HC.View
         public override void ToXml(System.Xml.XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.SetAttribute("readonly", FReadOnly.ToString());
+            if (FReadOnly)
+                aNode.SetAttribute("readonly", "1");
+
+            if (FPrintOnlyText)
+                aNode.SetAttribute("printonlytext", "1");
+
             aNode.SetAttribute("border", HC.GetBorderSidePro(FBorderSides));
             aNode.SetAttribute("borderwidth", FBorderWidth.ToString());
             aNode.InnerText = FText;
@@ -370,6 +397,7 @@ namespace HC.View
         {
             base.ParseXml(aNode);
             FReadOnly = bool.Parse(aNode.Attributes["readonly"].Value);
+            FPrintOnlyText = bool.Parse(aNode.Attributes["printonlytext"].Value);
             HC.SetBorderSideByPro(aNode.Attributes["border"].Value, FBorderSides);
             FBorderWidth = byte.Parse(aNode.Attributes["borderwidth"].Value);
             FText = aNode.InnerText;
@@ -379,6 +407,12 @@ namespace HC.View
         {
             get { return FReadOnly; }
             set { FReadOnly = value; }
+        }
+
+        public bool PrintOnlyText
+        {
+            get { return FPrintOnlyText; }
+            set { FPrintOnlyText = value; }
         }
 
         public HCBorderSides BorderSides

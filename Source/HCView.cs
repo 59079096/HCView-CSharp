@@ -341,7 +341,7 @@ namespace HC.View
                     aCanvas.Font.EndUpdate();
                 }
 
-                aCanvas.TextOut(aRect.Left + (aRect.Width - aCanvas.TextWidth(vS)) / 2, aRect.Top + 20, vS);
+                aCanvas.TextOut(aRect.Left + (aRect.Width - aCanvas.TextWidth(vS)) / 2, aRect.Top + vSection.Footer.Height, vS);
             }
 
             if (FOnSectionPaintFooter != null)
@@ -1814,6 +1814,11 @@ namespace HC.View
         public bool InsertDomain(HCDomainItem aMouldDomain)
         {
             return ActiveSection.InsertDomain(aMouldDomain);
+        }
+
+        public bool ActiveTableResetRowCol(int rowCount, int colCount)
+        {
+            return ActiveSection.ActiveTableResetRowCol(rowCount, colCount);
         }
 
         /// <summary> 当前表格选中行下面插入行 </summary>

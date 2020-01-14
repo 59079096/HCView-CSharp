@@ -553,8 +553,17 @@ namespace HC.View
             FHotToolBar = null;
 
             FTableToolMenu = new ContextMenuStrip();
-            ToolStripItem vMenuItem = FTableToolMenu.Items.Add("表格属性");
+            ToolStripMenuItem vMenuItem = new ToolStripMenuItem("重设行列");
+            FTableToolMenu.Items.Add(vMenuItem);
+            vMenuItem.DropDownItems.Add("2 x 2").Click += delegate (object sender, EventArgs e)
+            {
+                this.ActiveTableResetRowCol(2, 2);
+            };
+
+
+            vMenuItem = new ToolStripMenuItem("表格属性");
             vMenuItem.Click += DoTableToolPropertyClick;
+            FTableToolMenu.Items.Add(vMenuItem);
 
             FTableToolBar = new HCTableToolBar();
             FTableToolBar.OnUpdateView = DoTableToolBarUpdateView;

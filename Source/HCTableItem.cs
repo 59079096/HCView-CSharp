@@ -2396,10 +2396,6 @@ namespace HC.View
                 throw new Exception("异常：不能创建列数为0的表格！");
 
             GripSize = 2;
-            FFixCol = -1;
-            FFixColCount = 0;
-            FFixRow = -1;
-            FFixRowCount = 0;
             FCellHPadding = 2;
             FCellVPadding = 2;
             FFormatHeight = 0;
@@ -2414,27 +2410,12 @@ namespace HC.View
             CanPageBreak = true;
             FPageBreaks = new List<PageBreak>();
             FMulCellUndo = new HCMulCellUndo();
-
-            //FWidth := FRows[0].ColCount * (MinColWidth + FBorderWidth) + FBorderWidth;
-            Height = aRowCount * (HC.MinRowHeight + FBorderWidthPix) + FBorderWidthPix;
+            FSelectCellRang = new View.SelectCellRang();
+            FColWidths = new List<int>();
             FRows = new HCTableRows();
             FRows.OnRowAdd = DoRowAdd;  // 添加行时触发的事件
-            FSelectCellRang = new View.SelectCellRang();
-            this.InitializeMouseInfo();
-            //
-            int vDataWidth = aWidth - (aColCount + 1) * FBorderWidthPix;
-            for (int i = 0; i <= aRowCount - 1; i++)
-            {
-                HCTableRow vRow = new HCTableRow(OwnerData.Style, aColCount);
-                vRow.SetRowWidth(vDataWidth);
-                FRows.Add(vRow);
-            }
-            FColWidths = new List<int>();
-            for (int i = 0; i <= aColCount - 1; i++)
-                FColWidths.Add(FRows[0][i].Width);
-
+            this.ResetRowCol(aWidth, aRowCount, aColCount);
             FMangerUndo = true;  // 自己管理自己的撤销和恢复操作
-            FLastChangeFormated = false;
         }
 
         ~HCTableItem()
@@ -2732,6 +2713,8 @@ namespace HC.View
 
                 CellChangeByAction(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEvent);
             }
+
+            FLastChangeFormated = false;
         }
 
         public override void ReAdaptActiveItem()
@@ -3833,7 +3816,7 @@ namespace HC.View
                 FRows[i].ParseXml(aNode.ChildNodes[i] as XmlElement);
         }
 
-        public void ReSetRowCol(int aRowCount, int aColCount)
+        public bool ResetRowCol(int aWidth, int aRowCount, int aColCount)
         {
             FFixRow = -1;
             FFixRowCount = 0;
@@ -3842,22 +3825,27 @@ namespace HC.View
 
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
-            
-            FColWidths.Clear();
-            for (int i = 0; i <= aColCount - 1; i++)
-                FColWidths.Add(HC.DefaultColWidth);
 
-            int vWidth = GetFormatWidth();
-            HCTableRow vRow;
+            this.Width = aWidth;
+            Height = aRowCount * (HC.MinRowHeight + FBorderWidthPix) + FBorderWidthPix;
+            int vDataWidth = aWidth - (aColCount + 1) * FBorderWidthPix;
+
             FRows.Clear();
+            HCTableRow vRow;
             for (int i = 0; i <= aRowCount - 1; i++)
             {
                 vRow = new HCTableRow(OwnerData.Style, aColCount);
-                vRow.SetRowWidth(vWidth);
+                vRow.SetRowWidth(vDataWidth);
                 FRows.Add(vRow);
             }
 
+            FColWidths.Clear();
+            for (int i = 0; i <= aColCount - 1; i++)
+                FColWidths.Add(FRows[0][i].Width);
+
             FLastChangeFormated = false;
+
+            return true;
         }
 
         public int GetFormatWidth()

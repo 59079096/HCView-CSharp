@@ -26,10 +26,27 @@ namespace HC.View
 
     }
 
+    public class HCCbbItem
+    {
+        public string Text;
+        public object Obj;
+
+        public HCCbbItem() : base()
+        {
+
+        }
+
+        public HCCbbItem(string text, object obj = null) : this()
+        {
+            this.Text = text;
+            this.Obj = obj;
+        }
+    }
+
     public class HCComboboxItem : HCEditItem
     {
         private bool FSaveItem;
-        private List<string> FItems;
+        private List<HCCbbItem> FItems;
         private int FItemIndex, FMoveItemIndex;
         private RECT FButtonRect, FButtonDrawRect;
         private bool FMouseInButton;
@@ -139,7 +156,7 @@ namespace HC.View
                 else
                     ACanvas.Brush.Color = HC.clInfoBk;
                 
-                ACanvas.TextOut(2, vTop + 2, FItems[i]);
+                ACanvas.TextOut(2, vTop + 2, FItems[i].Text);
                 vTop = vTop + DROPDOWNITEMHEIGHT;
             }
 
@@ -156,11 +173,6 @@ namespace HC.View
 
         private void DoPopupFormClose(Object Sender, EventArgs e)
         {
-            if (FItemIndex < 0)
-                Text = "";
-            else
-                Text = FItems[FItemIndex];
-
             FMoveItemIndex = -1;
             OwnerData.Style.UpdateInfoRePaint();
         }
@@ -213,7 +225,7 @@ namespace HC.View
             RECT vRect = GetItemRect();
             if (HC.PtInRect(vRect, e.X, e.Y))
             {
-                FItemIndex = GetItemIndexAt(e.X, e.Y);
+                this.ItemIndex = GetItemIndexAt(e.X, e.Y);
                 FPopupForm.ClosePopup(false);
             }
             else
@@ -264,9 +276,6 @@ namespace HC.View
             base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop,
                 ADataScreenBottom, ACanvas, APaintInfo);
     
-            FButtonDrawRect = FButtonRect;
-            FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
-
             if (IsSelectComplate)
                 ACanvas.Brush.Color = AStyle.SelColor;
             else
@@ -275,6 +284,11 @@ namespace HC.View
             else
                 ACanvas.Brush.Color = HC.clWindow;
 
+            if (APaintInfo.Print && this.PrintOnlyText)
+                return;
+
+            FButtonDrawRect = FButtonRect;
+            FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
             ACanvas.FillRect(FButtonDrawRect);
 
             ACanvas.Pen.Color = Color.Black;
@@ -342,7 +356,7 @@ namespace HC.View
                 ACaretInfo.Visible = false;
         }
 
-        protected void SetItems(List<string> Value)
+        protected void SetItems(List<HCCbbItem> Value)
         {
             if (!ReadOnly)
             {
@@ -359,7 +373,7 @@ namespace HC.View
                 if ((Value >= 0) && (Value <= FItems.Count - 1))
                 {
                     FItemIndex = Value;
-                    Text = FItems[FItemIndex];
+                    Text = FItems[FItemIndex].Text;
                 }
                 else
                 {
@@ -378,7 +392,7 @@ namespace HC.View
             this.StyleNo = HCStyle.Combobox;
             Width = 80;
             FSaveItem = true;
-            FItems = new List<string>();
+            FItems = new List<HCCbbItem>();
 
             FScrollBar = new HCComScrollBar();
             FScrollBar.Orientation = Orientation.oriVertical;
@@ -420,7 +434,7 @@ namespace HC.View
 
                 if (FItems.Count > 0)
                 {
-                    vText = FItems[0];
+                    vText = FItems[0].Text;
                     for (int i = 1; i < FItems.Count; i++)
                         vText = vText + HC.sLineBreak + FItems[i];
                 }
@@ -442,7 +456,7 @@ namespace HC.View
             HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
             string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
             for (int i = 0; i < vStrings.Length; i++)
-                FItems.Add(vStrings[i]);
+                FItems.Add(new HCCbbItem(vStrings[i]));
         }
 
         public override void ToXml(XmlElement aNode)
@@ -454,7 +468,7 @@ namespace HC.View
 
                 if (FItems.Count > 0)
                 {
-                    vText = FItems[0];
+                    vText = FItems[0].Text;
                     for (int i = 1; i < FItems.Count - 1; i++)
                         vText = vText + HC.sLineBreak + FItems[i];
                 }
@@ -471,10 +485,10 @@ namespace HC.View
             string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
 
             for (int i = 0; i < vStrings.Length; i++)
-                FItems.Add(vStrings[i]);
+                FItems.Add(new HCCbbItem(vStrings[i]));
         }
 
-        public List<string> Items
+        public List<HCCbbItem> Items
         {
             get { return FItems; }
             set { SetItems(value); }

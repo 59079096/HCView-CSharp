@@ -172,7 +172,7 @@ namespace EMRView
         {
             InsertAsProc vEvent = delegate (frmRecord frmRecord)
             {
-                frmRecord.InsertDeCheckBox(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
+                frmRecord.InsertDeImage(frmDataElement.GetDeIndex(), frmDataElement.GetDeName());
             };
 
             InsertDataElementAs(vEvent);

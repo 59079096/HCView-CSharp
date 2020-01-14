@@ -219,7 +219,7 @@ namespace HC.View
     public class HCCustomItem : HCObject
     {
         private int FParaNo, FStyleNo, FFirstDItemNo;
-        private bool FActive, FVisible;
+        private bool FActive, FVisible, FPrintInvisible;
         private HCSet FOptions;
         private ItemSelectState FSelectState;
 
@@ -295,12 +295,14 @@ namespace HC.View
             FFirstDItemNo = -1;
             FVisible = true;
             FActive = false;
+            FPrintInvisible = false;
         }
 
         public virtual void Assign(HCCustomItem source)
         {
             this.FStyleNo = source.StyleNo;
             this.FParaNo = source.ParaNo;
+            this.FPrintInvisible = source.PrintInvisible;
             //this.FOptions = new HashSet<ItemOption>(source.Options);
             this.FOptions.Value = source.Options.Value;
         }
@@ -317,6 +319,9 @@ namespace HC.View
             int APageDataDrawTop, int APageDataDrawBottom, int APageDataScreenTop, int APageDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)  // 不可继承
         {
+            if (APaintInfo.Print && FPrintInvisible)
+                return;
+
             int vDCState = ACanvas.Save();
             try
             {
@@ -427,6 +432,12 @@ namespace HC.View
             buffer = System.BitConverter.GetBytes(FParaNo);
             aStream.Write(buffer, 0, buffer.Length);
             aStream.WriteByte(FOptions.Value);
+
+            byte vByte = 0;
+            if (FPrintInvisible)
+                vByte = (byte)(vByte | (1 << 7));
+
+            aStream.WriteByte(vByte);
         }
 
         public virtual void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -443,6 +454,12 @@ namespace HC.View
                 aStream.Read(vBuffer, 0, vBuffer.Length);
                 ParaFirst = BitConverter.ToBoolean(vBuffer, 0);
             }
+
+            if (aFileVersion > 33)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FPrintInvisible = HC.IsOdd(vByte >> 7);
+            }
         }
 
         public virtual string ToHtml(string aPath)
@@ -456,6 +473,9 @@ namespace HC.View
             aNode.SetAttribute("pno", FParaNo.ToString());
             aNode.SetAttribute("parafirst", this.ParaFirst.ToString());
             aNode.SetAttribute("pagebreak", this.PageBreak.ToString());
+
+            if (FPrintInvisible)
+                aNode.SetAttribute("printvisible", "1");
         }
 
         public virtual void ParseXml(XmlElement aNode)
@@ -464,6 +484,7 @@ namespace HC.View
             FParaNo = int.Parse(aNode.Attributes["pno"].Value);
             this.ParaFirst = bool.Parse(aNode.Attributes["parafirst"].Value);
             this.PageBreak = bool.Parse(aNode.Attributes["pagebreak"].Value);
+            FPrintInvisible = aNode.GetAttribute("printvisible") == "1";
         }
 
         // 撤销重做相关方法
@@ -543,6 +564,12 @@ namespace HC.View
         {
             get { return FVisible; }
             set { FVisible = value; }
+        }
+
+        public bool PrintInvisible
+        {
+            get { return FPrintInvisible; }
+            set { FPrintInvisible = value; }
         }
     }
 

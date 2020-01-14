@@ -20,6 +20,12 @@ using System.Xml;
 
 namespace HC.View
 {
+    public enum HCRadioStyle : byte
+    {
+        Radio,
+        CheckBox
+    }
+
     public class HCRadioButton : HCObject
     {
         public bool Checked = false;
@@ -31,6 +37,7 @@ namespace HC.View
     {
         private bool FMultSelect, FMouseIn;
         private List<HCRadioButton> FItems;
+        private HCRadioStyle FRadioStyle = HCRadioStyle.Radio;
         public static byte RadioButtonWidth = 16;
 
         private int GetItemAt(int x, int  y)
@@ -38,13 +45,15 @@ namespace HC.View
             int Result = -1;
             this.OwnerData.Style.ApplyTempStyle(TextStyleNo);
             
-            SIZE vSize = new SIZE();
+            //SIZE vSize = new SIZE();
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
-                vSize = this.OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
+                //vSize = this.OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
+                //if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
+                //    RadioButtonWidth + vSize.cx, vSize.cy), x, y))
+
                 if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
-                    RadioButtonWidth + vSize.cx, vSize.cy), x, y))
-                
+                    RadioButtonWidth, RadioButtonWidth), x, y))
                 {
                     Result = i;
                     break;
@@ -71,7 +80,7 @@ namespace HC.View
                 else
                     vSize = aRichData.Style.TempCanvas.TextExtent("H");
                 
-                if (vLeft + vSize.cx + RadioButtonWidth > Width)
+                if (!this.AutoSize && vLeft + vSize.cx + RadioButtonWidth > Width)
                 {
                     vLeft = FMargin;
                     vTop = vTop + vSize.cy + FMargin;
@@ -82,7 +91,10 @@ namespace HC.View
 
                 vLeft = vLeft + RadioButtonWidth + vSize.cx + FMargin;
             }
-            
+
+            if (this.AutoSize)
+                Width = vLeft;
+
             Height = vTop + vSize.cy + FMargin;
             
             if (Width < FMinWidth)
@@ -114,9 +126,9 @@ namespace HC.View
                 vPoint.Offset(aDrawRect.Left, aDrawRect.Top);
                 vItemRect = HC.Bounds(vPoint.X, vPoint.Y, RadioButtonWidth, RadioButtonWidth);
                 if (FItems[i].Checked)
-                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONRADIO);
+                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | (FRadioStyle == HCRadioStyle.Radio ? Kernel.DFCS_BUTTONRADIO : Kernel.DFCS_BUTTONCHECK));
                 else
-                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONRADIO);
+                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, (FRadioStyle == HCRadioStyle.Radio ? Kernel.DFCS_BUTTONRADIO : Kernel.DFCS_BUTTONCHECK));
                 
                 aCanvas.TextOut(vPoint.X + RadioButtonWidth, vPoint.Y, FItems[i].Text);
             }
@@ -218,25 +230,19 @@ namespace HC.View
             if (FItems.Count > 0)
             {
                 vS = FItems[0].Text;
-                if (vS == "")
-                    vS = "未命名";
-
                 for (int i = 1; i < FItems.Count; i++)
-                {
-                    if (FItems[i].Text != "")
-                        vS = vS + HC.sLineBreak + FItems[i].Text;
-                    else
-                        vS = vS + HC.sLineBreak + "未命名";
-                }
+                    vS = vS + HC.sLineBreak + FItems[i].Text;
             }
 
             HC.HCSaveTextToStream(aStream, vS);
-
+            byte[] vBuffer;
             for (int i = 0; i < FItems.Count; i++)
             {
-                byte[] vBuffer = BitConverter.GetBytes(FItems[i].Checked);
+                vBuffer = BitConverter.GetBytes(FItems[i].Checked);
                 aStream.Write(vBuffer, 0, vBuffer.Length);
             }
+
+            aStream.WriteByte((byte)this.FRadioStyle);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -245,6 +251,7 @@ namespace HC.View
             FItems.Clear();
 
             string vS = "";
+            byte[] vBuffer;
             HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             if (vS != "")
             {
@@ -253,13 +260,16 @@ namespace HC.View
                 for (int i = 0; i < vStrings.Length; i++)
                     AddItem(vStrings[i]);
 
-                byte[]  vBuffer = BitConverter.GetBytes(false);
+                vBuffer = BitConverter.GetBytes(false);
                 for (int i = 0; i < FItems.Count; i++)
                 {
                     aStream.Read(vBuffer, 0, vBuffer.Length);
                     FItems[i].Checked = BitConverter.ToBoolean(vBuffer, 0);
                 }
             }
+
+            if (aFileVersion > 33)
+                this.FRadioStyle = (HCRadioStyle)aStream.ReadByte();
         }
 
         public override void ToXml(XmlElement aNode)
@@ -286,6 +296,7 @@ namespace HC.View
                 }
             }
             aNode.SetAttribute("check", vS);
+            aNode.SetAttribute("radiostyle", ((byte)FRadioStyle).ToString());
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -308,12 +319,20 @@ namespace HC.View
                 else
                     FItems[i].Checked = false;
             }
+
+            FRadioStyle = (HCRadioStyle)(byte.Parse(aNode.Attributes["radiostyle"].Value));
         }
     
         public bool MultSelect
         {
             get { return FMultSelect; }
             set { FMultSelect = value; }
+        }
+
+        public HCRadioStyle RadioStyle
+        {
+            get { return FRadioStyle; }
+            set { FRadioStyle = value; }
         }
 
         public List<HCRadioButton> Items

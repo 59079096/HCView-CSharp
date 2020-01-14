@@ -123,6 +123,7 @@ namespace HC.View
         private bool FShowParaLastMark;  // 是否显示换行符
         private int FHtmlFileTempName;
         private HCStates FStates;  // 全局操作状态
+        private Byte FFormatVersion = 1;  // 排版算法版本
 
         private InvalidateRectEventHandler FOnInvalidateRect;
 
@@ -343,6 +344,7 @@ namespace HC.View
             byte[] vBuffer = BitConverter.GetBytes(vBegPos);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
+            aStream.WriteByte(FFormatVersion);
             SaveParaStyles(aStream);
             SaveTextStyles(aStream);
 
@@ -387,6 +389,11 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             vDataSize = BitConverter.ToInt64(vBuffer, 0);
             //
+            if (aFileVersion > 33)
+                FFormatVersion = (byte)aStream.ReadByte();
+            else
+                FFormatVersion = 1;
+
             LoadParaStyles(aStream, aFileVersion);
             LoadTextStyles(aStream, aFileVersion);
         }
@@ -530,6 +537,11 @@ namespace HC.View
         public HCStates States
         {
             get { return FStates; }
+        }
+
+        public byte FormatVersion
+        {
+            get { return FFormatVersion; }
         }
 
         public InvalidateRectEventHandler OnInvalidateRect

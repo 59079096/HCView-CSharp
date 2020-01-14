@@ -17,6 +17,7 @@ using System.Text;
 using System.Windows.Forms;
 using HC.Win32;
 using System.IO;
+using HC.View;
 
 namespace EMRView
 {
@@ -156,6 +157,31 @@ namespace EMRView
             }
         }
         #endregion
+
+        public void PopupDeCombobox(DeCombobox aDeCombobox)
+        {
+            aDeCombobox.Items.Clear();
+            int vCMV = -1;
+
+            DataTable dt = emrMSDB.DB.GetData(string.Format("SELECT DeCode, domainid "
+                + "FROM Comm_DataElement WHERE DeID ={0}", aDeCombobox[DeProp.Index]));
+            if (dt.Rows.Count > 0)
+            {
+                vCMV = int.Parse(dt.Rows[0]["domainid"].ToString());
+                if (vCMV > 0)  // 有值域
+                {
+                    DataTable FDBDomain = emrMSDB.DB.GetData(string.Format("SELECT DE.Code, DE.devalue "
+                        + "FROM Comm_DataElementDomain DE "
+                        + "WHERE DE.domainid = {0}", vCMV));
+
+                    if (FDBDomain.Rows.Count > 0)
+                    {
+                        for (int i = 0; i < FDBDomain.Rows.Count; i++)
+                            aDeCombobox.Items.Add(new HCCbbItem(FDBDomain.Rows[i]["devalue"].ToString(), FDBDomain.Rows[i]["code"].ToString()));
+                    }
+                }
+            }
+        }
 
         public void PopupDeItem(DeItem aDeItem, POINT aPopupPt)
         {

@@ -1188,6 +1188,16 @@ namespace HC.View
             return ActiveDataChangeByAction(vEvent);
         }
 
+        public bool ActiveTableResetRowCol(int rowCount, int colCount)
+        {
+            HCFunction vEvent = delegate ()
+            {
+                return FActiveData.ActiveTableResetRowCol(rowCount, colCount);
+            };
+
+            return ActiveDataChangeByAction(vEvent);
+        }
+
         //
         public bool ActiveTableInsertRowAfter(byte aRowCount)
         {
@@ -1628,6 +1638,23 @@ namespace HC.View
                             }
 
                             aCanvas.DrawLine(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawTop);
+
+                            // 正在编辑页眉提示
+                            aCanvas.Brush.Color = Color.FromArgb(216, 232, 245);
+                            aCanvas.FillRect(new RECT(vPageDrawLeft - 40, vPageDrawTop, vPageDrawLeft, vPageDrawTop + 20));
+                            aCanvas.Font.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Font.Size = 10;
+                                aCanvas.Font.Family = "宋体";
+                                aCanvas.Font.Color = Color.FromArgb(21, 66, 139);
+                            }
+                            finally
+                            {
+                                aCanvas.Font.EndUpdate();
+                            }
+
+                            aCanvas.TextOut(vPageDrawLeft - 32, vPageDrawTop + 4, "页眉");
                         }
                         else
                         {
@@ -1671,6 +1698,23 @@ namespace HC.View
                             }
 
                             aCanvas.DrawLine(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPageDrawBottom);
+                            
+                            // 正在编辑页脚提示
+                            aCanvas.Brush.Color = Color.FromArgb(216, 232, 245);
+                            aCanvas.FillRect(new RECT(vPageDrawLeft - 40, vPageDrawBottom, vPageDrawLeft, vPageDrawBottom - 20));
+                            aCanvas.Font.BeginUpdate();
+                            try
+                            {
+                                aCanvas.Font.Size = 10;
+                                aCanvas.Font.Family = "宋体";
+                                aCanvas.Font.Color = Color.FromArgb(21, 66, 139);
+                            }
+                            finally
+                            {
+                                aCanvas.Font.EndUpdate();
+                            }
+
+                            aCanvas.TextOut(vPageDrawLeft - 32, vPageDrawBottom - 16, "页脚");
                         }
                         else
                         {

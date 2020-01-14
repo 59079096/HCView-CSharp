@@ -5321,6 +5321,19 @@ namespace HC.View
             return Result;
         }
 
+        public bool ActiveTableResetRowCol(int rowCount, int colCount)
+        {
+            if (!CanEdit())
+                return false;
+
+            InsertProcEventHandler vEvent = delegate (HCCustomItem AItem)
+            {
+                return (AItem as HCTableItem).ResetRowCol(this.Width, rowCount, colCount);
+            };
+
+            return TableInsertRC(vEvent);
+        }
+
         public bool TableInsertRowAfter(byte aRowCount)
         {
             if (!CanEdit())

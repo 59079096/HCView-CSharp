@@ -475,6 +475,13 @@ namespace EMRView
             FEmrView.SetActiveItemExtra(aStream);
         }
 
+        private void DoDeComboboxGetItem(object sender, EventArgs e)
+        {
+            DeCombobox vCombobox = sender as DeCombobox;
+            //if (DoDeItemPopup(vCombobox))
+            PopupForm().PopupDeCombobox(vCombobox);
+        }
+
         /// <summary> 当前位置文本样式和上一位置不一样时事件 </summary>
         private void CurTextStyleChange(int aNewStyleNo)
         {
@@ -631,7 +638,7 @@ namespace EMRView
                         if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
                         {
                             vPt.Y = vPt.Y + FEmrView.ZoomIn(vActiveDrawItem.Height);
-                            vPt.Offset(FEmrView.Left, FEmrView.Top);
+                            //vPt.Offset(FEmrView.Left, FEmrView.Top);
                             HC.Win32.User.ClientToScreen(FEmrView.Handle, ref vPt);
 
                             if (DoDeItemPopup(vDeItem))
@@ -662,6 +669,9 @@ namespace EMRView
         /// <summary> 病历有新的Item插入时触发 </summary>
         protected void DoItemInsert(object sender, HCCustomData aData, HCCustomItem aItem)
         {
+            if (aItem is DeCombobox)
+                (aItem as DeCombobox).OnPopupItem = DoDeComboboxGetItem;
+
             if (FOnInsertDeItem != null)
                 FOnInsertDeItem(FEmrView, sender as HCSection, aData, aItem);
         }

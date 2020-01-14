@@ -41,17 +41,17 @@ namespace EMRView
             MessageBox.Show("未处理的异常：" + e.ExceptionObject.ToString());
         }
 
-        //private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
-        //{
-        //    string vPath = "";
-        //    string vAssembly = args.Name.Substring(0, args.Name.IndexOf(","));
-        //    if (vAssembly == "ICSharpCode.AvalonEdit")
-        //        vPath = AppDomain.CurrentDomain.BaseDirectory + "SharpCode\\ICSharpCode.AvalonEdit.dll";
-        //    else
-        //    if (vAssembly == "ICSharpCode.CodeCompletion")
-        //        vPath = AppDomain.CurrentDomain.BaseDirectory + "SharpCode\\ICSharpCode.CodeCompletion.dll";
+        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            string vPath = "";
+            string vAssembly = args.Name.Substring(0, args.Name.IndexOf(","));
+            if (vAssembly == "ICSharpCode.AvalonEdit")
+                vPath = AppDomain.CurrentDomain.BaseDirectory + "SharpCode\\ICSharpCode.AvalonEdit.dll";
+            else
+            if (vAssembly == "ICSharpCode.CodeCompletion")
+                vPath = AppDomain.CurrentDomain.BaseDirectory + "SharpCode\\ICSharpCode.CodeCompletion.dll";
 
-        //    return string.IsNullOrWhiteSpace(vPath) ? null : Assembly.LoadFrom(vPath);
-        //}
+            return string.IsNullOrWhiteSpace(vPath) ? null : Assembly.LoadFrom(vPath);
+        }
     }
 }

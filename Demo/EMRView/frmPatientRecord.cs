@@ -108,12 +108,6 @@ namespace EMRView
                 tabRecord.SelectedTab = vPage;
             }
         }
-                    
-        private void DoInsertDeItem(HCEmrView aEmrView, HCSection aSection, HCCustomData aData, HCCustomItem aItem)
-        {
-            if (aItem is DeCombobox)
-                (aItem as DeCombobox).OnPopupItem = DoRecordDeComboboxGetItem;
-        }
 
         private void DoSetDeItemText(object sender, DeItem deItem, ref string text, ref bool cancel)
         {
@@ -579,20 +573,6 @@ namespace EMRView
 
         }
 
-        private void DoRecordDeComboboxGetItem(object sender, EventArgs e)
-        {
-            if (sender is DeCombobox)
-            {
-                DeCombobox vCombobox = sender as DeCombobox;
-                if (vCombobox[DeProp.Index] == "1002")
-                {
-                    vCombobox.Items.Clear();
-                    for (int i = 0; i < 20; i++)
-                        vCombobox.Items.Add("选项" + i.ToString());
-                }
-            }
-        }
-
         private bool DoRecordCopyRequest(int aFormat)
         {
             if (aFormat == HC.View.HC.HCExtFormat.Id)  // 复制为HC格式
@@ -701,7 +681,6 @@ namespace EMRView
             aFrmRecord.OnSaveStructure = DoSaveRecordStructure;
             aFrmRecord.OnChangedSwitch = DoRecordChangedSwitch;
             aFrmRecord.OnReadOnlySwitch = DoRecordReadOnlySwitch;
-            aFrmRecord.OnInsertDeItem = DoInsertDeItem;
             aFrmRecord.OnSetDeItemText = DoSetDeItemText;
             aFrmRecord.OnDeItemPopup = DoDeItemPopup;
             aFrmRecord.OnPrintPreview = DoPrintPreview;
