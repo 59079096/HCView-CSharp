@@ -128,6 +128,7 @@ namespace HC.View
         StyleItemEventHandler FOnCreateItemByStyle;
         FloatStyleItemEventHandler FOnCreateFloatItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
+        TextEventHandler FOnInsertText;
         GetUndoListEventHandler FOnGetUndoList;
 
         private int GetPageIndexByFilm(int aVOffset)
@@ -311,6 +312,14 @@ namespace HC.View
         {
             if (FOnCanEdit != null)
                 return FOnCanEdit(sender);
+            else
+                return true;
+        }
+
+        private bool DoDataInsertText(HCCustomData aData, string aText)
+        {
+            if (FOnInsertText != null)
+                return FOnInsertText(aData, aText);
             else
                 return true;
         }
@@ -709,6 +718,7 @@ namespace HC.View
             aData.OnCreateItemByStyle = DoDataCreateStyleItem;
             aData.OnCreateFloatItemByStyle = DoDataCreateFloatStyleItem;
             aData.OnCanEdit = DoDataCanEdit;
+            aData.OnInsertText = DoDataInsertText;
             aData.OnCreateItem = DoDataCreateItem;
             aData.OnReadOnlySwitch = DoDataReadOnlySwitch;
             aData.OnGetScreenCoord = DoGetScreenCoordEvent;
@@ -3091,6 +3101,12 @@ namespace HC.View
         {
             get { return FOnCanEdit; }
             set { FOnCanEdit = value; }
+        }
+
+        public TextEventHandler OnInsertText
+        {
+            get { return FOnInsertText; }
+            set { FOnInsertText = value; }
         }
 
         public GetUndoListEventHandler OnGetUndoList

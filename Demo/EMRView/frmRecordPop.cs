@@ -7,17 +7,13 @@
 { 交流。                                                }
 {                                                       }
 {*******************************************************/
+using HC.View;
+using HC.Win32;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using HC.Win32;
 using System.IO;
-using HC.View;
+using System.Windows.Forms;
 
 namespace EMRView
 {
@@ -183,7 +179,7 @@ namespace EMRView
             }
         }
 
-        public void PopupDeItem(DeItem aDeItem, POINT aPopupPt)
+        public bool PopupDeItem(DeItem aDeItem, POINT aPopupPt)
         {
             FFrmtp = "";
             FDeItem = aDeItem;
@@ -271,17 +267,20 @@ namespace EMRView
 
                 if (FDBDomain.Rows.Count > 0)  // 有选项
                     IniDomainUI();
+                else  // 没选项
+                    return false;
             }
             else
             if (FFrmtp == DeFrmtp.String)
             {
+                return false;  // 文本的不弹了，使用直接在元素上修改的方式
                 tbxMemo.Clear();
                 tabPop.SelectedIndex = 2;
                 this.Width = 260;
                 this.Height = 200;
             }
-            else  // 不认识的不处理
-                return;
+            else  // 不认识的类型不弹
+                return false;
 
             System.Drawing.Rectangle vRect = Screen.GetWorkingArea(this);
             if (aPopupPt.X + Width > vRect.Right)
@@ -304,6 +303,8 @@ namespace EMRView
 
             if (FFrmtp == DeFrmtp.Number)
                 tbxValue.Focus();
+
+            return true;
         }
 
         public TextEventHandler OnSetActiveItemText

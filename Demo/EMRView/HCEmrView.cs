@@ -28,7 +28,7 @@ namespace EMRView
         private bool FHideTrace;  // 隐藏痕迹
         private bool FTrace;  // 是否处于留痕迹状态
         private int FTraceCount;  // 当前文档痕迹数量
-        private Color FDeDoneColor, FDeUnDoneColor;
+        private Color FDeDoneColor, FDeUnDoneColor, FDeHotColor;
         private string FPageBlankTip;
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
@@ -180,6 +180,17 @@ namespace EMRView
             }
 
             return vResult;
+        }
+
+        protected override void DoSectionItemMouseDown(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
+        {
+            base.DoSectionItemMouseDown(sender, aData, aItemNo, aOffset, e);
+            if (!(sender as HCCustomSection).SelectExists())
+            {
+                HCCustomItem vItem = aData.Items[aItemNo];
+                if ((vItem is DeItem) && aData.SelectInfo.StartRestrain)  // 是通过约束选中的,不按激活处理,便于数据元后输入普通内容
+                    vItem.Active = false;
+            }
         }
 
         /// <summary> 指定的节当前是否可编辑 </summary>
@@ -518,22 +529,20 @@ namespace EMRView
             {
                 if (vDeItem.IsElement)
                 {
+                    if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入或光标在其中
+                    {
+                        aCanvas.Brush.Color = FDeHotColor;
+                        aCanvas.FillRect(aDrawRect);
+                    }
+                    else
                     if (FDesignMode)  // 设计模式
                     {
-                        if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入或光标在其中
-                        {
-                            if (vDeItem.AllocValue)  // 已经填写过了
-                                aCanvas.Brush.Color = FDeDoneColor;
-                            else  // 没填写过
-                                aCanvas.Brush.Color = FDeUnDoneColor;
+                        if (vDeItem.AllocValue)  // 已经填写过了
+                            aCanvas.Brush.Color = FDeDoneColor;
+                        else  // 没填写过
+                            aCanvas.Brush.Color = FDeUnDoneColor;
 
-                            aCanvas.FillRect(aDrawRect);
-                        }
-                        else  // 静态
-                        {
-                            aCanvas.Brush.Color = HC.View.HC.clBtnFace;
-                            aCanvas.FillRect(aDrawRect);
-                        }
+                        aCanvas.FillRect(aDrawRect);
                     }
                     else  // 非设计模式
                     {
@@ -547,12 +556,6 @@ namespace EMRView
                             if (!vDeItem.AllocValue)  // 没填过
                             {
                                 aCanvas.Brush.Color = FDeUnDoneColor;
-                                aCanvas.FillRect(aDrawRect);
-                            }
-                            else  // 填过了
-                            if (vDeItem.MouseIn || vDeItem.Active)  // 鼠标移入或光标在其中
-                            {
-                                aCanvas.Brush.Color = FDeDoneColor;
                                 aCanvas.FillRect(aDrawRect);
                             }
                         }
@@ -832,6 +835,7 @@ namespace EMRView
             this.Height = 100;
             FDeDoneColor = HC.View.HC.clBtnFace;
             FDeUnDoneColor = Color.FromArgb(0xFF, 0xDD, 0x80);
+            FDeHotColor = Color.FromArgb(204, 224, 244);
             FPageBlankTip = "";// "--------本页以下空白--------";
             this.Style.DefaultTextStyle.Size = HC.View.HC.GetFontSize("小四");
             this.Style.DefaultTextStyle.Family = "宋体";

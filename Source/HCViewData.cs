@@ -55,6 +55,7 @@ namespace HC.View
 
     public delegate HCCustomItem StyleItemEventHandler(HCCustomData aData, int aStyleNo);
     public delegate bool OnCanEditEventHandler(object sender);
+    public delegate bool TextEventHandler(HCCustomData aData, string aText);
 
     public class HCViewData : HCViewDevData  // 富文本数据类，可做为其他显示富文本类的基类
     {
@@ -69,6 +70,7 @@ namespace HC.View
 
         private StyleItemEventHandler FOnCreateItemByStyle;
         private OnCanEditEventHandler FOnCanEdit;
+        private TextEventHandler FOnInsertText;
 
         private void GetDomainFrom(int aItemNo, int aOffset, HCDomainInfo aDomainInfo)
         {
@@ -753,6 +755,15 @@ namespace HC.View
             return Result;
         }
 
+        public override bool DoInsertText(string aText)
+        {
+            bool vResult = base.DoInsertText(aText);
+            if (vResult && (FOnInsertText != null))
+                vResult = FOnInsertText(this, aText);
+
+            return vResult;
+        }
+
         public bool InsertDomain(HCDomainItem aMouldDomain)
         {
             if (!CanEdit())
@@ -847,23 +858,15 @@ namespace HC.View
                 vEndNo = aStartNo;
                 vEndOffset = vStartOffset;
             }
-            
-            SelectInfo.StartItemNo = aStartNo;
-            SelectInfo.StartItemOffset = aStartOffset;
 
-            if ((vEndNo < 0) || ((vEndNo == vStartNo) && (vEndOffset == vStartOffset)))
-            {
-                SelectInfo.EndItemNo = -1;
-                SelectInfo.EndItemOffset = -1;
-            }
-            else
-            {
-                SelectInfo.EndItemNo = vEndNo;
-                SelectInfo.EndItemOffset = vEndOffset;
-            }
+            this.AdjustSelectRange(ref vStartNo, ref vStartOffset, ref vEndNo, ref vEndOffset);
+            this.MatchItemSelectState();
 
             if (!aSilence)
-                ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, true);
+            {
+                ReSetSelectAndCaret(vStartNo, aStartOffset, true);
+                this.Style.UpdateInfoRePaint();
+            }
         }
 
         /// <summary> 光标选到指定Item的最后面 </summary>
@@ -1234,6 +1237,12 @@ namespace HC.View
         {
             get { return FOnCanEdit; }
             set { FOnCanEdit = value; }
+        }
+
+        public TextEventHandler OnInsertText
+        {
+            get { return FOnInsertText; }
+            set { FOnInsertText = value; }
         }
     }
 }

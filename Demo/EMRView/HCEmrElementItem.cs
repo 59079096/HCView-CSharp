@@ -302,7 +302,7 @@ namespace EMRView
                 if (this.IsElement)
                 {
                     if (aAction == HCItemAction.hiaInsertChar)
-                        Result = false;
+                        Result = !FEditProtect && this.Active;
                     else
                     if ((aAction == HCItemAction.hiaBackDeleteChar) || (aAction == HCItemAction.hiaDeleteChar) || (aAction == HCItemAction.hiaRemove))
                         Result = !FEditProtect;

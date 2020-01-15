@@ -58,6 +58,7 @@ namespace HC.View
         private StyleItemEventHandler FOnSectionCreateStyleItem;
         private FloatStyleItemEventHandler FOnSectionCreateFloatStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
+        private TextEventHandler FOnSectionInsertText;
         private SectionDataItemEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
         private SectionDataItemNoFunEvent FOnSectionSaveItem;
         private SectionDataItemFunEvent FOnSectionDeleteItem;
@@ -289,17 +290,6 @@ namespace HC.View
             return new POINT(vPt.X, vPt.Y);
         }
 
-        private void DoSectionItemMouseDown(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
-        {
-            
-        }
-
-        private void DoSectionItemMouseUp(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
-        {
-            if (((Control.ModifierKeys & Keys.Shift) == Keys.Shift) && (aData.Items[aItemNo].HyperLink != ""))
-                System.Diagnostics.Process.Start(aData.Items[aItemNo].HyperLink);
-        }
-
         private void DoSectionItemResize(HCCustomData aData, int aItemNo)
         {
             DoViewResize();
@@ -469,6 +459,7 @@ namespace HC.View
             Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
             Result.OnCreateFloatItemByStyle = DoSectionCreateFloatStyleItem;
             Result.OnCanEdit = DoSectionCanEdit;
+            Result.OnInsertText = DoSectionInsertText;
             Result.OnInsertItem = DoSectionInsertItem;
             Result.OnRemoveItem = DoSectionRemoveItem;
             Result.OnSaveItem = DoSectionSaveItem;
@@ -981,10 +972,29 @@ namespace HC.View
                 return true;
         }
 
+        protected virtual void DoSectionItemMouseDown(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
+        {
+
+        }
+
+        protected virtual void DoSectionItemMouseUp(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
+        {
+            if (((Control.ModifierKeys & Keys.Shift) == Keys.Shift) && (aData.Items[aItemNo].HyperLink != ""))
+                System.Diagnostics.Process.Start(aData.Items[aItemNo].HyperLink);
+        }
+
         protected virtual bool DoSectionCanEdit(object sender)
         {
             if (FOnSectionCanEdit != null)
                 return FOnSectionCanEdit(sender);
+            else
+                return true;
+        }
+
+        protected virtual bool DoSectionInsertText(HCCustomData aData, string aText)
+        {
+            if (FOnSectionInsertText != null)
+                return FOnSectionInsertText(aData, aText);
             else
                 return true;
         }
@@ -2834,7 +2844,7 @@ namespace HC.View
                         {
                             byte vByte = 0;
                             vByte = (byte)aStream.ReadByte();  // 节数量
-                                                               // 各节数据
+                            // 各节数据
                             FSections[0].LoadFromStream(aStream, FStyle, aFileVersion);
                             for (int i = 1; i <= vByte - 1; i++)
                             {
@@ -3972,6 +3982,12 @@ namespace HC.View
         {
             get { return FOnSectionCanEdit; }
             set { FOnSectionCanEdit = value; }
+        }
+
+        public TextEventHandler OnSectionInsertText
+        {
+            get { return FOnSectionInsertText; }
+            set { FOnSectionInsertText = value; }
         }
 
         /// <summary> 节当前位置段样式和上一次不一样时触发 </summary>

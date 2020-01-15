@@ -31,7 +31,7 @@ namespace EMRView
 
     public partial class frmRecord : Form
     {
-        private int FMouseDownTick;
+        //private int FMouseDownTick;
         private HCEmrView FEmrView;
         private frmRecordPop frmRecordPop;
         private EventHandler FOnSave, FOnSaveStructure, FOnChangedSwitch, FOnReadOnlySwitch;
@@ -333,6 +333,7 @@ namespace EMRView
                 FEmrView.OnSectionReadOnlySwitch = DoReadOnlySwitch;
                 FEmrView.OnCanNotEdit = DoCanNotEdit;
                 FEmrView.OnSectionPaintPaperBefor = DoPaintPaperBefor;
+                FEmrView.OnSectionInsertText = DoInsertText;
                 FEmrView.ContextMenuStrip = this.pmView;
                 FEmrView.OnTableToolPropertyClick = mniTableProperty_Click;
                 //
@@ -449,14 +450,32 @@ namespace EMRView
             }
         }
 
+        private bool DoInsertText(HCCustomData aData, string aText)
+        {
+            HCCustomItem vItem = aData.GetActiveItem();
+            if ((vItem != null) && (vItem is DeItem))
+            {
+                DeItem vDeItem = vItem as DeItem;
+                if (vDeItem.IsElement && !vDeItem.AllocValue && vItem.IsSelectComplate)  // 数据元没赋过值且全选中了（无弹出框时处理为全选中、手动全选中）
+                {
+                    FEmrView.SetActiveItemText(aText);
+                    vDeItem.Propertys.Remove(DeProp.CMVVCode);
+                    vDeItem.AllocValue = true;
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary> 设置当前数据元的文本内容，为能提前预处理一下DeItem，所以取一下DeItem </summary>
-        private void DoSetActiveDeItemText(DeItem aDeItem, string aText, ref bool aCancel)
+        private void DoSetActiveDeItemText(DeItem aDeItem, string aText, ref bool aReject)
         {
             if (FOnSetDeItemText != null)
             {
                 string vText = aText;
-                FOnSetDeItemText(this, aDeItem, ref vText, ref aCancel);
-                if (!aCancel)
+                FOnSetDeItemText(this, aDeItem, ref vText, ref aReject);
+                if (!aReject)
                 {
                     FEmrView.SetActiveItemText(vText);
                     aDeItem.AllocValue = true;
@@ -591,7 +610,7 @@ namespace EMRView
         protected void DoEmrViewMouseDown(object sender, MouseEventArgs e)
         {
             PopupFormClose(this, null);
-            FMouseDownTick = Environment.TickCount;
+            //FMouseDownTick = Environment.TickCount;
         }
 
         protected void DoEmrViewMouseUp(object sender, MouseEventArgs e)
@@ -642,7 +661,20 @@ namespace EMRView
                             HC.Win32.User.ClientToScreen(FEmrView.Handle, ref vPt);
 
                             if (DoDeItemPopup(vDeItem))
-                                PopupForm().PopupDeItem(vDeItem, vPt);
+                            {
+                                if (!PopupForm().PopupDeItem(vDeItem, vPt))  // 不用弹出框处理值时，判断首次输入直接替换原内容
+                                {
+                                    HCViewData vData = FEmrView.ActiveSectionTopLevelData() as HCViewData;
+                                    if (vData.SelectExists())
+                                        return;
+
+                                    if (!vDeItem.AllocValue)  // 没有处理过值
+                                    {
+                                        vData.SetSelectBound(vData.SelectInfo.StartItemNo, 0,
+                                            vData.SelectInfo.StartItemNo, vData.GetItemOffsetAfter(vData.SelectInfo.StartItemNo), false);
+                                    }
+                                }
+                            }
                         }
                     }
                 }

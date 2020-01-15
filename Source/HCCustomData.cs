@@ -44,6 +44,8 @@ namespace HC.View
             FEndItemNo,
             FEndItemOffset;  // 选中结束在第几个字符后面
 
+        private bool FStartRestrain;
+
         public SelectInfo()
         {
             this.Initialize();
@@ -58,6 +60,7 @@ namespace HC.View
         {
             FStartItemNo = -1;
             FStartItemOffset = -1;
+            FStartRestrain = false;
             FEndItemNo = -1;
             FEndItemOffset = -1;
         }
@@ -73,6 +76,12 @@ namespace HC.View
         {
             get { return FStartItemOffset; }
             set { FStartItemOffset = value; }
+        }
+
+        public bool StartRestrain
+        {
+            get { return FStartRestrain; }
+            set { FStartRestrain = value; }
         }
 
         /// <summary> 选中结束Item序号 </summary>
@@ -465,11 +474,11 @@ namespace HC.View
                         }
                     }
                     else
-                    if ((FSelectInfo.StartItemOffset > 0)  // 在Item上
-                        && (FSelectInfo.StartItemOffset < FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Length))
-                    {
+                    //if ((FSelectInfo.StartItemOffset > 0)  // 在Item上
+                    //    && (FSelectInfo.StartItemOffset < FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Length))
+                    //{
                         FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
-                    }
+                    //}
                 }
             }
         }
@@ -1272,7 +1281,6 @@ namespace HC.View
                 if ((aItemNo > FSelectInfo.StartItemNo) && (aItemNo < FSelectInfo.EndItemNo))
                     Result = true;
                 else
-
                 if (aItemNo == FSelectInfo.StartItemNo)
                 {
                     if (aItemNo == FSelectInfo.EndItemNo)
@@ -1757,7 +1765,7 @@ namespace HC.View
 
         /// <summary> 获取选中内容是否在同一个DrawItem中 </summary>
         /// <returns></returns>
-        public bool SelectInSameDItem()
+        public bool SelectInSameDrawItem()
         {
             int vStartDNo = GetSelectStartDrawItemNo();
 

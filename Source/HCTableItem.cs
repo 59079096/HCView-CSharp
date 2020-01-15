@@ -170,6 +170,7 @@ namespace HC.View
             aCellData.OnDrawItemAnnotate = (OwnerData as HCViewData).OnDrawItemAnnotate;
 
             aCellData.OnCanEdit = (OwnerData as HCViewData).OnCanEdit;
+            aCellData.OnInsertText = (OwnerData as HCViewData).OnInsertText;
             aCellData.OnItemResized = (OwnerData as HCRichData).OnItemResized;
             aCellData.OnCurParaNoChange = (OwnerData as HCRichData).OnCurParaNoChange;
 
