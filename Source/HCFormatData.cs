@@ -35,6 +35,8 @@ namespace HC.View
         /// <summary> 多次格式化是否有变动，外部由此决定是否重新计算分页起始结束DrawItemNo </summary>
         private bool FFormatChange;
 
+        private DataItemEventHandler FOnItemRequestFormat;
+
         private void FormatRange(int aStartDrawItemNo, int aLastItemNo)
         {
             int vPrioDrawItemNo = -1, vStartItemNo = -1, vStartOffset = -1;
@@ -611,7 +613,7 @@ namespace HC.View
 
                 FindLineBreak(vText, aParaStyle.BreakRough, aCharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
 
-                if ((viPlaceOffset == 0) && (!vLineFirst))  // 能放下的都不合适放到当前行且不是行首格式化，整体下移
+                if ((viPlaceOffset == 0) && (aPos.X > aFmtLeft))  // 能放下的都不合适放到当前行且不是行首格式化，整体下移
                 {
                     vRemainderWidth = aPlaceWidth;
                     FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
@@ -804,7 +806,7 @@ namespace HC.View
             ReSetSelectAndCaret(aItemNo, GetItemOffsetAfter(aItemNo));
         }
 
-        protected void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
+        protected virtual void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
         {
             SelectInfo.StartItemNo = aItemNo;
             SelectInfo.StartItemOffset = aOffset;
@@ -939,6 +941,7 @@ namespace HC.View
                     || ((DrawItems[AFirstDrawItemNo].Rect.Top != FFormatStartTop)  // 段格式化后，高度的增量
                     || (DrawItems[vLastDrawItemNo].Rect.Bottom != FFormatEndBottom));
 
+            FFormatChange = false;
             if (FFormatHeightChange || (AExtraItemCount != 0) || FFormatDrawItemCountChange)
             {
                 FFormatChange = true;
@@ -1046,6 +1049,12 @@ namespace HC.View
             }
         }
 
+        public virtual void ItemRequestFormat(HCCustomItem aItem)
+        {
+            if (FOnItemRequestFormat != null)
+                FOnItemRequestFormat(this, aItem);
+        }
+
         public void BeginFormat()
         {
             FFormatCount++;
@@ -1085,6 +1094,17 @@ namespace HC.View
         {
             get { return FFormatChange; }
             set { FFormatChange = value; }
+        }
+
+        public int FormatCount
+        {
+            get { return FFormatCount; }
+        }
+
+        public DataItemEventHandler OnItemRequestFormat
+        {
+            get { return FOnItemRequestFormat; }
+            set { FOnItemRequestFormat = value; }
         }
     }
 }

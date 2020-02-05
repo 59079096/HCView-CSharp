@@ -20,7 +20,8 @@ using System.Xml;
 
 namespace HC.View
 {
-    public delegate bool InsertProcEventHandler(HCCustomItem aItem);
+    public delegate bool TextItemActionEventHandler(HCTextItem aTextItem);
+    public delegate bool RectItemActionEventHandler(HCCustomRectItem aRectItem);
     public delegate void ItemMouseEventHandler(HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e);
 
     public class HCRichData : HCUndoData
@@ -47,7 +48,7 @@ namespace HC.View
         private DataItemNoEventHandler FOnItemResized;
         private ItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         private EventHandler FOnCreateItem;  // 新建了Item(目前主要是为了打字和用中文输入法输入英文时痕迹的处理)
-        private DataItemFunEventHandler FOnDeleteItem;
+        private DataActionEventHandler FOnAcceptAction;
 
         private bool SelectByMouseDownShift(ref int AMouseDownItemNo, ref int AMouseDownItemOffset)
         {
@@ -193,20 +194,23 @@ namespace HC.View
         }
 
         /// <summary> 为避免表格插入行、列大量重复代码 </summary>
-        private bool TableInsertRC(InsertProcEventHandler aProc)
+        private bool RectItemAction(RectItemActionEventHandler aAction)
         {
             bool Result = false;
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
             int vCurItemNo = GetActiveItemNo();
-            if (Items[vCurItemNo] is HCTableItem)
+            if (Items[vCurItemNo] is HCCustomRectItem)
             {
                 GetFormatRange(vCurItemNo, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                 Undo_New();
-                UndoAction_ItemSelf(vCurItemNo, HC.OffsetInner);
+                if ((Items[vCurItemNo] as HCCustomRectItem).MangerUndo)
+                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                else
+                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
-                Result = aProc(Items[vCurItemNo]);
+                Result = aAction(Items[vCurItemNo] as HCCustomRectItem);
                 if (Result)
                 {
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
@@ -218,6 +222,35 @@ namespace HC.View
             }
 
             return Result;
+        }
+
+        private bool TextItemAction(TextItemActionEventHandler aAction)
+        {
+            bool vResult = false;
+            int vCurItemNo = this.GetActiveItemNo();
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            if (this.Items[vCurItemNo] is HCTextItem)
+            {
+                GetFormatRange(vCurItemNo, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+                Undo_New();
+                UndoAction_ItemMirror(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+
+                //UndoAction_ItemSelf(vCurItemNo, OffsetInner);
+                vResult = aAction(Items[vCurItemNo] as HCTextItem);
+                if (vResult)
+                {
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
+                    //DisSelect;
+                    Style.UpdateInfoRePaint();
+                    Style.UpdateInfoReCaret();
+                }
+
+                InitializeMouseField();
+            }
+
+            return vResult;
         }
 
         private void InitializeMouseField()
@@ -436,11 +469,14 @@ namespace HC.View
             }
         }
 
-        protected virtual bool CanDeleteItem(int aItemNo)
+        protected virtual bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
         {
             bool vResult = CanEdit();
-            if (vResult && (FOnDeleteItem != null))
-                vResult = FOnDeleteItem(this, this.Items[aItemNo]);
+            if (vResult)
+                vResult = this.Items[aItemNo].AcceptAction(aOffset, aAction);
+                
+            if (vResult && (FOnAcceptAction != null))
+                vResult = FOnAcceptAction(this, aItemNo, aOffset, aAction);
 
             return vResult;
         }
@@ -475,73 +511,6 @@ namespace HC.View
         protected virtual void SetReadOnly(bool value)
         {
             FReadOnly = value;
-        }
-
-        public void DeleteItems(int aStartNo, int aEndNo, bool aKeepPara)
-        {
-            if (!CanEdit()) return;
-
-            if (aEndNo < aStartNo) return;
-
-            this.InitializeField();
-
-            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
-            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
-
-            if (Items[aStartNo].ParaFirst && (vFormatFirstDrawItemNo > 0))
-                vFormatFirstDrawItemNo--;
-
-            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
-
-            bool vStartParaFirst = Items[aStartNo].ParaFirst;
-            int vDelCount = aEndNo - aStartNo + 1;
-            Undo_New();
-            for (int i = aEndNo; i >= aStartNo; i--)
-            {
-                UndoAction_DeleteItem(i, 0);
-                Items.Delete(i);
-            }
-
-            if (Items.Count == 0)  // 删除没有了，不用SetEmptyData，因为其无Undo
-            {
-                HCCustomItem vItem = CreateDefaultTextItem();
-                this.CurStyleNo = vItem.StyleNo;
-                vItem.ParaFirst = true;
-                Items.Add(vItem);
-                vDelCount--;
-                UndoAction_InsertItem(0, 0);
-            }
-            else
-            if (vStartParaFirst)  // 段首删除了
-            {
-                if ((aStartNo < Items.Count - 1) && (!Items[aStartNo].ParaFirst))  // 下一个不是段首
-                {
-                    UndoAction_ItemParaFirst(aStartNo, 0, true);
-                    Items[aStartNo].ParaFirst = true;
-                }
-                else  // 段删除完了
-                if (aKeepPara)  // 保持段
-                {
-                    HCCustomItem vItem = CreateDefaultTextItem();
-                    this.CurStyleNo = vItem.StyleNo;
-                    vItem.ParaFirst = true;
-                    Items.Insert(aStartNo, vItem);
-                    vDelCount--;
-                    UndoAction_InsertItem(aStartNo, 0);
-                }
-            }
-
-            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
-            Style.UpdateInfoRePaint();
-            Style.UpdateInfoReCaret();
-
-            if (vStartParaFirst && aKeepPara)
-                ReSetSelectAndCaret(aStartNo, 0);
-            else
-            if (aStartNo > 0)
-                ReSetSelectAndCaret(aStartNo - 1);
-            else  // 从第一个开始删除
-                ReSetSelectAndCaret(0, 0);
         }
 
         protected int MouseMoveDrawItemNo
@@ -640,6 +609,15 @@ namespace HC.View
 
             if (FOnCreateItem != null)
                 FOnCreateItem(Result, null);
+
+            return Result;
+        }
+
+        public override bool CanEdit()
+        {
+            bool Result = !FReadOnly;
+            if (!Result)
+                User.MessageBeep(0);
 
             return Result;
         }
@@ -1148,13 +1126,13 @@ namespace HC.View
             if (!CanEdit()) 
                 return;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem aItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem aRectItem)
             {
-                (aItem as HCTableItem).ApplyContentAlign(aAlign);
+                (aRectItem as HCTableItem).ApplyContentAlign(aAlign);
                 return true;
             };
 
-            TableInsertRC(vEvent);
+            RectItemAction(vEvent);
         }
 
         public override bool DisSelect()
@@ -1179,7 +1157,7 @@ namespace HC.View
         private bool DeleteItemSelectComplate(ref int vDelCount, int vParaFirstItemNo, int vParaLastItemNo,
             int vFormatFirstItemNo, int vFormatLastItemNo)
         {
-            if (!CanDeleteItem(SelectInfo.StartItemNo))
+            if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actDeleteItem))
                 return false;
             
             UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
@@ -1251,6 +1229,7 @@ namespace HC.View
                             }
 
                             SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
+                            SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);  // 删除选中再插入时如果是RectItem用原有Offset不行
                         }
                     }
                 }
@@ -1290,7 +1269,10 @@ namespace HC.View
                 // 如果变动会引起RectItem的宽度变化，则需要格式化到段最后一个Item
                 GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                vFormatFirstItemNo = DrawItems[vFormatFirstDrawItemNo].ItemNo;
+                if (this.FormatCount > 0)
+                    vFormatFirstItemNo = SelectInfo.StartItemNo;
+                else
+                    vFormatFirstItemNo = DrawItems[vFormatFirstDrawItemNo].ItemNo;
 
                 Undo_New();
 
@@ -1321,7 +1303,10 @@ namespace HC.View
 
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                    vFormatFirstItemNo = DrawItems[vFormatFirstDrawItemNo].ItemNo;
+                    if (this.FormatCount > 0)
+                        vFormatFirstItemNo = SelectInfo.StartItemNo;
+                    else
+                        vFormatFirstItemNo = DrawItems[vFormatFirstDrawItemNo].ItemNo;
 
                     if (vEndItem.IsSelectComplate)
                     {
@@ -1371,7 +1356,7 @@ namespace HC.View
                     {
                         if (vSelEndComplate)
                         {
-                            if (CanDeleteItem(SelectInfo.EndItemNo))
+                            if (DoAcceptAction(SelectInfo.EndItemNo, SelectInfo.EndItemOffset, HCAction.actDeleteItem))
                             {
                                 UndoAction_DeleteItem(SelectInfo.EndItemNo, HC.OffsetAfter);
                                 Items.Delete(SelectInfo.EndItemNo);
@@ -1389,7 +1374,7 @@ namespace HC.View
                     {
                         if (vSelEndComplate)
                         {
-                            if (CanDeleteItem(SelectInfo.EndItemNo))
+                            if (DoAcceptAction(SelectInfo.EndItemNo, SelectInfo.EndItemOffset, HCAction.actDeleteItem))
                             {
                                 UndoAction_DeleteItem(SelectInfo.EndItemNo, vEndItem.Length);
                                 Items.RemoveAt(SelectInfo.EndItemNo);
@@ -1409,7 +1394,7 @@ namespace HC.View
                     // 删除选中起始Item下一个到结束Item上一个
                     for (int i = SelectInfo.EndItemNo - 1; i >= SelectInfo.StartItemNo + 1; i--)
                     {
-                        if (CanDeleteItem(i))
+                        if (DoAcceptAction(i, 0, HCAction.actDeleteItem))
                         {
                             UndoAction_DeleteItem(i, 0);
                             Items.Delete(i);
@@ -1423,7 +1408,7 @@ namespace HC.View
                     {
                         if (SelectInfo.StartItemOffset == HC.OffsetBefor)  // 在其前
                         {
-                            if (CanDeleteItem(SelectInfo.StartItemNo))  // 允许删除
+                            if (DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actDeleteItem))  // 允许删除
                             {
                                 UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                 Items.Delete(SelectInfo.StartItemNo);
@@ -1443,7 +1428,7 @@ namespace HC.View
                     {
                         if (vSelStartComplate)
                         {
-                            if (CanDeleteItem(SelectInfo.StartItemNo))
+                            if (DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actDeleteItem))
                             {
                                 UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                 Items.RemoveAt(SelectInfo.StartItemNo);
@@ -2553,18 +2538,20 @@ namespace HC.View
         #endregion
 
         #region MouseUp子方法DoNormalMouseUp
-        private void DoNormalMouseUp(int vUpItemNo, int vUpItemOffset, int vDrawItemNo, MouseEventArgs e)
+        private void DoNormalMouseUp(int vUpItemNo, int vUpItemOffset, int vDrawItemNo, bool vRestrain, MouseEventArgs e)
         {
             if (FMouseMoveItemNo < 0)
             {
                 SelectInfo.StartItemNo = vUpItemNo;
                 SelectInfo.StartItemOffset = vUpItemOffset;
+                SelectInfo.StartRestrain = vRestrain;
                 CaretDrawItemNo = vDrawItemNo;
             }
             else
             {
                 SelectInfo.StartItemNo = FMouseMoveItemNo;
                 SelectInfo.StartItemOffset = FMouseMoveItemOffset;
+                SelectInfo.StartRestrain = vRestrain;
                 CaretDrawItemNo = FMouseMoveDrawItemNo;
             }
 
@@ -2658,7 +2645,7 @@ namespace HC.View
                     FMouseDownItemNo = vUpItemNo;
                     FMouseDownItemOffset = vUpItemOffset;
 
-                    DoNormalMouseUp(vUpItemNo, vUpItemOffset, vDrawItemNo, e);  // 弹起处自己处理Item选中状态，并以弹起处为当前编辑位置
+                    DoNormalMouseUp(vUpItemNo, vUpItemOffset, vDrawItemNo, vRestrain, e);  // 弹起处自己处理Item选中状态，并以弹起处为当前编辑位置
 
                     SelectInfo.EndItemNo = -1;
                     SelectInfo.EndItemOffset = -1;
@@ -2668,7 +2655,7 @@ namespace HC.View
                     if (SelectExists(false))
                         DisSelect();
 
-                    DoNormalMouseUp(vUpItemNo, vUpItemOffset, vDrawItemNo, e);
+                    DoNormalMouseUp(vUpItemNo, vUpItemOffset, vDrawItemNo, vRestrain, e);
                 }
             }
         }
@@ -2924,6 +2911,12 @@ namespace HC.View
                         }
                         else
                             CaretDrawItemNo = vNewCaretDrawItemNo;
+                    }
+                    else
+                    if (SelectInfo.StartRestrain)
+                    {
+                        SelectInfo.StartRestrain = false;
+                        Items[DrawItems[vNewCaretDrawItemNo].ItemNo].Active = true;
                     }
 
                     Style.UpdateInfoRePaint();
@@ -3400,6 +3393,7 @@ namespace HC.View
                         SelectInfo.StartItemNo = DrawItems[vDrawItemNo].ItemNo;
                         SelectInfo.StartItemOffset = vDrawItemOffset;
                         CaretDrawItemNo = vDrawItemNo;
+                        Style.UpdateInfoRePaint();
                     }
                     else
                         e.Handled = true;
@@ -3534,6 +3528,7 @@ namespace HC.View
                         SelectInfo.StartItemNo = DrawItems[vDrawItemNo].ItemNo;
                         SelectInfo.StartItemOffset = vDrawItemOffset;
                         CaretDrawItemNo = vDrawItemNo;
+                        Style.UpdateInfoRePaint();
                     }
                     else  // 当前行是最后一行
                         e.Handled = true;
@@ -3732,7 +3727,7 @@ namespace HC.View
                         break;
 
                     case User.VK_DELETE:  // 在RectItem前
-                        if (!CanDeleteItem(SelectInfo.StartItemNo))
+                        if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actDeleteItem))
                         {
                             SelectInfo.StartItemOffset = HC.OffsetAfter;
                             return;
@@ -3821,7 +3816,7 @@ namespace HC.View
                 switch (Key)
                 {
                     case User.VK_BACK:
-                        if (!CanDeleteItem(SelectInfo.StartItemNo))
+                        if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actDeleteItem))
                         {
                             SelectInfo.StartItemOffset = HC.OffsetBefor;
                             return;
@@ -4217,11 +4212,8 @@ namespace HC.View
             }
             else  // 光标不在Item最右边
             {
-                if (!CanDeleteItem(vCurItemNo))
-                    SelectInfo.StartItemOffset = SelectInfo.StartItemOffset + 1;
-                else
-                if (!vCurItem.CanAccept(SelectInfo.StartItemOffset, HCItemAction.hiaDeleteChar))
-                    SelectInfo.StartItemOffset = SelectInfo.StartItemOffset + 1;
+                if (!DoAcceptAction(vCurItemNo, SelectInfo.StartItemOffset, HCAction.actDeleteText))
+                    SelectInfo.StartItemOffset = Items[vCurItemNo].Length;
                 else  // 可删除
                 {
                     string vText = Items[vCurItemNo].Text;
@@ -4233,7 +4225,7 @@ namespace HC.View
                     string vsDelete = vText.Substring(SelectInfo.StartItemOffset + 1 - 1, 1);
                     vCurItem.Text = vText.Remove(SelectInfo.StartItemOffset + 1 - 1, 1);
                     #endif
-                    DoItemAction(vCurItemNo, SelectInfo.StartItemOffset + 1, HCItemAction.hiaDeleteChar);
+                    DoItemAction(vCurItemNo, SelectInfo.StartItemOffset + 1, HCAction.actDeleteText);
 
                     if (vText == "")  // 删除后没有内容了
                     {
@@ -4484,7 +4476,7 @@ namespace HC.View
                         if (Items[SelectInfo.StartItemNo - 1].StyleNo < HCStyle.Null)
                         {
                             vCurItemNo = SelectInfo.StartItemNo - 1;
-                            if (CanDeleteItem(vCurItemNo))
+                            if (DoAcceptAction(vCurItemNo, HC.OffsetBefor, HCAction.actDeleteItem))
                             {
                                 Undo_New();
 
@@ -4541,8 +4533,12 @@ namespace HC.View
             }
             else  // 光标不在Item最开始  文本TextItem
             {
-                if (!vCurItem.CanAccept(SelectInfo.StartItemOffset, HCItemAction.hiaBackDeleteChar))  // 不允许删除
-                    LeftKeyDown(vSelectExist, e);  // 往前走
+                if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actBackDeleteText))  // 不允许删除
+                {
+                    //LeftKeyDown  // 往前走
+                    SelectInfo.StartItemOffset = 0;
+                    ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                }
                 else
                 if (vCurItem.Length == 1)  // 删除后没有内容了
                 {
@@ -4710,7 +4706,7 @@ namespace HC.View
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                    DoItemAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCItemAction.hiaBackDeleteChar);
+                    DoItemAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actBackDeleteText);
                     string vText = vCurItem.Text;  // 和上面 201806242257 处一样
 
                     Undo_New();
@@ -4843,16 +4839,7 @@ namespace HC.View
                 return;
         }
 
-        public virtual bool CanEdit()
-        {
-            bool Result = !FReadOnly;
-            if (!Result)
-                User.MessageBeep(0);
-
-            return Result;
-        }
-
-        public virtual bool DoInsertText(string aText)
+        public virtual bool DoInsertTextBefor(int aItemNo, int aOffset, string aText)
         {
             return aText != "";
         }
@@ -4919,6 +4906,73 @@ namespace HC.View
 
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret(false);
+        }
+
+        public void DeleteItems(int aStartNo, int aEndNo, bool aKeepPara)
+        {
+            if (!CanEdit()) return;
+
+            if (aEndNo < aStartNo) return;
+
+            this.InitializeField();
+
+            int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+
+            if (Items[aStartNo].ParaFirst && (vFormatFirstDrawItemNo > 0))
+                vFormatFirstDrawItemNo--;
+
+            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+            bool vStartParaFirst = Items[aStartNo].ParaFirst;
+            int vDelCount = aEndNo - aStartNo + 1;
+            Undo_New();
+            for (int i = aEndNo; i >= aStartNo; i--)
+            {
+                UndoAction_DeleteItem(i, 0);
+                Items.Delete(i);
+            }
+
+            if (Items.Count == 0)  // 删除没有了，不用SetEmptyData，因为其无Undo
+            {
+                HCCustomItem vItem = CreateDefaultTextItem();
+                this.CurStyleNo = vItem.StyleNo;
+                vItem.ParaFirst = true;
+                Items.Add(vItem);
+                vDelCount--;
+                UndoAction_InsertItem(0, 0);
+            }
+            else
+            if (vStartParaFirst)  // 段首删除了
+            {
+                if ((aStartNo < Items.Count - 1) && (!Items[aStartNo].ParaFirst))  // 下一个不是段首
+                {
+                    UndoAction_ItemParaFirst(aStartNo, 0, true);
+                    Items[aStartNo].ParaFirst = true;
+                }
+                else  // 段删除完了
+                if (aKeepPara)  // 保持段
+                {
+                    HCCustomItem vItem = CreateDefaultTextItem();
+                    this.CurStyleNo = vItem.StyleNo;
+                    vItem.ParaFirst = true;
+                    Items.Insert(aStartNo, vItem);
+                    vDelCount--;
+                    UndoAction_InsertItem(aStartNo, 0);
+                }
+            }
+
+            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+            Style.UpdateInfoRePaint();
+            Style.UpdateInfoReCaret();
+
+            if (vStartParaFirst && aKeepPara)
+                ReSetSelectAndCaret(aStartNo, 0);
+            else
+            if (aStartNo > 0)
+                ReSetSelectAndCaret(aStartNo - 1);
+            else  // 从第一个开始删除
+                ReSetSelectAndCaret(0, 0);
         }
 
         public void DeleteActiveDataItems(int aStartNo, int aEndNo, bool aKeepPara)
@@ -5003,7 +5057,7 @@ namespace HC.View
 
             if (vTextItem.StyleNo == this.CurStyleNo)
             {
-                if (vTextItem.CanAccept(SelectInfo.StartItemOffset, HCItemAction.hiaInsertChar))
+                if (DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actInsertText))
                 {
                     int vLen = -1;
                     if (SelectInfo.StartItemOffset == 0)  // 在TextItem最前面插入
@@ -5250,7 +5304,7 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            if (!DoInsertText(aText))
+            if (!DoInsertTextBefor(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, aText))
                 return false;
 
             if (!DeleteSelected())
@@ -5384,17 +5438,31 @@ namespace HC.View
             return Result;
         }
 
+        public bool SetActiveImage(Stream aImageStream)
+        {
+            if (!CanEdit())
+                return false;
+
+            RectItemActionEventHandler vEvent = delegate (HCCustomRectItem aRectItem)
+            {
+                (aRectItem as HCImageItem).Image = new Bitmap(aImageStream);
+                return true;
+            };
+
+            return RectItemAction(vEvent);
+        }
+
         public bool ActiveTableResetRowCol(int rowCount, int colCount)
         {
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate (HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate (HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).ResetRowCol(this.Width, rowCount, colCount);
+                return (ARectItem as HCTableItem).ResetRowCol(this.Width, rowCount, colCount);
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool TableInsertRowAfter(byte aRowCount)
@@ -5402,12 +5470,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).InsertRowAfter(aRowCount);
+                return (ARectItem as HCTableItem).InsertRowAfter(aRowCount);
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool TableInsertRowBefor(byte aRowCount)
@@ -5415,12 +5483,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).InsertRowBefor(aRowCount);
+                return (ARectItem as HCTableItem).InsertRowBefor(aRowCount);
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool ActiveTableDeleteCurRow()
@@ -5428,12 +5496,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate (HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).DeleteCurRow();
+                return (ARectItem as HCTableItem).DeleteCurRow();
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool ActiveTableSplitCurRow()
@@ -5441,12 +5509,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).SplitCurRow();
+                return (ARectItem as HCTableItem).SplitCurRow();
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool ActiveTableSplitCurCol()
@@ -5454,12 +5522,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).SplitCurCol();
+                return (ARectItem as HCTableItem).SplitCurCol();
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool TableInsertColAfter(byte aColCount)
@@ -5467,12 +5535,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).InsertColAfter(aColCount);
+                return (ARectItem as HCTableItem).InsertColAfter(aColCount);
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool TableInsertColBefor(byte aColCount)
@@ -5480,12 +5548,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).InsertColBefor(aColCount);
+                return (ARectItem as HCTableItem).InsertColBefor(aColCount);
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool ActiveTableDeleteCurCol()
@@ -5493,12 +5561,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate (HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).DeleteCurCol();
+                return (ARectItem as HCTableItem).DeleteCurCol();
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool MergeTableSelectCells()
@@ -5506,12 +5574,12 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate(HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate(HCCustomRectItem ARectItem)
             {
-                return (AItem as HCTableItem).MergeSelectCells();
+                return (ARectItem as HCTableItem).MergeSelectCells();
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
         public bool TableApplyContentAlign(HCContentAlign aAlign)
@@ -5519,16 +5587,16 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
-            InsertProcEventHandler vEvent = delegate (HCCustomItem AItem)
+            RectItemActionEventHandler vEvent = delegate (HCCustomRectItem ARectItem)
             {
-                (AItem as HCTableItem).ApplyContentAlign(aAlign);
+                (ARectItem as HCTableItem).ApplyContentAlign(aAlign);
                 return true;
             };
 
-            return TableInsertRC(vEvent);
+            return RectItemAction(vEvent);
         }
 
-        public void ReAdaptActiveItem()
+        public void ActiveItemReAdaptEnvironment()
         {
             if (!CanEdit())
                 return;
@@ -5550,7 +5618,7 @@ namespace HC.View
                 else
                     UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
-                vRectItem.ReAdaptActiveItem();
+                vRectItem.ActiveItemReAdaptEnvironment();
                 if (vRectItem.SizeChanged)
                 {
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
@@ -5687,10 +5755,10 @@ namespace HC.View
             set { FOnCreateItem = value; }
         }
 
-        public DataItemFunEventHandler OnDeleteItem
+        public DataActionEventHandler OnAcceptAction
         {
-            get { return FOnDeleteItem; }
-            set { FOnDeleteItem = value; }
+            get { return FOnAcceptAction; }
+            set { FOnAcceptAction = value; }
         }
     }
 }

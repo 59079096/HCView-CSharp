@@ -58,10 +58,10 @@ namespace HC.View
         private StyleItemEventHandler FOnSectionCreateStyleItem;
         private FloatStyleItemEventHandler FOnSectionCreateFloatStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
-        private TextEventHandler FOnSectionInsertText;
+        private TextEventHandler FOnSectionInsertTextBefor;
         private SectionDataItemEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
         private SectionDataItemNoFunEvent FOnSectionSaveItem;
-        private SectionDataItemFunEvent FOnSectionDeleteItem;
+        private SectionDataActionEventHandler FOnSectionAcceptAction;
         private SectionDrawItemPaintEventHandler FOnSectionDrawItemPaintAfter, FOnSectionDrawItemPaintBefor;
 
         private SectionPaintEventHandler FOnSectionPaintHeader, FOnSectionPaintFooter, FOnSectionPaintPage,
@@ -455,15 +455,14 @@ namespace HC.View
             Result.OnChangeTopLevelData = DoSectionChangeTopLevelData;
             Result.OnCheckUpdateInfo = DoSectionDataCheckUpdateInfo;
             Result.OnCreateItem = DoSectionCreateItem;
-            Result.OnDeleteItem = DoSectionDeleteItem;
+            Result.OnDataAcceptAction = DoSectionAcceptAction;
             Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
             Result.OnCreateFloatItemByStyle = DoSectionCreateFloatStyleItem;
             Result.OnCanEdit = DoSectionCanEdit;
-            Result.OnInsertText = DoSectionInsertText;
+            Result.OnInsertTextBefor = DoSectionInsertTextBefor;
             Result.OnInsertItem = DoSectionInsertItem;
             Result.OnRemoveItem = DoSectionRemoveItem;
             Result.OnSaveItem = DoSectionSaveItem;
-            Result.OnInsertFloatItem = DoSectionInsertFloatItem;
             Result.OnItemMouseDown = DoSectionItemMouseDown;
             Result.OnItemMouseUp = DoSectionItemMouseUp;
             Result.OnItemResize = DoSectionItemResize;
@@ -573,19 +572,44 @@ namespace HC.View
             {
                 if (FCaret.Height < FViewHeight)
                 {
-                    if (FCaret.Y < 0)
-                        FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - FPagePadding;
-                    else
-                        if (FCaret.Y + FCaret.Height + FPagePadding > FViewHeight)
-                        FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + FPagePadding - FViewHeight;
+                    if (!FCaret.VScroll)
+                    {
+                        FCaret.VScroll = true;
+                        try
+                        {
+                            if (FCaret.Y < 0)
+                                FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - FPagePadding;
+                            else
+                            if (FCaret.Y + FCaret.Height + FPagePadding > FViewHeight)
+                                FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + FPagePadding - FViewHeight;
+                        }
+                        finally
+                        {
+                            FCaret.VScroll = false;
+                        }
+                    }
 
-                    if (FCaret.X < 0)
-                        FHScrollBar.Position = FHScrollBar.Position + FCaret.X - FPagePadding;
-                    else
-                        if (FCaret.X + FPagePadding > FViewWidth)
-                        FHScrollBar.Position = FHScrollBar.Position + FCaret.X + FPagePadding - FViewWidth;
+                    if (!FCaret.HScroll)
+                    {
+                        FCaret.HScroll = true;
+                        try
+                        {
+                            if (FCaret.X < 0)
+                                FHScrollBar.Position = FHScrollBar.Position + FCaret.X - FPagePadding;
+                            else
+                            if (FCaret.X + FPagePadding > FViewWidth)
+                                FHScrollBar.Position = FHScrollBar.Position + FCaret.X + FPagePadding - FViewWidth;
+                        }
+                        finally
+                        {
+                            FCaret.HScroll = false;
+                        }
+                    }
                 }
             }
+
+            if (FCaret.VScroll || FCaret.HScroll)
+                return;
 
             if (FCaret.Y + FCaret.Height > FViewHeight)
                 FCaret.Height = FViewHeight - FCaret.Y;
@@ -922,10 +946,10 @@ namespace HC.View
                 FOnSectionCreateItem(this, null);
         }
 
-        protected virtual bool DoSectionDeleteItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        protected virtual bool DoSectionAcceptAction(object sender, HCCustomData aData, int aItemNo, int aOffset, HCAction aAction)
         {
-            if (FOnSectionDeleteItem != null)
-                return FOnSectionDeleteItem(sender, aData, aItem);
+            if (FOnSectionAcceptAction != null)
+                return FOnSectionAcceptAction(sender, aData, aItemNo, aOffset, aAction);
             else
                 return true;
         }
@@ -944,12 +968,6 @@ namespace HC.View
                 return FOnSectionCreateFloatStyleItem(aData, aStyleNo);
             else
                 return null;
-        }
-
-        protected virtual void DoSectionInsertFloatItem(object sender, HCSectionData aData, HCCustomFloatItem aItem)
-        {
-            if (FOnSectionInsertItem != null)
-                FOnSectionInsertItem(sender, aData, aItem);
         }
 
         protected virtual void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
@@ -991,10 +1009,10 @@ namespace HC.View
                 return true;
         }
 
-        protected virtual bool DoSectionInsertText(HCCustomData aData, string aText)
+        protected virtual bool DoSectionInsertTextBefor(HCCustomData aData, int aItemNo, int aOffset, string aText)
         {
-            if (FOnSectionInsertText != null)
-                return FOnSectionInsertText(aData, aText);
+            if (FOnSectionInsertTextBefor != null)
+                return FOnSectionInsertTextBefor(aData, aItemNo, aOffset, aText);
             else
                 return true;
         }
@@ -1016,6 +1034,23 @@ namespace HC.View
         protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
+            if (aData.Items[aItemNo].HyperLink != "")
+            {
+                aCanvas.Pen.BeginUpdate();
+                try
+                {
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.Blue;
+                    aCanvas.Pen.Width = 1;
+                }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
+
+                aCanvas.DrawLine(aDrawRect.Left, aDrawRect.Bottom, aDrawRect.Right, aDrawRect.Bottom);
+            }
+
             if (FOnSectionDrawItemPaintAfter != null)
                 FOnSectionDrawItemPaintAfter(this, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
@@ -1563,9 +1598,9 @@ namespace HC.View
         }
 
         /// <summary> ActiveItem重新适应其环境(供外部直接修改Item属性后重新和其前后Item连接组合) </summary>
-        public void ReAdaptActiveItem()
+        public void ActiveItemReAdaptEnvironment()
         {
-            ActiveSection.ReAdaptActiveItem();
+            ActiveSection.ActiveItemReAdaptEnvironment();
         }
 
         /// <summary> 全部清空(清除各节页眉、页脚、页面的Item及DrawItem) </summary>
@@ -1824,6 +1859,11 @@ namespace HC.View
         public bool InsertDomain(HCDomainItem aMouldDomain)
         {
             return ActiveSection.InsertDomain(aMouldDomain);
+        }
+
+        public bool SetActiveImage(Stream aImageStream)
+        {
+            return ActiveSection.SetActiveImage(aImageStream);
         }
 
         public bool ActiveTableResetRowCol(int rowCount, int colCount)
@@ -3823,6 +3863,12 @@ namespace HC.View
             set { FOnSectionSaveItem = value; }
         }
 
+        public SectionDataActionEventHandler OnSectionAcceptAction
+        {
+            get { return FOnSectionAcceptAction; }
+            set { FOnSectionAcceptAction = value; }
+        }
+
         /// <summary> Item绘制开始前触发 </summary>
         public SectionDrawItemPaintEventHandler OnSectionDrawItemPaintBefor
         {
@@ -3984,10 +4030,10 @@ namespace HC.View
             set { FOnSectionCanEdit = value; }
         }
 
-        public TextEventHandler OnSectionInsertText
+        public TextEventHandler OnSectionInsertTextBefor
         {
-            get { return FOnSectionInsertText; }
-            set { FOnSectionInsertText = value; }
+            get { return FOnSectionInsertTextBefor; }
+            set { FOnSectionInsertTextBefor = value; }
         }
 
         /// <summary> 节当前位置段样式和上一次不一样时触发 </summary>

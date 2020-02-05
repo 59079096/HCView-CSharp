@@ -10,6 +10,8 @@ namespace HC.View
 {
     public class HCFloatBarCodeItem : HCCustomFloatItem
     {
+        private bool FAutoSize, FShowText;
+        private Byte FPenWidth;
         private string FText;
 
         protected override string GetText()
@@ -28,6 +30,9 @@ namespace HC.View
         public HCFloatBarCodeItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             StyleNo = HCStyle.FloatBarCode;
+            FAutoSize = true;
+            FShowText = true;
+            FPenWidth = 2;
             Width = 80;
             Height = 60;
             SetText("0000");
@@ -62,24 +67,88 @@ namespace HC.View
         {
             base.SaveToStream(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FText);
+            byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            vBuffer = BitConverter.GetBytes(FShowText);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            aStream.WriteByte(FPenWidth);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
             HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
+            if (aFileVersion > 34)
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FAutoSize = BitConverter.ToBoolean(vBuffer, 0);
+
+                vBuffer = BitConverter.GetBytes(FShowText);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FShowText = BitConverter.ToBoolean(vBuffer, 0);
+
+                FPenWidth = (Byte)aStream.ReadByte();
+            }
         }
 
         public override void ToXml(System.Xml.XmlElement aNode)
         {
             base.ToXml(aNode);
             aNode.InnerText = FText;
+
+            if (FAutoSize)
+                aNode.SetAttribute("autosize", "1");
+            else
+                aNode.SetAttribute("autosize", "0");
+
+            if (FShowText)
+                aNode.SetAttribute("showtext", "1");
+            else
+                aNode.SetAttribute("showtext", "0");
+
+            aNode.SetAttribute("penwidth", FPenWidth.ToString());
         }
 
         public override void ParseXml(System.Xml.XmlElement aNode)
         {
             base.ParseXml(aNode);
             FText = aNode.InnerText;
+
+            if (aNode.HasAttribute("autosize"))
+                FAutoSize = bool.Parse(aNode.Attributes["autosize"].Value);
+            else
+                FAutoSize = true;
+
+            if (aNode.HasAttribute("showtext"))
+                FShowText = bool.Parse(aNode.Attributes["showtext"].Value);
+            else
+                FShowText = true;
+
+            if (aNode.HasAttribute("penwidth"))
+                FPenWidth = Byte.Parse(aNode.Attributes["penwidth"].Value);
+            else
+                FPenWidth = 2;
+        }
+
+        public Byte PenWidth
+        {
+            get { return FPenWidth; }
+            set { FPenWidth = value; }
+        }
+
+        public bool AutoSize
+        {
+            get { return FAutoSize; }
+            set { FAutoSize = value; }
+        }
+
+        public bool ShowText
+        {
+            get { return FShowText; }
+            set { FShowText = value; }
         }
     }
 }

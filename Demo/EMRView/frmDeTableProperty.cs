@@ -39,8 +39,8 @@ namespace EMRView
             DeTable vTable = vData.GetActiveItem() as DeTable;
 
             // 表格
-            tbxCellHPadding.Text = vTable.CellHPadding.ToString();
-            tbxCellVPadding.Text = vTable.CellVPadding.ToString();
+            tbxCellHPadding.Text = String.Format("{0:0.##}", vTable.CellHPaddingMM);
+            tbxCellVPadding.Text = String.Format("{0:0.##}", vTable.CellVPaddingMM);
             cbxBorderVisible.Checked = vTable.BorderVisible;
             tbxBorderWidth.Text = String.Format("{0:0.##}", vTable.BorderWidthPt);
 
@@ -105,8 +105,8 @@ namespace EMRView
                 try
                 {
                     // 表格
-                    vTable.CellHPadding = byte.Parse(tbxCellHPadding.Text);
-                    vTable.CellVPadding = byte.Parse(tbxCellVPadding.Text);
+                    vTable.CellHPaddingMM = Single.Parse(tbxCellHPadding.Text);
+                    vTable.CellVPaddingMM = Single.Parse(tbxCellVPadding.Text);
                     vTable.BorderWidthPt = float.Parse(tbxBorderWidth.Text);
                     vTable.BorderVisible = cbxBorderVisible.Checked;
 

@@ -206,6 +206,7 @@ namespace HC.View
 
         public void MouseDown(MouseEventArgs e, byte aCellHPadding, byte aCellVPadding)
         {
+            this.Active = true;
             if (FCellData != null)
             {
                 MouseEventArgs vEvent = new MouseEventArgs(e.Button, e.Clicks, e.X - aCellHPadding,

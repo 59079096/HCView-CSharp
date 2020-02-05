@@ -67,7 +67,7 @@ namespace HC.View
 
         public override bool MouseUp(MouseEventArgs e)
         {
-            if (HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
+            if (OwnerData.CanEdit() && HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
                 Checked = !FChecked;
 
             return base.MouseUp(e);            

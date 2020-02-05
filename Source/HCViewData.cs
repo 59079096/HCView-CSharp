@@ -20,42 +20,9 @@ using System.Reflection;
 
 namespace HC.View
 {
-    public class HCDomainInfo : HCObject
-    {
-        private int FBeginNo, FEndNo;
-
-        public HCDomainInfo()
-        {
-            Clear();
-        }
-
-        public void Clear()
-        {
-            FBeginNo = -1;
-            FEndNo = -1;
-        }
-
-        public bool Contain(int aItemNo)
-        {
-            return (aItemNo >= FBeginNo) && (aItemNo <= FEndNo);
-        }
-
-        public int BeginNo
-        {
-            get { return FBeginNo; }
-            set { FBeginNo = value; }
-        }
-
-        public int EndNo
-        {
-            get { return FEndNo; }
-            set { FEndNo = value; }
-        }
-    }
-
     public delegate HCCustomItem StyleItemEventHandler(HCCustomData aData, int aStyleNo);
     public delegate bool OnCanEditEventHandler(object sender);
-    public delegate bool TextEventHandler(HCCustomData aData, string aText);
+    public delegate bool TextEventHandler(HCCustomData aData, int aItemNo, int aOffset, string aText);
 
     public class HCViewData : HCViewDevData  // 富文本数据类，可做为其他显示富文本类的基类
     {
@@ -70,7 +37,26 @@ namespace HC.View
 
         private StyleItemEventHandler FOnCreateItemByStyle;
         private OnCanEditEventHandler FOnCanEdit;
-        private TextEventHandler FOnInsertText;
+        private TextEventHandler FOnInsertTextBefor;
+
+        private void GetDomainStackFrom(int aItemNo, int aOffset, Stack<HCDomainInfo> aDomainStack)
+        {
+            HCDomainInfo vDomainInfo;
+            for (int i = 0; i < aItemNo; i++)
+            {
+                if (Items[i] is HCDomainItem)
+                {
+                    if (HCDomainItem.IsBeginMark(Items[i]))
+                    {
+                        vDomainInfo = new HCDomainInfo();
+                        vDomainInfo.BeginNo = i;
+                        aDomainStack.Push(vDomainInfo);
+                    }
+                    else
+                        aDomainStack.Pop();
+                }
+            }
+        }
 
         private void GetDomainFrom(int aItemNo, int aOffset, HCDomainInfo aDomainInfo)
         {
@@ -234,10 +220,10 @@ namespace HC.View
             }
         }
 
-        protected override bool CanDeleteItem(int aItemNo)
+        protected override bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
         {
-            bool Result = base.CanDeleteItem(aItemNo);
-            if (Result)
+            bool Result = base.DoAcceptAction(aItemNo, aOffset, aAction);
+            if (Result && (aAction == HCAction.actDeleteItem))
             {
                 if (Items[aItemNo].StyleNo == HCStyle.Domain)
                 {
@@ -251,8 +237,6 @@ namespace HC.View
                     else  // 域起始标记
                         Result = FDomainStartDeletes.IndexOf(aItemNo) >= 0;  // 结束标识已经删除了
                 }
-                else
-                    Result = Items[aItemNo].CanAccept(0, HCItemAction.hiaRemove);
             }
 
             return Result;
@@ -616,36 +600,39 @@ namespace HC.View
 
         public bool DeleteDomain(HCDomainInfo aDomain)
         {
-            if (aDomain.BeginNo < 0)
-                return false;
-        
-            Undo_New();
-        
-            int vBeginItemNo = aDomain.BeginNo;
+            return DeleteDomainByItemNo(aDomain.BeginNo, aDomain.EndNo);
+        }
 
-            int vFirstDrawItemNo = GetFormatFirstDrawItem(Items[aDomain.BeginNo].FirstDItemNo);
-            int vParaLastItemNo = GetParaLastItemNo(aDomain.EndNo);
-        
-            if (Items[aDomain.BeginNo].ParaFirst)
+        public bool DeleteDomainByItemNo(int aStartNo, int aEndNo)
+        {
+            if (aStartNo < 0)
+                return false;
+
+            Undo_New();
+
+            int vFirstDrawItemNo = GetFormatFirstDrawItem(Items[aStartNo].FirstDItemNo);
+            int vParaLastItemNo = GetParaLastItemNo(aEndNo);
+
+            if (Items[aStartNo].ParaFirst)
             {
-                if (aDomain.EndNo == vParaLastItemNo)
+                if (aEndNo == vParaLastItemNo)
                 {
-                    if (aDomain.BeginNo > 0)
-                        vFirstDrawItemNo = GetFormatFirstDrawItem(Items[aDomain.BeginNo].FirstDItemNo - 1);
+                    if (aStartNo > 0)
+                        vFirstDrawItemNo = GetFormatFirstDrawItem(Items[aStartNo].FirstDItemNo - 1);
                 }
                 else  // 域结束不是段尾，起始是段首
                 {
-                    UndoAction_ItemParaFirst(aDomain.EndNo + 1, 0, true);
-                    Items[aDomain.EndNo + 1].ParaFirst = true;
+                    UndoAction_ItemParaFirst(aEndNo + 1, 0, true);
+                    Items[aEndNo + 1].ParaFirst = true;
                 }
             }
-        
-            FormatPrepare(vFirstDrawItemNo, vParaLastItemNo);
-        
-            int vDelCount = 0;
-            bool vBeginPageBreak = Items[vBeginItemNo].PageBreak;
 
-            for (int i = aDomain.EndNo; i >= aDomain.BeginNo; i--)  // 删除域及域范围内的Ite
+            FormatPrepare(vFirstDrawItemNo, vParaLastItemNo);
+
+            int vDelCount = 0;
+            bool vBeginPageBreak = Items[aStartNo].PageBreak;
+
+            for (int i = aEndNo; i >= aStartNo; i--)  // 删除域及域范围内的Ite
             {
                 UndoAction_DeleteItem(i, 0);
                 Items.Delete(i);
@@ -654,31 +641,30 @@ namespace HC.View
 
             FActiveDomain.Clear();
 
-            if (vBeginItemNo == 0)  // 删除完了
+            if (aStartNo == 0)  // 删除完了
             {
                 HCCustomItem vItem = CreateDefaultTextItem();
                 vItem.ParaFirst = true;
                 vItem.PageBreak = vBeginPageBreak;
 
-                Items.Insert(vBeginItemNo, vItem);
-                UndoAction_InsertItem(vBeginItemNo, 0);
+                Items.Insert(aStartNo, vItem);
+                UndoAction_InsertItem(aStartNo, 0);
                 vDelCount--;
             }
 
             ReFormatData(vFirstDrawItemNo, vParaLastItemNo - vDelCount, -vDelCount);
-        
+
             this.InitializeField();
-            if (vBeginItemNo > Items.Count - 1)
-                ReSetSelectAndCaret(vBeginItemNo - 1);
+            if (aStartNo > Items.Count - 1)
+                ReSetSelectAndCaret(aStartNo - 1);
             else
-                ReSetSelectAndCaret(vBeginItemNo, 0);
+                ReSetSelectAndCaret(aStartNo, 0);
 
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
 
             return true;
         }
-
 
         public override void MouseDown(MouseEventArgs e)
         {
@@ -755,11 +741,11 @@ namespace HC.View
             return Result;
         }
 
-        public override bool DoInsertText(string aText)
+        public override bool DoInsertTextBefor(int aItemNo, int aOffset, string aText)
         {
-            bool vResult = base.DoInsertText(aText);
-            if (vResult && (FOnInsertText != null))
-                vResult = FOnInsertText(this, aText);
+            bool vResult = base.DoInsertTextBefor(aItemNo, aOffset, aText);
+            if (vResult && (FOnInsertTextBefor != null))
+                vResult = FOnInsertTextBefor(this, aItemNo, aOffset, aText);
 
             return vResult;
         }
@@ -1205,12 +1191,25 @@ namespace HC.View
         {
             if (aTraverse != null)
             {
+                HCDomainInfo vDomainInfo;
                 for (int i = 0; i <= Items.Count - 1; i++)
                 {
                     if (aTraverse.Stop)
                         break;
 
-                    aTraverse.Process(this, i, aTraverse.Tag, ref aTraverse.Stop);
+                    if (Items[i] is HCDomainItem)
+                    {
+                        if (HCDomainItem.IsBeginMark(Items[i]))
+                        {
+                            vDomainInfo = new HCDomainInfo();
+                            GetDomainFrom(i, HC.OffsetAfter, vDomainInfo);
+                            aTraverse.DomainStack.Push(vDomainInfo);
+                        }
+                        else
+                            aTraverse.DomainStack.Pop();
+                    }
+
+                    aTraverse.Process(this, i, aTraverse.Tag, aTraverse.DomainStack, ref aTraverse.Stop);
                     if (Items[i].StyleNo < HCStyle.Null)
                         (Items[i] as HCCustomRectItem).TraverseItem(aTraverse);
                 }
@@ -1239,10 +1238,10 @@ namespace HC.View
             set { FOnCanEdit = value; }
         }
 
-        public TextEventHandler OnInsertText
+        public TextEventHandler OnInsertTextBefor
         {
-            get { return FOnInsertText; }
-            set { FOnInsertText = value; }
+            get { return FOnInsertTextBefor; }
+            set { FOnInsertTextBefor = value; }
         }
     }
 }

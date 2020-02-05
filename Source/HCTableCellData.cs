@@ -60,6 +60,18 @@ namespace HC.View
             }
         }
 
+        protected override void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
+        {
+            if (FActive)
+                base.ReSetSelectAndCaret(aItemNo, aOffset, aNextWhenMid);
+            else
+            {
+                this.SelectInfo.Initialize();
+                this.SelectInfo.StartItemNo = aItemNo;
+                this.SelectInfo.StartItemOffset = aOffset;
+            }
+        }
+
         /// <summary> 取消选中 </summary>
         /// <returns>取消时当前是否有选中，True：有选中；False：无选中</returns>
         public override bool DisSelect()

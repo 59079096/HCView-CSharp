@@ -345,12 +345,18 @@ namespace HCViewDemo
         private void comboboxToolStripMenuItem_Click(object sender, EventArgs e)
         {
             HCComboboxItem vCombobox = new HCComboboxItem(FHCView.ActiveSectionTopLevelData(), "默认值");
-            vCombobox.Items.Add("选项1");
-            vCombobox.Items.Add("选项2");
-            vCombobox.Items.Add("选项3");
-            vCombobox.Items.Add("选项4");
-            vCombobox.Items.Add("选项5");
-            vCombobox.Items.Add("选项6");
+            HCCbbItem vItem = new HCCbbItem("选项1");
+            vCombobox.Items.Add(vItem);
+            vItem = new HCCbbItem("选项2");
+            vCombobox.Items.Add(vItem);
+            vItem = new HCCbbItem("选项3");
+            vCombobox.Items.Add(vItem);
+            vItem = new HCCbbItem("选项4");
+            vCombobox.Items.Add(vItem);
+            vItem = new HCCbbItem("选项5");
+            vCombobox.Items.Add(vItem);
+            vItem = new HCCbbItem("选项6");
+            vCombobox.Items.Add(vItem);
             //vCombobox.OnPopupItem = DoComboboxPopupItem;
             //vCombobox.ItemIndex := 0;
             FHCView.InsertItem(vCombobox);

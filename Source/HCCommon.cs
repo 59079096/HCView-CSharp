@@ -117,10 +117,11 @@ namespace HC.View
             //3.2 表格边框改用磅为单位、段样式增加BreakRough处理截断、兼容EmrView使用TDeImageItem类处理ImageItem
             //3.3 兼容32版本图片保存时没有按DeImageItem保存，读取时不正确的问题
             //3.4 RadioGroun控件保存选项样式、保存文件所用的排版算法版本
-            HC_FileVersion = "3.4";
+            //3.5 数据元增加DeleteProtect控制是否能删除掉整个数据元，表格存储CellPadding，FloatBarCode存储单线条宽度
+            HC_FileVersion = "3.5";
 
         public const ushort
-            HC_FileVersionInt = 34;
+            HC_FileVersionInt = 35;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -903,6 +904,19 @@ namespace HC.View
         //jctCNFH   // 全角符号
     }
 
+    public enum HCAction : byte
+    {
+        actBackDeleteText,  // 向前删除文本
+        actDeleteText,  // 向后删除文本
+        actInsertText,  // 插入文本
+        actSetItemText,    // 直接赋值Item的Text
+        actDeleteItem,  // 删除Item
+        actInsertItem,  // 插入Item
+        actItemProperty,  // Item属性变化
+        actItemSelf,  // Item自己管理
+        actItemMirror  // Item镜像
+    }
+
     public struct HCCaretInfo
     {
         public int X, Y, Height, PageIndex;
@@ -925,7 +939,7 @@ namespace HC.View
 
     public class HCCaret
     {
-        private bool FReCreate, FDisFocus;
+        private bool FReCreate, FDisFocus, FVScroll, FHScroll;
         private int FHeight;
         private IntPtr FOwnHandle;
         private int FX, FY;
@@ -1038,6 +1052,18 @@ namespace HC.View
         public bool DisFocus
         {
             get { return FDisFocus; }
+        }
+
+        public bool VScroll
+        {
+            get { return FVScroll; }
+            set { FVScroll = value; }
+        }
+
+        public bool HScroll
+        {
+            get { return FHScroll; }
+            set { FHScroll = value; }
         }
     }
 

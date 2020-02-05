@@ -137,25 +137,9 @@ namespace HC.View
         }
     }
 
-    public enum UndoActionTag : byte
-    {
-        /// <summary> 向前删除文本 </summary>
-        uatDeleteBackText,
-        /// <summary> 向后删除文本 </summary>
-        uatDeleteText,
-        /// <summary> 插入文本 </summary>
-        uatInsertText,
-        uatSetItemText,    // 直接赋值Item的Text
-        uatDeleteItem, 
-        uatInsertItem, 
-        uatItemProperty, 
-        uatItemSelf,
-        uatItemMirror
-    }
-
     public class HCCustomUndoAction : Object
     {
-        private UndoActionTag FTag;
+        private HCAction FTag;
         private int FItemNo;  // 事件发生时的ItemNo
         private int FOffset;  // 事件发生时的Offset
         private bool FParaFirst;
@@ -184,7 +168,7 @@ namespace HC.View
             set { FParaFirst = value; }
         }
 
-        public UndoActionTag Tag
+        public HCAction Tag
         {
             get { return FTag; }
             set { FTag = value; }
@@ -223,7 +207,7 @@ namespace HC.View
         private ItemProperty FItemProperty;
         public HCItemPropertyUndoAction() : base()
         {
-            this.Tag = UndoActionTag.uatItemProperty;
+            this.Tag = HCAction.actItemProperty;
         }
 
         public ItemProperty ItemProperty
@@ -344,7 +328,7 @@ namespace HC.View
         private object FObject;
         public HCItemSelfUndoAction() : base()
         {
-            this.Tag = UndoActionTag.uatItemSelf;
+            this.Tag = HCAction.actItemSelf;
             FObject = null;
         }
 
@@ -415,32 +399,32 @@ namespace HC.View
             FData = null;
         }
 
-        public HCCustomUndoAction ActionAppend(UndoActionTag aTag, int aItemNo, int aOffset, bool aParaFirst)
+        public HCCustomUndoAction ActionAppend(HCAction aTag, int aItemNo, int aOffset, bool aParaFirst)
         {
             HCCustomUndoAction Result = null;
             switch (aTag)
             {
-                case UndoActionTag.uatDeleteBackText:
-                case UndoActionTag.uatDeleteText:
-                case UndoActionTag.uatInsertText:
+                case HCAction.actBackDeleteText:
+                case HCAction.actDeleteText:
+                case HCAction.actInsertText:
                     Result = new HCTextUndoAction();
                     break;
 
-                case UndoActionTag.uatSetItemText:
+                case HCAction.actSetItemText:
                     Result = new HCSetItemTextUndoAction();
                     break;
 
-                case UndoActionTag.uatDeleteItem:
-                case UndoActionTag.uatInsertItem:
-                case UndoActionTag.uatItemMirror:
+                case HCAction.actDeleteItem:
+                case HCAction.actInsertItem:
+                case HCAction.actItemMirror:
                     Result = new HCItemUndoAction();
                     break;
 
-                //case UndoActionTag.uatItemProperty:
+                //case HCAction.actItemProperty:
                 //    Result = new HCItemParaFirstUndoAction();
                 //    break;
 
-                case UndoActionTag.uatItemSelf:
+                case HCAction.actItemSelf:
                     Result = new HCItemSelfUndoAction();
                     break;
 

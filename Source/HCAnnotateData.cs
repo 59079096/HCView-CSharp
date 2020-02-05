@@ -517,23 +517,23 @@ namespace HC.View
             }
         }
 
-        protected override void DoItemAction(int aItemNo, int aOffset, HCItemAction aAction)
+        protected override void DoItemAction(int aItemNo, int aOffset, HCAction aAction)
         {
             switch (aAction)
             {
-                case HCItemAction.hiaRemove:
+                case HCAction.actDeleteItem:
                     _AnnotateRemove(aItemNo, aOffset);
                     break;
 
-                case HCItemAction.hiaInsertChar:
+                case HCAction.actInsertText:
                     _AnnotateInsertChar(aItemNo, aOffset);
                     break;
 
-                case HCItemAction.hiaBackDeleteChar:
+                case HCAction.actBackDeleteText:
                     _AnnotateBackChar(aItemNo, aOffset);
                     break;
 
-                case HCItemAction.hiaDeleteChar:
+                case HCAction.actDeleteText:
                     _AnnotateDeleteChar(aItemNo, aOffset);
                     break;
             }

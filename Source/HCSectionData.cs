@@ -329,7 +329,7 @@ namespace HC.View
                     if (aTraverse.Stop)
                         return;
 
-                    aTraverse.Process(this, i, aTraverse.Tag, ref aTraverse.Stop);
+                    aTraverse.Process(this, i, aTraverse.Tag, aTraverse.DomainStack, ref aTraverse.Stop);
                 }
             }
         }

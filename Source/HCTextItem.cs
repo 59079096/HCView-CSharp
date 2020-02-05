@@ -66,6 +66,7 @@ namespace HC.View
         {
             base.Assign(source);
             FText = (source as HCTextItem).Text;
+            FHyperLink = (source as HCTextItem).HyperLink;
         }
 
         public override HCCustomItem BreakByOffset(int aOffset)
@@ -85,6 +86,15 @@ namespace HC.View
             return Result;
         }
 
+        public override bool CanConcatItems(HCCustomItem aItem)
+        {
+            bool vResult = base.CanConcatItems(aItem);
+            if (vResult)
+                vResult = FHyperLink == aItem.HyperLink;
+
+            return vResult;
+        }
+
         // 保存和读取
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
@@ -102,6 +112,8 @@ namespace HC.View
            
             if (vDSize > 0)
                 aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            HC.HCSaveTextToStream(aStream, FHyperLink);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -132,6 +144,11 @@ namespace HC.View
                 else
                     FText = System.Text.Encoding.Default.GetString(vBuffer);
             }
+
+            if (aFileVersion > 34)
+                HC.HCLoadTextFromStream(aStream, ref FHyperLink, aFileVersion);
+            else
+                FHyperLink = "";
         }
 
         public override string ToHtml(string aPath)

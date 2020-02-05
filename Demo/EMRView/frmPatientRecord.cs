@@ -132,7 +132,7 @@ namespace EMRView
             vFrmRecordSet.ShowDialog(PatientInfo.PatID, PatientInfo.VisitID, (this.GetActiveRecord().ObjectData as RecordInfo).ID);
         }
 
-        private void DoTraverseItem(HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
+        private void DoTraverseItem(HCCustomData aData, int aItemNo, int aTags, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
         {
             if (!(aData.Items[aItemNo] is DeItem))
                 return;
@@ -162,7 +162,7 @@ namespace EMRView
             }
         }
 
-        private void DoSyntaxCheck(HCCustomData aData, int aItemNo)
+        private void DoSyntaxCheck(HCCustomData aData, Stack<HCDomainInfo> aDomainStack, int aItemNo)
         {
             /*DeItem vDeItem = aData.Items[aItemNo] as DeItem;
             vDeItem.SyntaxClear();
@@ -1145,7 +1145,7 @@ namespace EMRView
                     HCCustomItem vItem = null;
                     DeItem vDeItem = null;
                     HashSet<SectionArea> vAreas = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-                    TraverseItemEventHandle vTraverseItemEvent = delegate (HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
+                    TraverseItemEventHandle vTraverseItemEvent = delegate (HCCustomData aData, int aItemNo, int aTags, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
                     {
                         vItem = aData.Items[aItemNo];
                         if (vItem.StyleNo < HCStyle.Null)
@@ -1265,7 +1265,7 @@ namespace EMRView
             FXmlDoc.AppendChild(vNode);
         }
 
-        public void TraverseItem(HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+        public void TraverseItem(HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
         {
             if ((aData is HCHeaderData) || (aData is HCFooterData))
                 return;

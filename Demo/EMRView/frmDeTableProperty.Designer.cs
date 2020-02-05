@@ -62,6 +62,8 @@
             this.cbbCellAlignVert = new System.Windows.Forms.ComboBox();
             this.label16 = new System.Windows.Forms.Label();
             this.btnOK = new System.Windows.Forms.Button();
+            this.label17 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
             this.tabTableInfo.SuspendLayout();
             this.tabTable.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvTable)).BeginInit();
@@ -84,6 +86,8 @@
             // 
             // tabTable
             // 
+            this.tabTable.Controls.Add(this.label7);
+            this.tabTable.Controls.Add(this.label17);
             this.tabTable.Controls.Add(this.tbxFixColLast);
             this.tabTable.Controls.Add(this.tbxFixColFirst);
             this.tabTable.Controls.Add(this.tbxFixRowLast);
@@ -272,7 +276,7 @@
             // 
             // tbxCellVPadding
             // 
-            this.tbxCellVPadding.Location = new System.Drawing.Point(202, 29);
+            this.tbxCellVPadding.Location = new System.Drawing.Point(235, 29);
             this.tbxCellVPadding.Name = "tbxCellVPadding";
             this.tbxCellVPadding.Size = new System.Drawing.Size(65, 21);
             this.tbxCellVPadding.TabIndex = 6;
@@ -308,7 +312,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(167, 32);
+            this.label3.Location = new System.Drawing.Point(200, 32);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(29, 12);
             this.label3.TabIndex = 2;
@@ -404,6 +408,24 @@
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
             // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.Location = new System.Drawing.Point(151, 32);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(29, 12);
+            this.label17.TabIndex = 26;
+            this.label17.Text = "毫米";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(303, 32);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(29, 12);
+            this.label7.TabIndex = 27;
+            this.label7.Text = "毫米";
+            // 
             // frmDeTableProperty
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -465,5 +487,7 @@
         private System.Windows.Forms.TextBox tbxFixRowFirst;
         private System.Windows.Forms.ComboBox cbbCellAlignVert;
         private System.Windows.Forms.Label label16;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label label17;
     }
 }

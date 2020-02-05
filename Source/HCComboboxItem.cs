@@ -179,6 +179,9 @@ namespace HC.View
 
         private void DoPopup()
         {
+            if (!OwnerData.CanEdit())
+                return;
+
             if (FOnPopupItem != null)
                 FOnPopupItem(this, null);
 
@@ -457,6 +460,8 @@ namespace HC.View
             string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
             for (int i = 0; i < vStrings.Length; i++)
                 FItems.Add(new HCCbbItem(vStrings[i]));
+
+            FSaveItem = FItems.Count > 0;
         }
 
         public override void ToXml(XmlElement aNode)
@@ -486,6 +491,8 @@ namespace HC.View
 
             for (int i = 0; i < vStrings.Length; i++)
                 FItems.Add(new HCCbbItem(vStrings[i]));
+
+            FSaveItem = FItems.Count > 0;
         }
 
         public List<HCCbbItem> Items

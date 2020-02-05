@@ -63,10 +63,7 @@ namespace HC.View
         int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo);
 
     public delegate void SectionDataItemEventHandler(object sender, HCCustomData aData, HCCustomItem aItem);
-
-    public delegate void SectionDataFloatItemEventHandler(object sender, HCSectionData aData, HCCustomFloatItem aItem);
-
-    public delegate bool SectionDataItemFunEvent(object sender, HCCustomData aData, HCCustomItem aItem);
+    public delegate bool SectionDataActionEventHandler(object sender, HCCustomData aData, int aItemNo, int aOffset, HCAction aAction);
     public delegate bool SectionDataItemNoFunEvent(object sender, HCCustomData aData, int aItemNo);
 
     public delegate void SectionDrawItemAnnotateEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
@@ -118,17 +115,16 @@ namespace HC.View
         SectionDrawItemAnnotateEventHandler FOnDrawItemAnnotate;
 
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
-        SectionDataFloatItemEventHandler FOnInsertFloatItem;
         SectionDataItemEventHandler FOnInsertItem, FOnRemoveItem;
         SectionDataItemNoFunEvent FOnSaveItem;
-        SectionDataItemFunEvent FOnDeleteItem;
+        SectionDataActionEventHandler FOnDataAcceptAction;
         SectionDataItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         DataItemNoEventHandler FOnItemResize;
         EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
         StyleItemEventHandler FOnCreateItemByStyle;
         FloatStyleItemEventHandler FOnCreateFloatItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
-        TextEventHandler FOnInsertText;
+        TextEventHandler FOnInsertTextBefor;
         GetUndoListEventHandler FOnGetUndoList;
 
         private int GetPageIndexByFilm(int aVOffset)
@@ -220,11 +216,6 @@ namespace HC.View
                 FOnDrawItemAnnotate(this, aData, aDrawItemNo, aDrawRect, aDataAnnotate);
         }
 
-        private void DoDataInsertFloatItem(HCSectionData aData, HCCustomFloatItem aItem)
-        {
-            if (FOnInsertFloatItem != null)
-                FOnInsertFloatItem(this, aData, aItem);
-        }
         private void DoDataInsertItem(HCCustomData aData, HCCustomItem aItem)
         {
             if (FOnInsertItem != null)
@@ -245,10 +236,10 @@ namespace HC.View
                 return true;
         }
 
-        private bool DoDataDeleteItem(HCCustomData aData, HCCustomItem aItem)
+        private bool DoDataAcceptAction(HCCustomData aData, int aItemNo, int aOffset, HCAction aAction)
         {
-            if (FOnDeleteItem != null)
-                return FOnDeleteItem(this, aData, aItem);
+            if (FOnDataAcceptAction != null)
+                return FOnDataAcceptAction(this, aData, aItemNo, aOffset, aAction);
             else
                 return true;
         }
@@ -269,6 +260,17 @@ namespace HC.View
         {
             if (FOnDataChange != null)
                 FOnDataChange(sender, null);
+        }
+
+        private void DoDataItemRequestFormat(HCCustomData aSectionData, HCCustomItem aItem)
+        {
+            HCFunction vEvent = delegate ()
+            {
+                (aSectionData as HCSectionData).ReFormatActiveItem();
+                return true;
+            };
+
+            DoSectionDataAction(aSectionData as HCSectionData, vEvent);
         }
 
         /// <summary> 缩放Item约束不要超过整页宽、高 </summary>
@@ -316,10 +318,10 @@ namespace HC.View
                 return true;
         }
 
-        private bool DoDataInsertText(HCCustomData aData, string aText)
+        private bool DoDataInsertTextBefor(HCCustomData aData, int aItemNo, int aOffset, string aText)
         {
-            if (FOnInsertText != null)
-                return FOnInsertText(aData, aText);
+            if (FOnInsertTextBefor != null)
+                return FOnInsertTextBefor(aData, aItemNo, aOffset, aText);
             else
                 return true;
         }
@@ -673,22 +675,22 @@ namespace HC.View
             return Result;
         }
 
-        protected bool ActiveDataChangeByAction(HCFunction aFunction)
+        protected bool DoSectionDataAction(HCSectionData aData, HCFunction aAction)
         {
-            if (!FActiveData.CanEdit())
+            if (!aData.CanEdit())
                 return false;
 
-            if (FActiveData.FloatItemIndex >= 0)
+            if (aData.FloatItemIndex >= 0)
                 return false;
 
-            bool Result = aFunction();  // 处理变动
+            bool Result = aAction();  // 处理变动
 
-            if (FActiveData.FormatChange)
+            if (aData.FormatChange)
             {
-                FActiveData.FormatChange = false;
+                aData.FormatChange = false;
 
-                if (FActiveData == FPage)
-                    BuildSectionPages(FActiveData.FormatStartDrawItemNo);
+                if (aData == FPage)
+                    BuildSectionPages(aData.FormatStartDrawItemNo);
                 else
                     BuildSectionPages(0);
             }
@@ -707,18 +709,18 @@ namespace HC.View
         protected void SetDataProperty(int vWidth, HCSectionData aData)
         {
             aData.Width = vWidth;
-            aData.OnInsertFloatItem = DoDataInsertFloatItem;
             aData.OnInsertItem = DoDataInsertItem;
             aData.OnRemoveItem = DoDataRemoveItem;
             aData.OnSaveItem = DoDataSaveItem;
-            aData.OnDeleteItem = DoDataDeleteItem;
+            aData.OnAcceptAction = DoDataAcceptAction;
             aData.OnItemResized = DoDataItemResized;
             aData.OnItemMouseDown = DoDataItemMouseDown;
             aData.OnItemMouseUp = DoDataItemMouseUp;
+            aData.OnItemRequestFormat = DoDataItemRequestFormat;
             aData.OnCreateItemByStyle = DoDataCreateStyleItem;
             aData.OnCreateFloatItemByStyle = DoDataCreateFloatStyleItem;
             aData.OnCanEdit = DoDataCanEdit;
-            aData.OnInsertText = DoDataInsertText;
+            aData.OnInsertTextBefor = DoDataInsertTextBefor;
             aData.OnCreateItem = DoDataCreateItem;
             aData.OnReadOnlySwitch = DoDataReadOnlySwitch;
             aData.OnGetScreenCoord = DoGetScreenCoordEvent;
@@ -801,15 +803,15 @@ namespace HC.View
             DoDataChanged(this);
         }
 
-        public void ReAdaptActiveItem()
+        public void ActiveItemReAdaptEnvironment()
         {
             HCFunction vEvent = delegate()
             {
-                FActiveData.ReAdaptActiveItem();
+                FActiveData.ActiveItemReAdaptEnvironment();
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void DisActive()
@@ -922,7 +924,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void PaintDisplayPage(int aFilmOffsetX, int aFilmOffsetY, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
@@ -956,7 +958,7 @@ namespace HC.View
                     return true;
                 };
 
-                ActiveDataChangeByAction(vEvent);
+                DoSectionDataAction(FActiveData, vEvent);
 
                 e.KeyChar = vKey;
             }
@@ -990,7 +992,7 @@ namespace HC.View
                                 FActiveData.KeyDown(e);
                                 return true;
                             };
-                            ActiveDataChangeByAction(vEvent);
+                            DoSectionDataAction(FActiveData, vEvent);
 
                             //Key = vKey;
                         }
@@ -1027,7 +1029,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyTextFontName(string aFontName)
@@ -1038,7 +1040,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyTextFontSize(Single aFontSize)
@@ -1049,7 +1051,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyTextColor(Color aColor)
@@ -1060,7 +1062,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyTextBackColor(Color aColor)
@@ -1071,7 +1073,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyTableCellAlign(HCContentAlign aAlign)
@@ -1082,7 +1084,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertText(string aText)
@@ -1092,7 +1094,7 @@ namespace HC.View
                 return FActiveData.InsertText(aText);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertTable(int aRowCount, int aColCount)
@@ -1102,7 +1104,7 @@ namespace HC.View
                 return FActiveData.InsertTable(aRowCount, aColCount);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertImage(Bitmap aImage)
@@ -1112,7 +1114,7 @@ namespace HC.View
                 return FActiveData.InsertImage(aImage);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertGifImage(string aFile)
@@ -1122,7 +1124,7 @@ namespace HC.View
                 return FActiveData.InsertGifImage(aFile);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertLine(int aLineHeight)
@@ -1132,7 +1134,7 @@ namespace HC.View
                 return FActiveData.InsertLine(aLineHeight);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertItem(HCCustomItem aItem)
@@ -1142,7 +1144,7 @@ namespace HC.View
                 return FActiveData.InsertItem(aItem);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertItem(int aIndex, HCCustomItem aItem)
@@ -1152,7 +1154,7 @@ namespace HC.View
                 return FActiveData.InsertItem(aIndex, aItem);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         /// <summary> 从当前位置后换行 </summary>
@@ -1163,7 +1165,7 @@ namespace HC.View
                 return FActiveData.InsertBreak();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         /// <summary> 从当前位置后分页 </summary>
@@ -1174,7 +1176,7 @@ namespace HC.View
                 return FPage.InsertPageBreak();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool InsertDomain(HCDomainItem aMouldDomain)
@@ -1184,7 +1186,7 @@ namespace HC.View
                 return FActiveData.InsertDomain(aMouldDomain);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         /// <summary> 当前选中的内容添加批注 </summary>
@@ -1195,7 +1197,17 @@ namespace HC.View
                 return FActiveData.InsertAnnotate(aTitle, aText);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
+        }
+
+        public bool SetActiveImage(Stream aImageStream)
+        {
+            HCFunction vEvent = delegate ()
+            {
+                return FActiveData.SetActiveImage(aImageStream);
+            };
+
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableResetRowCol(int rowCount, int colCount)
@@ -1205,7 +1217,7 @@ namespace HC.View
                 return FActiveData.ActiveTableResetRowCol(rowCount, colCount);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         //
@@ -1216,7 +1228,7 @@ namespace HC.View
                 return FActiveData.TableInsertRowAfter(aRowCount);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableInsertRowBefor(byte aRowCount)
@@ -1226,7 +1238,7 @@ namespace HC.View
                 return FActiveData.TableInsertRowBefor(aRowCount);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableDeleteCurRow()
@@ -1236,7 +1248,7 @@ namespace HC.View
                 return FActiveData.ActiveTableDeleteCurRow();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableSplitCurRow()
@@ -1246,7 +1258,7 @@ namespace HC.View
                 return FActiveData.ActiveTableSplitCurRow();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableSplitCurCol()
@@ -1256,7 +1268,7 @@ namespace HC.View
                 return FActiveData.ActiveTableSplitCurCol();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableInsertColAfter(byte aColCount)
@@ -1266,7 +1278,7 @@ namespace HC.View
                 return FActiveData.TableInsertColAfter(aColCount);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableInsertColBefor(byte aColCount)
@@ -1276,7 +1288,7 @@ namespace HC.View
                 return FActiveData.TableInsertColBefor(aColCount);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool ActiveTableDeleteCurCol()
@@ -1286,7 +1298,7 @@ namespace HC.View
                 return FActiveData.ActiveTableDeleteCurCol();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         //// <summary>  节坐标转换到指定页坐标 </summary>
@@ -1313,7 +1325,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyParaAlignVert(ParaAlignVert aAlign)
@@ -1324,7 +1336,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyParaBackColor(Color aColor)
@@ -1335,7 +1347,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyParaBreakRough(bool aRough)
@@ -1346,7 +1358,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyParaLineSpace(ParaLineSpaceMode aSpaceMode, Single aSpace)
@@ -1357,7 +1369,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyParaLeftIndent(Single indent)
@@ -1368,7 +1380,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyParaRightIndent(Single indent)
@@ -1379,7 +1391,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ApplyParaFirstIndent(Single indent)
@@ -1390,7 +1402,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         /// <summary> 获取光标在Dtat中的位置信息并映射到指定页面 </summary>
@@ -1657,6 +1669,7 @@ namespace HC.View
                             {
                                 aCanvas.Font.Size = 10;
                                 aCanvas.Font.Family = "宋体";
+                                aCanvas.Font.FontStyles.Value = 0;
                                 aCanvas.Font.Color = Color.FromArgb(21, 66, 139);
                             }
                             finally
@@ -1717,6 +1730,7 @@ namespace HC.View
                             {
                                 aCanvas.Font.Size = 10;
                                 aCanvas.Font.Family = "宋体";
+                                aCanvas.Font.FontStyles.Value = 0;
                                 aCanvas.Font.Color = Color.FromArgb(21, 66, 139);
                             }
                             finally
@@ -2120,7 +2134,7 @@ namespace HC.View
                     return true;
                 };
 
-                ActiveDataChangeByAction(vEvent);
+                DoSectionDataAction(FActiveData, vEvent);
             }
             else
             {
@@ -2388,24 +2402,24 @@ namespace HC.View
             HCCustomItem vItem = null;
             for (int i = vPrioDrawItemNo + 1; i <= FPage.DrawItems.Count - 1; i++)
             {
-                vItem = FPage.Items[FPage.DrawItems[i].ItemNo];
-                if (vItem.PageBreak && (vItem.FirstDItemNo == i))
-                {
-                    vFmtPageOffset = vPageDataFmtBottom - FPage.DrawItems[i].Rect.Top;
-                    if (vFmtPageOffset > 0)
-                    {
-                        for (int j = i; j <= FPage.DrawItems.Count - 1; j++)
-                            FPage.DrawItems[j].Rect.Offset(0, vFmtPageOffset);
-                    }
-
-                    vPageDataFmtTop = vPageDataFmtBottom;
-                    vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
-
-                    _FormatNewPage(ref vPageIndex, i - 1, i);
-                }
-
                 if (FPage.DrawItems[i].LineFirst)
                 {
+                    vItem = FPage.Items[FPage.DrawItems[i].ItemNo];
+                    if (vItem.PageBreak && (vItem.FirstDItemNo == i))
+                    {
+                        vFmtPageOffset = vPageDataFmtBottom - FPage.DrawItems[i].Rect.Top;
+                        if (vFmtPageOffset > 0)
+                        {
+                            for (int j = i; j <= FPage.DrawItems.Count - 1; j++)
+                                FPage.DrawItems[j].Rect.Offset(0, vFmtPageOffset);
+                        }
+
+                        vPageDataFmtTop = vPageDataFmtBottom;
+                        vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+
+                        _FormatNewPage(ref vPageIndex, i - 1, i);
+                    }
+
                     if (FPage.GetDrawItemStyle(i) < HCStyle.Null)
                         _FormatRectItemCheckPageBreak(i, vPageHeight, ref vPageIndex, ref vPageDataFmtTop, ref vPageDataFmtBottom);
                     else
@@ -2430,7 +2444,7 @@ namespace HC.View
                 return FActiveData.DeleteSelected();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void DisSelect()
@@ -2445,7 +2459,7 @@ namespace HC.View
                 return FActiveData.DeleteActiveDomain();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool DeleteActiveDataItems(int aStartNo, int aEndNo, bool aKeepPara)
@@ -2456,7 +2470,7 @@ namespace HC.View
                 return true;
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool MergeTableSelectCells()
@@ -2466,7 +2480,7 @@ namespace HC.View
                 return FActiveData.MergeTableSelectCells();
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool TableApplyContentAlign(HCContentAlign aAlign)
@@ -2476,7 +2490,7 @@ namespace HC.View
                 return FActiveData.TableApplyContentAlign(aAlign);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ReFormatActiveParagraph()
@@ -2487,7 +2501,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void ReFormatActiveItem()
@@ -2498,7 +2512,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(FActiveData, vEvent);
         }
 
         public int GetHeaderAreaHeight()
@@ -2688,7 +2702,7 @@ namespace HC.View
                 return FActiveData.InsertStream(aStream, aStyle, aFileVersion);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public void FormatData()
@@ -2724,7 +2738,7 @@ namespace HC.View
                     return true;
                 };
 
-                ActiveDataChangeByAction(vEvent);
+                DoSectionDataAction(FActiveData, vEvent);
             }
             else
                 (aUndo.Data as HCSectionData).Undo(aUndo);
@@ -2744,7 +2758,7 @@ namespace HC.View
                     return true;
                 };
 
-                ActiveDataChangeByAction(vEvent);
+                DoSectionDataAction(FActiveData, vEvent);
             }
             else
                 (aRedo.Data as HCSectionData).Redo(aRedo);
@@ -2965,12 +2979,6 @@ namespace HC.View
             set { FOnCheckUpdateInfo = value; }
         }
 
-        public SectionDataFloatItemEventHandler OnInsertFloatItem
-        {
-            get { return FOnInsertFloatItem; }
-            set { FOnInsertFloatItem = value; }
-        }
-
         public SectionDataItemEventHandler OnInsertItem
         {
             get { return FOnInsertItem; }
@@ -3079,10 +3087,10 @@ namespace HC.View
             set { FOnCreateItem = value; }
         }
 
-        public SectionDataItemFunEvent OnDeleteItem
+        public SectionDataActionEventHandler OnDataAcceptAction
         {
-            get { return FOnDeleteItem; }
-            set { FOnDeleteItem = value; }
+            get { return FOnDataAcceptAction; }
+            set { FOnDataAcceptAction = value; }
         }
 
         public StyleItemEventHandler OnCreateItemByStyle
@@ -3103,10 +3111,10 @@ namespace HC.View
             set { FOnCanEdit = value; }
         }
 
-        public TextEventHandler OnInsertText
+        public TextEventHandler OnInsertTextBefor
         {
-            get { return FOnInsertText; }
-            set { FOnInsertText = value; }
+            get { return FOnInsertTextBefor; }
+            set { FOnInsertTextBefor = value; }
         }
 
         public GetUndoListEventHandler OnGetUndoList
@@ -3154,7 +3162,7 @@ namespace HC.View
                 return ActiveData.Replace(aText);
             };
 
-            return ActiveDataChangeByAction(vEvent);
+            return DoSectionDataAction(ActiveData, vEvent);
         }
 
         public bool ParseHtml(string aHtmlText)
@@ -3164,7 +3172,7 @@ namespace HC.View
                 return true;
             };
 
-            ActiveDataChangeByAction(vEvent);
+            DoSectionDataAction(this.ActiveData, vEvent);
             return true;
         }
 

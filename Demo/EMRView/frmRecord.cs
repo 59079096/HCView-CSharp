@@ -333,7 +333,9 @@ namespace EMRView
                 FEmrView.OnSectionReadOnlySwitch = DoReadOnlySwitch;
                 FEmrView.OnCanNotEdit = DoCanNotEdit;
                 FEmrView.OnSectionPaintPaperBefor = DoPaintPaperBefor;
-                FEmrView.OnSectionInsertText = DoInsertText;
+                FEmrView.OnSectionInsertTextBefor = DoInsertTextBefor;
+                FEmrView.OnPasteRequest = DoPasteRequest;
+                FEmrView.OnSyntaxPaint = DoSyntaxPaint;
                 FEmrView.ContextMenuStrip = this.pmView;
                 FEmrView.OnTableToolPropertyClick = mniTableProperty_Click;
                 //
@@ -345,7 +347,7 @@ namespace EMRView
         }
 
         /// <summary> 遍历处理痕迹隐藏或显示 </summary>
-        private void DoHideTraceTraverse(HCCustomData aData, int aItemNo, int aTags, ref bool aStop)
+        private void DoHideTraceTraverse(HCCustomData aData, int aItemNo, int aTags, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
         {
             if (!(aData.Items[aItemNo] is DeItem))  // 只对元素生效
                 return;
@@ -450,22 +452,47 @@ namespace EMRView
             }
         }
 
-        private bool DoInsertText(HCCustomData aData, string aText)
+        private bool DoInsertTextBefor(HCCustomData aData, int aItemNo, int aOffset, string aText)
         {
-            HCCustomItem vItem = aData.GetActiveItem();
-            if ((vItem != null) && (vItem is DeItem))
+            HCCustomItem vItem = aData.Items[aItemNo];
+            if (vItem is DeItem)
             {
                 DeItem vDeItem = vItem as DeItem;
                 if (vDeItem.IsElement && !vDeItem.AllocValue && vItem.IsSelectComplate)  // 数据元没赋过值且全选中了（无弹出框时处理为全选中、手动全选中）
                 {
-                    FEmrView.SetActiveItemText(aText);
-                    vDeItem.Propertys.Remove(DeProp.CMVVCode);
-                    vDeItem.AllocValue = true;
+                    FEmrView.UndoGroupBegin();
+                    try
+                    {
+                        FEmrView.SetActiveItemText(aText);
+                        (aData as HCRichData).UndoItemMirror(aItemNo, aOffset);
+                        vDeItem.Propertys.Remove(DeProp.CMVVCode);
+                        vDeItem.AllocValue = true;
+                    }
+                    finally
+                    {
+                        FEmrView.UndoGroupEnd();
+                    }
+
                     return false;
                 }
             }
 
             return true;
+        }
+
+        private void DoSyntaxPaint(HCCustomData aData, int aItemNo, string aDrawText, EmrSyntax aSyntax, RECT aRect, HCCanvas aCanvas)
+        {
+            if (aSyntax.Problem == EmrSyntaxProblem.espContradiction)  // 矛盾
+                aCanvas.Brush.Color = Color.Red;
+            else
+                aCanvas.Brush.Color = Color.Blue;
+
+            aCanvas.FillRect(aRect);
+        }
+
+        private bool DoPasteRequest(int aFormat)
+        {
+            return true;  // 控制能否粘贴指定格式的内容
         }
 
         /// <summary> 设置当前数据元的文本内容，为能提前预处理一下DeItem，所以取一下DeItem </summary>
@@ -643,7 +670,7 @@ namespace EMRView
                     {
                         vInfo = vInfo + "元素(" + vDeItem[DeProp.Index] + ")";
 
-                        if (FEmrView.ActiveSection.ActiveData.ReadOnly)
+                        if (FEmrView.ActiveSection.ActiveData.ReadOnly || vDeItem.EditProtect)
                         {
                             tssDeInfo.Text = "";
                             return;
@@ -1021,7 +1048,7 @@ namespace EMRView
             set { SetPrintToolVisible(value); }
         }
 
-        public DataItemNoEventHandler OnSyntaxCheck
+        public DataDomainItemNoEventHandler OnSyntaxCheck
         {
             get { return FEmrView.OnSyntaxCheck; }
             set { FEmrView.OnSyntaxCheck = value; }
@@ -1216,7 +1243,7 @@ namespace EMRView
             {
                 DeItem vDeItem = vTopData.GetActiveItem() as DeItem;
                 vDeItem.EditProtect = !vDeItem.EditProtect;
-                FEmrView.ReAdaptActiveItem();
+                FEmrView.ActiveItemReAdaptEnvironment();
             }
         }
 
@@ -1540,7 +1567,7 @@ namespace EMRView
             {
                 DeItem vDeItem = vTopData.GetActiveItem() as DeItem;
                 vDeItem.CopyProtect = !vDeItem.CopyProtect;
-                FEmrView.ReAdaptActiveItem();
+                FEmrView.ActiveItemReAdaptEnvironment();
             }
         }
 

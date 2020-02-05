@@ -22,7 +22,40 @@ using System.Xml;
 
 namespace HC.View
 {
-    public delegate void TraverseItemEventHandle(HCCustomData aData, int aItemNo, int aTag, ref bool aStop);
+    public class HCDomainInfo : HCObject
+    {
+        private int FBeginNo, FEndNo;
+
+        public HCDomainInfo()
+        {
+            Clear();
+        }
+
+        public void Clear()
+        {
+            FBeginNo = -1;
+            FEndNo = -1;
+        }
+
+        public bool Contain(int aItemNo)
+        {
+            return (aItemNo >= FBeginNo) && (aItemNo <= FEndNo);
+        }
+
+        public int BeginNo
+        {
+            get { return FBeginNo; }
+            set { FBeginNo = value; }
+        }
+
+        public int EndNo
+        {
+            get { return FEndNo; }
+            set { FEndNo = value; }
+        }
+    }
+
+    public delegate void TraverseItemEventHandle(HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop);
 
     public class HCItemTraverse : Object
     {
@@ -30,10 +63,14 @@ namespace HC.View
         public int Tag;
         public bool Stop;
         public TraverseItemEventHandle Process;
+        public Stack<HCDomainInfo> DomainStack;
 
         public HCItemTraverse()
         {
+            Tag = 0;
+            Stop = false;
             Areas = new HashSet<SectionArea>();
+            DomainStack = new Stack<HCDomainInfo>();
         }
     }
 
@@ -98,10 +135,11 @@ namespace HC.View
         }
     }
 
+    public delegate void DataDomainItemNoEventHandler(HCCustomData aData, Stack<HCDomainInfo> aDomainStack, int aItemNo);
     public delegate void DataItemEventHandler(HCCustomData aData, HCCustomItem aItem);
-    public delegate bool DataItemFunEventHandler(HCCustomData aData, HCCustomItem aItem);
     public delegate void DataItemNoEventHandler(HCCustomData aData, int aItemNo);
     public delegate bool DataItemNoFunEventHandler(HCCustomData aData, int aItemNo);
+    public delegate bool DataActionEventHandler(HCCustomData aData, int aItemNo, int aOffset, HCAction aAction);
 
     public delegate void DrawItemPaintEventHandler(HCCustomData aData, int aItemNo,
       int aDrawItemNo, RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight,
@@ -597,7 +635,7 @@ namespace HC.View
                 FOnRemoveItem(this, aItem);
         }
 
-        protected virtual void DoItemAction(int aItemNo, int aOffset, HCItemAction aAction) { }
+        protected virtual void DoItemAction(int aItemNo, int aOffset, HCAction aAction) { }
 
         protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
@@ -661,6 +699,11 @@ namespace HC.View
         ~HCCustomData()
         {
                     
+        }
+
+        public virtual bool CanEdit()
+        {
+            return true;
         }
 
         /// <summary> 全选 </summary>
@@ -2267,17 +2310,17 @@ namespace HC.View
                                 if (i == vSelStartDNo)  // 选中在不同DrawItem，当前是起始
                                 {
                                     aCanvas.FillRect(new RECT(vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelStartDOffs, FStyle.TempCanvas),
-                                    vDrawRect.Top,
-                                    vDrawRect.Right,
-                                    Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
+                                        vDrawRect.Top,
+                                        vDrawRect.Right,
+                                        Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
                                 }
                                 else
                                 if (i == vSelEndDNo)  // 选中在不同的DrawItem，当前是结束
                                 {
                                     aCanvas.FillRect(new RECT(vDrawRect.Left,
-                                    vDrawRect.Top,
-                                    vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelEndDOffs, FStyle.TempCanvas),
-                                    Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
+                                        vDrawRect.Top,
+                                        vDrawRect.Left + GetDrawItemOffsetWidth(i, vSelEndDOffs, FStyle.TempCanvas),
+                                        Math.Min(vDrawRect.Bottom, aDataScreenBottom)));
                                 }
                                 else
                                 if ((i > vSelStartDNo) && (i < vSelEndDNo))  // 选中起始和结束DrawItem之间的DrawItem
@@ -2285,7 +2328,7 @@ namespace HC.View
                             }
                         }
 
-                        vItem.PaintTo(FStyle, vDrawRect, aDataDrawTop, aDataDrawBottom,
+                        vItem.PaintTo(FStyle, vClearRect, aDataDrawTop, aDataDrawBottom,
                             aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);  // 触发Item绘制事件
 
                         // 绘制文本                      
@@ -2451,13 +2494,7 @@ namespace HC.View
             }
         }
 
-        public virtual void SaveToStream(Stream aStream)
-        {
-            SaveToStream(aStream, 0, 0, FItems.Count - 1, Items.Last.Length);
-        }
-
-        public virtual void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset,
-            int aEndItemNo, int aEndOffset)
+        public void SaveItemToStream(Stream aStream, int aStartItemNo, int aStartOffset, int aEndItemNo, int aEndOffset)
         {
             Int64 vBegPos = aStream.Position;
             byte[] vBuffer = System.BitConverter.GetBytes(vBegPos);
@@ -2513,6 +2550,17 @@ namespace HC.View
             }
 
             aStream.Position = vEndPos;
+        }
+
+        public virtual void SaveToStream(Stream aStream)
+        {
+            SaveToStream(aStream, 0, 0, FItems.Count - 1, Items.Last.Length);
+        }
+
+        public virtual void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset,
+            int aEndItemNo, int aEndOffset)
+        {
+            SaveItemToStream(aStream, aStartItemNo, aStartOffset, aEndItemNo, aEndOffset);
         }
 
         public string SaveToText()

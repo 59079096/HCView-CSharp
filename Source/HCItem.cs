@@ -51,11 +51,6 @@ namespace HC.View
         issNone = 0, issPart = 1, issComplate = 2
     }
 
-    public enum HCItemAction : byte
-    {
-        hiaRemove, hiaInsertChar, hiaBackDeleteChar, hiaDeleteChar
-    }
-
     public class PaintInfo : HCObject
     {
         private bool FPrint;
@@ -402,7 +397,7 @@ namespace HC.View
             return FSelectState != ItemSelectState.issNone;
         }
 
-        public virtual bool CanAccept(int aOffset, HCItemAction aAction)
+        public virtual bool AcceptAction(int aOffset, HCAction aAction)
         {
             return true;
         }

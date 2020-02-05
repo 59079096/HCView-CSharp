@@ -77,6 +77,7 @@ namespace HC.View
                 aCanvas.Pen.Color = Color.Black;
 
             aCanvas.Pen.Width = FBorderWidth;
+            aCanvas.Pen.Style = HCPenStyle.psSolid;
 
             if (FBorderSides.Contains((byte)BorderSide.cbsLeft))
             {
@@ -302,7 +303,10 @@ namespace HC.View
                 if (FCaretOffset > FText.Length)
                     FCaretOffset = 0;
 
-                OwnerData.Style.UpdateInfoRePaint();
+                if (this.AutoSize)
+                    (OwnerData as HCFormatData).ItemRequestFormat(this);
+                else
+                    OwnerData.Style.UpdateInfoRePaint();
             }
         }
 
@@ -332,6 +336,11 @@ namespace HC.View
             FPrintOnlyText = (source as HCEditItem).PrintOnlyText;
             FBorderSides.Value = (source as HCEditItem).BorderSides.Value;
             FBorderWidth = (source as HCEditItem).BorderWidth;
+        }
+
+        public override void Clear()
+        {
+            this.Text = "";
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)

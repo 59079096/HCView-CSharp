@@ -35,7 +35,7 @@ namespace EMRView
         private HCCopyPasteEventHandler FOnCopyRequest, FOnPasteRequest;
         private HCCopyPasteStreamEventHandler FOnCopyAsStream, FOnPasteFromStream;
         // 语法检查相关事件
-        private DataItemNoEventHandler FOnSyntaxCheck;
+        private DataDomainItemNoEventHandler FOnSyntaxCheck;
         private SyntaxPaintEventHandler FOnSyntaxPaint;
 
         private void SetPageBlankTip(string value)
@@ -47,11 +47,11 @@ namespace EMRView
             }
         }
 
-        private void DoSyntaxCheck(HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+        private void DoSyntaxCheck(HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
         {
             //if (FOnSyntaxCheck != null) 调用前已经判断了
             if (aData.Items[aItemNo].StyleNo > HCStyle.Null)
-                FOnSyntaxCheck(aData, aItemNo);
+                FOnSyntaxCheck(aData, aDomainStack, aItemNo);
         }
 
         private void DoSyncDeItem(object sender, HCCustomData aData, HCCustomItem aItem)
@@ -205,11 +205,72 @@ namespace EMRView
                 return true;
         }
 
-        protected override bool DoSectionDeleteItem(object sender, HCCustomData aData, HCCustomItem aItem)
+        protected override bool DoSectionAcceptAction(object sender, HCCustomData aData, int aItemNo, int aOffset, HCAction aAction)
         {
-            bool vResult = base.DoSectionDeleteItem(sender, aData, aItem);
-            if ((aItem is DeGroup) && (!FDesignMode))  // 设计模式不允许删除数据组
-                vResult = false;
+            bool vResult = base.DoSectionAcceptAction(sender, aData, aItemNo, aOffset, aAction);
+            if (vResult && !FDesignMode)
+            {
+                switch (aAction)
+                {
+                    case HCAction.actBackDeleteText:
+                    case HCAction.actDeleteText:
+                        {
+                            if (aData.Items[aItemNo] is DeItem)
+                            {
+                                DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+
+                                if (vDeItem.IsElement && (vDeItem.Length == 1))
+                                {
+                                    if (vDeItem[DeProp.Name] != "")
+                                        this.SetActiveItemText(vDeItem[DeProp.Name]);
+                                    else
+                                        this.SetActiveItemText("未填写");
+
+                                    vDeItem.AllocValue = false;
+
+                                    vResult = false;
+                                }
+                            }
+                        }
+                        break;
+
+                    case HCAction.actDeleteItem:
+                        {
+                            HCCustomItem vItem = aData.Items[aItemNo];
+                            if (vItem is DeGroup)  // 非设计模式不允许删除数据组
+                                vResult = false;
+                            else
+                            if (vItem is DeItem)
+                                vResult = (vItem as DeItem).DeleteAllow;
+                            else
+                            if (vItem is DeTable)
+                                vResult = (vItem as DeTable).DeleteAllow;
+                            else
+                            if (vItem is DeCheckBox)
+                                vResult = (vItem as DeCheckBox).DeleteAllow;
+                            else
+                            if (vItem is DeEdit)
+                                vResult = (vItem as DeEdit).DeleteAllow;
+                            else
+                            if (vItem is DeCombobox)
+                                vResult = (vItem as DeCombobox).DeleteAllow;
+                            else
+                            if (vItem is DeDateTimePicker)
+                                vResult = (vItem as DeDateTimePicker).DeleteAllow;
+                            else
+                            if (vItem is DeRadioGroup)
+                                vResult = (vItem as DeRadioGroup).DeleteAllow;
+                            else
+                            if (vItem is DeFloatBarCodeItem)
+                                vResult = (vItem as DeFloatBarCodeItem).DeleteAllow;
+                            else
+                            if (vItem is DeImageItem)
+                                vResult = (vItem as DeImageItem).DeleteAllow;
+                        }
+
+                        break;
+                }
+            }
 
             return vResult;
         }
@@ -657,7 +718,7 @@ namespace EMRView
                 return;
 
             DeItem vDeItem = aData.Items[aItemNo] as DeItem;
-            if ((vDeItem.SyntaxCount() > 0) && (!vDeItem.Selected()))
+            if ((vDeItem.SyntaxCount() > 0) && (!vDeItem.IsSelectComplate))
             {
                 int vOffset = aData.DrawItems[aDrawItemNo].CharOffs;
                 int vOffsetEnd = aData.DrawItems[aDrawItemNo].CharOffsetEnd();
@@ -665,47 +726,60 @@ namespace EMRView
                 int vSyOffset = 0, vSyOffsetEnd = 0, vStart = 0, vLen;
                 RECT vRect = new RECT();
                 bool vDT = false;
+                bool vDrawSyntax = false;
                 for (int i = 0; i < vDeItem.Syntaxs.Count; i++)
                 {
                     vSyOffset = vDeItem.Syntaxs[i].Offset;
-                    vSyOffsetEnd = vSyOffset + vDeItem.Syntaxs[i].Length - 1;
+                    if (vSyOffset > vOffsetEnd)
+                        continue;
 
-                    if (vSyOffsetEnd >= vOffset)  // 此DrawItem中有语法问题
+                    vSyOffsetEnd = vSyOffset + vDeItem.Syntaxs[i].Length - 1;
+                    if (vSyOffsetEnd < vOffset)
+                        continue;
+
+                    vDrawSyntax = false;
+                    if ((vSyOffset <= vOffset) && (vSyOffsetEnd >= vOffsetEnd))
                     {
-                        if (vSyOffsetEnd >= vOffsetEnd)  // 全部在问题中
+                        vDrawSyntax = true;
+                        vRect.Left = aClearRect.Left;
+                        vRect.Right = aClearRect.Right;
+                    }
+                    else
+                    if (vSyOffset >= vOffset)  // 有交集
+                    {
+                        vDrawSyntax = true;
+                        if (vSyOffsetEnd <= vOffsetEnd)  // 问题在DrawItem中间
                         {
-                            vStart = 1;
-                            vLen = aData.DrawItems[aDrawItemNo].CharLen;
-                            vRect.Left = aClearRect.Left;
+                            vStart = vSyOffset - vOffset;
+                            vLen = vDeItem.Syntaxs[i].Length;
+                            vRect.Left = aClearRect.Left
+                                + aData.GetDrawItemOffsetWidth(aDrawItemNo, vStart, aCanvas);
+                            vRect.Right = aClearRect.Left
+                                + aData.GetDrawItemOffsetWidth(aDrawItemNo, vStart + vLen, aCanvas);
+                        }
+                        else  // DrawItem是问题的一部分
+                        {
+                            vRect.Left = aClearRect.Left
+                                + aData.GetDrawItemOffsetWidth(aDrawItemNo, vSyOffset - vOffset, aCanvas);
                             vRect.Right = aClearRect.Right;
                         }
-                        else  // 部分在问题中（结束在此DrawItme内）
-                        {
-                            if (vSyOffset > vOffset)  // 问题起始不在此DrawItem开始，问题在此DrawItem中间
-                            {
-                                vStart = vSyOffset - vOffset + 1;
-                                vLen = vDeItem.Syntaxs[i].Length;
-                                vRect.Left = aClearRect.Left //+ ACanvas.TextWidth(System.Copy(ADrawText, 1, vStart - 1));
-                                    + aData.GetDrawItemOffsetWidth(aDrawItemNo, vStart - 1, aCanvas);
-                                vRect.Right = aClearRect.Left //+ ACanvas.TextWidth(System.Copy(ADrawText, 1, vStart + vLen - 1));
-                                    + aData.GetDrawItemOffsetWidth(aDrawItemNo, vStart + vLen - 1, aCanvas);
-                            }
-                            else  // 起始不在此DrawItem中
-                            {
-                                //vStart := 1;
-                                vLen = vSyOffsetEnd - vOffset + 1;
-                                vRect.Left = aClearRect.Left;
+                    }
+                    else  // vSyOffset < vOffset
+                    if (vSyOffsetEnd <= vOffsetEnd)  // 有交集，DrawItem是问题的一部分
+                    {
+                        vDrawSyntax = true;
+                        vRect.Left = aClearRect.Left;
+                        vRect.Right = aClearRect.Left
+                            + aData.GetDrawItemOffsetWidth(aDrawItemNo, vSyOffsetEnd - vOffset + 1, aCanvas);
+                    }
 
-                                vRect.Right = aClearRect.Left //+ ACanvas.TextWidth(System.Copy(ADrawText, 1, vLen));
-                                  + aData.GetDrawItemOffsetWidth(aDrawItemNo, vLen, aCanvas);
-                            }
-                        }
-
+                    if (vDrawSyntax)  // 此DrawItem中有语法问题
+                    {
                         vRect.Top = aClearRect.Top;
                         vRect.Bottom = aClearRect.Bottom;
 
                         if (FOnSyntaxPaint != null)
-                            FOnSyntaxPaint(vDeItem.Syntaxs[i], vRect, aCanvas);
+                            FOnSyntaxPaint(aData, aItemNo, aDrawText, vDeItem.Syntaxs[i], vRect, aCanvas);
                         else
                         {
                             switch (vDeItem.Syntaxs[i].Problem)
@@ -930,7 +1004,7 @@ namespace EMRView
 
             HCCustomItem vItem;
             string vText = "";
-            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
             {
                 vItem = aData.Items[aItemNo];
                 if ((vItem is DeItem) && (vItem as DeItem)[DeProp.Index] == aDeIndex)
@@ -981,7 +1055,7 @@ namespace EMRView
             vItemTraverse.Areas.Add(SectionArea.saFooter);
 
             HCCustomItem vItem;
-            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, ref bool aStop)
+            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
             {
                 vItem = aData.Items[aItemNo];
                 if ((vItem is DeItem) && (vItem as DeItem)[DeProp.Index] == aDeIndex)
@@ -1043,6 +1117,92 @@ namespace EMRView
             }
         }
 
+        public bool CheckDeGroupStart(HCViewData aData, int aItemNo, string aDeIndex)
+        {
+            bool vResult = false;
+            if (aData.Items[aItemNo] is DeGroup)
+            {
+                DeGroup vDeGroup = aData.Items[aItemNo] as DeGroup;
+                vResult = (vDeGroup.MarkType == MarkType.cmtBeg) && (vDeGroup[DeProp.Index] == aDeIndex);
+            }
+
+            return vResult;
+        }
+
+        public bool CheckDeGroupEnd(HCViewData aData, int aItemNo, string aDeIndex)
+        {
+            bool vResult = false;
+            if (aData.Items[aItemNo] is DeGroup)
+            {
+                DeGroup vDeGroup = aData.Items[aItemNo] as DeGroup;
+                vResult = (vDeGroup.MarkType == MarkType.cmtEnd) && (vDeGroup[DeProp.Index] == aDeIndex);
+            }
+
+            return vResult;
+        }
+
+        public void GetDataDeGroupItemNo(HCViewData aData, string aDeIndex, bool aForward, ref int aStartNo, ref int aEndNo)
+        {
+            aEndNo = -1;
+            int vBeginNo = -1;
+            int vEndNo = -1;
+
+            if (aForward)  // 从AStartNo往前找
+            {
+                for (int i = aStartNo; i >= 0; i--)  // 找结尾ItemNo
+                {
+                    if (CheckDeGroupEnd(aData, i, aDeIndex))
+                    {
+                        vEndNo = i;
+                        break;
+                    }
+                }
+
+                if (vEndNo >= 0)  // 再往前找起始ItemNo
+                {
+                    for (int i = vEndNo - 1; i >= 0; i--)
+                    {
+                        if (CheckDeGroupStart(aData, i, aDeIndex))
+                        {
+                            vBeginNo = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            else  // 从AStartNo往后找
+            {
+                for (int i = aStartNo; i < aData.Items.Count; i++)  // 找起始ItemNo
+                {
+                    if (CheckDeGroupStart(aData, i, aDeIndex))
+                    {
+                        vBeginNo = i;
+                        break;
+                    }
+                }
+
+                if (vBeginNo >= 0)  // 找结尾ItemNo
+                {
+                    for (int i = vBeginNo + 1; i < aData.Items.Count; i++)
+                    {
+                        if (CheckDeGroupEnd(aData, i, aDeIndex))
+                        {
+                            vEndNo = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ((vBeginNo >= 0) && (vEndNo >= 0))
+            {
+                aStartNo = vBeginNo;
+                aEndNo = vEndNo;
+            }
+            else
+                aStartNo = -1;
+        }
+
         /// <summary> 获取指定数据组中的文本内容 </summary>
         /// <param name="AData">指定从哪个Data里获取</param>
         /// <param name="ADeGroupStartNo">指定数据组的起始ItemNo</param>
@@ -1065,48 +1225,13 @@ namespace EMRView
         {
             string Result = "";
 
-            DeGroup vDeGroup = null;
-            int vBeginNo = -1;
+            int vBeginNo = aDeGroupStartNo;
             int vEndNo = -1;
             string vDeIndex = (aData.Items[aDeGroupStartNo] as DeGroup)[DeProp.Index];
 
-            for (int i = 0; i <= aDeGroupStartNo - 1; i++)  // 找起始
-            {
-                if (aData.Items[i] is DeGroup)
-                {
-                    vDeGroup = aData.Items[i] as DeGroup;
-                    if (vDeGroup.MarkType == MarkType.cmtBeg)  // 是域起始
-                    {
-                        if (vDeGroup[DeProp.Index] == vDeIndex)  // 是目标域起始
-                        {
-                            vBeginNo = i;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (vBeginNo >= 0)  // 找结束
-            {
-                for (int i = vBeginNo + 1; i <= aDeGroupStartNo - 1; i++)
-                {
-                    if (aData.Items[i] is DeGroup)
-                    {
-                        vDeGroup = aData.Items[i] as DeGroup;
-                        if (vDeGroup.MarkType == MarkType.cmtEnd)  // 是域结束
-                        {
-                            if (vDeGroup[DeProp.Index] == vDeIndex)
-                            {
-                                vEndNo = i;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (vEndNo > 0)
-                    Result = GetDataDeGroupText(aData, vBeginNo, vEndNo);
-            }
+            GetDataDeGroupItemNo(aData, vDeIndex, true, ref vBeginNo, ref vEndNo);
+            if (vEndNo > 0)
+                Result = GetDataDeGroupText(aData, vBeginNo, vEndNo);
 
             return Result;
         }
@@ -1131,6 +1256,49 @@ namespace EMRView
             // 选中，使用插入时删除当前数据组中的内容
             aData.SetSelectBound(vGroupBeg, HC.View.HC.OffsetAfter, vGroupEnd, HC.View.HC.OffsetBefor);
             aData.InsertText(aText);
+        }
+
+        public void GetDataDeGroupToStream(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo, Stream aStream)
+        {
+            HC.View.HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
+            this.Style.SaveToStream(aStream);
+            aData.SaveItemToStream(aStream, aDeGroupStartNo + 1, 0, aDeGroupEndNo - 1, aData.Items[aDeGroupEndNo - 1].Length);
+
+        }
+
+        public void SetDataDeGroupFromStream(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo, Stream aStream)
+        {
+            this.BeginUpdate();
+            try
+            {
+                aData.BeginFormat();
+                try
+                {
+                    if (aDeGroupEndNo - aDeGroupEndNo > 1)  // 中间有内容
+                        aData.DeleteItems(aDeGroupStartNo + 1, aDeGroupEndNo - aDeGroupStartNo - 1, false);
+                    else
+                        aData.SetSelectBound(aDeGroupStartNo, HC.View.HC.OffsetAfter, aDeGroupStartNo, HC.View.HC.OffsetAfter);
+
+                    aStream.Position = 0;
+                    string vFileExt = "";
+                    ushort viVersion = 0;
+                    byte vLang = 0;
+                    HC.View.HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref viVersion, ref vLang);  // 文件格式和版本
+                    HCStyle vStyle = new HCStyle();
+                    vStyle.LoadFromStream(aStream, viVersion);
+                    aData.InsertStream(aStream, vStyle, viVersion);
+                }
+                finally
+                {
+                    aData.EndFormat(false);
+                }
+
+                this.FormatData();
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
         }
 
         public void SyntaxCheck()
@@ -1220,7 +1388,7 @@ namespace EMRView
         }
 
         /// <summary> 数据元需要用语法检测器来检测时触发 </summary>
-        public DataItemNoEventHandler OnSyntaxCheck
+        public DataDomainItemNoEventHandler OnSyntaxCheck
         {
             get { return FOnSyntaxCheck; }
             set { FOnSyntaxCheck = value; }

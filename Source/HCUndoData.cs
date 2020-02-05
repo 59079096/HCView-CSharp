@@ -273,39 +273,39 @@ namespace HC.View
         {
             switch (aAction.Tag)
             {
-                case UndoActionTag.uatDeleteBackText: 
+                case HCAction.actBackDeleteText: 
                     UndoRedoDeleteBackText(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
-                case UndoActionTag.uatDeleteText: 
+                case HCAction.actDeleteText: 
                     UndoRedoDeleteText(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
-                case UndoActionTag.uatInsertText:
+                case HCAction.actInsertText:
                     UndoRedoInsertText(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
-                case UndoActionTag.uatSetItemText:
+                case HCAction.actSetItemText:
                     UndoRedoSetItemText(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
-                case UndoActionTag.uatDeleteItem: 
+                case HCAction.actDeleteItem: 
                     UndoRedoDeleteItem(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
-                case UndoActionTag.uatInsertItem: 
+                case HCAction.actInsertItem: 
                     UndoRedoInsertItem(aUndo, aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset, ref aCaretDrawItemNo);
                     break;
 
-                case UndoActionTag.uatItemProperty: 
+                case HCAction.actItemProperty: 
                     UndoRedoItemProperty(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
-                case UndoActionTag.uatItemSelf:
+                case HCAction.actItemSelf:
                     UndoRedoItemSelf(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
 
-                case UndoActionTag.uatItemMirror: 
+                case HCAction.actItemMirror: 
                     UndoRedoItemMirror(aAction, aIsUndo, ref aCaretItemNo, ref aCaretOffset);
                     break;
             }
@@ -316,14 +316,14 @@ namespace HC.View
             int Result = aAction.ItemNo;
             switch (aAction.Tag)
             {
-                case UndoActionTag.uatDeleteItem:
+                case HCAction.actDeleteItem:
                     {
                         if (Result > 0)
                             Result--;
                     }
                     break;
 
-                case UndoActionTag.uatInsertItem:
+                case HCAction.actInsertItem:
                     {
                         if (aIsUndo)
                         {
@@ -338,7 +338,7 @@ namespace HC.View
                     }
                     break;
 
-                case UndoActionTag.uatItemProperty:
+                case HCAction.actItemProperty:
                     HCItemPropertyUndoAction vPropAction = aAction as HCItemPropertyUndoAction;
                     if ((vPropAction.ItemProperty == ItemProperty.uipParaFirst)
                         && (vPropAction.ItemProperty == ItemProperty.uipPageBreak))
@@ -364,7 +364,7 @@ namespace HC.View
             int Result = aAction.ItemNo;
             switch (aAction.Tag)
             {
-                case UndoActionTag.uatDeleteItem:
+                case HCAction.actDeleteItem:
                     if (aIsUndo)
                     {
                         if (Result > 0)
@@ -377,7 +377,7 @@ namespace HC.View
                     }
                     break;
 
-                case UndoActionTag.uatInsertItem:
+                case HCAction.actInsertItem:
                     if (aIsUndo)
                     {
                         if ((Result < Items.Count - 1) && aAction.ParaFirst)
@@ -708,7 +708,7 @@ namespace HC.View
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatDeleteBackText, aItemNo, aOffset,
+                    HCTextUndoAction vTextAction = vUndo.ActionAppend(HCAction.actBackDeleteText, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCTextUndoAction;
                     vTextAction.Text = aText;
                 }
@@ -723,7 +723,7 @@ namespace HC.View
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatDeleteText, aItemNo, aOffset,
+                    HCTextUndoAction vTextAction = vUndo.ActionAppend(HCAction.actDeleteText, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCTextUndoAction;
                     vTextAction.Text = aText;
                 }
@@ -738,7 +738,7 @@ namespace HC.View
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatInsertText, aItemNo, aOffset,
+                    HCTextUndoAction vTextAction = vUndo.ActionAppend(HCAction.actInsertText, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCTextUndoAction;
                     vTextAction.Text = aText;
                 }
@@ -753,7 +753,7 @@ namespace HC.View
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCSetItemTextUndoAction vTextAction = vUndo.ActionAppend(UndoActionTag.uatSetItemText, aItemNo, aOffset,
+                    HCSetItemTextUndoAction vTextAction = vUndo.ActionAppend(HCAction.actSetItemText, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCSetItemTextUndoAction;
                     vTextAction.Text = Items[aItemNo].Text;
                     vTextAction.NewText = aNewText;
@@ -769,7 +769,7 @@ namespace HC.View
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatDeleteItem, aItemNo, aOffset,
+                    HCItemUndoAction vItemAction = vUndo.ActionAppend(HCAction.actDeleteItem, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCItemUndoAction;
                     SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
                 }
@@ -787,7 +787,7 @@ namespace HC.View
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatInsertItem, aItemNo, aOffset,
+                    HCItemUndoAction vItemAction = vUndo.ActionAppend(HCAction.actInsertItem, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCItemUndoAction;
                     SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
                 }
@@ -878,7 +878,7 @@ namespace HC.View
             {
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
-                    vUndo.ActionAppend(UndoActionTag.uatItemSelf, aItemNo, aOffset, Items[aItemNo].ParaFirst);
+                    vUndo.ActionAppend(HCAction.actItemSelf, aItemNo, aOffset, Items[aItemNo].ParaFirst);
             }
         }
 
@@ -890,7 +890,7 @@ namespace HC.View
                 HCUndo vUndo = vUndoList.Last;
                 if (vUndo != null)
                 {
-                    HCItemUndoAction vItemAction = vUndo.ActionAppend(UndoActionTag.uatItemMirror, aItemNo, aOffset,
+                    HCItemUndoAction vItemAction = vUndo.ActionAppend(HCAction.actItemMirror, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCItemUndoAction;
                     SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
                 }
@@ -927,6 +927,11 @@ namespace HC.View
         public virtual void Redo(HCCustomUndo aRedo)
         {
             DoUndoRedo(aRedo);
+        }
+
+        public void UndoItemMirror(int aItemNo, int aOffset)
+        {
+            this.UndoAction_ItemMirror(aItemNo, aOffset);
         }
     }
 }

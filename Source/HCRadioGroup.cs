@@ -28,15 +28,34 @@ namespace HC.View
 
     public class HCRadioButton : HCObject
     {
-        public bool Checked = false;
+        private bool FChecked = false;
+        private EventHandler FOnSetChecked;
+
+        private void SetChecked(bool value)
+        {
+
+        }
+
         public string Text = "";
         public POINT Position = new POINT();
+
+        public bool Checked
+        {
+            get { return FChecked; }
+            set { SetChecked(value); }
+        }
+
+        public EventHandler OnSetChecked
+        {
+            get { return FOnSetChecked; }
+            set { FOnSetChecked = value; }
+        }
     }
 
     public class HCRadioGroup : HCControlItem
     {
         private bool FMultSelect, FMouseIn;
-        private List<HCRadioButton> FItems;
+        private HCList<HCRadioButton> FItems;
         private HCRadioStyle FRadioStyle = HCRadioStyle.Radio;
         public static byte RadioButtonWidth = 16;
 
@@ -61,6 +80,24 @@ namespace HC.View
             }
 
             return Result;
+        }
+
+        protected void DoItemNotify(object sender, NListEventArgs<HCRadioButton> e)
+        {
+            e.Item.OnSetChecked = DoItemSetChecked;
+        }
+
+        protected void DoItemSetChecked(object sender, EventArgs e)
+        {
+            if ((!FMultSelect) && (sender as HCRadioButton).Checked)
+            {
+                int vIndex = FItems.IndexOf(sender as HCRadioButton);
+                for (int i = 0; i < FItems.Count; i++)
+                {
+                    if (i != vIndex)
+                        FItems[i].Checked = false;
+                }
+            }
         }
 
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
@@ -137,21 +174,11 @@ namespace HC.View
         public override bool MouseDown(MouseEventArgs e)
         {
             bool vResult = base.MouseDown(e);
-            if (e.Button == MouseButtons.Left)
+            if (OwnerData.CanEdit() && (e.Button == MouseButtons.Left))
             {
                 int vIndex = GetItemAt(e.X, e.Y);
                 if (vIndex >= 0)
-                {
                     FItems[vIndex].Checked = !FItems[vIndex].Checked;
-                    if (!FMultSelect)
-                    {
-                        for (int i = 0; i <= FItems.Count - 1; i++)
-                        {
-                            if (i != vIndex)
-                                FItems[i].Checked = false;
-                        }
-                    }
-                }
             }
 
             return vResult;
@@ -197,7 +224,8 @@ namespace HC.View
         {
             this.StyleNo = HCStyle.RadioGroup;
             Width = 100;
-            FItems = new List<HCRadioButton>();
+            FItems = new HCList<HCRadioButton>();
+            FItems.OnInsert += new EventHandler<NListEventArgs<HCRadioButton>>(DoItemNotify);
         }
 
         ~HCRadioGroup()

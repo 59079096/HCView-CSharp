@@ -54,6 +54,20 @@ namespace HC.View
             FHeight = value;
         }
 
+        protected virtual void DoSizeChanged()
+        {
+            FormatDirty();
+        }
+
+        protected void SetSizeChanged(bool value)
+        {
+            if (FSizeChanged != value)
+            {
+                FSizeChanged = value;
+                DoSizeChanged();
+            }
+        }
+
         protected void SelfUndoListInitializate(HCUndoList aUndoList)
         {
             aUndoList.OnUndoNew = DoSelfUndoNew;
@@ -156,7 +170,7 @@ namespace HC.View
         /// <summary> ActiveItem重新适应其环境(供外部直接修改Item属性后重新和其前后Item连接组合) </summary>
         public virtual void ReFormatActiveItem() { }
 
-        public virtual void ReAdaptActiveItem() { }
+        public virtual void ActiveItemReAdaptEnvironment() { }
 
         public virtual bool DeleteSelected()
         {
@@ -330,6 +344,8 @@ namespace HC.View
         {
             return false;
         }
+
+        public virtual void Clear() { }
 
         /// <summary> 当前RectItem是否有需要处理的Data(为松耦合请返回TCustomRichData类型) </summary>
         public virtual HCCustomData GetActiveData()
@@ -526,7 +542,7 @@ namespace HC.View
         public bool SizeChanged
         {
             get { return FSizeChanged; }
-            set { FSizeChanged = value; }
+            set { SetSizeChanged(value); }
         }
 
         /// <summary> 在当前页显示不下时是否可以分页截断显示 </summary>
@@ -1286,5 +1302,23 @@ namespace HC.View
 
         public HCAnimateRectItem(HCCustomData aOwnerData, int aWidth, int aHeight)
             : base(aOwnerData, aWidth, aHeight) { }
+    }
+
+    public class HCDataItem : HCResizeRectItem
+    {
+        public HCDataItem() : base()
+        {
+
+        }
+
+        public HCDataItem(HCCustomData aOwnerData) : base(aOwnerData)
+        {
+
+        }
+
+        public HCDataItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
+        {
+
+        }
     }
 }
