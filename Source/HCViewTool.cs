@@ -18,6 +18,7 @@ namespace HC.View
         private HCTableToolBar FTableToolBar;
         private HCImageToolBar FImageToolBar;
         private POINT FMouseViewPt;
+        private bool FUseTableTool, FUseImageTool;
         private EventHandler FOnTableToolPropertyClick;
 
         private void DoTableToolPropertyClick(object sender, EventArgs e)
@@ -33,34 +34,54 @@ namespace HC.View
             FImageToolBar.ActiveIndex = 0;
         }
 
-        private void SetActiveToolItem(HCCustomItem value)
+        private void SetUseTableTool(bool value)
+        {
+            if (FUseTableTool != value)
+            {
+                FUseTableTool = value;
+                if (!value)
+                    FTableToolBar.Visible = false;
+            }
+        }
+
+        private void SetUseImageTool(bool value)
+        {
+            if (FUseImageTool != value)
+            {
+                FUseImageTool = value;
+                if (!value)
+                    FImageToolBar.Visible = false;
+            }
+        }
+
+        private void SetActiveToolItem(HCCustomItem aItem)
         {
             // MouseDown里会触发重绘，此时ToolBar并未确定显示，处理ToolBar的Visible属性
             // 会重新触发重绘，重绘是通过DoImageToolBarUpdateView(Rect)，需要先计算区域参数
             // 然后触发UpdateView，所以需要提前计算ToolBar的坐标vPt位置
-            if (FActiveItem != value)
+            if (FActiveItem != aItem)
             {
-                if (FActiveItem is HCTableItem)
+                if (FUseTableTool && (FActiveItem is HCTableItem))
                     FTableToolBar.Visible = false;
                 else
-                if (FActiveItem is HCImageItem)
+                if (FUseImageTool && (FActiveItem is HCImageItem))
                     FImageToolBar.Visible = false;
 
-                if ((value != null) && (value.Active))
+                if ((aItem != null) && (aItem.Active))
                 {
                     POINT vPt = this.GetTopLevelRectDrawItemViewCoord();
 
-                    if ((value is HCTableItem) && (FTableToolBar.Controls.Count > 0))
+                    if (FUseTableTool && (aItem is HCTableItem) && (FTableToolBar.Controls.Count > 0))
                     {
-                        FActiveItem = value;
+                        FActiveItem = aItem;
                         FTableToolBar.Left = vPt.X - FTableToolBar.Width + FToolOffset;
                         FTableToolBar.Top = vPt.Y;// - FTableToolBar.Height + FToolOffset;
                         FTableToolBar.Visible = true;
                     }
                     else
-                    if ((value is HCImageItem) && (FImageToolBar.Controls.Count > 0))
+                    if (FUseImageTool && (aItem is HCImageItem) && (FImageToolBar.Controls.Count > 0))
                     {
-                        FActiveItem = value;
+                        FActiveItem = aItem;
                         (FActiveItem as HCImageItem).ShapeManager.OnStructOver = DoImageShapeStructOver;
                         FImageToolBar.Left = vPt.X;
                         FImageToolBar.Top = vPt.Y - FImageToolBar.Height + FToolOffset;
@@ -75,10 +96,10 @@ namespace HC.View
             else
             if ((FActiveItem != null) && (!FActiveItem.Active))
             {
-                if (FActiveItem is HCTableItem)
+                if (FUseTableTool && (FActiveItem is HCTableItem))
                     FTableToolBar.Visible = false;
                 else
-                if (FActiveItem is HCImageItem)
+                if (FUseImageTool && (FActiveItem is HCImageItem))
                     FImageToolBar.Visible = false;
 
                 FActiveItem = null;
@@ -320,13 +341,13 @@ namespace HC.View
 
             if (!this.ReadOnly)
             {
-                if (FTableToolBar.Visible && TableMouseDown(e))
+                if (FUseTableTool && FTableToolBar.Visible && TableMouseDown(e))
                 {
                     FCaptureToolBar = FTableToolBar;
                     return;
                 }
 
-                if (FImageToolBar.Visible && ImageMouseDown(e))
+                if (FUseImageTool && FImageToolBar.Visible && ImageMouseDown(e))
                 {
                     FCaptureToolBar = FImageToolBar;
                     return;
@@ -551,6 +572,8 @@ namespace HC.View
             FToolOffset = -4;
             FActiveItem = null;
             FHotToolBar = null;
+            FUseTableTool = true;
+            FUseImageTool = true;
 
             FTableToolMenu = new ContextMenuStrip();
             ToolStripMenuItem vMenuItem = new ToolStripMenuItem("重设行列");
@@ -572,6 +595,18 @@ namespace HC.View
             FImageToolBar = new HCImageToolBar();
             FImageToolBar.OnUpdateView = DoImageToolBarUpdateView;
             FImageToolBar.OnControlPaint = DoImageToolBarControlPaint;
+        }
+
+        public bool UseTableTool
+        {
+            get { return FUseTableTool; }
+            set { SetUseTableTool(value); }
+        }
+
+        public bool UseImageTool
+        {
+            get { return FUseImageTool; }
+            set { SetUseImageTool(value); }
         }
 
         public EventHandler OnTableToolPropertyClick
