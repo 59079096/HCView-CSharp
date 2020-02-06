@@ -231,13 +231,18 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             vSize = BitConverter.ToUInt32(vBuffer, 0);
 
-            vBuffer = new byte[vSize];
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-
-            using (MemoryStream vImgStream = new MemoryStream(vBuffer))
+            if (vSize > 0)
             {
-                FImage = new Bitmap(vImgStream);
+                vBuffer = new byte[vSize];
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+
+                using (MemoryStream vImgStream = new MemoryStream(vBuffer))
+                {
+                    FImage = new Bitmap(vImgStream);
+                }
             }
+            else
+                FImage = new Bitmap(this.Width, this.Height);
 
             if (aFileVersion > 26)
                 FShapeManager.LoadFromStream(aStream);

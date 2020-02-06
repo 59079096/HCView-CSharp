@@ -447,7 +447,15 @@ namespace HC.View
                     return;
             }
 
-            base.OnKeyDown(e);
+            this.BeginUpdate();
+            try
+            {
+                base.OnKeyDown(e);  // 删除Item时会触发ToolBar隐藏，重绘时环境还没有准备好
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
         }
 
         private void DoContextPopup(object sender, CancelEventArgs e)
@@ -492,7 +500,18 @@ namespace HC.View
         {
             base.DoSectionRemoveItem(sender, aData, aItem);
             if (aItem == FActiveItem)
+            {
+                if (FActiveItem is HCImageItem)
+                {
+                    (FActiveItem as HCImageItem).ShapeManager.DisActive();
+                    FImageToolBar.Visible = false;
+                }
+                else
+                if (FActiveItem is HCTableItem)  // 是表格
+                    FTableToolBar.Visible = false;
+
                 FActiveItem = null;
+            }
         }
 
         protected override void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, 

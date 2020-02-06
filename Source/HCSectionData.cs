@@ -35,33 +35,6 @@ namespace HC.View
         private HCFloatItems FFloatItems;  // THCItems支持Add时控制暂时不用
         int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex;
 
-        private HCCustomFloatItem CreateFloatItemByStyle(int aStyleNo)
-        {
-            HCCustomFloatItem Result = null;
-
-            if (FOnCreateFloatItemByStyle != null)
-                Result = FOnCreateFloatItemByStyle(this, aStyleNo);
-
-            if (Result == null)
-            {
-                switch (aStyleNo)
-                {
-                    case HCStyle.FloatLine:
-                        Result = new HCFloatLineItem(this);
-                        break;
-
-                    case HCStyle.FloatBarCode:
-                        Result = new HCFloatBarCodeItem(this);
-                        break;
-
-                    default:
-                        throw new Exception("未找到类型 " + aStyleNo.ToString() + " 对应的创建FloatItem代码！");
-                }
-            }
-
-            return Result;
-        }
-
         private int GetFloatItemAt(int x, int y)
         {
             int Result = -1;
@@ -120,7 +93,7 @@ namespace HC.View
                     if ((aFileVersion < 28) && (vStyleNo == (byte)HCShapeStyle.hssLine))
                         vFloatItem = new HCFloatLineItem(this);
                     else
-                        vFloatItem = CreateFloatItemByStyle(vStyleNo);
+                        vFloatItem = CreateItemByStyle(vStyleNo) as HCCustomFloatItem;
 
                     vFloatItem.LoadFromStream(aStream, aStyle, aFileVersion);
                     FFloatItems.Add(vFloatItem);
@@ -420,7 +393,7 @@ namespace HC.View
             for (int i = 0; i <= vItemsNode.ChildNodes.Count - 1; i++)
             {
                 vNode = vItemsNode.ChildNodes[i] as XmlElement;
-                HCCustomFloatItem vFloatItem = CreateFloatItemByStyle(int.Parse(vNode.Attributes["sno"].Value));
+                HCCustomFloatItem vFloatItem = CreateItemByStyle(int.Parse(vNode.Attributes["sno"].Value)) as HCCustomFloatItem;
                 vFloatItem.ParseXml(vNode);
                 FFloatItems.Add(vFloatItem);
             }

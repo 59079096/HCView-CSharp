@@ -80,7 +80,8 @@ namespace EMRView
                     if (vStrings[i] != "")
                     {
                         string[] vKv = vStrings[i].Split(new string[] { "=" }, StringSplitOptions.None);
-                        aPropertys.Add(vKv[0], vKv[1]);
+                        if (vKv[0] != "")
+                            aPropertys.Add(vKv[0], vKv[1]);
                     }
                 }
             }

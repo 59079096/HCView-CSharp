@@ -33,7 +33,12 @@ namespace HC.View
 
         private void SetChecked(bool value)
         {
-
+            if (FChecked != value)
+            {
+                FChecked = value;
+                if (FOnSetChecked != null)
+                    FOnSetChecked(this, null);
+            }
         }
 
         public string Text = "";
@@ -117,7 +122,7 @@ namespace HC.View
                 else
                     vSize = aRichData.Style.TempCanvas.TextExtent("H");
                 
-                if (!this.AutoSize && vLeft + vSize.cx + RadioButtonWidth > Width)
+                if (this.AutoSize && vLeft + vSize.cx + RadioButtonWidth > Width)
                 {
                     vLeft = FMargin;
                     vTop = vTop + vSize.cy + FMargin;
