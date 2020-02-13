@@ -614,11 +614,12 @@ namespace EMRView
                         }
                         else  // 没超范围
                         {
-                            if (!vDeItem.AllocValue)  // 没填过
-                            {
+                            if (vDeItem.AllocValue)  // 已经填写过了
+                                aCanvas.Brush.Color = FDeDoneColor;
+                            else  // 没填写过
                                 aCanvas.Brush.Color = FDeUnDoneColor;
-                                aCanvas.FillRect(aDrawRect);
-                            }
+
+                            aCanvas.FillRect(aDrawRect);
                         }
                     }
                 }
@@ -1274,7 +1275,7 @@ namespace EMRView
                 aData.BeginFormat();
                 try
                 {
-                    if (aDeGroupEndNo - aDeGroupEndNo > 1)  // 中间有内容
+                    if (aDeGroupEndNo - aDeGroupStartNo > 1)  // 中间有内容
                         aData.DeleteItems(aDeGroupStartNo + 1, aDeGroupEndNo - aDeGroupStartNo - 1, false);
                     else
                         aData.SetSelectBound(aDeGroupStartNo, HC.View.HC.OffsetAfter, aDeGroupStartNo, HC.View.HC.OffsetAfter);

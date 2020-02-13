@@ -1203,8 +1203,23 @@ namespace EMRView
 
         private void mniControlItem_Click(object sender, EventArgs e)
         {
-            frmDeControlProperty vFrmDeControlProperty = new frmDeControlProperty();
-            vFrmDeControlProperty.SetHCView(FEmrView);
+            HCCustomItem vControlItem = FEmrView.ActiveSectionTopLevelData().GetActiveItem();
+            if (vControlItem is DeCombobox)  // ComboboxItem
+            {
+                frmDeCombobox vFrmDeCombobox = new frmDeCombobox();
+                vFrmDeCombobox.SetHCView(FEmrView, vControlItem as DeCombobox);
+            }
+            else
+            if (vControlItem is DeRadioGroup)  // DeRadioGroup
+            {
+                frmDeRadioGroup vFrmDeRadioGroup = new frmDeRadioGroup();
+                vFrmDeRadioGroup.SetHCView(FEmrView, vControlItem as DeRadioGroup);
+            }
+            else
+            {
+                frmDeControlProperty vFrmDeControlProperty = new frmDeControlProperty();
+                vFrmDeControlProperty.SetHCView(FEmrView);
+            }
         }
 
         private void mniDeleteProtect_Click(object sender, EventArgs e)

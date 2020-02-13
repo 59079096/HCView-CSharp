@@ -47,33 +47,6 @@
             this.cbxBorderBottom = new System.Windows.Forms.CheckBox();
             this.cbxBorderTop = new System.Windows.Forms.CheckBox();
             this.label4 = new System.Windows.Forms.Label();
-            this.pnlCombobox = new System.Windows.Forms.Panel();
-            this.lstCombobox = new System.Windows.Forms.ListBox();
-            this.label11 = new System.Windows.Forms.Label();
-            this.dgvCombobox = new System.Windows.Forms.DataGridView();
-            this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.label6 = new System.Windows.Forms.Label();
-            this.btnDelete = new System.Windows.Forms.Button();
-            this.btnMod = new System.Windows.Forms.Button();
-            this.btnAdd = new System.Windows.Forms.Button();
-            this.tbxComboboxValue = new System.Windows.Forms.TextBox();
-            this.label5 = new System.Windows.Forms.Label();
-            this.pnlRadioGroup = new System.Windows.Forms.Panel();
-            this.lstRadioItem = new System.Windows.Forms.ListBox();
-            this.label13 = new System.Windows.Forms.Label();
-            this.dgvRadio = new System.Windows.Forms.DataGridView();
-            this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.label12 = new System.Windows.Forms.Label();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.label10 = new System.Windows.Forms.Label();
-            this.cbbRadioStyle = new System.Windows.Forms.ComboBox();
-            this.btnDeleteRadioItem = new System.Windows.Forms.Button();
-            this.btnModRadioItem = new System.Windows.Forms.Button();
-            this.btnAddRadioItem = new System.Windows.Forms.Button();
-            this.tbxRadioValue = new System.Windows.Forms.TextBox();
-            this.label7 = new System.Windows.Forms.Label();
             this.pnlDateTime = new System.Windows.Forms.Panel();
             this.cbbDTFormat = new System.Windows.Forms.ComboBox();
             this.label8 = new System.Windows.Forms.Label();
@@ -83,11 +56,6 @@
             this.pnlEdit.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvEdit)).BeginInit();
             this.pnlBorder.SuspendLayout();
-            this.pnlCombobox.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvCombobox)).BeginInit();
-            this.pnlRadioGroup.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvRadio)).BeginInit();
-            this.panel1.SuspendLayout();
             this.pnlDateTime.SuspendLayout();
             this.pnlBottom.SuspendLayout();
             this.SuspendLayout();
@@ -272,280 +240,12 @@
             this.label4.TabIndex = 0;
             this.label4.Text = "边框";
             // 
-            // pnlCombobox
-            // 
-            this.pnlCombobox.Controls.Add(this.lstCombobox);
-            this.pnlCombobox.Controls.Add(this.label11);
-            this.pnlCombobox.Controls.Add(this.dgvCombobox);
-            this.pnlCombobox.Controls.Add(this.label6);
-            this.pnlCombobox.Controls.Add(this.btnDelete);
-            this.pnlCombobox.Controls.Add(this.btnMod);
-            this.pnlCombobox.Controls.Add(this.btnAdd);
-            this.pnlCombobox.Controls.Add(this.tbxComboboxValue);
-            this.pnlCombobox.Controls.Add(this.label5);
-            this.pnlCombobox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlCombobox.Location = new System.Drawing.Point(0, 177);
-            this.pnlCombobox.Name = "pnlCombobox";
-            this.pnlCombobox.Size = new System.Drawing.Size(476, 234);
-            this.pnlCombobox.TabIndex = 3;
-            // 
-            // lstCombobox
-            // 
-            this.lstCombobox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstCombobox.FormattingEnabled = true;
-            this.lstCombobox.ItemHeight = 12;
-            this.lstCombobox.Location = new System.Drawing.Point(0, 124);
-            this.lstCombobox.Name = "lstCombobox";
-            this.lstCombobox.Size = new System.Drawing.Size(476, 76);
-            this.lstCombobox.TabIndex = 13;
-            // 
-            // label11
-            // 
-            this.label11.AutoSize = true;
-            this.label11.Dock = System.Windows.Forms.DockStyle.Top;
-            this.label11.Location = new System.Drawing.Point(0, 112);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(29, 12);
-            this.label11.TabIndex = 12;
-            this.label11.Text = "选项";
-            // 
-            // dgvCombobox
-            // 
-            this.dgvCombobox.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvCombobox.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.dataGridViewTextBoxColumn1,
-            this.dataGridViewTextBoxColumn2});
-            this.dgvCombobox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.dgvCombobox.Location = new System.Drawing.Point(0, 12);
-            this.dgvCombobox.Name = "dgvCombobox";
-            this.dgvCombobox.RowHeadersVisible = false;
-            this.dgvCombobox.RowTemplate.Height = 23;
-            this.dgvCombobox.Size = new System.Drawing.Size(476, 100);
-            this.dgvCombobox.TabIndex = 11;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            this.dataGridViewTextBoxColumn1.HeaderText = "键";
-            this.dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
-            this.dataGridViewTextBoxColumn2.HeaderText = "值";
-            this.dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            this.dataGridViewTextBoxColumn2.Width = 200;
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Dock = System.Windows.Forms.DockStyle.Top;
-            this.label6.Location = new System.Drawing.Point(0, 0);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(233, 12);
-            this.label6.TabIndex = 10;
-            this.label6.Text = "DeCombobox属性（第一列无值时不会存储）";
-            // 
-            // btnDelete
-            // 
-            this.btnDelete.Location = new System.Drawing.Point(242, 205);
-            this.btnDelete.Name = "btnDelete";
-            this.btnDelete.Size = new System.Drawing.Size(45, 23);
-            this.btnDelete.TabIndex = 6;
-            this.btnDelete.Text = "删除";
-            this.btnDelete.UseVisualStyleBackColor = true;
-            this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
-            // 
-            // btnMod
-            // 
-            this.btnMod.Location = new System.Drawing.Point(191, 205);
-            this.btnMod.Name = "btnMod";
-            this.btnMod.Size = new System.Drawing.Size(45, 23);
-            this.btnMod.TabIndex = 5;
-            this.btnMod.Text = "修改";
-            this.btnMod.UseVisualStyleBackColor = true;
-            this.btnMod.Click += new System.EventHandler(this.btnMod_Click);
-            // 
-            // btnAdd
-            // 
-            this.btnAdd.Location = new System.Drawing.Point(140, 205);
-            this.btnAdd.Name = "btnAdd";
-            this.btnAdd.Size = new System.Drawing.Size(45, 23);
-            this.btnAdd.TabIndex = 4;
-            this.btnAdd.Text = "添加";
-            this.btnAdd.UseVisualStyleBackColor = true;
-            this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
-            // 
-            // tbxComboboxValue
-            // 
-            this.tbxComboboxValue.Location = new System.Drawing.Point(34, 206);
-            this.tbxComboboxValue.Name = "tbxComboboxValue";
-            this.tbxComboboxValue.Size = new System.Drawing.Size(100, 21);
-            this.tbxComboboxValue.TabIndex = 3;
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(11, 210);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(17, 12);
-            this.label5.TabIndex = 2;
-            this.label5.Text = "值";
-            // 
-            // pnlRadioGroup
-            // 
-            this.pnlRadioGroup.Controls.Add(this.lstRadioItem);
-            this.pnlRadioGroup.Controls.Add(this.label13);
-            this.pnlRadioGroup.Controls.Add(this.dgvRadio);
-            this.pnlRadioGroup.Controls.Add(this.label12);
-            this.pnlRadioGroup.Controls.Add(this.panel1);
-            this.pnlRadioGroup.Controls.Add(this.btnDeleteRadioItem);
-            this.pnlRadioGroup.Controls.Add(this.btnModRadioItem);
-            this.pnlRadioGroup.Controls.Add(this.btnAddRadioItem);
-            this.pnlRadioGroup.Controls.Add(this.tbxRadioValue);
-            this.pnlRadioGroup.Controls.Add(this.label7);
-            this.pnlRadioGroup.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlRadioGroup.Location = new System.Drawing.Point(0, 411);
-            this.pnlRadioGroup.Name = "pnlRadioGroup";
-            this.pnlRadioGroup.Size = new System.Drawing.Size(476, 264);
-            this.pnlRadioGroup.TabIndex = 4;
-            // 
-            // lstRadioItem
-            // 
-            this.lstRadioItem.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstRadioItem.FormattingEnabled = true;
-            this.lstRadioItem.ItemHeight = 12;
-            this.lstRadioItem.Location = new System.Drawing.Point(0, 156);
-            this.lstRadioItem.Name = "lstRadioItem";
-            this.lstRadioItem.Size = new System.Drawing.Size(476, 76);
-            this.lstRadioItem.TabIndex = 19;
-            // 
-            // label13
-            // 
-            this.label13.AutoSize = true;
-            this.label13.Dock = System.Windows.Forms.DockStyle.Top;
-            this.label13.Location = new System.Drawing.Point(0, 144);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(29, 12);
-            this.label13.TabIndex = 18;
-            this.label13.Text = "选项";
-            // 
-            // dgvRadio
-            // 
-            this.dgvRadio.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvRadio.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.dataGridViewTextBoxColumn3,
-            this.dataGridViewTextBoxColumn4});
-            this.dgvRadio.Dock = System.Windows.Forms.DockStyle.Top;
-            this.dgvRadio.Location = new System.Drawing.Point(0, 44);
-            this.dgvRadio.Name = "dgvRadio";
-            this.dgvRadio.RowHeadersVisible = false;
-            this.dgvRadio.RowTemplate.Height = 23;
-            this.dgvRadio.Size = new System.Drawing.Size(476, 100);
-            this.dgvRadio.TabIndex = 16;
-            // 
-            // dataGridViewTextBoxColumn3
-            // 
-            this.dataGridViewTextBoxColumn3.HeaderText = "键";
-            this.dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            // 
-            // dataGridViewTextBoxColumn4
-            // 
-            this.dataGridViewTextBoxColumn4.HeaderText = "值";
-            this.dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
-            this.dataGridViewTextBoxColumn4.Width = 200;
-            // 
-            // label12
-            // 
-            this.label12.AutoSize = true;
-            this.label12.Dock = System.Windows.Forms.DockStyle.Top;
-            this.label12.Location = new System.Drawing.Point(0, 32);
-            this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(173, 12);
-            this.label12.TabIndex = 15;
-            this.label12.Text = "属性（第一列无值时不会存储）";
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.label10);
-            this.panel1.Controls.Add(this.cbbRadioStyle);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(476, 32);
-            this.panel1.TabIndex = 13;
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(10, 9);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(29, 12);
-            this.label10.TabIndex = 1;
-            this.label10.Text = "样式";
-            // 
-            // cbbRadioStyle
-            // 
-            this.cbbRadioStyle.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbbRadioStyle.FormattingEnabled = true;
-            this.cbbRadioStyle.Items.AddRange(new object[] {
-            "Radio",
-            "CheckBox"});
-            this.cbbRadioStyle.Location = new System.Drawing.Point(43, 6);
-            this.cbbRadioStyle.Name = "cbbRadioStyle";
-            this.cbbRadioStyle.Size = new System.Drawing.Size(90, 20);
-            this.cbbRadioStyle.TabIndex = 0;
-            // 
-            // btnDeleteRadioItem
-            // 
-            this.btnDeleteRadioItem.Location = new System.Drawing.Point(241, 235);
-            this.btnDeleteRadioItem.Name = "btnDeleteRadioItem";
-            this.btnDeleteRadioItem.Size = new System.Drawing.Size(45, 23);
-            this.btnDeleteRadioItem.TabIndex = 11;
-            this.btnDeleteRadioItem.Text = "删除";
-            this.btnDeleteRadioItem.UseVisualStyleBackColor = true;
-            this.btnDeleteRadioItem.Click += new System.EventHandler(this.btnDeleteRadioItem_Click);
-            // 
-            // btnModRadioItem
-            // 
-            this.btnModRadioItem.Location = new System.Drawing.Point(190, 235);
-            this.btnModRadioItem.Name = "btnModRadioItem";
-            this.btnModRadioItem.Size = new System.Drawing.Size(45, 23);
-            this.btnModRadioItem.TabIndex = 10;
-            this.btnModRadioItem.Text = "修改";
-            this.btnModRadioItem.UseVisualStyleBackColor = true;
-            this.btnModRadioItem.Click += new System.EventHandler(this.btnModRadioItem_Click);
-            // 
-            // btnAddRadioItem
-            // 
-            this.btnAddRadioItem.Location = new System.Drawing.Point(139, 235);
-            this.btnAddRadioItem.Name = "btnAddRadioItem";
-            this.btnAddRadioItem.Size = new System.Drawing.Size(45, 23);
-            this.btnAddRadioItem.TabIndex = 9;
-            this.btnAddRadioItem.Text = "添加";
-            this.btnAddRadioItem.UseVisualStyleBackColor = true;
-            this.btnAddRadioItem.Click += new System.EventHandler(this.btnAddRadioItem_Click);
-            // 
-            // tbxRadioValue
-            // 
-            this.tbxRadioValue.Location = new System.Drawing.Point(33, 236);
-            this.tbxRadioValue.Name = "tbxRadioValue";
-            this.tbxRadioValue.Size = new System.Drawing.Size(100, 21);
-            this.tbxRadioValue.TabIndex = 8;
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(10, 240);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(17, 12);
-            this.label7.TabIndex = 7;
-            this.label7.Text = "值";
-            // 
             // pnlDateTime
             // 
             this.pnlDateTime.Controls.Add(this.cbbDTFormat);
             this.pnlDateTime.Controls.Add(this.label8);
             this.pnlDateTime.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlDateTime.Location = new System.Drawing.Point(0, 675);
+            this.pnlDateTime.Location = new System.Drawing.Point(0, 177);
             this.pnlDateTime.Name = "pnlDateTime";
             this.pnlDateTime.Size = new System.Drawing.Size(476, 37);
             this.pnlDateTime.TabIndex = 5;
@@ -578,7 +278,7 @@
             // 
             this.pnlBottom.Controls.Add(this.btnSave);
             this.pnlBottom.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlBottom.Location = new System.Drawing.Point(0, 712);
+            this.pnlBottom.Location = new System.Drawing.Point(0, 214);
             this.pnlBottom.Name = "pnlBottom";
             this.pnlBottom.Size = new System.Drawing.Size(476, 32);
             this.pnlBottom.TabIndex = 7;
@@ -598,11 +298,9 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(476, 742);
+            this.ClientSize = new System.Drawing.Size(476, 302);
             this.Controls.Add(this.pnlBottom);
             this.Controls.Add(this.pnlDateTime);
-            this.Controls.Add(this.pnlRadioGroup);
-            this.Controls.Add(this.pnlCombobox);
             this.Controls.Add(this.pnlBorder);
             this.Controls.Add(this.pnlEdit);
             this.Controls.Add(this.pnlSize);
@@ -619,14 +317,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.dgvEdit)).EndInit();
             this.pnlBorder.ResumeLayout(false);
             this.pnlBorder.PerformLayout();
-            this.pnlCombobox.ResumeLayout(false);
-            this.pnlCombobox.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvCombobox)).EndInit();
-            this.pnlRadioGroup.ResumeLayout(false);
-            this.pnlRadioGroup.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvRadio)).EndInit();
-            this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
             this.pnlDateTime.ResumeLayout(false);
             this.pnlDateTime.PerformLayout();
             this.pnlBottom.ResumeLayout(false);
@@ -651,18 +341,6 @@
         private System.Windows.Forms.CheckBox cbxBorderBottom;
         private System.Windows.Forms.CheckBox cbxBorderTop;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Panel pnlCombobox;
-        private System.Windows.Forms.Button btnDelete;
-        private System.Windows.Forms.Button btnMod;
-        private System.Windows.Forms.Button btnAdd;
-        private System.Windows.Forms.TextBox tbxComboboxValue;
-        private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Panel pnlRadioGroup;
-        private System.Windows.Forms.Button btnDeleteRadioItem;
-        private System.Windows.Forms.Button btnModRadioItem;
-        private System.Windows.Forms.Button btnAddRadioItem;
-        private System.Windows.Forms.TextBox tbxRadioValue;
-        private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Panel pnlDateTime;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.ComboBox cbbDTFormat;
@@ -670,22 +348,7 @@
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.TextBox tbxText;
         private System.Windows.Forms.Label label9;
-        private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Label label10;
-        private System.Windows.Forms.ComboBox cbbRadioStyle;
-        private System.Windows.Forms.ListBox lstCombobox;
-        private System.Windows.Forms.Label label11;
-        private System.Windows.Forms.DataGridView dgvCombobox;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.ListBox lstRadioItem;
-        private System.Windows.Forms.Label label13;
-        private System.Windows.Forms.DataGridView dgvRadio;
-        private System.Windows.Forms.Label label12;
         private System.Windows.Forms.DataGridViewTextBoxColumn Key;
         private System.Windows.Forms.DataGridViewTextBoxColumn value;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
     }
 }

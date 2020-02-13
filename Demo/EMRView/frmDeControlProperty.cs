@@ -66,36 +66,6 @@ namespace EMRView
             else
                 pnlEdit.Visible = false;
 
-            DeCombobox vDeCombobox = null;
-            if (vControlItem is DeCombobox)
-            {
-                this.Text = "DeCombobox属性";
-                vDeCombobox = vControlItem as DeCombobox;
-
-                cbxBorderLeft.Checked = vDeCombobox.BorderSides.Contains((byte)BorderSide.cbsLeft);
-                cbxBorderTop.Checked = vDeCombobox.BorderSides.Contains((byte)BorderSide.cbsTop);
-                cbxBorderRight.Checked = vDeCombobox.BorderSides.Contains((byte)BorderSide.cbsRight);
-                cbxBorderBottom.Checked = vDeCombobox.BorderSides.Contains((byte)BorderSide.cbsBottom);
-                pnlBorder.Visible = true;
-
-                foreach (HCCbbItem vItem in vDeCombobox.Items)
-                    lstCombobox.Items.Add(vItem.Text);
-
-                dgvCombobox.RowCount = vDeCombobox.Propertys.Count + 1;
-                if (vDeCombobox.Propertys.Count > 0)
-                {
-                    int vRow = 0;
-                    foreach (KeyValuePair<string, string> keyValuePair in vDeCombobox.Propertys)
-                    {
-                        dgvCombobox.Rows[vRow].Cells[0].Value = keyValuePair.Key;
-                        dgvCombobox.Rows[vRow].Cells[1].Value = keyValuePair.Value;
-                        vRow++;
-                    }
-                }                
-            }
-            else
-                pnlCombobox.Visible = false;
-
             DeDateTimePicker vDeDateTimePicker = null;
             if (vControlItem is DeDateTimePicker)
             {
@@ -112,34 +82,6 @@ namespace EMRView
             else
                 pnlDateTime.Visible = false;
 
-            DeRadioGroup vDeRadioGroup = null;
-            if (vControlItem is DeRadioGroup)
-            {
-                this.Text = "DeRadioGroup属性";
-                vDeRadioGroup = vControlItem as DeRadioGroup;
-                if (vDeRadioGroup.RadioStyle == HCRadioStyle.CheckBox)
-                    cbbRadioStyle.SelectedIndex = 1;
-                else
-                    cbbRadioStyle.SelectedIndex = 0;
-
-                foreach (HCRadioButton vItem in vDeRadioGroup.Items)
-                    lstRadioItem.Items.Add(vItem.Text);
-
-                dgvRadio.RowCount = vDeRadioGroup.Propertys.Count + 1;
-                if (vDeRadioGroup.Propertys.Count > 0)
-                {
-                    int vRow = 0;
-                    foreach (KeyValuePair<string, string> keyValuePair in vDeRadioGroup.Propertys)
-                    {
-                        dgvRadio.Rows[vRow].Cells[0].Value = keyValuePair.Key;
-                        dgvRadio.Rows[vRow].Cells[1].Value = keyValuePair.Value;
-                        vRow++;
-                    }
-                }
-            }
-            else
-                pnlRadioGroup.Visible = false;
-
             int vHeight = 0;
             if (pnlSize.Visible)
                 vHeight += pnlSize.Height;
@@ -147,14 +89,8 @@ namespace EMRView
             if (pnlEdit.Visible)
                 vHeight += pnlEdit.Height;
             else
-            if (pnlCombobox.Visible)
-                vHeight += pnlCombobox.Height;
-            else
             if (pnlDateTime.Visible)
                 vHeight += pnlDateTime.Height;
-            else
-            if (pnlRadioGroup.Visible)
-                vHeight += pnlRadioGroup.Height;
 
             this.Height = vHeight;
 
@@ -214,49 +150,6 @@ namespace EMRView
                     }
                 }
 
-                if (vDeCombobox != null)
-                {
-                    if (cbxBorderLeft.Checked)
-                        vDeCombobox.BorderSides.InClude((byte)BorderSide.cbsLeft);
-                    else
-                        vDeCombobox.BorderSides.ExClude((byte)BorderSide.cbsLeft);
-
-                    if (cbxBorderTop.Checked)
-                        vDeCombobox.BorderSides.InClude((byte)BorderSide.cbsTop);
-                    else
-                        vDeCombobox.BorderSides.ExClude((byte)BorderSide.cbsTop);
-
-                    if (cbxBorderRight.Checked)
-                        vDeCombobox.BorderSides.InClude((byte)BorderSide.cbsRight);
-                    else
-                        vDeCombobox.BorderSides.ExClude((byte)BorderSide.cbsRight);
-
-                    if (cbxBorderBottom.Checked)
-                        vDeCombobox.BorderSides.InClude((byte)BorderSide.cbsBottom);
-                    else
-                        vDeCombobox.BorderSides.ExClude((byte)BorderSide.cbsBottom);
-
-                    vDeCombobox.Items.Clear();
-                    foreach (string vobj in lstCombobox.Items)
-                        vDeCombobox.Items.Add(new HCCbbItem(vobj.ToString()));
-
-                    string vsValue = "";
-                    vDeCombobox.Propertys.Clear();
-                    for (int i = 0; i < dgvCombobox.RowCount; i++)
-                    {
-                        if (dgvCombobox.Rows[i].Cells[0].Value == null)
-                            continue;
-
-                        if (dgvCombobox.Rows[i].Cells[1].Value == null)
-                            vsValue = "";
-                        else
-                            vsValue = dgvCombobox.Rows[i].Cells[1].Value.ToString();
-
-                        if (dgvCombobox.Rows[i].Cells[0].Value.ToString().Trim() != "")
-                            vDeCombobox.Propertys.Add(dgvCombobox.Rows[i].Cells[0].Value.ToString(), vsValue);
-                    }
-                }
-
                 if (vDeDateTimePicker != null)
                 {
                     if (cbxBorderLeft.Checked)
@@ -282,34 +175,6 @@ namespace EMRView
                     vDeDateTimePicker.Format = cbbDTFormat.Text;
                 }
 
-                if (vDeRadioGroup != null)
-                {
-                    if (cbbRadioStyle.SelectedIndex == 1)
-                        vDeRadioGroup.RadioStyle = HCRadioStyle.CheckBox;
-                    else
-                        vDeRadioGroup.RadioStyle = HCRadioStyle.Radio;
-
-                    vDeRadioGroup.Items.Clear();
-                    foreach (object vObj in lstRadioItem.Items)
-                        vDeRadioGroup.AddItem(vObj.ToString());
-
-                    string vsValue = "";
-                    vDeRadioGroup.Propertys.Clear();
-                    for (int i = 0; i < dgvRadio.RowCount; i++)
-                    {
-                        if (dgvRadio.Rows[i].Cells[0].Value == null)
-                            continue;
-
-                        if (dgvRadio.Rows[i].Cells[1].Value == null)
-                            vsValue = "";
-                        else
-                            vsValue = dgvRadio.Rows[i].Cells[1].Value.ToString();
-
-                        if (dgvRadio.Rows[i].Cells[0].Value.ToString().Trim() != "")
-                            vDeRadioGroup.Propertys.Add(dgvRadio.Rows[i].Cells[0].Value.ToString(), vsValue);
-                    }
-                }
-
                 aHCView.BeginUpdate();
                 try
                 {
@@ -322,56 +187,9 @@ namespace EMRView
             }
         }
 
-        private void btnAdd_Click(object sender, EventArgs e)
-        {
-            if (tbxComboboxValue.Text != "")
-            {
-                lstCombobox.Items.Add(tbxComboboxValue.Text);
-                tbxComboboxValue.Clear();
-            }
-        }
-
-        private void btnMod_Click(object sender, EventArgs e)
-        {
-            lstCombobox.SelectedItem = tbxComboboxValue.Text;
-            tbxComboboxValue.Clear();
-        }
-
-        private void btnDelete_Click(object sender, EventArgs e)
-        {
-            lstCombobox.Items.Remove(lstCombobox.SelectedItem);
-        }
-
-        private void btnAddRadioItem_Click(object sender, EventArgs e)
-        {
-            lstRadioItem.Items.Add(tbxRadioValue.Text);
-            tbxRadioValue.Clear();
-        }
-
-        private void btnModRadioItem_Click(object sender, EventArgs e)
-        {
-            lstRadioItem.SelectedItem = tbxRadioValue.Text;
-            tbxRadioValue.Clear();
-        }
-
-        private void btnDeleteRadioItem_Click(object sender, EventArgs e)
-        {
-            lstRadioItem.Items.Remove(lstRadioItem.SelectedItem);
-        }
-
         private void btnOK_Click(object sender, EventArgs e)
         {
             this.DialogResult = System.Windows.Forms.DialogResult.OK;
-        }
-
-        private void lstRadioItem_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            tbxRadioValue.Text = lstRadioItem.SelectedItem.ToString();
-        }
-
-        private void lstCombobox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            tbxComboboxValue.Text = lstCombobox.SelectedItem.ToString();
         }
     }
 }

@@ -60,6 +60,12 @@
     <Compile Include="frmDataElementDomain.Designer.cs">
       <DependentUpon>frmDataElementDomain.cs</DependentUpon>
     </Compile>
+    <Compile Include="frmDeCombobox.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDeCombobox.Designer.cs">
+      <DependentUpon>frmDeCombobox.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmDeFloatItemProperty.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -71,6 +77,12 @@
     </Compile>
     <Compile Include="frmDeInfo.Designer.cs">
       <DependentUpon>frmDeInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmDeRadioGroup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmDeRadioGroup.Designer.cs">
+      <DependentUpon>frmDeRadioGroup.cs</DependentUpon>
     </Compile>
     <Compile Include="frmDomain.cs">
       <SubType>Form</SubType>
@@ -250,6 +262,9 @@
     <EmbeddedResource Include="frmDataElementDomain.resx">
       <DependentUpon>frmDataElementDomain.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="frmDeCombobox.resx">
+      <DependentUpon>frmDeCombobox.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmDeControlProperty.resx">
       <DependentUpon>frmDeControlProperty.cs</DependentUpon>
     </EmbeddedResource>
@@ -261,6 +276,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="frmDeProperty.resx">
       <DependentUpon>frmDeProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmDeRadioGroup.resx">
+      <DependentUpon>frmDeRadioGroup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmDeTableProperty.resx">
       <DependentUpon>frmDeTableProperty.cs</DependentUpon>
