@@ -42,6 +42,7 @@ namespace HC.View
         }
 
         public string Text = "";
+        public string TextValue = "";
         public POINT Position = new POINT();
 
         public bool Checked
@@ -245,29 +246,36 @@ namespace HC.View
 
             FItems.Clear();
             for (int i = 0; i < vSource.Items.Count; i++)
-                AddItem(vSource.Items[i].Text, vSource.Items[i].Checked);
+                AddItem(vSource.Items[i].Text, vSource.Items[i].TextValue, vSource.Items[i].Checked);
         }
 
-        public void AddItem(string aText, bool AChecked = false)
+        public void AddItem(string aText, string aTextValue = "", bool AChecked = false)
         {
             HCRadioButton vRadioButton = new HCRadioButton();
             vRadioButton.Checked = AChecked;
             vRadioButton.Text = aText;
+            vRadioButton.TextValue = aTextValue;
             FItems.Add(vRadioButton);
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            string vS = "";
+            string vTexts = "", vTextValues = "";
             if (FItems.Count > 0)
             {
-                vS = FItems[0].Text;
+                vTexts = FItems[0].Text;
+                vTextValues = FItems[0].TextValue;
                 for (int i = 1; i < FItems.Count; i++)
-                    vS = vS + HC.sLineBreak + FItems[i].Text;
+                {
+                    vTexts = vTexts + HC.sLineBreak + FItems[i].Text;
+                    vTextValues = vTextValues + HC.sLineBreak + FItems[i].TextValue;
+                }
             }
 
-            HC.HCSaveTextToStream(aStream, vS);
+            HC.HCSaveTextToStream(aStream, vTexts);
+            HC.HCSaveTextToStream(aStream, vTextValues);
+
             byte[] vBuffer;
             for (int i = 0; i < FItems.Count; i++)
             {
@@ -289,9 +297,19 @@ namespace HC.View
             if (vS != "")
             {
                 string[] vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-
                 for (int i = 0; i < vStrings.Length; i++)
                     AddItem(vStrings[i]);
+
+                if (aFileVersion > 35)
+                {
+                    HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                    if (vS != "")
+                    {
+                        vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                        for (int i = 0; i < vStrings.Length; i++)
+                            FItems[i].TextValue = vStrings[i];
+                    }
+                }
 
                 vBuffer = BitConverter.GetBytes(false);
                 for (int i = 0; i < FItems.Count; i++)
@@ -308,27 +326,34 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            string vS = "";
+            string vText = "", vTextValue = "";
             if (FItems.Count > 0)
             {
-                for (int i = 0; i < FItems.Count; i++)
-                    vS += FItems[i] + HC.sLineBreak;
+                vText = FItems[0].Text;
+                vTextValue = FItems[0].TextValue;
+                for (int i = 1; i < FItems.Count; i++)
+                {
+                    vText = vText + HC.sLineBreak + FItems[i].Text;
+                    vTextValue = vTextValue + HC.sLineBreak + FItems[i].TextValue;
+                }
             }
 
-            aNode.SetAttribute("item", vS);
+            aNode.SetAttribute("item", vText);
+            aNode.SetAttribute("itemvalue", vTextValue);
 
-            vS = "";
+            vText = "";
             if (FItems.Count > 0)
             {
                 for (int i = 0; i < FItems.Count; i++)
                 {
                     if (FItems[i].Checked)
-                        vS += "1" + HC.sLineBreak;
+                        vText += "1" + HC.sLineBreak;
                     else
-                        vS += "0" + HC.sLineBreak;
+                        vText += "0" + HC.sLineBreak;
                 }
             }
-            aNode.SetAttribute("check", vS);
+
+            aNode.SetAttribute("check", vText);
             aNode.SetAttribute("radiostyle", ((byte)FRadioStyle).ToString());
         }
 
@@ -338,9 +363,16 @@ namespace HC.View
             FItems.Clear();
             string vText = aNode.Attributes["item"].Value;
             string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-
             for (int i = 0; i < vStrings.Length; i++)
                 AddItem(vStrings[i]);
+
+            if (aNode.HasAttribute("itemvalue"))
+            {
+                vText = aNode.Attributes["itemvalue"].Value;
+                vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                for (int i = 0; i < vStrings.Length; i++)
+                    FItems[i].TextValue = vStrings[i];
+            }
 
             vText = aNode.Attributes["check"].Value;
             vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);

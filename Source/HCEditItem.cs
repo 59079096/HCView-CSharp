@@ -62,7 +62,7 @@ namespace HC.View
             }
 
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
-            
+
             if (!this.AutoSize)
                 aCanvas.TextRect(aDrawRect, aDrawRect.Left + FMargin, aDrawRect.Top + FMargin, FText);
             else

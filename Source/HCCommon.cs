@@ -110,18 +110,20 @@ namespace HC.View
             // 2.5 使用unicode字符集保存文档以便支持藏文等
             // 2.6 文件保存时直接使用TItemOptions集合变量的值，不再单独判断成员存储
             // 2.7 浮动直线改为ShapeLine
-            //2.8 浮动Item都使用HCStyle的样式定义(负数)，这样便于统一按Item处理遍历等操作
-            //2.9 浮动Item保存PageIndex，原因见 20190906001
-            //3.0 表格增加边框宽度的存储
-            //3.1 增加行间距 最小值、固定值、多倍的存储
-            //3.2 表格边框改用磅为单位、段样式增加BreakRough处理截断、兼容EmrView使用TDeImageItem类处理ImageItem
-            //3.3 兼容32版本图片保存时没有按DeImageItem保存，读取时不正确的问题
-            //3.4 RadioGroun控件保存选项样式、保存文件所用的排版算法版本
-            //3.5 数据元增加DeleteProtect控制是否能删除掉整个数据元，表格存储CellPadding，FloatBarCode存储单线条宽度
-            HC_FileVersion = "3.5";
+            // 2.8 浮动Item都使用HCStyle的样式定义(负数)，这样便于统一按Item处理遍历等操作
+            // 2.9 浮动Item保存PageIndex，原因见 20190906001
+            // 3.0 表格增加边框宽度的存储
+            // 3.1 增加行间距 最小值、固定值、多倍的存储
+            // 3.2 表格边框改用磅为单位、段样式增加BreakRough处理截断、兼容EmrView使用TDeImageItem类处理ImageItem
+            // 3.3 兼容32版本图片保存时没有按DeImageItem保存，读取时不正确的问题
+            // 3.4 RadioGroun控件保存选项样式、保存文件所用的排版算法版本
+            // 3.5 数据元增加DeleteProtect控制是否能删除掉整个数据元，表格存储CellPadding，FloatBarCode存储单线条宽度
+            // 3.6 Combobox和RadioGrou的选项改为键值对的形式
+
+            HC_FileVersion = "3.6";
 
         public const ushort
-            HC_FileVersionInt = 35;
+            HC_FileVersionInt = 36;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -889,7 +891,8 @@ namespace HC.View
         hosLoading,  // 文档加载
         hosCopying,  // 复制
         hosPasting,  // 粘贴
-        hosBatchInsert  // 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确
+        hosBatchInsert,  // 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确
+        hosDestroying  // 编辑器在销毁中
     }
 
     public enum CharType : byte 

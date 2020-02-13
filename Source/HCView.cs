@@ -1516,6 +1516,11 @@ namespace HC.View
             CalcScrollRang();
         }
 
+        ~HCView()
+        {
+            FStyle.States.Include(HCState.hosDestroying);
+        }
+
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
             base.SetBoundsCore(x, y, width, height, specified);
@@ -2325,6 +2330,9 @@ namespace HC.View
         /// <summary> 重绘客户区指定区域 </summary>
         public void UpdateView(RECT aRect)
         {
+            if (FStyle.States.Contain(HCState.hosDestroying))
+                return;
+
             if ((FUpdateCount == 0) && IsHandleCreated)
             {
                 // 创建一个新的剪切区域，该区域是当前剪切区域和一个特定矩形的交集
@@ -2499,6 +2507,16 @@ namespace HC.View
                 Result = Result + FSections[i].PageCount;
 
             return Result;
+        }
+
+        public void PageUp()
+        {
+            DoPageUp(this, null);
+        }
+
+        public void PageDown()
+        {
+            DoPageDown(this, null);
         }
 
         /// <summary> 返回指定节页面绘制时Left位置 </summary>

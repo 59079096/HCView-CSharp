@@ -836,8 +836,9 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int ExtEscape(HDC hdc, int nEscape, int cbInput, string lpszInData, int cbOutput, string lpszOutData);
 		[DllImport("gdi32")] public static extern int ExtFloodFill(HDC hdc, int x, int y, int crColor, int wFillType);
 		[DllImport("gdi32")] public static extern int ExtSelectClipRgn(HDC hdc, HANDLE hRgn, int fnMode);
-		[DllImport("gdi32")] public static extern int ExtTextOut(HDC hdc, int x, int y, int wOptions, ref RECT lpRect, string lpString, int nCount, ref int lpDx);
-        [DllImport("gdi32", EntryPoint = "ExtTextOutW", CharSet = CharSet.Unicode, ExactSpelling = true)] 
+		[DllImport("gdi32", EntryPoint = "ExtTextOutW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+		public static extern int ExtTextOut(HDC hdc, int x, int y, int wOptions, ref RECT lpRect, string lpString, int nCount, IntPtr lpDx);
+        [DllImport("gdi32", EntryPoint = "ExtTextOutW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         public static extern int ExtTextOut(HDC hdc, int x, int y, int wOptions, IntPtr lpRect, string lpString, int nCount, IntPtr lpDx);
 		[DllImport("gdi32")] public static extern int FillPath(HDC hdc);
 		[DllImport("gdi32")] public static extern int FillRgn(HDC hdc, HANDLE hRgn, HANDLE hBrush);

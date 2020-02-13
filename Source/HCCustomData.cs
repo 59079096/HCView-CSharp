@@ -25,6 +25,7 @@ namespace HC.View
     public class HCDomainInfo : HCObject
     {
         private int FBeginNo, FEndNo;
+        public HCCustomData Data;
 
         public HCDomainInfo()
         {
@@ -33,6 +34,7 @@ namespace HC.View
 
         public void Clear()
         {
+            Data = null;
             FBeginNo = -1;
             FEndNo = -1;
         }
@@ -631,7 +633,7 @@ namespace HC.View
 
         protected virtual void DoRemoveItem(HCCustomItem aItem)
         {
-            if (FOnRemoveItem != null)
+            if ((FOnRemoveItem != null) && (!FStyle.States.Contain(HCState.hosDestroying)))
                 FOnRemoveItem(this, aItem);
         }
 

@@ -789,7 +789,7 @@ namespace HC.View
             int vlpDx = 0;
             if (FBrush.Style != HCBrushStyle.bsClear)
                 vOptions |= GDI.ETO_OPAQUE;
-            GDI.ExtTextOut(FHandle, x, y, vOptions, ref aRect, aText, aText.Length, ref vlpDx);
+            GDI.ExtTextOut(FHandle, x, y, vOptions, ref aRect, aText, aText.Length, IntPtr.Zero);
         }
 
         public void TextRect(ref RECT aRect, string aText, int aTextFlags)

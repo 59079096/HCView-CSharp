@@ -941,7 +941,7 @@ namespace HC.View
                     || ((DrawItems[AFirstDrawItemNo].Rect.Top != FFormatStartTop)  // 段格式化后，高度的增量
                     || (DrawItems[vLastDrawItemNo].Rect.Bottom != FFormatEndBottom));
 
-            FFormatChange = false;
+            //FFormatChange = false;
             if (FFormatHeightChange || (AExtraItemCount != 0) || FFormatDrawItemCountChange)
             {
                 FFormatChange = true;

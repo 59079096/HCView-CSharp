@@ -47,6 +47,7 @@ namespace HC.View
     {
         private bool FSaveItem;
         private List<HCCbbItem> FItems;
+        private List<HCCbbItem> FItemValues;
         private int FItemIndex, FMoveItemIndex;
         private RECT FButtonRect, FButtonDrawRect;
         private bool FMouseInButton;
@@ -359,16 +360,6 @@ namespace HC.View
                 ACaretInfo.Visible = false;
         }
 
-        protected void SetItems(List<HCCbbItem> Value)
-        {
-            if (!ReadOnly)
-            {
-                FItems.Clear();
-                for (int i = 0; i < Value.Count; i++)
-                    FItems.Add(Value[i]);
-            }
-        }
-
         protected void SetItemIndex(int Value)
         {
             if (!ReadOnly)
@@ -396,6 +387,7 @@ namespace HC.View
             Width = 80;
             FSaveItem = true;
             FItems = new List<HCCbbItem>();
+            FItemValues = new List<HCCbbItem>();
 
             FScrollBar = new HCComScrollBar();
             FScrollBar.Orientation = Orientation.oriVertical;
@@ -423,6 +415,10 @@ namespace HC.View
             HCComboboxItem vCombobox = Source as HCComboboxItem;
             for (int i = 0; i < vCombobox.Items.Count; i++)
                 FItems.Add(vCombobox.Items[i]);
+
+            FItemValues.Clear();
+            for (int i = 0; i < vCombobox.ItemValues.Count; i++)
+                FItemValues.Add(vCombobox.ItemValues[i]);
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
@@ -434,12 +430,21 @@ namespace HC.View
             if (FSaveItem)
             {
                 string vText = "";
-
                 if (FItems.Count > 0)
                 {
                     vText = FItems[0].Text;
                     for (int i = 1; i < FItems.Count; i++)
-                        vText = vText + HC.sLineBreak + FItems[i];
+                        vText = vText + HC.sLineBreak + FItems[i].Text;
+                }
+
+                HC.HCSaveTextToStream(aStream, vText);
+
+                vText = "";
+                if (FItemValues.Count > 0)
+                {
+                    vText = FItemValues[0].Text;
+                    for (int i = 1; i < FItemValues.Count; i++)
+                        vText = vText + HC.sLineBreak + FItemValues[i].Text;
                 }
 
                 HC.HCSaveTextToStream(aStream, vText);
@@ -461,6 +466,17 @@ namespace HC.View
             for (int i = 0; i < vStrings.Length; i++)
                 FItems.Add(new HCCbbItem(vStrings[i]));
 
+            if ((FItems.Count > 0) && (aFileVersion > 35))
+            {
+                vText = "";
+                HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
+                vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                for (int i = 0; i < vStrings.Length; i++)
+                    FItemValues.Add(new HCCbbItem(vStrings[i]));
+            }
+            else
+                FItemValues.Clear();
+
             FSaveItem = FItems.Count > 0;
         }
 
@@ -470,15 +486,24 @@ namespace HC.View
             if (FSaveItem)
             {
                 string vText = "";
-
                 if (FItems.Count > 0)
                 {
                     vText = FItems[0].Text;
                     for (int i = 1; i < FItems.Count - 1; i++)
-                        vText = vText + HC.sLineBreak + FItems[i];
+                        vText = vText + HC.sLineBreak + FItems[i].Text;
                 }
 
                 aNode.SetAttribute("item", vText);
+
+                vText = "";
+                if (FItemValues.Count > 0)
+                {
+                    vText = FItemValues[0].Text;
+                    for (int i = 1; i < FItemValues.Count - 1; i++)
+                        vText = vText + HC.sLineBreak + FItemValues[i].Text;
+                }
+
+                aNode.SetAttribute("itemvalue", vText);
             }
         }
 
@@ -492,13 +517,27 @@ namespace HC.View
             for (int i = 0; i < vStrings.Length; i++)
                 FItems.Add(new HCCbbItem(vStrings[i]));
 
+            if (aNode.HasAttribute("itemvalue"))
+            {
+                vText = aNode.Attributes["itemvalue"].Value;
+                vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                for (int i = 0; i < vStrings.Length; i++)
+                    FItemValues.Add(new HCCbbItem(vStrings[i]));
+            }
+            else
+                FItemValues.Clear();
+
             FSaveItem = FItems.Count > 0;
         }
 
         public List<HCCbbItem> Items
         {
             get { return FItems; }
-            set { SetItems(value); }
+        }
+
+        public List<HCCbbItem> ItemValues
+        {
+            get { return FItemValues; }
         }
 
         public int ItemIndex

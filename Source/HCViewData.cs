@@ -49,6 +49,7 @@ namespace HC.View
                     if (HCDomainItem.IsBeginMark(Items[i]))
                     {
                         vDomainInfo = new HCDomainInfo();
+                        vDomainInfo.Data = this;
                         vDomainInfo.BeginNo = i;
                         aDomainStack.Push(vDomainInfo);
                     }
@@ -77,6 +78,7 @@ namespace HC.View
                 {
                     if (aOffset == HC.OffsetAfter)
                     {
+                        aDomainInfo.Data = this;
                         aDomainInfo.BeginNo = aItemNo;  // 当前即为起始标识
                         vLevel = (Items[aItemNo] as HCDomainItem).Level;
                         vEndNo = aItemNo + 1;
@@ -449,7 +451,9 @@ namespace HC.View
         {
             FDomainStartDeletes = new List<int>();
             FHotDomain = new HCDomainInfo();
+            FHotDomain.Data = this;
             FActiveDomain = new HCDomainInfo();
+            FActiveDomain.Data = this;
         }
 
         ~HCViewData()
