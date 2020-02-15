@@ -473,6 +473,7 @@ namespace HC.View
 
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FHeight = BitConverter.ToInt32(vBuffer, 0);
+            FormatDirty();
         }
 
         public override string ToHtml(string aPath) 

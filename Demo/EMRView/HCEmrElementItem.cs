@@ -206,6 +206,7 @@ namespace EMRView
 
         protected override void SetText(string value)
         {
+            FAllocValue = true;
             if (value != "")
                 base.SetText(value);
             else
@@ -309,7 +310,7 @@ namespace EMRView
                 if (this.IsElement)
                 {
                     if ((aAction == HCAction.actInsertText) || (aAction == HCAction.actBackDeleteText) || (aAction == HCAction.actDeleteText))
-                        Result = !FEditProtect && this.Active;
+                        Result = !FEditProtect;
                     else
                     if (aAction == HCAction.actDeleteItem)
                         Result = FDeleteAllow;

@@ -261,6 +261,14 @@ namespace HC.View
             return true;
         }
 
+        public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            if (OwnerData.Style.States.Contain(HCState.hosPasting))
+                return InsertText(Clipboard.GetText());
+            else
+                return false;
+        }
+
         public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
         {
             if (FCaretOffset < 0)

@@ -358,10 +358,7 @@ namespace EMRView
                     {
                         vsResult = GetDeItemValueTry(vDeIndex);
                         if (vsResult != "")
-                        {
                             vDeItem.Text = vsResult;
-                            vDeItem.AllocValue = true;
-                        }
                     }
                 }
             }
@@ -1160,7 +1157,6 @@ namespace EMRView
                             {
                                 vDeItem.Text = vValue;
                                 //vDeItem[DeProp.CMVVCode] = ""; 值域编码
-                                vDeItem.AllocValue = true;
                             }
                         }
                     };

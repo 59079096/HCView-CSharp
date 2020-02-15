@@ -891,6 +891,8 @@ namespace HC.View
         hosLoading,  // 文档加载
         hosCopying,  // 复制
         hosPasting,  // 粘贴
+        hosUndoing,
+        hosRedoing,
         hosBatchInsert,  // 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确
         hosDestroying  // 编辑器在销毁中
     }
@@ -912,7 +914,8 @@ namespace HC.View
         actBackDeleteText,  // 向前删除文本
         actDeleteText,  // 向后删除文本
         actInsertText,  // 插入文本
-        actSetItemText,    // 直接赋值Item的Text
+        actReturnItem,  // 在Item上回车
+        actSetItemText, // 直接赋值Item的Text
         actDeleteItem,  // 删除Item
         actInsertItem,  // 插入Item
         actItemProperty,  // Item属性变化

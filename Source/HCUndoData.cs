@@ -614,66 +614,6 @@ namespace HC.View
             else
                 return base.GetUndoList();
         }
-        protected void SaveItemToStreamAlone(HCCustomItem aItem, Stream aStream)
-        {
-            HC._SaveFileFormatAndVersion(aStream);
-            aItem.SaveToStream(aStream);
-            if (aItem.StyleNo > HCStyle.Null)
-                Style.TextStyles[aItem.StyleNo].SaveToStream(aStream);
-
-            Style.ParaStyles[aItem.ParaNo].SaveToStream(aStream);
-        }
-
-        protected void LoadItemFromStreamAlone(Stream aStream, ref HCCustomItem aItem)
-        {
-            string vFileExt = "";
-            ushort vFileVersion = 0;
-            byte vLan = 0;
-
-            aStream.Position = 0;
-            HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref vFileVersion, ref vLan);  // 文件格式和版本
-            if ((vFileExt != HC.HC_EXT) && (vFileExt != "cff."))
-                throw new Exception("加载失败，不是" + HC.HC_EXT + "文件！");
-
-            int vStyleNo = HCStyle.Null;
-            byte[] vBuffer = BitConverter.GetBytes(vStyleNo);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            vStyleNo = BitConverter.ToInt32(vBuffer, 0);
-
-            if (aItem == null)
-                aItem = CreateItemByStyle(vStyleNo);
-
-            aItem.LoadFromStream(aStream, null, vFileVersion);
-
-            if (vStyleNo > HCStyle.Null)
-            {
-                HCTextStyle vTextStyle = new HCTextStyle();
-                try
-                {
-                    vTextStyle.LoadFromStream(aStream, vFileVersion);
-                    vStyleNo = Style.GetStyleNo(vTextStyle, true);
-                    aItem.StyleNo = vStyleNo;
-                }
-                finally
-                {
-                    vTextStyle.Dispose();
-                }
-            }
-
-            int vParaNo = -1;
-            HCParaStyle vParaStyle = new HCParaStyle();
-            try
-            {
-                vParaStyle.LoadFromStream(aStream, vFileVersion);
-                vParaNo = Style.GetParaNo(vParaStyle, true);
-            }
-            finally
-            {
-                vParaStyle.Dispose();
-            }
-
-            aItem.ParaNo = vParaNo;
-        }
 
         protected void Undo_New()
         {
@@ -771,7 +711,7 @@ namespace HC.View
                 {
                     HCItemUndoAction vItemAction = vUndo.ActionAppend(HCAction.actDeleteItem, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCItemUndoAction;
-                    SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
+                    SaveItemToStreamAlone(vItemAction.ItemStream, Items[aItemNo]);
                 }
             }
         }
@@ -789,7 +729,7 @@ namespace HC.View
                 {
                     HCItemUndoAction vItemAction = vUndo.ActionAppend(HCAction.actInsertItem, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCItemUndoAction;
-                    SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
+                    SaveItemToStreamAlone(vItemAction.ItemStream, Items[aItemNo]);
                 }
             }
         }
@@ -892,7 +832,7 @@ namespace HC.View
                 {
                     HCItemUndoAction vItemAction = vUndo.ActionAppend(HCAction.actItemMirror, aItemNo, aOffset,
                         Items[aItemNo].ParaFirst) as HCItemUndoAction;
-                    SaveItemToStreamAlone(Items[aItemNo], vItemAction.ItemStream);
+                    SaveItemToStreamAlone(vItemAction.ItemStream, Items[aItemNo]);
                 }
             }
         }
@@ -932,6 +872,50 @@ namespace HC.View
         public void UndoItemMirror(int aItemNo, int aOffset)
         {
             this.UndoAction_ItemMirror(aItemNo, aOffset);
+        }
+
+        public void SaveItemToStreamAlone(Stream aStream, HCCustomItem aItem)
+        {
+            HC._SaveFileFormatAndVersion(aStream);
+            Style.SaveToStream(aStream);
+            aItem.SaveToStream(aStream);
+        }
+
+        public void LoadItemFromStreamAlone(Stream aStream, ref HCCustomItem aItem)
+        {
+            string vFileExt = "";
+            ushort vFileVersion = 0;
+            byte vLan = 0;
+
+            aStream.Position = 0;
+            HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref vFileVersion, ref vLan);  // 文件格式和版本
+            if ((vFileExt != HC.HC_EXT) && (vFileExt != "cff."))
+                throw new Exception("加载失败，不是" + HC.HC_EXT + "文件！");
+
+            HCStyle vStyle = new HCStyle();
+            vStyle.LoadFromStream(aStream, vFileVersion);
+
+            int vStyleNo = HCStyle.Null;
+            byte[] vBuffer = BitConverter.GetBytes(vStyleNo);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
+            vStyleNo = BitConverter.ToInt32(vBuffer, 0);
+
+            if (vStyleNo > HCStyle.Null)
+            {
+                HCTextStyle vTextStyle = vStyle.TextStyles[vStyleNo];
+                vStyleNo = Style.GetStyleNo(vTextStyle, true);
+            }
+
+            if (aItem == null)
+                aItem = CreateItemByStyle(vStyleNo);
+
+            aItem.LoadFromStream(aStream, vStyle, vFileVersion);
+            aItem.StyleNo = vStyleNo;
+
+            int vParaNo = aItem.ParaNo;
+            HCParaStyle vParaStyle = vStyle.ParaStyles[vParaNo];
+            vParaNo = Style.GetParaNo(vParaStyle, true);
+            aItem.ParaNo = vParaNo;
         }
     }
 }

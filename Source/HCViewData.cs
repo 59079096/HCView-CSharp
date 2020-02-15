@@ -17,6 +17,7 @@ using System.Windows.Forms;
 using HC.Win32;
 using System.Drawing;
 using System.Reflection;
+using System.IO;
 
 namespace HC.View
 {
@@ -38,189 +39,6 @@ namespace HC.View
         private StyleItemEventHandler FOnCreateItemByStyle;
         private OnCanEditEventHandler FOnCanEdit;
         private TextEventHandler FOnInsertTextBefor;
-
-        private void GetDomainStackFrom(int aItemNo, int aOffset, Stack<HCDomainInfo> aDomainStack)
-        {
-            HCDomainInfo vDomainInfo;
-            for (int i = 0; i < aItemNo; i++)
-            {
-                if (Items[i] is HCDomainItem)
-                {
-                    if (HCDomainItem.IsBeginMark(Items[i]))
-                    {
-                        vDomainInfo = new HCDomainInfo();
-                        vDomainInfo.Data = this;
-                        vDomainInfo.BeginNo = i;
-                        aDomainStack.Push(vDomainInfo);
-                    }
-                    else
-                        aDomainStack.Pop();
-                }
-            }
-        }
-
-        private void GetDomainFrom(int aItemNo, int aOffset, HCDomainInfo aDomainInfo)
-        {
-            aDomainInfo.Clear();
-
-            if ((aItemNo < 0) || (aOffset < 0))
-                return;
-
-            /* 找起始标识 }*/
-            int vCount = 0;
-            byte vLevel = 0;
-            // 确定往前找的起始位置
-            int vStartNo = aItemNo;
-            int vEndNo = aItemNo;
-            if (Items[aItemNo] is HCDomainItem)
-            {
-                if ((Items[aItemNo] as HCDomainItem).MarkType == MarkType.cmtBeg)
-                {
-                    if (aOffset == HC.OffsetAfter)
-                    {
-                        aDomainInfo.Data = this;
-                        aDomainInfo.BeginNo = aItemNo;  // 当前即为起始标识
-                        vLevel = (Items[aItemNo] as HCDomainItem).Level;
-                        vEndNo = aItemNo + 1;
-                    }
-                    else  // 光标在前面
-                    {
-                        if (aItemNo > 0)
-                            vStartNo = aItemNo - 1; // 从前一个往前
-                        else  // 是在第一个前面
-                            return;  // 不用找了
-                    }
-                }
-                else  // 查找位置是结束标记
-                {
-                    if (aOffset == HC.OffsetAfter)
-                    {
-                        if (aItemNo < Items.Count - 1)
-                            vEndNo = aItemNo + 1;
-                        else  // 是最后一个后面
-                            return;  // 不用找了
-                    }
-                    else  // 光标在前面
-                    {
-                        aDomainInfo.EndNo = aItemNo;
-                        vStartNo = aItemNo - 1;
-                    }
-                }
-            }
-
-            if (aDomainInfo.BeginNo < 0)
-            {
-                vCount = 0;
-
-                if (vStartNo < Items.Count / 2)  // 在前半程
-                {
-                    for (int i = vStartNo; i >= 0; i--)  // 先往前找起始
-                    {
-                        if (Items[i] is HCDomainItem)
-                        {
-                            if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)  // 起始标记
-                            {
-                                if (vCount != 0)
-                                    vCount--;
-                                else
-                                {
-                                    aDomainInfo.BeginNo = i;
-                                    vLevel = (Items[i] as HCDomainItem).Level;
-                                    break;
-                                }
-                            }
-                            else  // 结束标记
-                                vCount++;  // 有嵌套
-                        }
-                    }
-
-                    if ((aDomainInfo.BeginNo >= 0) && (aDomainInfo.EndNo < 0))  // 找结束标识
-                    {
-                        for (int i = vEndNo; i <= Items.Count - 1; i++)
-                        {
-                            if (Items[i] is HCDomainItem)
-                            {
-                                if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结尾
-                                {
-                                    if ((Items[i] as HCDomainItem).Level == vLevel)
-                                    {
-                                        aDomainInfo.EndNo = i;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (aDomainInfo.EndNo < 0)
-                            throw new Exception("异常：获取数据组结束出错！");
-                    }
-                }
-                else  // 在后半程
-                {
-                    for (int i = vEndNo; i <= this.Items.Count - 1; i++)  // 先往后找结
-                    {
-                        if (Items[i] is HCDomainItem)
-                        {
-                            if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)
-                            {
-                                if (vCount > 0)
-                                    vCount--;
-                                else
-                                {
-                                    aDomainInfo.EndNo = i;
-                                    vLevel = (Items[i] as HCDomainItem).Level;
-                                    break;
-                                }
-                            }
-                            else
-                                vCount++;
-                        }
-                    }
-
-                    if ((aDomainInfo.EndNo >= 0) && (aDomainInfo.BeginNo < 0))
-                    {
-                        for (int i = vStartNo; i >= 0; i--)
-                        {
-                            if (Items[i] is HCDomainItem)
-                            {
-                                if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)
-                                {
-                                    if ((Items[i] as HCDomainItem).Level == vLevel)
-                                    {
-                                        aDomainInfo.BeginNo = i;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (aDomainInfo.BeginNo < 0)
-                            throw new Exception("异常：获取域起始位置出错！");
-                    }
-                }
-            }
-            else
-            if (aDomainInfo.EndNo < 0)
-            {
-                for (int i = vEndNo; i <= this.Items.Count - 1; i++)
-                {
-                    if (Items[i] is HCDomainItem)
-                    {
-                        if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结尾
-                        {
-                            if ((Items[i] as HCDomainItem).Level == vLevel)
-                            {
-                                aDomainInfo.EndNo = i;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (aDomainInfo.EndNo < 0)
-                    throw new Exception("异常：获取域起始位置出错！");
-            }
-        }
 
         protected override bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
         {
@@ -804,6 +622,189 @@ namespace HC.View
             return Result;
         }
 
+        public void GetDomainStackFrom(int aItemNo, int aOffset, Stack<HCDomainInfo> aDomainStack)
+        {
+            HCDomainInfo vDomainInfo;
+            for (int i = 0; i < aItemNo; i++)
+            {
+                if (Items[i] is HCDomainItem)
+                {
+                    if (HCDomainItem.IsBeginMark(Items[i]))
+                    {
+                        vDomainInfo = new HCDomainInfo();
+                        vDomainInfo.Data = this;
+                        vDomainInfo.BeginNo = i;
+                        aDomainStack.Push(vDomainInfo);
+                    }
+                    else
+                        aDomainStack.Pop();
+                }
+            }
+        }
+
+        public void GetDomainFrom(int aItemNo, int aOffset, HCDomainInfo aDomainInfo)
+        {
+            aDomainInfo.Clear();
+
+            if ((aItemNo < 0) || (aOffset < 0))
+                return;
+
+            /* 找起始标识 }*/
+            int vCount = 0;
+            byte vLevel = 0;
+            // 确定往前找的起始位置
+            int vStartNo = aItemNo;
+            int vEndNo = aItemNo;
+            if (Items[aItemNo] is HCDomainItem)
+            {
+                if ((Items[aItemNo] as HCDomainItem).MarkType == MarkType.cmtBeg)
+                {
+                    if (aOffset == HC.OffsetAfter)
+                    {
+                        aDomainInfo.Data = this;
+                        aDomainInfo.BeginNo = aItemNo;  // 当前即为起始标识
+                        vLevel = (Items[aItemNo] as HCDomainItem).Level;
+                        vEndNo = aItemNo + 1;
+                    }
+                    else  // 光标在前面
+                    {
+                        if (aItemNo > 0)
+                            vStartNo = aItemNo - 1; // 从前一个往前
+                        else  // 是在第一个前面
+                            return;  // 不用找了
+                    }
+                }
+                else  // 查找位置是结束标记
+                {
+                    if (aOffset == HC.OffsetAfter)
+                    {
+                        if (aItemNo < Items.Count - 1)
+                            vEndNo = aItemNo + 1;
+                        else  // 是最后一个后面
+                            return;  // 不用找了
+                    }
+                    else  // 光标在前面
+                    {
+                        aDomainInfo.EndNo = aItemNo;
+                        vStartNo = aItemNo - 1;
+                    }
+                }
+            }
+
+            if (aDomainInfo.BeginNo < 0)
+            {
+                vCount = 0;
+
+                if (vStartNo < Items.Count / 2)  // 在前半程
+                {
+                    for (int i = vStartNo; i >= 0; i--)  // 先往前找起始
+                    {
+                        if (Items[i] is HCDomainItem)
+                        {
+                            if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)  // 起始标记
+                            {
+                                if (vCount != 0)
+                                    vCount--;
+                                else
+                                {
+                                    aDomainInfo.BeginNo = i;
+                                    vLevel = (Items[i] as HCDomainItem).Level;
+                                    break;
+                                }
+                            }
+                            else  // 结束标记
+                                vCount++;  // 有嵌套
+                        }
+                    }
+
+                    if ((aDomainInfo.BeginNo >= 0) && (aDomainInfo.EndNo < 0))  // 找结束标识
+                    {
+                        for (int i = vEndNo; i <= Items.Count - 1; i++)
+                        {
+                            if (Items[i] is HCDomainItem)
+                            {
+                                if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结尾
+                                {
+                                    if ((Items[i] as HCDomainItem).Level == vLevel)
+                                    {
+                                        aDomainInfo.EndNo = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (aDomainInfo.EndNo < 0)
+                            throw new Exception("异常：获取数据组结束出错！");
+                    }
+                }
+                else  // 在后半程
+                {
+                    for (int i = vEndNo; i <= this.Items.Count - 1; i++)  // 先往后找结
+                    {
+                        if (Items[i] is HCDomainItem)
+                        {
+                            if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)
+                            {
+                                if (vCount > 0)
+                                    vCount--;
+                                else
+                                {
+                                    aDomainInfo.EndNo = i;
+                                    vLevel = (Items[i] as HCDomainItem).Level;
+                                    break;
+                                }
+                            }
+                            else
+                                vCount++;
+                        }
+                    }
+
+                    if ((aDomainInfo.EndNo >= 0) && (aDomainInfo.BeginNo < 0))
+                    {
+                        for (int i = vStartNo; i >= 0; i--)
+                        {
+                            if (Items[i] is HCDomainItem)
+                            {
+                                if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)
+                                {
+                                    if ((Items[i] as HCDomainItem).Level == vLevel)
+                                    {
+                                        aDomainInfo.BeginNo = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (aDomainInfo.BeginNo < 0)
+                            throw new Exception("异常：获取域起始位置出错！");
+                    }
+                }
+            }
+            else
+            if (aDomainInfo.EndNo < 0)
+            {
+                for (int i = vEndNo; i <= this.Items.Count - 1; i++)
+                {
+                    if (Items[i] is HCDomainItem)
+                    {
+                        if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结尾
+                        {
+                            if ((Items[i] as HCDomainItem).Level == vLevel)
+                            {
+                                aDomainInfo.EndNo = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (aDomainInfo.EndNo < 0)
+                    throw new Exception("异常：获取域起始位置出错！");
+            }
+        }
+
         /// <summary> 设置选中范围，仅供外部使用内部不使用 </summary>
         public void SetSelectBound(int aStartNo, int aStartOffset, int aEndNo, int aEndOffset, bool aSilence = true)
         {
@@ -1218,6 +1219,23 @@ namespace HC.View
                         (Items[i] as HCCustomRectItem).TraverseItem(aTraverse);
                 }
             }
+        }
+
+        public void SaveDomainToStream(Stream aStream, int aDomainItemNo)
+        {
+            int vGroupBeg = -1;
+            int vGroupEnd = GetDomainAnother(aDomainItemNo);
+            if (vGroupEnd > aDomainItemNo)
+                vGroupBeg = aDomainItemNo;
+            else
+            {
+                vGroupBeg = vGroupEnd;
+                vGroupEnd = aDomainItemNo;
+            }
+
+            HC._SaveFileFormatAndVersion(aStream);
+            this.Style.SaveToStream(aStream);
+            SaveItemToStream(aStream, vGroupBeg + 1, 0, vGroupEnd - 1, GetItemOffsetAfter(vGroupEnd - 1));
         }
 
         public HCDomainInfo HotDomain

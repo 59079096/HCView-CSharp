@@ -1725,7 +1725,7 @@ namespace HC.View
                                 vDataStream.Read(vBuffer, 0, vBuffer.Length);
                                 vShowUnderLine = BitConverter.ToBoolean(vBuffer, 0);
 
-                                vResult = ActiveSection.InsertStream(vDataStream, vStyle, aFileVersion);  // 只插入第一节的数据
+                                vResult = ActiveSection.InsertStream(vDataStream, vStyle, HC.HC_FileVersionInt);  // 只插入第一节的数据
                             }
                         }
                     };
@@ -2138,78 +2138,86 @@ namespace HC.View
         /// <summary> 粘贴剪贴板中的内容 </summary>
         public void Paste()
         {
-            IDataObject vIData = Clipboard.GetDataObject();
-            //string[] vFormats = vIData.GetFormats();
-
-            if (vIData.GetDataPresent(HC.HC_EXT) && DoPasteRequest(HC.HCExtFormat.Id))
+            FStyle.States.Include(HCState.hosPasting);
+            try
             {
-                MemoryStream vStream = (MemoryStream)vIData.GetData(HC.HC_EXT);
-                try
+                IDataObject vIData = Clipboard.GetDataObject();
+                //string[] vFormats = vIData.GetFormats();
+
+                if (vIData.GetDataPresent(HC.HC_EXT) && DoPasteRequest(HC.HCExtFormat.Id))
                 {
-                    string vFileFormat = "";
-                    ushort vFileVersion = 0;
-                    byte vLang = 0;
-
-                    vStream.Position = 0;
-                    HC._LoadFileFormatAndVersion(vStream, ref vFileFormat, ref vFileVersion, ref vLang);  // 文件格式和版本
-                    if (!DoPasteFormatStream(vStream))
-                        return;
-
-                    HCStyle vStyle = new HCStyle();
+                    MemoryStream vStream = (MemoryStream)vIData.GetData(HC.HC_EXT);
                     try
                     {
-                        vStyle.LoadFromStream(vStream, vFileVersion);
-                        this.BeginUpdate();
+                        string vFileFormat = "";
+                        ushort vFileVersion = 0;
+                        byte vLang = 0;
+
+                        vStream.Position = 0;
+                        HC._LoadFileFormatAndVersion(vStream, ref vFileFormat, ref vFileVersion, ref vLang);  // 文件格式和版本
+                        if (!DoPasteFormatStream(vStream))
+                            return;
+
+                        HCStyle vStyle = new HCStyle();
                         try
                         {
-                            FStyle.States.Include(HCState.hosPasting);
+                            vStyle.LoadFromStream(vStream, vFileVersion);
+                            this.BeginUpdate();
                             try
                             {
-                                ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
+                                FStyle.States.Include(HCState.hosPasting);
+                                try
+                                {
+                                    ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
+                                }
+                                finally
+                                {
+                                    FStyle.States.Exclude(HCState.hosPasting);
+                                }
                             }
                             finally
                             {
-                                FStyle.States.Exclude(HCState.hosPasting);
+                                this.EndUpdate();
                             }
                         }
                         finally
                         {
-                            this.EndUpdate();
+                            vStyle.Dispose();
                         }
                     }
                     finally
                     {
-                        vStyle.Dispose();
+                        vStream.Close();
+                        vStream.Dispose();
                     }
                 }
-                finally
+                else
+                if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
+                    InsertText(Clipboard.GetText());
+                else
+                if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_UNICODETEXT))
+                    InsertText(Clipboard.GetText());
+                else
+                if (vIData.GetDataPresent(DataFormats.Bitmap) && DoPasteRequest(User.CF_BITMAP))
                 {
-                    vStream.Close();
-                    vStream.Dispose();
+                    Image vImage = (Image)vIData.GetData(typeof(Bitmap));
+
+                    HCRichData vTopData = this.ActiveSectionTopLevelData() as HCRichData;
+                    HCImageItem vImageItem = new HCImageItem(vTopData);
+
+                    vImageItem.Image = new Bitmap(vImage);
+
+                    vImageItem.Width = vImageItem.Image.Width;
+                    vImageItem.Height = vImageItem.Image.Height;
+
+                    vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
+
+                    this.InsertItem(vImageItem);
                 }
             }
-            else
-            if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
-                InsertText(Clipboard.GetText());
-            else
-            if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_UNICODETEXT))
-                InsertText(Clipboard.GetText());
-            else
-            if (vIData.GetDataPresent(DataFormats.Bitmap) && DoPasteRequest(User.CF_BITMAP))
+            finally
             {
-                Image vImage = (Image)vIData.GetData(typeof(Bitmap));
-
-                HCRichData vTopData = this.ActiveSectionTopLevelData() as HCRichData;
-                HCImageItem vImageItem = new HCImageItem(vTopData);
-
-                vImageItem.Image = new Bitmap(vImage);
-
-                vImageItem.Width = vImageItem.Image.Width;
-                vImageItem.Height = vImageItem.Image.Height;
-
-                vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
-
-                this.InsertItem(vImageItem);
+                FStyle.States.Exclude(HCState.hosPasting);
             }
         }
 
@@ -2642,18 +2650,22 @@ namespace HC.View
         }
 
         /// <summary> 读取hcf文件 </summary>
-        public void LoadFromFile(string aFileName)
+        public bool LoadFromFile(string aFileName)
         {
-            FFileName = aFileName;
+            bool vResult = false;            
             FileStream vStream = new FileStream(aFileName, FileMode.Open, FileAccess.Read);
             try
             {
-                LoadFromStream(vStream);
+                vResult = LoadFromStream(vStream);
+                if (vResult)
+                    FFileName = aFileName;
             }
             finally
             {
                 vStream.Dispose();
             }
+
+            return vResult;
         }
 
         /// <summary> 读取其他格式的文件 </summary>
@@ -2798,13 +2810,18 @@ namespace HC.View
         }
 
         /// <summary> 读文本到第一节正文 </summary>
-        public void LoadFromText(string aText)
+        public bool LoadFromText(string aText)
         {
+            if (ReadOnly)
+                return false;
+
             Clear();
             FStyle.Initialize();
 
             if (aText != "")
-                ActiveSection.InsertText(aText);
+                return ActiveSection.InsertText(aText);
+            else
+                return false;
         }
 
         /// <summary> 文档各节正文字符串保存为文本格式文件 </summary>
@@ -2817,13 +2834,16 @@ namespace HC.View
         }
 
         /// <summary> 读取文本文件内容到第一节正文 </summary>
-        public void LoadFromTextFile(string aFileName, System.Text.Encoding aEncoding)
+        public bool LoadFromTextFile(string aFileName, System.Text.Encoding aEncoding)
         {
+            bool vResult = false;
             using (FileStream vStream = new FileStream(aFileName, FileMode.Open))
             {
                 vStream.Position = 0;
-                LoadFromTextStream(vStream, aEncoding);
+                vResult = LoadFromTextStream(vStream, aEncoding);
             }
+
+            return vResult;
         }
 
         /// <summary> 文档各节正文字符串保存为文本格式流 </summary>
@@ -2839,13 +2859,13 @@ namespace HC.View
         }
 
         /// <summary> 读取文本文件流 </summary>
-        public void LoadFromTextStream(Stream aStream, System.Text.Encoding aEncoding)
+        public bool LoadFromTextStream(Stream aStream, System.Text.Encoding aEncoding)
         {
             long vSize = aStream.Length - aStream.Position;
             byte[] vBuffer = new byte[vSize];
             aStream.Read(vBuffer, 0, (int)vSize);
             string vS = aEncoding.GetString(vBuffer);
-            LoadFromText(vS);
+            return LoadFromText(vS);
         }
 
         /// <summary> 文档保存到流 </summary>
@@ -2881,8 +2901,12 @@ namespace HC.View
         }
 
         /// <summary> 读取文件流 </summary>
-        public virtual void LoadFromStream(Stream aStream)
+        public virtual bool LoadFromStream(Stream aStream)
         {
+            if (ReadOnly)
+                return false;
+
+            bool vResult = false;
             this.BeginUpdate();
             try
             {
@@ -2919,6 +2943,7 @@ namespace HC.View
                         FStyle.States.Exclude(HCState.hosLoading);
                     }
 
+                    vResult = true;
                     DoViewResize();
                 }
                 finally
@@ -2930,6 +2955,8 @@ namespace HC.View
             {
                 this.EndUpdate();
             }
+
+            return vResult;
         }
 
         /// <summary> 文档保存为xml格式 </summary>
@@ -2968,8 +2995,12 @@ namespace HC.View
         }
 
         /// <summary> 读取xml格式 </summary>
-        public void LoadFromXml(string aFileName)
+        public bool LoadFromXml(string aFileName)
         {
+            if (ReadOnly)
+                return false;
+
+            bool vResult = false;
             this.BeginUpdate();
             try
             {
@@ -2986,7 +3017,7 @@ namespace HC.View
                     if (vXml.DocumentElement.Name == "HCView")
                     {
                         if (vXml.DocumentElement.Attributes["EXT"].Value != HC.HC_EXT)
-                            return;
+                            return false;
 
                         string vVersion = vXml.DocumentElement.Attributes["ver"].Value;
                         byte vLang = byte.Parse(vXml.DocumentElement.Attributes["lang"].Value);
@@ -3019,6 +3050,7 @@ namespace HC.View
                             FStyle.States.Exclude(HCState.hosLoading);
                         }
 
+                        vResult = true;
                         DoViewResize();
                     }
                 }
@@ -3031,6 +3063,8 @@ namespace HC.View
             {
                 this.EndUpdate();
             }
+
+            return vResult;
         }
 
         /// <summary> 导出为html格式 </summary>
@@ -3593,52 +3627,68 @@ namespace HC.View
         /// <summary> 撤销 </summary>
         public void Undo()
         {
-            if (FUndoList.Enable)
+            FStyle.States.Include(HCState.hosUndoing);
+            try
             {
-                try
+                if (FUndoList.Enable)
                 {
-                    FUndoList.Enable = false;
-
-                    BeginUpdate();
                     try
                     {
-                        FUndoList.Undo();
+                        FUndoList.Enable = false;
+
+                        BeginUpdate();
+                        try
+                        {
+                            FUndoList.Undo();
+                        }
+                        finally
+                        {
+                            EndUpdate();
+                        }
                     }
                     finally
                     {
-                        EndUpdate();
+                        FUndoList.Enable = true;
                     }
                 }
-                finally
-                {
-                    FUndoList.Enable = true;
-                }
+            }
+            finally
+            {
+                FStyle.States.Exclude(HCState.hosUndoing);
             }
         }
 
         /// <summary> 恢复/重做 </summary>
         public void Redo()
         {
-            if (FUndoList.Enable)
+            FStyle.States.Include(HCState.hosRedoing);
+            try
             {
-                try
+                if (FUndoList.Enable)
                 {
-                    FUndoList.Enable = false;
-
-                    BeginUpdate();
                     try
                     {
-                        FUndoList.Redo();
+                        FUndoList.Enable = false;
+
+                        BeginUpdate();
+                        try
+                        {
+                            FUndoList.Redo();
+                        }
+                        finally
+                        {
+                            EndUpdate();
+                        }
                     }
                     finally
                     {
-                        EndUpdate();
+                        FUndoList.Enable = true;
                     }
                 }
-                finally
-                {
-                    FUndoList.Enable = true;
-                }
+            }
+            finally
+            {
+                FStyle.States.Exclude(HCState.hosRedoing);
             }
         }
 

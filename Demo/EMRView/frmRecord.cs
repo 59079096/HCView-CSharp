@@ -466,7 +466,6 @@ namespace EMRView
                         FEmrView.SetActiveItemText(aText);
                         (aData as HCRichData).UndoItemMirror(aItemNo, aOffset);
                         vDeItem.Propertys.Remove(DeProp.CMVVCode);
-                        vDeItem.AllocValue = true;
                     }
                     finally
                     {
@@ -503,16 +502,10 @@ namespace EMRView
                 string vText = aText;
                 FOnSetDeItemText(this, aDeItem, ref vText, ref aReject);
                 if (!aReject)
-                {
                     FEmrView.SetActiveItemText(vText);
-                    aDeItem.AllocValue = true;
-                }
             }
             else
-            {
                 FEmrView.SetActiveItemText(aText);
-                aDeItem.AllocValue = true;
-            }
         }
 
         /// <summary> 设置当前数据元的内容为扩展内容 </summary>
@@ -1675,7 +1668,6 @@ namespace EMRView
                 {
                     bool vCancel = false;
                     this.DoSetActiveDeItemText(vDeItem, vValue, ref vCancel);
-                    vDeItem.AllocValue = true;
                 }
             }
         }

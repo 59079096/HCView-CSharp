@@ -27,6 +27,7 @@ namespace EMRView
         private bool FDesignMode;
         private bool FHideTrace;  // 隐藏痕迹
         private bool FTrace;  // 是否处于留痕迹状态
+        private bool FIgnoreAcceptAction = false;
         private int FTraceCount;  // 当前文档痕迹数量
         private Color FDeDoneColor, FDeUnDoneColor, FDeHotColor;
         private string FPageBlankTip;
@@ -207,6 +208,9 @@ namespace EMRView
 
         protected override bool DoSectionAcceptAction(object sender, HCCustomData aData, int aItemNo, int aOffset, HCAction aAction)
         {
+            if (FIgnoreAcceptAction)
+                return false;
+
             bool vResult = base.DoSectionAcceptAction(sender, aData, aItemNo, aOffset, aAction);
             if (vResult && !FDesignMode)
             {
@@ -230,6 +234,16 @@ namespace EMRView
 
                                     vResult = false;
                                 }
+                            }
+                        }
+                        break;
+
+                    case HCAction.actReturnItem:
+                        {
+                            if (aData.Items[aItemNo] is DeItem)
+                            {
+                                if ((aData.Items[aItemNo] as DeItem).IsElement)
+                                    vResult = false;
                             }
                         }
                         break;
@@ -552,6 +566,13 @@ namespace EMRView
         /// <summary> 粘贴前，便于控制是否允许粘贴 </summary>
         protected override bool DoPasteRequest(int aFormat)
         {
+            HCCustomItem vItem = this.ActiveSectionTopLevelData().GetActiveItem();
+            if ((vItem is DeItem) && (vItem as DeItem).IsElement)
+            {
+                if (aFormat != User.CF_TEXT)
+                    return false;
+            }
+
             if (FOnPasteRequest != null)
                 return FOnPasteRequest(aFormat);
             else
@@ -1256,7 +1277,15 @@ namespace EMRView
 
             // 选中，使用插入时删除当前数据组中的内容
             aData.SetSelectBound(vGroupBeg, HC.View.HC.OffsetAfter, vGroupEnd, HC.View.HC.OffsetBefor);
-            aData.InsertText(aText);
+            FIgnoreAcceptAction = true;
+            try
+            {
+                aData.InsertText(aText);
+            }
+            finally
+            {
+                FIgnoreAcceptAction = false;
+            }
         }
 
         public void GetDataDeGroupToStream(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo, Stream aStream)
@@ -1269,36 +1298,44 @@ namespace EMRView
 
         public void SetDataDeGroupFromStream(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo, Stream aStream)
         {
-            this.BeginUpdate();
+            FIgnoreAcceptAction = true;
             try
             {
-                aData.BeginFormat();
+                this.BeginUpdate();
                 try
                 {
-                    if (aDeGroupEndNo - aDeGroupStartNo > 1)  // 中间有内容
-                        aData.DeleteItems(aDeGroupStartNo + 1, aDeGroupEndNo - aDeGroupStartNo - 1, false);
-                    else
-                        aData.SetSelectBound(aDeGroupStartNo, HC.View.HC.OffsetAfter, aDeGroupStartNo, HC.View.HC.OffsetAfter);
+                    aData.BeginFormat();
+                    try
+                    {
+                        if (aDeGroupEndNo - aDeGroupStartNo > 1)  // 中间有内容
+                            aData.DeleteItems(aDeGroupStartNo + 1, aDeGroupEndNo - aDeGroupStartNo - 1, false);
+                        else
+                            aData.SetSelectBound(aDeGroupStartNo, HC.View.HC.OffsetAfter, aDeGroupStartNo, HC.View.HC.OffsetAfter);
 
-                    aStream.Position = 0;
-                    string vFileExt = "";
-                    ushort viVersion = 0;
-                    byte vLang = 0;
-                    HC.View.HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref viVersion, ref vLang);  // 文件格式和版本
-                    HCStyle vStyle = new HCStyle();
-                    vStyle.LoadFromStream(aStream, viVersion);
-                    aData.InsertStream(aStream, vStyle, viVersion);
+                        aStream.Position = 0;
+                        string vFileExt = "";
+                        ushort viVersion = 0;
+                        byte vLang = 0;
+                        HC.View.HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref viVersion, ref vLang);  // 文件格式和版本
+                        HCStyle vStyle = new HCStyle();
+                        vStyle.LoadFromStream(aStream, viVersion);
+                        aData.InsertStream(aStream, vStyle, viVersion);
+                    }
+                    finally
+                    {
+                        aData.EndFormat(false);
+                    }
+
+                    this.FormatData();
                 }
                 finally
                 {
-                    aData.EndFormat(false);
+                    this.EndUpdate();
                 }
-
-                this.FormatData();
             }
             finally
             {
-                this.EndUpdate();
+                FIgnoreAcceptAction = false;
             }
         }
 
