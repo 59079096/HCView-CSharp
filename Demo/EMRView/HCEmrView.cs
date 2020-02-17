@@ -209,7 +209,7 @@ namespace EMRView
         protected override bool DoSectionAcceptAction(object sender, HCCustomData aData, int aItemNo, int aOffset, HCAction aAction)
         {
             if (FIgnoreAcceptAction)
-                return false;
+                return true;
 
             bool vResult = base.DoSectionAcceptAction(sender, aData, aItemNo, aOffset, aAction);
             if (vResult && !FDesignMode)
