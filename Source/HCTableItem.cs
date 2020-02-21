@@ -169,6 +169,7 @@ namespace HC.View
             aCellData.OnInsertAnnotate = (OwnerData as HCViewData).OnInsertAnnotate;
             aCellData.OnRemoveAnnotate = (OwnerData as HCViewData).OnRemoveAnnotate;
             aCellData.OnDrawItemAnnotate = (OwnerData as HCViewData).OnDrawItemAnnotate;
+            aCellData.OnCaretItemChanged = (OwnerData as HCViewData).OnCaretItemChanged;
 
             aCellData.OnCanEdit = (OwnerData as HCViewData).OnCanEdit;
             aCellData.OnInsertTextBefor = (OwnerData as HCViewData).OnInsertTextBefor;

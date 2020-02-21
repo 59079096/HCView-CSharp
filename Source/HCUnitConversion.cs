@@ -89,7 +89,7 @@ namespace HC.View
         /// <returns></returns>
         public static int PtToPixel(Single aPt, int aDpi)
         {
-            return (int)Math.Round(aPt / 72 * aDpi);
+            return (int)Math.Round(aPt * aDpi / 72);
         }
 
         /// <summary>

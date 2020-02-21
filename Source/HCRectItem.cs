@@ -586,7 +586,7 @@ namespace HC.View
                     {
                         aCanvas.Pen.Width = 1;
                         aCanvas.Pen.Style = HCPenStyle.psSolid;
-                        aCanvas.Pen.Color = HC.clActiveBorder;
+                        aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
                     }
                     finally
                     {
@@ -604,7 +604,7 @@ namespace HC.View
                     {
                         aCanvas.Pen.Width = 1;
                         aCanvas.Pen.Style = HCPenStyle.psSolid;
-                        aCanvas.Pen.Color = HC.clActiveBorder;
+                        aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
                     }
                     finally
                     {

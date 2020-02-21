@@ -424,9 +424,8 @@ namespace HC.View
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-
-            ushort vSize = 0;
-
+            byte[] vBuffer = BitConverter.GetBytes(FSaveItem);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
             if (FSaveItem)
             {
                 string vText = "";
@@ -449,11 +448,6 @@ namespace HC.View
 
                 HC.HCSaveTextToStream(aStream, vText);
             }
-            else
-            {
-                byte[] vBuffer = BitConverter.GetBytes(vSize);
-                aStream.Write(vBuffer, 0, vBuffer.Length);
-            }
         }
 
         public override void LoadFromStream(Stream AStream, HCStyle AStyle, ushort aFileVersion)
@@ -461,28 +455,54 @@ namespace HC.View
             base.LoadFromStream(AStream, AStyle, aFileVersion);
             FItems.Clear();
             string vText = "";
-            HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
-            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-            for (int i = 0; i < vStrings.Length; i++)
-                FItems.Add(new HCCbbItem(vStrings[i]));
 
-            if ((FItems.Count > 0) && (aFileVersion > 35))
+            if (aFileVersion > 36)
             {
-                vText = "";
-                HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
-                vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-                for (int i = 0; i < vStrings.Length; i++)
-                    FItemValues.Add(new HCCbbItem(vStrings[i]));
+                byte[] vBuffer = BitConverter.GetBytes(FSaveItem);
+                AStream.Read(vBuffer, 0, vBuffer.Length);
+                FSaveItem = BitConverter.ToBoolean(vBuffer, 0);
+                if (FSaveItem)
+                {
+                    HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
+                    string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                    for (int i = 0; i < vStrings.Length; i++)
+                        FItems.Add(new HCCbbItem(vStrings[i]));
+
+                    vText = "";
+                    HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
+                    vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                    for (int i = 0; i < vStrings.Length; i++)
+                        FItemValues.Add(new HCCbbItem(vStrings[i]));
+                }
             }
             else
-                FItemValues.Clear();
+            {
+                HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
+                string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                for (int i = 0; i < vStrings.Length; i++)
+                    FItems.Add(new HCCbbItem(vStrings[i]));
 
-            FSaveItem = FItems.Count > 0;
+                if ((FItems.Count > 0) && (aFileVersion > 35))
+                {
+                    vText = "";
+                    HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
+                    vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                    for (int i = 0; i < vStrings.Length; i++)
+                        FItemValues.Add(new HCCbbItem(vStrings[i]));
+                }
+                else
+                    FItemValues.Clear();
+
+                FSaveItem = FItems.Count > 0;
+            }
         }
 
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+            if (FSaveItem)
+                aNode.SetAttribute("saveitem", "1");
+
             if (FSaveItem)
             {
                 string vText = "";
@@ -527,7 +547,10 @@ namespace HC.View
             else
                 FItemValues.Clear();
 
-            FSaveItem = FItems.Count > 0;
+            if (aNode.HasAttribute("saveitem"))
+                FSaveItem = bool.Parse(aNode.Attributes["saveitem"].Value);
+            else
+                FSaveItem = FItems.Count > 0;
         }
 
         public List<HCCbbItem> Items

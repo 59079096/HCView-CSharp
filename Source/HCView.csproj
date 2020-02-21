@@ -99,6 +99,7 @@
     <Compile Include="HCRtfReader.cs" />
     <Compile Include="HCRtfRW.cs" />
     <Compile Include="HCShape.cs" />
+    <Compile Include="HCStatusScrollBar.cs" />
     <Compile Include="HCToolBar.cs" />
     <Compile Include="HCUnitConversion.cs" />
     <Compile Include="HCViewData.cs" />

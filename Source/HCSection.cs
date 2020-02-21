@@ -121,6 +121,7 @@ namespace HC.View
         SectionDataItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         DataItemNoEventHandler FOnItemResize;
         EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
+        SectionDataItemEventHandler FOnCaretItemChanged;
         StyleItemEventHandler FOnCreateItemByStyle;
         FloatStyleItemEventHandler FOnCreateFloatItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
@@ -336,6 +337,12 @@ namespace HC.View
         {
             if (FOnCurParaNoChange != null)
                 FOnCurParaNoChange(sender, e);
+        }
+
+        private void DoDataCaretItemChanged(HCCustomData aData, HCCustomItem aItem)
+        {
+            if (FOnCaretItemChanged != null)
+                FOnCaretItemChanged(this, aData, aItem);
         }
 
         private HCUndoList DoDataGetUndoList()
@@ -732,6 +739,7 @@ namespace HC.View
             aData.OnDrawItemAnnotate = DoDataDrawItemAnnotate;
             aData.OnGetUndoList = DoDataGetUndoList;
             aData.OnCurParaNoChange = DoDataCurParaNoChange;
+            aData.OnCaretItemChanged = DoDataCaretItemChanged;
         }
 
         public HCCustomSection(HCStyle aStyle)
@@ -3127,6 +3135,12 @@ namespace HC.View
         {
             get { return FOnCurParaNoChange; }
             set { FOnCurParaNoChange = value; }
+        }
+
+        public SectionDataItemEventHandler OnCaretItemChanged
+        {
+            get { return FOnCaretItemChanged; }
+            set { FOnCaretItemChanged = value; }
         }
 
         public EventHandler OnActivePageChange

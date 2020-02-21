@@ -23,6 +23,7 @@ namespace HC.View
     public class HCCustomFloatItem : HCResizeRectItem  // 可浮动Item
     {
         private int FLeft, FTop, FPageIndex;
+        private bool FLock = false;
         private RECT FDrawRect;
         private POINT FMousePt;
 
@@ -58,27 +59,40 @@ namespace HC.View
 
         public override bool MouseDown(MouseEventArgs e)
         {
-            bool vResult = base.MouseDown(e);
-            if (!this.Resizing)
-                FMousePt = new POINT(e.X, e.Y);
+            if (FLock)
+                return this.Active;
+            else
+            {
+                bool vResult = base.MouseDown(e);
+                if (!this.Resizing)
+                    FMousePt = new POINT(e.X, e.Y);
 
-            return vResult;
+                return vResult;
+            }
         }
 
         public override bool MouseMove(MouseEventArgs e)
         {
-            bool vResult = base.MouseMove(e);
-            if ((!this.Resizing) && (e.Button == MouseButtons.Left))
+            if (FLock)
+                return this.Active;
+            else
             {
-                FLeft += e.X - FMousePt.X;
-                FTop += e.Y - FMousePt.Y;
-            }
+                bool vResult = base.MouseMove(e);
+                if ((!this.Resizing) && (e.Button == MouseButtons.Left))
+                {
+                    FLeft += e.X - FMousePt.X;
+                    FTop += e.Y - FMousePt.Y;
+                }
 
-            return vResult;
+                return vResult;
+            }
         }
 
         public override bool MouseUp(MouseEventArgs e)
         {
+            if (FLock)
+                return false;
+
             bool vResult = false;
 
             if (this.Resizing)
@@ -125,6 +139,9 @@ namespace HC.View
 
             vBuffer = BitConverter.GetBytes(FPageIndex);
             aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            vBuffer = BitConverter.GetBytes(FLock);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -153,6 +170,15 @@ namespace HC.View
                 aStream.Read(vBuffer, 0, vBuffer.Length);
                 FPageIndex = BitConverter.ToInt32(vBuffer, 0);
             }
+
+            if (aFileVersion > 37)
+            {
+                vBuffer = BitConverter.GetBytes(FLock);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FLock = BitConverter.ToBoolean(vBuffer, 0);
+            }
+            else
+                FLock = false;
         }
 
         public override void ToXml(XmlElement aNode)
@@ -163,6 +189,8 @@ namespace HC.View
             aNode.SetAttribute("width", Width.ToString());
             aNode.SetAttribute("height", Height.ToString());
             aNode.SetAttribute("pageindex", FPageIndex.ToString());
+            if (FLock)
+                aNode.SetAttribute("lock", "1");
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -173,6 +201,10 @@ namespace HC.View
             Width = int.Parse(aNode.Attributes["width"].Value);
             Height = int.Parse(aNode.Attributes["height"].Value);
             FPageIndex = int.Parse(aNode.Attributes["pageindex"].Value);
+            if (aNode.HasAttribute("lock"))
+                FLock = bool.Parse(aNode.Attributes["lock"].Value);
+            else
+                FLock = false;
         }
 
         public RECT DrawRect
@@ -197,6 +229,12 @@ namespace HC.View
         {
             get { return FPageIndex; }
             set { FPageIndex = value; }
+        }
+
+        public bool Lock
+        {
+            get { return FLock; }
+            set { FLock = value; }
         }
     }
 

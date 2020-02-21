@@ -107,6 +107,67 @@ namespace EMRView
             return HCEmrViewLite.CreateEmrStyleItem(aData, aStyleNo);
         }
 
+        protected override void DoSectionCaretItemChanged(object sender, HCCustomData data, HCCustomItem item)
+        {
+            string vInfo = "";
+            HCCustomItem vActiveItem = this.GetTopLevelItem();
+            if (vActiveItem != null)
+            {
+                if (this.ActiveSection.ActiveData.ActiveDomain.BeginNo >= 0)
+                {
+                    DeGroup vDeGroup = this.ActiveSection.ActiveData.Items[
+                        this.ActiveSection.ActiveData.ActiveDomain.BeginNo] as DeGroup;
+
+                    vInfo = vDeGroup[DeProp.Name] + "(" + vDeGroup[DeProp.Index] + ")";
+                }
+
+                if (vActiveItem is DeItem)
+                {
+                    DeItem vDeItem = vActiveItem as DeItem;
+                    if (vDeItem.StyleEx != StyleExtra.cseNone)
+                        vInfo = vInfo + "-" + vDeItem.GetHint();
+                    else
+                    if (vDeItem.IsElement)
+                    {
+                        if (vInfo != "")
+                            vInfo = vInfo + " > " + vDeItem[DeProp.Name] + "(" + vDeItem[DeProp.Index] + ")";
+                        else
+                            vInfo = vDeItem[DeProp.Name] + "(" + vDeItem[DeProp.Index] + ")";
+                    }
+                }
+                else
+                if (vActiveItem is DeEdit)
+                {
+                    DeEdit vDeEdit = vActiveItem as DeEdit;
+                    if (vInfo != "")
+                        vInfo = vInfo + " > " + vDeEdit[DeProp.Name] + "(" + vDeEdit[DeProp.Index] + ")";
+                    else
+                        vInfo = vDeEdit[DeProp.Name] + "(" + vDeEdit[DeProp.Index] + ")";
+                }
+                else
+                if (vActiveItem is DeCombobox)
+                {
+                    DeCombobox vDeCombobox = vActiveItem as DeCombobox;
+                    if (vInfo != "")
+                        vInfo = vInfo + " > " + vDeCombobox[DeProp.Name] + "(" + vDeCombobox[DeProp.Index] + ")";
+                    else
+                        vInfo = vDeCombobox[DeProp.Name] + "(" + vDeCombobox[DeProp.Index] + ")";
+                }
+                else
+                if (vActiveItem is DeDateTimePicker)
+                {
+                    DeDateTimePicker vDeDateTimePicker = vActiveItem as DeDateTimePicker;
+                    if (vInfo != "")
+                        vInfo = vInfo + " > " + vDeDateTimePicker[DeProp.Name] + "(" + vDeDateTimePicker[DeProp.Index] + ")";
+                    else
+                        vInfo = vDeDateTimePicker[DeProp.Name] + "(" + vDeDateTimePicker[DeProp.Index] + ")";
+                }
+            }
+
+            this.HScrollBar.Statuses[1].Text = vInfo;
+            base.DoSectionCaretItemChanged(sender, data, item);
+        }
+
         /// <summary> 当节某Data有Item插入后触发 </summary>
         /// <param name="sender">在哪个文档节插入</param>
         /// <param name="aData">在哪个Data插入</param>
@@ -935,6 +996,7 @@ namespace EMRView
             FPageBlankTip = "";// "--------本页以下空白--------";
             this.Style.DefaultTextStyle.Size = HC.View.HC.GetFontSize("小四");
             this.Style.DefaultTextStyle.Family = "宋体";
+            this.HScrollBar.AddStatus(200);
         }
 
         ~HCEmrView()
@@ -1169,6 +1231,9 @@ namespace EMRView
             int vBeginNo = -1;
             int vEndNo = -1;
 
+            if (aStartNo < 0)
+                aStartNo = 0;
+
             if (aForward)  // 从AStartNo往前找
             {
                 for (int i = aStartNo; i >= 0; i--)  // 找结尾ItemNo
@@ -1234,7 +1299,12 @@ namespace EMRView
         {
             string Result = "";
             for (int i = aDeGroupStartNo + 1; i <= aDeGroupEndNo - 1; i++)
-                Result = Result + aData.Items[i].Text;
+            {
+                if (aData.Items[i].ParaFirst)
+                    Result = Result + HC.View.HC.sLineBreak + aData.Items[i].Text;
+                else
+                    Result = Result + aData.Items[i].Text;
+            }
 
             return Result;
         }
@@ -1280,7 +1350,10 @@ namespace EMRView
             FIgnoreAcceptAction = true;
             try
             {
-                aData.InsertText(aText);
+                if (aText != "")
+                    aData.InsertText(aText);
+                else
+                    aData.DeleteSelected();
             }
             finally
             {

@@ -866,7 +866,7 @@ namespace EMRView
             XmlDocument vXmlDoc = GetStructureToXml(aFrmRecord);
             if (vXmlDoc == null)
                 return;
-
+            vXmlDoc.Save("c:\\a.xml");
             using (MemoryStream vSM = new MemoryStream())
             {
                 vXmlDoc.Save(vSM);

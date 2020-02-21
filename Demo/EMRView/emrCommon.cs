@@ -345,8 +345,8 @@ namespace EMRView
     /// <summary> 模板信息 </summary>
     public class TemplateInfo  
     {
-        public int ID, Owner, OwnerID, DesID;
-        public string Name;
+        public int ID, Owner, DesID;
+        public string Name, OwnerID;
     }
 
     public class RecordDataSetInfo

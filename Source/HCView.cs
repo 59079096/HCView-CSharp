@@ -36,7 +36,7 @@ namespace HC.View
         private HCStyle FStyle;
         private List<HCSection> FSections;
         private HCUndoList FUndoList;
-        private HCScrollBar FHScrollBar;
+        private HCStatusScrollBar FHScrollBar;
         private HCRichScrollBar FVScrollBar;
         private IntPtr FDC = IntPtr.Zero;
         private Bitmap FDataBmp;
@@ -56,6 +56,7 @@ namespace HC.View
         private EventHandler FOnCaretChange, FOnVerScroll, FOnHorScroll, FOnSectionCreateItem, FOnSectionReadOnlySwitch,
             FOnSectionCurParaNoChange, FOnSectionActivePageChange;
         private StyleItemEventHandler FOnSectionCreateStyleItem;
+        private SectionDataItemEventHandler FOnSectionCaretItemChanged;
         private FloatStyleItemEventHandler FOnSectionCreateFloatStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
         private TextEventHandler FOnSectionInsertTextBefor;
@@ -130,6 +131,7 @@ namespace HC.View
             FStyle.UpdateInfoRePaint();
             FStyle.UpdateInfoReCaret(false);
             CheckUpdateInfo();
+            GetPagesAndActive();
             if (FOnVerScroll != null)
                 FOnVerScroll(this, null);
         }
@@ -366,14 +368,15 @@ namespace HC.View
                 {
                     aCanvas.Font.Size = 10;
                     aCanvas.Font.Family = "宋体";
-                    aCanvas.Font.Color = Color.Black;
+                    aCanvas.Font.Color = Color.FromArgb(0xD0, 0xD1, 0xD5);
+                    aCanvas.Font.FontStyles.Value = 0;
                 }
                 finally
                 {
                     aCanvas.Font.EndUpdate();
                 }
 
-                aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供 QQ群：649023932");
+                aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供，技术交流QQ群：649023932");
             }
 
             if (FAnnotatePre.Visible)  // 当前页有批注，绘制批注
@@ -481,6 +484,7 @@ namespace HC.View
             Result.OnDrawItemAnnotate = DoSectionDrawItemAnnotate;
             Result.OnGetUndoList = DoSectionGetUndoList;
             Result.OnCurParaNoChange = DoSectionCurParaNoChange;
+            Result.OnCaretItemChanged = DoSectionCaretItemChanged;
             Result.OnActivePageChange = DoSectionActivePageChange;
 
             return Result;
@@ -818,6 +822,13 @@ namespace HC.View
             }
         }
 
+        private void GetPagesAndActive()
+        {
+            FHScrollBar.Statuses[0].Text = "预览" + (PagePreviewFirst + 1).ToString()
+                + " 光标" + (ActivePageIndex + 1).ToString()
+                + "/" + PageCount.ToString() + "页";
+        }
+
         protected override void CreateHandle()
         {
             base.CreateHandle();
@@ -927,6 +938,7 @@ namespace HC.View
 
         protected virtual void DoCaretChange()
         {
+            GetPagesAndActive();
             if (FOnCaretChange != null)
                 FOnCaretChange(this, null);
         }
@@ -960,6 +972,12 @@ namespace HC.View
                 return FOnSectionCreateStyleItem(aData, aStyleNo);
             else
                 return null;
+        }
+
+        protected virtual void DoSectionCaretItemChanged(Object sender, HCCustomData data, HCCustomItem item)
+        {
+            if (FOnSectionCaretItemChanged != null)
+                FOnSectionCaretItemChanged(sender, data, item);
         }
 
         protected virtual HCCustomFloatItem DoSectionCreateFloatStyleItem(HCSectionData aData, int aStyleNo)
@@ -1504,7 +1522,8 @@ namespace HC.View
             FVScrollBar.OnPageUpClick = DoPageUp;
             FVScrollBar.OnPageDownClick = DoPageDown;
             // 水平滚动条，范围在Resize中设置
-            FHScrollBar = new HCScrollBar();
+            FHScrollBar = new HCStatusScrollBar();
+            FHScrollBar.AddStatus(100);
             FHScrollBar.Orientation = Orientation.oriHorizontal;
             FHScrollBar.OnScroll = DoHorScroll;
 
@@ -2190,6 +2209,13 @@ namespace HC.View
                         vStream.Close();
                         vStream.Dispose();
                     }
+                }
+                else
+                if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
+                {
+                    string vs = vIData.GetData(DataFormats.Rtf).ToString();
+                    HCRtfRW vRtfRW = new HCRtfRW();
+                    vRtfRW.InsertString(this, vs);
                 }
                 else
                 if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
@@ -2962,6 +2988,20 @@ namespace HC.View
         /// <summary> 文档保存为xml格式 </summary>
         public void SaveToXml(string aFileName, System.Text.Encoding aEncoding)
         {
+            FileStream vStream = new FileStream(aFileName, FileMode.Create, FileAccess.Write);
+            try
+            {
+                SaveToXmlStream(vStream, aEncoding);
+            }
+            finally
+            {
+                vStream.Close();
+                vStream.Dispose();
+            }
+        }
+
+        public void SaveToXmlStream(Stream stream, System.Text.Encoding encoding)
+        {
             FUndoList.Clear();
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
             DeleteUnUsedStyle(FStyle, FSections, vParts);
@@ -2991,11 +3031,30 @@ namespace HC.View
                 vNode.AppendChild(vSectionNode);
             }
 
-            vXml.Save(aFileName);
+            vXml.Save(stream);
         }
 
         /// <summary> 读取xml格式 </summary>
         public bool LoadFromXml(string aFileName)
+        {
+            bool vResult = false;
+            FileStream vStream = new FileStream(aFileName, FileMode.Open, FileAccess.Read);
+            try
+            {
+                vStream.Position = 0;
+                vResult = LoadFromXmlStream(vStream);
+                if (vResult)
+                    FFileName = aFileName;
+            }
+            finally
+            {
+                vStream.Dispose();
+            }
+
+            return vResult;
+        }
+
+        public bool LoadFromXmlStream(Stream stream)
         {
             if (ReadOnly)
                 return false;
@@ -3013,7 +3072,7 @@ namespace HC.View
 
                     XmlDocument vXml = new XmlDocument();
                     vXml.PreserveWhitespace = true;
-                    vXml.Load(aFileName);
+                    vXml.Load(stream);
                     if (vXml.DocumentElement.Name == "HCView")
                     {
                         if (vXml.DocumentElement.Attributes["EXT"].Value != HC.HC_EXT)
@@ -3815,7 +3874,7 @@ namespace HC.View
         }
 
         /// <summary> 水平滚动条 </summary>
-        public HCScrollBar HScrollBar
+        public HCStatusScrollBar HScrollBar
         {
             get { return FHScrollBar; }
         }
@@ -4109,6 +4168,12 @@ namespace HC.View
         {
             get { return FOnSectionCurParaNoChange; }
             set { FOnSectionCurParaNoChange = value; }
+        }
+
+        public SectionDataItemEventHandler OnSectionCaretItemChanged
+        {
+            get { return FOnSectionCaretItemChanged; }
+            set { FOnSectionCaretItemChanged = value; }
         }
 
         /// <summary> 节当前位置文本样式和上一次不一样时触发 </summary>

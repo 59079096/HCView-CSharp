@@ -340,7 +340,7 @@ namespace EMRView
                         vTempInfo.ID = (int)dt.Rows[i]["id"];
                         vTempInfo.DesID = (int)dt.Rows[i]["desid"];
                         vTempInfo.Owner = (int)dt.Rows[i]["Owner"];
-                        vTempInfo.OwnerID = (int)dt.Rows[i]["OwnerID"];
+                        vTempInfo.OwnerID = dt.Rows[i]["OwnerID"].ToString();
                         vTempInfo.Name = dt.Rows[i]["tname"].ToString();
 
                         TreeNode vNode = e.Node.Nodes.Add(dt.Rows[i]["tname"].ToString());
@@ -429,7 +429,7 @@ namespace EMRView
                     TemplateInfo vTempInfo = new TemplateInfo();
                     vTempInfo.ID = vTemplateID;
                     vTempInfo.Owner = 1;
-                    vTempInfo.OwnerID = 0;
+                    vTempInfo.OwnerID = "";
                     vTempInfo.Name = vFrmTemplateInfo.TemplateName;
 
                     tvTemplate.SelectedNode = tvTemplate.SelectedNode.Nodes.Add(vTempInfo.Name);

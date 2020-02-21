@@ -387,19 +387,9 @@ namespace EMRView
             }
         }
 
-        /// <summary> 获取文档当前光标处的信息 </summary>
-        private void GetPagesAndActive()
-        {
-            tssPage.Text = "预览" + (FEmrView.PagePreviewFirst + 1).ToString()
-                + "页 光标" + (FEmrView.ActivePageIndex + 1).ToString()
-                + "页 共" + FEmrView.PageCount.ToString() + "页";
-        }
-
         /// <summary> 文档光标位置发生变化时触发 </summary>
         private void DoCaretChange(object sender, EventArgs e)
         {
-            GetPagesAndActive();
-
             CurTextStyleChange(FEmrView.CurStyleNo);
             CurParaStyleChange(FEmrView.CurParaNo);
         }
@@ -427,7 +417,7 @@ namespace EMRView
         /// <summary> 文档垂直滚动条滚动时触发 </summary>
         private void DoVerScroll(object sender, EventArgs e)
         {
-            GetPagesAndActive();
+            PopupForm().Close();
         }
 
         /// <summary> 节整页绘制前事件 </summary>
@@ -635,87 +625,52 @@ namespace EMRView
 
         protected void DoEmrViewMouseUp(object sender, MouseEventArgs e)
         {
-            string vInfo = "";
-
             HCCustomItem vActiveItem = FEmrView.GetTopLevelItem();
-            if (vActiveItem != null)
+            if (vActiveItem is DeItem)
             {
-                if (FEmrView.ActiveSection.ActiveData.ActiveDomain.BeginNo >= 0)
-                {
-                    DeGroup vDeGroup = FEmrView.ActiveSection.ActiveData.Items[
-                        FEmrView.ActiveSection.ActiveData.ActiveDomain.BeginNo] as DeGroup;
-
-                    vInfo = vDeGroup[DeProp.Name];
+                DeItem vDeItem = vActiveItem as DeItem;
+                if (vDeItem.StyleEx != StyleExtra.cseNone)
+                { 
+                    
                 }
-
-                if (vActiveItem is DeItem)
+                else
+                if (vDeItem.Active
+                    && (vDeItem[DeProp.Index] != "")
+                    && (!vDeItem.IsSelectComplate)
+                    && (!vDeItem.IsSelectPart)
+                    //&& (Environment.TickCount - FMouseDownTick < 500)
+                    )
                 {
-                    DeItem vDeItem = vActiveItem as DeItem;
-                    if (vDeItem.StyleEx != StyleExtra.cseNone)
-                        vInfo += "-" + vDeItem.GetHint();
-                    else
-                    if (vDeItem.Active
-                            && (vDeItem[DeProp.Index] != "")
-                            && (!vDeItem.IsSelectComplate)
-                            && (!vDeItem.IsSelectPart)
-                            //&& (Environment.TickCount - FMouseDownTick < 500)
-                        )
+
+                    POINT vPt = FEmrView.GetTopLevelDrawItemViewCoord();  // 得到相对EmrView的坐标
+                    HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
+                    RECT vDrawItemRect = vActiveDrawItem.Rect;
+                    vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
+
+                    if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
                     {
-                        vInfo = vInfo + "元素(" + vDeItem[DeProp.Index] + ")";
+                        vPt.Y = vPt.Y + FEmrView.ZoomIn(vActiveDrawItem.Height);
+                        //vPt.Offset(FEmrView.Left, FEmrView.Top);
+                        HC.Win32.User.ClientToScreen(FEmrView.Handle, ref vPt);
 
-                        if (FEmrView.ActiveSection.ActiveData.ReadOnly || vDeItem.EditProtect)
+                        if (DoDeItemPopup(vDeItem))
                         {
-                            tssDeInfo.Text = "";
-                            return;
-                        }
-
-                        POINT vPt = FEmrView.GetTopLevelDrawItemViewCoord();  // 得到相对EmrView的坐标
-                        HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
-                        RECT vDrawItemRect = vActiveDrawItem.Rect;
-                        vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
-
-                        if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
-                        {
-                            vPt.Y = vPt.Y + FEmrView.ZoomIn(vActiveDrawItem.Height);
-                            //vPt.Offset(FEmrView.Left, FEmrView.Top);
-                            HC.Win32.User.ClientToScreen(FEmrView.Handle, ref vPt);
-
-                            if (DoDeItemPopup(vDeItem))
+                            if (!PopupForm().PopupDeItem(vDeItem, vPt))  // 不用弹出框处理值时，判断首次输入直接替换原内容
                             {
-                                if (!PopupForm().PopupDeItem(vDeItem, vPt))  // 不用弹出框处理值时，判断首次输入直接替换原内容
-                                {
-                                    HCViewData vData = FEmrView.ActiveSectionTopLevelData() as HCViewData;
-                                    if (vData.SelectExists())
-                                        return;
+                                HCViewData vData = FEmrView.ActiveSectionTopLevelData() as HCViewData;
+                                if (vData.SelectExists())
+                                    return;
 
-                                    if (!vDeItem.AllocValue)  // 没有处理过值
-                                    {
-                                        vData.SetSelectBound(vData.SelectInfo.StartItemNo, 0,
-                                            vData.SelectInfo.StartItemNo, vData.GetItemOffsetAfter(vData.SelectInfo.StartItemNo), false);
-                                    }
+                                if (!vDeItem.AllocValue)  // 没有处理过值
+                                {
+                                    vData.SetSelectBound(vData.SelectInfo.StartItemNo, 0,
+                                        vData.SelectInfo.StartItemNo, vData.GetItemOffsetAfter(vData.SelectInfo.StartItemNo), false);
                                 }
                             }
                         }
                     }
                 }
-                else
-                if (vActiveItem is DeEdit)
-                {
-
-                }
-                else
-                if (vActiveItem is DeCombobox)
-                {
-
-                }
-                else
-                if (vActiveItem is DeDateTimePicker)
-                {
-
-                }
             }
-
-            tssDeInfo.Text = vInfo;
         }
 
         /// <summary> 病历有新的Item插入时触发 </summary>
@@ -1068,17 +1023,20 @@ namespace EMRView
         {
             HCCustomData vActiveData = FEmrView.ActiveSection.ActiveData;
             HCCustomFloatItem vActiveFloatItem = (vActiveData as HCSectionData).GetActiveFloatItem();
+            bool vReadOnly = (vActiveData as HCRichData).ReadOnly;
+
             if (vActiveFloatItem != null)
             {
                 for (int i = 0; i < pmView.Items.Count; i++)
                     pmView.Items[i].Visible = false;
 
-                mniFloatItemProperty.Visible = true;
+                if (!vReadOnly)
+                    mniFloatItemProperty.Visible = true;
+
                 return;
             }
             else
                 mniFloatItemProperty.Visible = false;
-
 
             HCCustomItem vActiveItem = vActiveData.GetActiveItem();
 
@@ -1097,6 +1055,8 @@ namespace EMRView
 
                     vTopData = (vTopItem as HCCustomRectItem).GetActiveData();
                     vTopItem = vTopData.GetActiveItem();
+                    if ((vTopData as HCRichData).ReadOnly)
+                        vReadOnly = true;
                 }
                 else
                     break;
@@ -1104,6 +1064,15 @@ namespace EMRView
 
             if (vTopData == null)
                 vTopData = vActiveData;
+
+            if (vReadOnly)
+            {
+                for (int i = 0; i < pmView.Items.Count; i++)
+                    pmView.Items[i].Visible = false;
+
+                mniCopy.Visible = vTopData.SelectExists();
+                return;
+            }
 
             mniTable.Enabled = vActiveItem.StyleNo == HCStyle.Table;
             if (mniTable.Enabled)

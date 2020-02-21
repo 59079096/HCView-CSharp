@@ -489,7 +489,8 @@ namespace HC.View
                 if ((FCaretDrawItemNo >= 0) && (FCaretDrawItemNo < FDrawItems.Count))
                 {
                     vItemNo = FDrawItems[FCaretDrawItemNo].ItemNo;
-                    FItems[vItemNo].Active = false;
+                    if ((value >= 0) && (vItemNo != FDrawItems[value].ItemNo))
+                        FItems[vItemNo].Active = false;
                 }
                 else
                 {
@@ -511,14 +512,16 @@ namespace HC.View
                         if (FSelectInfo.StartItemOffset == HC.OffsetInner)
                         {
                             FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
+                            DoCaretItemChanged();
                         }
                     }
                     else
                     //if ((FSelectInfo.StartItemOffset > 0)  // 在Item上
                     //    && (FSelectInfo.StartItemOffset < FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Length))
-                    //{
+                    {
                         FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
-                    //}
+                        DoCaretItemChanged();
+                    }
                 }
             }
         }
@@ -676,6 +679,8 @@ namespace HC.View
         {
             Clear();
         }
+
+        protected virtual void DoCaretItemChanged() { }
 
         protected bool Loading
         {

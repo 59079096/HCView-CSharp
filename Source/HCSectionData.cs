@@ -148,6 +148,9 @@ namespace HC.View
 
             if (FFloatItemIndex >= 0)
             {
+                if (this.ReadOnly)
+                    return true;
+
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
                     e.X - FFloatItems[FFloatItemIndex].Left, e.Y - FFloatItems[FFloatItemIndex].Top,
                     e.Delta);
@@ -166,6 +169,9 @@ namespace HC.View
 
             if ((e.Button == MouseButtons.Left) && (FMouseDownIndex >= 0))
             {
+                if (this.ReadOnly)
+                    return true;
+
                 HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
                 MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, 
                     e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
@@ -205,6 +211,9 @@ namespace HC.View
 
             if (FMouseDownIndex >= 0)
             {
+                if (this.ReadOnly)
+                    return true;
+
                 Undo_New();
                 UndoAction_FloatItemMirror(FMouseDownIndex);
 
@@ -221,9 +230,12 @@ namespace HC.View
 
         public bool KeyDownFloatItem(KeyEventArgs e)
         {
+            if (this.ReadOnly)
+                return true;
+
             bool Result = true;
 
-            if (FFloatItemIndex >= 0)
+            if ((FFloatItemIndex >= 0) && !FFloatItems[FFloatItemIndex].Lock)
             {
                 int Key = e.KeyValue;
                 switch (Key)

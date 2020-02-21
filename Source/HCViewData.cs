@@ -28,7 +28,7 @@ namespace HC.View
     public class HCViewData : HCViewDevData  // 富文本数据类，可做为其他显示富文本类的基类
     {
         private List<int> FDomainStartDeletes;  // 仅用于选中删除时，当域起始结束都选中时，删除了结束后标明起始的可删除
-
+        private bool FCaretItemChanged = false;
         private HCDomainInfo FHotDomain,  // 当前高亮域
             FActiveDomain;  // 当前激活域
 
@@ -39,11 +39,17 @@ namespace HC.View
         private StyleItemEventHandler FOnCreateItemByStyle;
         private OnCanEditEventHandler FOnCanEdit;
         private TextEventHandler FOnInsertTextBefor;
+        private DataItemEventHandler FOnCaretItemChanged;
 
         protected override bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
         {
-            bool Result = base.DoAcceptAction(aItemNo, aOffset, aAction);
-            if (Result && (aAction == HCAction.actDeleteItem))
+            if (Style.States.Contain(HCState.hosLoading)
+                || Style.States.Contain(HCState.hosUndoing)
+                || Style.States.Contain(HCState.hosRedoing))
+                return true;
+
+            bool Result = true;
+            if (aAction == HCAction.actDeleteItem)
             {
                 if (Items[aItemNo].StyleNo == HCStyle.Domain)
                 {
@@ -58,6 +64,9 @@ namespace HC.View
                         Result = FDomainStartDeletes.IndexOf(aItemNo) >= 0;  // 结束标识已经删除了
                 }
             }
+
+            if (Result)
+                Result = base.DoAcceptAction(aItemNo, aOffset, aAction);
 
             return Result;
         }
@@ -147,6 +156,11 @@ namespace HC.View
             Result = Result - vDelCount;
 
             return Result;
+        }
+
+        protected override void DoCaretItemChanged()
+        {
+            FCaretItemChanged = true;
         }
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, 
@@ -267,6 +281,7 @@ namespace HC.View
 
         public HCViewData(HCStyle aStyle) : base(aStyle)
         {
+            FCaretItemChanged = false;
             FDomainStartDeletes = new List<int>();
             FHotDomain = new HCDomainInfo();
             FHotDomain.Data = this;
@@ -384,6 +399,13 @@ namespace HC.View
                         Style.UpdateInfoRePaint();
                     }
                 }
+            }
+
+            if (FCaretItemChanged)
+            {
+                FCaretItemChanged = false;
+                if (FOnCaretItemChanged != null)
+                    FOnCaretItemChanged(this, Items[SelectInfo.StartItemNo]);
             }
         }
 
@@ -1236,6 +1258,12 @@ namespace HC.View
             HC._SaveFileFormatAndVersion(aStream);
             this.Style.SaveToStream(aStream);
             SaveItemToStream(aStream, vGroupBeg + 1, 0, vGroupEnd - 1, GetItemOffsetAfter(vGroupEnd - 1));
+        }
+
+        public DataItemEventHandler OnCaretItemChanged
+        {
+            get { return FOnCaretItemChanged; }
+            set { FOnCaretItemChanged = value; }
         }
 
         public HCDomainInfo HotDomain
