@@ -2365,6 +2365,9 @@ namespace HC.View
         /// <param name="aStartItemNo"></param>
         public void BuildSectionPages(int aStartDrawItemNo)
         {
+            if (FPage.FormatCount > 0)
+                return;
+
             int vPrioDrawItemNo = aStartDrawItemNo;
             HCPage vPage = null;
 

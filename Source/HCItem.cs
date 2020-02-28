@@ -397,7 +397,7 @@ namespace HC.View
             return FSelectState != ItemSelectState.issNone;
         }
 
-        public virtual bool AcceptAction(int aOffset, HCAction aAction)
+        public virtual bool AcceptAction(int aOffset, bool aRestrain, HCAction aAction)
         {
             return true;
         }

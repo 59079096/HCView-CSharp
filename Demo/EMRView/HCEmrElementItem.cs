@@ -301,28 +301,43 @@ namespace EMRView
                 return this[DeProp.Trace];
         }
 
-        public override bool AcceptAction(int aOffset, HCAction aAction)
+        public override bool AcceptAction(int aOffset, bool aRestrain, HCAction aAction)
         {
-            bool Result = base.AcceptAction(aOffset, aAction);
+            bool vResult = base.AcceptAction(aOffset, aRestrain, aAction);
 
-            if (Result)
+            if (vResult)
             {
-                if (this.IsElement)
+                switch (aAction)
                 {
-                    if ((aAction == HCAction.actInsertText) || (aAction == HCAction.actBackDeleteText) || (aAction == HCAction.actDeleteText))
-                        Result = !FEditProtect;
-                    else
-                    if (aAction == HCAction.actDeleteItem)
-                        Result = FDeleteAllow;
+                    case HCAction.actInsertText:
+                        if (FEditProtect)  // 两头允许输入，触发actConcatText时返回供Data层处理新TextItem还是连接
+                            vResult = (aOffset == 0) || (aOffset == this.Length);
+
+                        break;
+
+                    case HCAction.actConcatText:
+                        if (FEditProtect)
+                            vResult = false;
+                        else
+                        if (IsElement)
+                            vResult = !aRestrain;
+
+                        break;
+
+                    case HCAction.actBackDeleteText:
+                        if (FEditProtect)
+                            vResult = aOffset == 0;
+
+                        break;
+
+                    case HCAction.actDeleteText:
+                        if (FEditProtect)
+                            vResult = aOffset == this.Length;
+                        break;
                 }
-                else
-                    Result = !FEditProtect;
             }
 
-            if (!Result)
-                User.MessageBeep(0);
-
-            return Result;
+            return vResult;
         }
 
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)

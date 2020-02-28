@@ -473,7 +473,7 @@ namespace HC.View
         {
             bool vResult = CanEdit();
             if (vResult)
-                vResult = this.Items[aItemNo].AcceptAction(aOffset, aAction);
+                vResult = this.Items[aItemNo].AcceptAction(aOffset, SelectInfo.StartRestrain, aAction);
                 
             if (vResult && (FOnAcceptAction != null))
                 vResult = FOnAcceptAction(this, aItemNo, aOffset, aAction);
@@ -5020,126 +5020,187 @@ namespace HC.View
         #region DoTextItemInsert 在文本Item前后或中间插入文
         private bool DoTextItemInsert(string AText, bool ANewPara, ref int vAddCount)
         {
-            if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actInsertText))
-                return false;
-
             bool Result = false;
             HCTextItem vTextItem = Items[SelectInfo.StartItemNo] as HCTextItem;
 
             if (vTextItem.StyleNo == this.CurStyleNo)
             {
-                //if (DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actInsertText))
-                //{
-                    int vLen = -1;
-                    if (SelectInfo.StartItemOffset == 0)  // 在TextItem最前面插入
-                    {
-                        UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
-                        vTextItem.Text = AText + vTextItem.Text;
-                        if ((ANewPara) && (!vTextItem.ParaFirst))
-                        {
-                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, true);
-                            vTextItem.ParaFirst = true;
-                        }
+                int vOffset = 0;
 
-                        vLen = AText.Length;
-                    }
-                    else
-                    if (SelectInfo.StartItemOffset == vTextItem.Length)  // 在TextItem最后插入
+                if (SelectInfo.StartItemOffset == 0)  // 在TextItem最前面插入
+                {
+                    vOffset = AText.Length;
+
+                    if (ANewPara)  // 另起一段
                     {
-                        if (ANewPara)
+                        HCCustomItem vNewItem = CreateDefaultTextItem();
+                        vNewItem.ParaFirst = true;
+                        vNewItem.Text = AText;
+
+                        Items.Insert(SelectInfo.StartItemNo, vNewItem);
+                        UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                        vAddCount++;
+                    }
+                    else  // 同段
+                    if (vTextItem.AcceptAction(0, SelectInfo.StartRestrain, HCAction.actConcatText))  // TextItem最前面可接受连接字符
+                    {
+                        UndoAction_InsertText(SelectInfo.StartItemNo, 1, AText);
+                        vTextItem.Text = AText + vTextItem.Text;
+                    }
+                    else  // TextItem最前面不接收字符
+                    {
+                        if (vTextItem.ParaFirst)  // 段最前面不接收，新插入的作为段首
                         {
-                            if ((!IsParaLastItem(SelectInfo.StartItemNo)) && (Items[SelectInfo.StartItemNo + 1].StyleNo > HCStyle.Null))
+                            HCCustomItem vNewItem = CreateDefaultTextItem();
+                            vNewItem.Text = AText;
+                            vNewItem.ParaFirst = true;
+
+                            UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, false);
+                            vTextItem.ParaFirst = false;
+
+                            Items.Insert(SelectInfo.StartItemNo, vNewItem);
+                            UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                            vAddCount++;
+                        }
+                        else  // TextItem最前面不接收字符，TextItem不是段最前面
+                        if (Items[SelectInfo.StartItemNo - 1].StyleNo > HCStyle.Null)  // 前一个是文本
+                        {
+                            vTextItem = Items[SelectInfo.StartItemNo - 1] as HCTextItem;
+                            if (vTextItem.AcceptAction(vTextItem.Length, true, HCAction.actConcatText))  // 前一个在最后可接受连接字符
+                            //and MergeItemText(Items[SelectInfo.StartItemNo - 1], vNewItem)
                             {
-                                SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
-                                SelectInfo.StartItemOffset = 0;
-                                return DoTextItemInsert(AText, ANewPara, ref vAddCount);
+                                UndoAction_InsertText(SelectInfo.StartItemNo - 1, vTextItem.Length + 1, AText);
+                                vTextItem.Text = vTextItem.Text + AText;
+                                SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
+                                vOffset = vTextItem.Length;
                             }
                             else
                             {
                                 HCCustomItem vNewItem = CreateDefaultTextItem();
-                                vNewItem.ParaFirst = true;
+                                vNewItem.Text = AText;
+
+                                Items.Insert(SelectInfo.StartItemNo, vNewItem);
+                                UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                                vAddCount++;
+                            }
+                        }
+                        else  // 前一个不是文本
+                        {
+                            HCCustomItem vNewItem = CreateDefaultTextItem();
+                            vNewItem.Text = AText;
+
+                            Items.Insert(SelectInfo.StartItemNo, vNewItem);
+                            UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+                            vAddCount++;
+                        }
+                    }
+                }
+                else
+                if (SelectInfo.StartItemOffset == vTextItem.Length)  // 在TextItem最后插入
+                {
+
+                    if (ANewPara)  // 另起一段
+                    {
+                        HCCustomItem vNewItem = CreateDefaultTextItem();
+                        vNewItem.ParaFirst = true;
+                        vNewItem.Text = AText;
+
+                        Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
+                        UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                        vAddCount++;
+
+                        SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                        vOffset = vNewItem.Length;
+                    }
+                    else  // 最后面插入文本不另起一段
+                    if (vTextItem.AcceptAction(SelectInfo.StartItemOffset, SelectInfo.StartRestrain, HCAction.actConcatText))  // 最后面能接收文本
+                    {
+                        UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
+                        vTextItem.Text = vTextItem.Text + AText;
+                        vOffset = vTextItem.Length;
+                    }
+                    else  // 最后面不能接收输入
+                    if (!IsParaLastItem(SelectInfo.StartItemNo))  // 同段后面还有内容
+                    {
+                        if (Items[SelectInfo.StartItemNo + 1].StyleNo > HCStyle.Null)  // 同段后面是文本
+                        {
+                            vTextItem = Items[SelectInfo.StartItemNo + 1] as HCTextItem;
+                            if (vTextItem.AcceptAction(0, true, HCAction.actConcatText))  // 后一个在最前可接受连接字符
+                            //and MergeItemText(Items[SelectInfo.StartItemNo - 1], vNewItem)
+                            {
+                                UndoAction_InsertText(SelectInfo.StartItemNo + 1, 1, AText);
+                                vTextItem.Text = AText + vTextItem.Text;
+                                SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                                vOffset = AText.Length;
+                            }
+                            else
+                            {
+                                HCCustomItem vNewItem = CreateDefaultTextItem();
                                 vNewItem.Text = AText;
 
                                 Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
                                 UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
                                 vAddCount++;
-
                                 SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
-                                vLen = vNewItem.Length;
+                                vOffset = AText.Length;
                             }
                         }
-                        else
+                        else  // 同段后面不是文本
                         {
-                            UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
-                            vTextItem.Text = vTextItem.Text + AText;
-                            vLen = vTextItem.Length;
-                        }
-                    }
-                    else  // 在Item中间
-                    {
-                        if (ANewPara)
-                        {
-                            // 原TextItem打断
-                            string vS = vTextItem.SubString(SelectInfo.StartItemOffset + 1 - 1, vTextItem.Length - SelectInfo.StartItemOffset);
-                            UndoAction_DeleteText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, vS);
-                            // 原位置后半部分
-                            HCCustomItem vAfterItem = vTextItem.BreakByOffset(SelectInfo.StartItemOffset);
-                            vAfterItem.Text = AText + vAfterItem.Text;
-                            vAfterItem.ParaFirst = true;
-                            // 插入原TextItem后半部分增加Text后的
-                            Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
-                            UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
-                            vAddCount++;
+                            HCCustomItem vNewItem = CreateDefaultTextItem();
+                            vNewItem.Text = AText;
 
-                            SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
-                            vLen = AText.Length;
-                        }
-                        else
-                        {
-                            vLen = SelectInfo.StartItemOffset + AText.Length;
-                            string vS = vTextItem.Text;
-                            vS = vS.Insert(SelectInfo.StartItemOffset, AText);
-                            UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
-                            vTextItem.Text = vS;
-                        }
-                    }
-
-                    SelectInfo.StartItemOffset = vLen;
-
-                    Result = true;
-                /*}
-                else  // 此位置不可接受输入
-                {
-                    if ((SelectInfo.StartItemOffset == 0)
-                        || (SelectInfo.StartItemOffset == vTextItem.Length))   // 在首尾不可接受时，插入到前后位置
-                    {
-                        HCCustomItem vNewItem = CreateDefaultTextItem();
-                        vNewItem.ParaFirst = ANewPara;
-                        vNewItem.Text = AText;
-
-                        if (SelectInfo.StartItemOffset == 0)  // 在首
-                        {
-                            if ((!vNewItem.ParaFirst) && vTextItem.ParaFirst)
-                            {
-                                vNewItem.ParaFirst = true;
-                                UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, false);
-                                vTextItem.ParaFirst = false;
-                            }
-
-                            Items.Insert(SelectInfo.StartItemNo, vNewItem);
-                            UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
-                        }
-                        else
-                        {
                             Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
                             UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                            vAddCount++;
                             SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                            vOffset = AText.Length;
                         }
-
-                        vAddCount++;
-                        SelectInfo.StartItemOffset = vNewItem.Length;
                     }
-                }*/
+                    else  // 段最后一个后面不接收输入
+                    {
+                        HCCustomItem vNewItem = CreateDefaultTextItem();
+                        vNewItem.Text = AText;
+
+                        Items.Insert(SelectInfo.StartItemNo + 1, vNewItem);
+                        UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                        vAddCount++;
+                        SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                        vOffset = AText.Length;
+                    }
+                }
+                else  // 在Item中间
+                {
+                    if (ANewPara)
+                    {
+                        // 原TextItem打断
+                        string vS = vTextItem.SubString(SelectInfo.StartItemOffset + 1 - 1, vTextItem.Length - SelectInfo.StartItemOffset);
+                        UndoAction_DeleteText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, vS);
+                        // 原位置后半部分
+                        HCCustomItem vAfterItem = vTextItem.BreakByOffset(SelectInfo.StartItemOffset);
+                        vAfterItem.Text = AText + vAfterItem.Text;
+                        vAfterItem.ParaFirst = true;
+                        // 插入原TextItem后半部分增加Text后的
+                        Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
+                        UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
+                        vAddCount++;
+
+                        SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
+                        vOffset = AText.Length;
+                    }
+                    else
+                    {
+                        vOffset = SelectInfo.StartItemOffset + AText.Length;
+                        string vS = vTextItem.Text;
+                        vS = vS.Insert(SelectInfo.StartItemOffset, AText);
+                        UndoAction_InsertText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset + 1, AText);
+                        vTextItem.Text = vS;
+                    }
+                }
+
+                SelectInfo.StartItemOffset = vOffset;
+
+                Result = true;
             }
             else  // 插入位置TextItem样式和当前样式不同，在TextItem头、中、尾没选中，但应用了新样式，以新样式处理
             {
@@ -5316,6 +5377,7 @@ namespace HC.View
                 {
                     bool vNewPara = false;
                     int vAddCount = 0;
+                    CurStyleNo = Items[SelectInfo.StartItemNo].StyleNo;  // 防止静默移动选中位置没有更新当前样式
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
@@ -5331,13 +5393,14 @@ namespace HC.View
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vAddCount, vAddCount);
                     Result = true;
                 }
+
+                ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
             finally
             {
                 Undo_GroupEnd(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
 
-            ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             InitializeMouseField();  // 201807311101
 
             Style.UpdateInfoRePaint();

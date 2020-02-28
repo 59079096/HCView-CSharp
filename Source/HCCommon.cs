@@ -922,7 +922,8 @@ namespace HC.View
         actInsertItem,  // 插入Item
         actItemProperty,  // Item属性变化
         actItemSelf,  // Item自己管理
-        actItemMirror  // Item镜像
+        actItemMirror,  // Item镜像
+        actConcatText  // 粘接文本(两头)
     }
 
     public struct HCCaretInfo
