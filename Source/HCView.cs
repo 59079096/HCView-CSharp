@@ -2212,13 +2212,6 @@ namespace HC.View
                     }
                 }
                 else
-                if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
-                {
-                    string vs = vIData.GetData(DataFormats.Rtf).ToString();
-                    HCRtfRW vRtfRW = new HCRtfRW();
-                    vRtfRW.InsertString(this, vs);
-                }
-                else
                 if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                     InsertText(Clipboard.GetText());
                 else
