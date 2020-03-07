@@ -28,10 +28,9 @@ namespace HC.View
         protected void SetAppend(bool value)
         {
             if ((FAppend != value) && (!FLock))
-            {
                 FAppend = value;
-                FLock = true;
-            }
+                
+            FLock = true;
         }
 
         protected abstract bool DoMatchCur(HCTextStyle aTextStyle);

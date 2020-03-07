@@ -20,6 +20,7 @@ using System.Xml;
 using System.Reflection;
 using System.Text;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace HC.View
 {
@@ -2211,6 +2212,13 @@ namespace HC.View
                     }
                 }
                 else
+                if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
+                {
+                    string vs = vIData.GetData(DataFormats.Rtf).ToString();
+                    HCRtfRW vRtfRW = new HCRtfRW();
+                    vRtfRW.InsertString(this, vs);
+                }
+                else
                 if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                     InsertText(Clipboard.GetText());
                 else
@@ -2702,7 +2710,36 @@ namespace HC.View
         /// <summary> 文档保存为PDF格式 </summary>
         public void SaveToPDF(string aFileName)
         {
+            using (FileStream vStream = new FileStream(aFileName, FileMode.Create, FileAccess.Write))
+            {
+                SaveToPDFStream(vStream);
+            }
+        }
 
+        [DllImport("HCExpPDF.dll", EntryPoint = "SetServiceCode")]
+        public static extern object SetServiceCode(object obj);
+
+        [DllImport("HCExpPDF.dll", EntryPoint = "SaveToPDFStream", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SaveToPDFStream_DLL(ref object inObj, out object outObj);
+        public virtual void SaveToPDFStream(Stream stream)
+        {
+            using (MemoryStream vFileStream = new MemoryStream())
+            {
+                HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
+                this.SaveToStream(vFileStream, true, vParts);
+                vFileStream.Position = 0;
+                byte[] bytes = new byte[vFileStream.Length];
+                vFileStream.Read(bytes, 0, bytes.Length);
+                object vInObj = (object)bytes;
+
+                object vOutObj = null;
+                SaveToPDFStream_DLL(ref vInObj, out vOutObj);
+                if (vOutObj != null)
+                {
+                    byte[] vOutBytes = vOutObj as byte[];
+                    stream.Write(vOutBytes, 0, vOutBytes.Length);
+                }
+            }
         }
 
         /// <summary> 以字符串形式获取文档各节正文内容 </summary>
@@ -3436,16 +3473,14 @@ namespace HC.View
                             return;
                         }
 
-                        int vMarginLeft = -1, vMarginRight = -1;
-                        this.ActiveSection.GetPageMarginLeftAndRight(this.ActiveSection.ActivePageIndex, ref vMarginLeft, ref vMarginRight);
                         // "抹"掉不需要显示的地方
                         vPrintCanvas.Brush.Color = Color.White;
 
                         RECT vRect = new RECT();
                         if (aPrintHeader)
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft, 
+                            vRect = HC.Bounds(vPrintOffsetX,
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
-                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
+                                this.ActiveSection.PaperWidthPix, vPt.Y);
                         else  // 不打印页眉
                             vRect = HC.Bounds(vPrintOffsetX,// + vMarginLeft,防止页眉浮动Item在页边距中
                                 vPrintOffsetY, this.ActiveSection.PaperWidthPix,// - vMarginLeft - vMarginRight,
@@ -3580,13 +3615,13 @@ namespace HC.View
 
                         RECT vRect = new RECT();
                         if (aPrintHeader)
-                            vRect = HC.Bounds(vPrintOffsetX + vMarginLeft,
+                            vRect = HC.Bounds(vPrintOffsetX,
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight(),  // 页眉下边
-                                this.ActiveSection.PaperWidthPix - vMarginLeft - vMarginRight, vPt.Y);
+                                this.ActiveSection.PaperWidthPix, vPt.Y);
                         else  // 不打印页眉
                             vRect = HC.Bounds(vPrintOffsetX,// + vMarginLeft, 防止页眉浮动Item在页边距中
                                 vPrintOffsetY, 
-                                this.ActiveSection.PaperWidthPix,// - vMarginLeft - vMarginRight,
+                                this.ActiveSection.PaperWidthPix,
                                 this.ActiveSection.GetHeaderAreaHeight() + vPt.Y);
 
                         vPrintCanvas.FillRect(vRect);
@@ -3622,9 +3657,9 @@ namespace HC.View
                         }
                         else  // 打印页脚
                         {
-                            vRect = new RECT(vPrintOffsetX + vMarginLeft, 
+                            vRect = new RECT(vPrintOffsetX,
                                 vPrintOffsetY + this.ActiveSection.GetHeaderAreaHeight() + vPt.Y + vData.DrawItems[vDrawItemNo].Rect.Height,
-                                vPrintOffsetX + this.ActiveSection.PaperWidthPix - vMarginRight,
+                                vPrintOffsetX + this.ActiveSection.PaperWidthPix,
                                 vPrintOffsetY + this.ActiveSection.PaperHeightPix - this.ActiveSection.PaperMarginBottomPix);
 
                             vPrintCanvas.FillRect(vRect);
@@ -4312,7 +4347,17 @@ namespace HC.View
 
                 if (vFirst >= 0)
                 {
-                    aCanvas.Font.Size = 8;
+                    aCanvas.Font.BeginUpdate();
+                    try
+                    {
+                        aCanvas.Font.Size = 8;
+                        aCanvas.Font.Family = "宋体";
+                        aCanvas.Font.Color = Color.Black;
+                    }
+                    finally
+                    {
+                        aCanvas.Font.EndUpdate();
+                    }
                     // 计算本页各批注显示位置
                     vTop = FDrawAnnotates[vFirst].DrawRect.Top;
                     for (int i = vFirst; i <= vLast; i++)

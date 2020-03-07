@@ -647,7 +647,7 @@ namespace HC.View
                     this.Clear();
             }
 
-            if (this.Count > FMaxUndoCount)  // 超出列表最大允许的数量
+            if ((this.Count > FMaxUndoCount) && (!FGroupWorking))  // 超出列表最大允许的数量
             {
                 int vOver = 0, vIndex = -1;
 
@@ -719,6 +719,7 @@ namespace HC.View
 
         public void UndoGroupBegin(int aItemNo, int aOffset)
         {
+            FGroupWorking = true;
             HCUndoGroupBegin vUndoGroupBegin = null;
             if (FOnUndoGroupStart != null)
                 vUndoGroupBegin = FOnUndoGroupStart(aItemNo, aOffset);
@@ -743,6 +744,7 @@ namespace HC.View
             vUndoGroupEnd.Offset = aOffset;
 
             DoNewUndo(vUndoGroupEnd);
+            FGroupWorking = false;
         }
 
         public HCUndo UndoNew()

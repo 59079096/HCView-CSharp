@@ -107,7 +107,7 @@ namespace HC.View
                 else
                     aCanvas.Font.Size = FSize;
 
-                aCanvas.Font.FontStyles = FFontStyles;
+                aCanvas.Font.FontStyles.Value = FFontStyles.Value;  // 防止后面其他地方修改canva的font时影响到原始的样式数据
             }
             finally
             {

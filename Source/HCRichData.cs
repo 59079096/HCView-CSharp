@@ -166,6 +166,7 @@ namespace HC.View
             if ((aItem.StyleNo > HCStyle.Null) && (aItem.Text == ""))
                 return false;
 
+            aItem.ParaNo = Items[0].ParaNo;
             UndoAction_DeleteItem(0, 0);
             Items.Clear();
             DrawItems.Clear();
@@ -3682,7 +3683,7 @@ namespace HC.View
                         break;
 
                     case User.VK_BACK:  // 在RectItem前
-                        if (vCurItem.ParaFirst && DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actReturnItem))
+                        if (vCurItem.ParaFirst && DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actBackDeleteText))
                         {
                             if (SelectInfo.StartItemNo > 0)  // 第一个前回删不处理，停止格式化
                             {
