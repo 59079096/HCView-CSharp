@@ -1031,7 +1031,11 @@ namespace EMRView
                     pmView.Items[i].Visible = false;
 
                 if (!vReadOnly)
-                    mniFloatItemProperty.Visible = true;
+                {
+                    mniFloatItemProperty.Visible = FEmrView.DesignModeEx;
+                    if (vActiveFloatItem is DeFloatBarCodeItem)
+                      mniFloatItemProperty.Text = "浮动条码";
+                }
 
                 return;
             }

@@ -16,6 +16,7 @@ using HC.View;
 using System.IO;
 using HC.Win32;
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace EMRView
 {
@@ -1423,6 +1424,29 @@ namespace EMRView
             vItemTraverse.Process = DoSyntaxCheck;
             this.TraverseItem(vItemTraverse);
             this.UpdateView();
+        }
+
+        [DllImport("HCExpPDF.dll")]
+        public static extern void EmrSaveToPDFStream(ref object inobj, out object outobj);
+        public override void SaveToPDFStream(Stream stream)
+        {
+            using (MemoryStream vFileStream = new MemoryStream())
+            {
+                HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
+                this.SaveToStream(vFileStream, true, vParts);
+                vFileStream.Position = 0;
+                byte[] bytes = new byte[vFileStream.Length];
+                vFileStream.Read(bytes, 0, bytes.Length);
+                object vInObj = (object)bytes;
+
+                object oubOjb = null;
+                EmrSaveToPDFStream(ref vInObj, out oubOjb);
+                if (oubOjb != null)
+                {
+                    byte[] vOutBytes = oubOjb as byte[];
+                    stream.Write(vOutBytes, 0, vOutBytes.Length);
+                }
+            }
         }
 
         /// <summary> 文档是否处于设计模式 </summary>
