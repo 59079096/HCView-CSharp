@@ -835,13 +835,16 @@ namespace HC.View
     public class HCControlItem : HCTextRectItem
     {
         private bool FAutoSize;
-        protected byte FMargin;
+        protected byte FPaddingLeft, FPaddingTop, FPaddingRight, FPaddingBottom;
         protected int FMinWidth, FMinHeight;
 
         public HCControlItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
             FAutoSize = true;
-            FMargin = 5;
+            FPaddingLeft = 5;
+            FPaddingRight = 5;
+            FPaddingTop = 5;
+            FPaddingBottom = 5;
             FMinWidth = 20;
             FMinHeight = 10;
         }
@@ -1090,8 +1093,25 @@ namespace HC.View
         public override void PaintTop(HCCanvas aCanvas)
         {
             base.PaintTop(aCanvas);
-            aCanvas.Brush.Style = HCBrushStyle.bsClear;
-            aCanvas.Rectangle(FResizeRect);
+            if (FResizing)
+            {
+                aCanvas.Brush.Style = HCBrushStyle.bsClear;
+                aCanvas.Rectangle(FResizeRect);
+                aCanvas.Brush.Color = Color.White;
+                aCanvas.Font.BeginUpdate();
+                try
+                {
+                    aCanvas.Font.Color = Color.Black;
+                    aCanvas.Font.FontStyles.Value = 0;
+                }
+                finally
+                {
+                    aCanvas.Font.EndUpdate();
+                }
+
+                aCanvas.TextOut(FResizeRect.Left + 2, FResizeRect.Top + 2,
+                    FResizeWidth.ToString() + " x " + FResizeHeight.ToString());
+            }
         }
 
         // 继承THCCustomItem抽象方法
@@ -1226,14 +1246,16 @@ namespace HC.View
             bool vResult = base.MouseUp(e);
             if (FResizing)
             {
-                FResizing = false;
-
                 if ((FResizeWidth < 0) || (FResizeHeight < 0))
+                {
+                    FResizing = false;
                     return vResult;
+                }
 
                 SelfUndo_Resize(FResizeWidth, FResizeHeight);
                 Width = FResizeWidth;
                 Height = FResizeHeight;
+                FResizing = false;
             }
 
             return vResult;

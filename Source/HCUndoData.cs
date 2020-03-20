@@ -347,14 +347,10 @@ namespace HC.View
                             Result--;
                     }
                     break;
-
-                default:
-                    {
-                        if (Result > Items.Count - 1)
-                            Result = Items.Count - 1;
-                    }
-                    break;
             }
+
+            if (Result > Items.Count - 1)
+                Result = Items.Count - 1;
 
             return Result;
         }
@@ -393,6 +389,7 @@ namespace HC.View
 
             if (Result > Items.Count - 1)
                 Result = Items.Count - 1;
+
             return Result;
         }
 

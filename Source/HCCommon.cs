@@ -1131,6 +1131,12 @@ namespace HC.View
 
         public new void Clear()
         {
+            for (int i = this.Count - 1; i >= 0; i--)
+            {
+                if (OnDelete != null)
+                    OnDelete.Invoke(this, new NListEventArgs<T>(base[i], i));
+            }
+
             base.Clear();
             if (OnClear != null)
                 OnClear.Invoke(this, new EventArgs());

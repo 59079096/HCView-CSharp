@@ -377,6 +377,7 @@ namespace HC.View
                     aCanvas.Font.EndUpdate();
                 }
 
+                aCanvas.Brush.Style = HCBrushStyle.bsClear;
                 aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供，技术交流QQ群：649023932");
             }
 
@@ -553,10 +554,11 @@ namespace HC.View
                 return;
             }
 
+            vCaretInfo.Y += GetSectionTopFilm(FActiveSectionIndex);
             FVScrollBar.SetAreaPos(-1, vCaretInfo.Y, vCaretInfo.Height);
 
             FCaret.X = ZoomIn(GetSectionDrawLeft(FActiveSectionIndex) + vCaretInfo.X) - FHScrollBar.Position;
-            FCaret.Y = ZoomIn(GetSectionTopFilm(FActiveSectionIndex) + vCaretInfo.Y) - FVScrollBar.Position;
+            FCaret.Y = ZoomIn(vCaretInfo.Y) - FVScrollBar.Position;
             FCaret.Height = ZoomIn(vCaretInfo.Height);
 
             if (!FStyle.UpdateInfo.ReScroll)
@@ -1016,7 +1018,7 @@ namespace HC.View
 
         protected virtual void DoSectionItemMouseUp(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
         {
-            if (((Control.ModifierKeys & Keys.Shift) == Keys.Shift) && (aData.Items[aItemNo].HyperLink != ""))
+            if (((Control.ModifierKeys & Keys.Control) == Keys.Control) && (aData.Items[aItemNo].HyperLink != ""))
                 System.Diagnostics.Process.Start(aData.Items[aItemNo].HyperLink);
         }
 
@@ -1631,28 +1633,38 @@ namespace HC.View
         /// <summary> 全部清空(清除各节页眉、页脚、页面的Item及DrawItem) </summary>
         public void Clear()
         {
-            FStyle.Initialize();  // 先清样式，防止Data初始化为EmptyData时空Item样式赋值为CurStyleNo
-            FSections.RemoveRange(1, FSections.Count - 1);
-
-            FUndoList.SaveState();
+            this.BeginUpdate();
             try
             {
-                FUndoList.Enable = false;
-                FSections[0].Clear();
-                FUndoList.Clear();
+                FStyle.Initialize();  // 先清样式，防止Data初始化为EmptyData时空Item样式赋值为CurStyleNo
+                FSections.RemoveRange(1, FSections.Count - 1);
+                FActiveSectionIndex = 0;
+                FDisplayFirstSection = -1;
+                FDisplayLastSection = -1;
+
+                FUndoList.SaveState();
+                try
+                {
+                    FUndoList.Enable = false;
+                    FSections[0].Clear();
+                    FUndoList.Clear();
+                }
+                finally
+                {
+                    FUndoList.RestoreState();
+                }
+
+                FHScrollBar.Position = 0;
+                FVScrollBar.Position = 0;
+                FStyle.UpdateInfoRePaint();
+                FStyle.UpdateInfoReCaret();
+                DoMapChanged();
+                DoViewResize();
             }
             finally
             {
-                FUndoList.RestoreState();
+                this.EndUpdate();
             }
-
-            FHScrollBar.Position = 0;
-            FVScrollBar.Position = 0;
-            FActiveSectionIndex = 0;
-            FStyle.UpdateInfoRePaint();
-            FStyle.UpdateInfoReCaret();
-            DoMapChanged();
-            DoViewResize();
         }
 
         /// <summary> 取消选中 </summary>
@@ -1875,6 +1887,7 @@ namespace HC.View
             Result = true;
             FStyle.UpdateInfoRePaint();
             FStyle.UpdateInfoReCaret();
+            FStyle.UpdateInfoReScroll();
             DoChange();
 
             return Result;
@@ -2062,7 +2075,7 @@ namespace HC.View
                         HC._SaveFileFormatAndVersion(vStream);  // 保存文件格式和版本
                         DoCopyAsStream(vStream);  // 通知保存事件
 
-                        HashSet<SectionArea> vSaveParts = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
+                        //HashSet<SectionArea> vSaveParts = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
                         FStyle.SaveToStream(vStream);
                         this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
 
@@ -2185,15 +2198,7 @@ namespace HC.View
                             this.BeginUpdate();
                             try
                             {
-                                FStyle.States.Include(HCState.hosPasting);
-                                try
-                                {
-                                    ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
-                                }
-                                finally
-                                {
-                                    FStyle.States.Exclude(HCState.hosPasting);
-                                }
+                                ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
                             }
                             finally
                             {
@@ -4487,6 +4492,8 @@ namespace HC.View
         public void RemoveDataAnnotate(HCDataAnnotate aDataAnnotate)
         {
             FCount--;
+            if (FCount == 0)
+                FVisible = false;
         }
 
         public void AddDrawAnnotate(HCDrawAnnotate aDrawAnnotate)
@@ -4541,7 +4548,6 @@ namespace HC.View
         public bool Visible
         {
             get { return FVisible; }
-            set { FVisible = value; }
         }
 
         public int Count

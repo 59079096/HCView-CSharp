@@ -62,9 +62,9 @@ namespace HC.View
             FShapeLine = new HCShapeLine(new POINT(0, 0), new POINT(Width, Height));
         }
 
-        public override bool PointInClient(POINT aPoint)
+        public override bool PointInClient(int x, int y)
         {
-            return FShapeLine.PointInClient(aPoint);
+            return FShapeLine.PointInClient(x, y);
         }
 
         public override void Assign(HCCustomItem source)
@@ -144,13 +144,13 @@ namespace HC.View
         }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, 
-            int aDataDrawTop, int  aDataDrawBottom, int  aDataScreenTop, 
-            int  aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
+            int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, 
+            int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             FShapeLine.PaintTo(aCanvas, aDrawRect, aPaintInfo);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
             FShapeLine.SaveToStream(aStream);

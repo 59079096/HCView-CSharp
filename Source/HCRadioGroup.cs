@@ -65,7 +65,7 @@ namespace HC.View
         private HCRadioStyle FRadioStyle = HCRadioStyle.Radio;
         public static byte RadioButtonWidth = 16;
 
-        private int GetItemAt(int x, int  y)
+        private int GetItemAt(int x, int y)
         {
             int Result = -1;
             this.OwnerData.Style.ApplyTempStyle(TextStyleNo);
@@ -112,8 +112,8 @@ namespace HC.View
 
             aRichData.Style.ApplyTempStyle(TextStyleNo);
 
-            int vLeft = FMargin;
-            int vTop = FMargin;
+            int vLeft = FPaddingLeft;
+            int vTop = FPaddingTop;
             SIZE vSize = new SIZE();
 
             for (int i = 0; i <= FItems.Count - 1; i++)
@@ -125,20 +125,20 @@ namespace HC.View
                 
                 if (this.AutoSize && vLeft + vSize.cx + RadioButtonWidth > Width)
                 {
-                    vLeft = FMargin;
-                    vTop = vTop + vSize.cy + FMargin;
+                    vLeft = FPaddingLeft;
+                    vTop = vTop + vSize.cy + FPaddingBottom;
                 }
 
                 FItems[i].Position.X = vLeft;
                 FItems[i].Position.Y = vTop;
 
-                vLeft = vLeft + RadioButtonWidth + vSize.cx + FMargin;
+                vLeft = vLeft + RadioButtonWidth + vSize.cx + FPaddingRight;
             }
 
             if (this.AutoSize)
                 Width = vLeft;
 
-            Height = vTop + vSize.cy + FMargin;
+            Height = vTop + vSize.cy + FPaddingBottom;
             
             if (Width < FMinWidth)
                 Width = FMinWidth;
@@ -216,10 +216,10 @@ namespace HC.View
 
         public override int GetOffsetAt(int x)
         {
-            if (x <= FMargin)
+            if (x <= FPaddingLeft)
                 return HC.OffsetBefor;
             else
-                if (x >= Width - FMargin)
+                if (x >= Width - FPaddingRight)
                     return HC.OffsetAfter;
                 else
                     return HC.OffsetInner;
@@ -258,7 +258,7 @@ namespace HC.View
             FItems.Add(vRadioButton);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
+        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
             string vTexts = "", vTextValues = "";

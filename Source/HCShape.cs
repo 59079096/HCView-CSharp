@@ -124,9 +124,9 @@ namespace HC.View
 
         public virtual void PaintTo(HCCanvas aCanvas, RECT aRect, PaintInfo aPaintInfo) { }
 
-        public virtual bool PointInClient(POINT aPoint)
+        public virtual bool PointInClient(int x, int y)
         {
-            return HC.PtInRect(ClientRect(), aPoint);
+            return HC.PtInRect(ClientRect(), x, y);
         }
 
         public virtual RECT ClientRect()
@@ -432,9 +432,9 @@ namespace HC.View
                 PaintAnchor(aCanvas, aRect);
         }
 
-        public override bool PointInClient(POINT aPoint)
+        public override bool PointInClient(int x, int y)
         {
-            return GetObjAt(aPoint.X, aPoint.Y) != HCShapeLineObj.sloNone;
+            return GetObjAt(x, y) != HCShapeLineObj.sloNone;
         }
 
         public override RECT ClientRect()
@@ -1045,14 +1045,14 @@ namespace HC.View
                 PaintAnchor(aCanvas, aRect);
         }
 
-        public override bool PointInClient(POINT aPoint)
+        public override bool PointInClient(int x, int y)
         {
-            int vIndex = GetPointAt(aPoint.X, aPoint.Y);
+            int vIndex = GetPointAt(x, y);
             if (vIndex >= 0)
                 return true;
             else
             {
-                vIndex = GetLineAt(aPoint.X, aPoint.Y);
+                vIndex = GetLineAt(x, y);
                 if (vIndex >= 0)
                     return true;
             }
@@ -1104,13 +1104,14 @@ namespace HC.View
             vCount = BitConverter.ToInt32(vBuffer, 0);
 
             int vX = 0, vY = 0;
+            HCPoint vPoint = null;
             for (int i = 0; i < vCount; i++)
             {
                 aStream.Read(vBuffer, 0, vBuffer.Length);
                 vX = BitConverter.ToInt32(vBuffer, 0);
                 aStream.Read(vBuffer, 0, vBuffer.Length);
                 vY = BitConverter.ToInt32(vBuffer, 0);
-                HCPoint vPoint = new HCPoint(vX, vY);
+                vPoint = new HCPoint(vX, vY);
                 FPoints.Add(vPoint);
             }
         }
@@ -1251,7 +1252,7 @@ namespace HC.View
                 int vIndex = -1;
                 for (int i = 0; i < this.Count; i++)
                 {
-                    if (this[i].PointInClient(new POINT(e.X, e.Y)))
+                    if (this[i].PointInClient(e.X, e.Y))
                     {
                         if (this[i].MouseDown(e))
                         {
@@ -1286,7 +1287,7 @@ namespace HC.View
             FHotIndex = -1;
             for (int i = 0; i < this.Count; i++)
             {
-                if (this[i].PointInClient(new POINT(e.X, e.Y)))
+                if (this[i].PointInClient(e.X, e.Y))
                 {
                     if (this[i].MouseMove(e))
                     {

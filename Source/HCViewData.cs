@@ -184,7 +184,8 @@ namespace HC.View
 
                 if (vDrawHotDomainBorde || vDrawActiveDomainBorde)  // 在Hot域或激活域中
                 {
-                    IntPtr vDliRGN = (IntPtr)GDI.CreateRectRgn(aDrawRect.Left, aDrawRect.Top, aDrawRect.Right, aDrawRect.Bottom);
+                    IntPtr vDliRGN = (IntPtr)GDI.CreateRectRgn(aDrawRect.Left, aDrawRect.Top, 
+                        aDrawRect.Left == aDrawRect.Right ? aDrawRect.Right + 3 : aDrawRect.Right, aDrawRect.Bottom);
                     try
                     {
                         if ((FHotDomain.BeginNo >= 0) && vDrawHotDomainBorde)

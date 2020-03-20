@@ -253,23 +253,7 @@ namespace HC.View
 
         public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
         {
-            if (this.AutoSize)
-            {
-                ARichData.Style.ApplyTempStyle(TextStyleNo);
-                SIZE vSize = new SIZE();
-                if (this.Text != "")
-                    vSize = ARichData.Style.TempCanvas.TextExtent(this.Text);
-                else
-                    vSize = ARichData.Style.TempCanvas.TextExtent("H");
-
-                Width = FMargin + vSize.cx + FMargin + BTNWIDTH;  // 间距
-                Height = FMargin + vSize.cy + FMargin;
-            }
-            if (Width < FMinWidth)
-                Width = FMinWidth;
-            if (Height < FMinHeight)
-                Height = FMinHeight;
-            
+            base.FormatToDrawItem(ARichData, AItemNo);
             FButtonRect = HC.Bounds(Width - BTNMARGIN - BTNWIDTH, BTNMARGIN, BTNWIDTH, Height - BTNMARGIN - BTNMARGIN);
             FPopupForm.Width = this.Width;
         }
@@ -279,7 +263,10 @@ namespace HC.View
         {
             base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop,
                 ADataScreenBottom, ACanvas, APaintInfo);
-    
+
+            if (APaintInfo.Print && this.PrintOnlyText)
+                return;
+
             if (IsSelectComplate)
                 ACanvas.Brush.Color = AStyle.SelColor;
             else
@@ -287,9 +274,6 @@ namespace HC.View
                 ACanvas.Brush.Color = HC.clMenu;
             else
                 ACanvas.Brush.Color = HC.clWindow;
-
-            if (APaintInfo.Print && this.PrintOnlyText)
-                return;
 
             FButtonDrawRect = FButtonRect;
             FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
@@ -310,7 +294,7 @@ namespace HC.View
 
         public override bool MouseDown(MouseEventArgs e)
         {
-            if ((e.Button == MouseButtons.Left) && HC.PtInRect(FButtonRect, e.X, e.Y))
+            if (OwnerData.CanEdit() && (e.Button == MouseButtons.Left) && HC.PtInRect(FButtonRect, e.X, e.Y))
             {
                 DoPopup();
                 return true;
@@ -385,6 +369,7 @@ namespace HC.View
         {
             this.StyleNo = HCStyle.Combobox;
             Width = 80;
+            FPaddingRight = BTNWIDTH;
             FSaveItem = true;
             FItems = new List<HCCbbItem>();
             FItemValues = new List<HCCbbItem>();

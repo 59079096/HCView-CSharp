@@ -1047,7 +1047,7 @@ namespace HC.View
 
                     if ((FMouseDownRow != vMouseDownRow) || (FMouseDownCol != vMouseDownCol))
                     {
-                        if (FMouseDownRow >= 0)
+                        if ((FMouseDownRow >= 0) && (e.Button != MouseButtons.Right))
                             FRows[FMouseDownRow][FMouseDownCol].Active = false;
 
                         FMouseDownRow = vMouseDownRow;  // 记录拖拽起始单元格

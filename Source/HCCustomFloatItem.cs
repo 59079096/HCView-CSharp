@@ -38,14 +38,9 @@ namespace HC.View
 
         }
 
-        public virtual bool PointInClient(POINT aPoint)
+        public virtual bool PointInClient(int x, int y)
         {
-            return HC.PtInRect(HC.Bounds(0, 0, Width, Height), aPoint);
-        }
-
-        public bool PointInClient(int x, int y)
-        {
-            return PointInClient(new POINT(x, y));
+            return HC.PtInRect(HC.Bounds(0, 0, Width, Height), x, y);
         }
 
         public override void Assign(HCCustomItem source)

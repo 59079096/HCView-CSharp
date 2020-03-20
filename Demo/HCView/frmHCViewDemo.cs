@@ -395,8 +395,8 @@ namespace HCViewDemo
 
         private void dateTimePickerToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //HCDateTimePicker vHCDateTimePicker = new HCDateTimePicker(FHCView.ActiveSectionTopLevelData(), DateTime.Now);
-            //FHCView.InsertItem(vHCDateTimePicker);
+            HCDateTimePicker vHCDateTimePicker = new HCDateTimePicker(FHCView.ActiveSectionTopLevelData(), DateTime.Now);
+            FHCView.InsertItem(vHCDateTimePicker);
         }
 
         private void radioGroupToolStripMenuItem_Click(object sender, EventArgs e)
@@ -707,6 +707,26 @@ namespace HCViewDemo
                 FHCView.Zoom = vOut / 100;
             else
                 FHCView.Zoom = 1.0f;
+        }
+
+        private void 超连接ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            HCCustomData vTopData = FHCView.ActiveSectionTopLevelData();
+            HCTextItem vTextItem = vTopData.CreateDefaultTextItem() as HCTextItem;
+            vTextItem.Text = "打开百度";
+            vTextItem.HyperLink = "www.baidu.com";
+            FHCView.InsertItem(vTextItem);
+        }
+
+        private void 域ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            FHCView.InsertDomain(null);
+        }
+
+        private void 一维码ToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            HCFloatBarCodeItem vFloatBarCodeItem = new HCFloatBarCodeItem(FHCView.ActiveSection.ActiveData);
+            FHCView.InsertFloatItem(vFloatBarCodeItem);
         }
     }
 }

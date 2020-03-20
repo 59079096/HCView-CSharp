@@ -2446,6 +2446,11 @@ namespace HC.View
                             FMouseMoveRestrain = vRestrain;
                         else  // 都视为约束
                             FMouseMoveRestrain = true;
+
+                        DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
+                        Style.UpdateInfoRePaint();
+                        Style.UpdateInfoReCaret();
+                        return;
                     }
                     else
                     {
@@ -2463,12 +2468,12 @@ namespace HC.View
                         MatchItemSelectState();  // 设置选中范围内的Item选中状态
                     else
                         CaretDrawItemNo = FMouseMoveDrawItemNo;  // 按下上一下DrawItem最后，划选到下一个开始时，没有选中内容，要更换CaretDrawIemNo
+                    
+                    if ((!vRestrain) && (Items[FMouseMoveItemNo].StyleNo < HCStyle.Null))
+                        DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
 
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
-
-                    if ((!vRestrain) && (Items[FMouseMoveItemNo].StyleNo < HCStyle.Null))
-                        DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
                 }
                 else  // 非拖拽，非划选
                 {
@@ -2614,6 +2619,14 @@ namespace HC.View
                         DoItemMouseUp(i, 0, e);
                 }
 
+                if (SelectInfo.EndItemNo < 0)  // 在RectItem里划选或TextItem划选回起始位置
+                {
+                    if ((FMouseDownItemNo >= 0) && (Items[FMouseDownItemNo].StyleNo < HCStyle.Null))  // 弹起时在RectItem
+                        DoItemMouseUp(FMouseDownItemNo, HC.OffsetInner, e);
+                    else
+                        DoItemMouseUp(vUpItemNo, vUpItemOffset,e);
+                }
+                else
                 if (Items[vUpItemNo].StyleNo < HCStyle.Null)
                     DoItemMouseUp(vUpItemNo, vUpItemOffset, e);
             }
@@ -2622,7 +2635,7 @@ namespace HC.View
                 if (FDraging || Style.UpdateInfo.Draging)
                 {
                     FDraging = false;
-                    bool vMouseUpInSelect = CoordInSelect(e.X, e.Y, vUpItemNo, vUpItemOffset, vRestrain);
+                    //bool vMouseUpInSelect = CoordInSelect(e.X, e.Y, vUpItemNo, vUpItemOffset, vRestrain);
 
                     // 清除弹起位置之外的Item选中状态，弹起处自己处理，弹起处不在选中范围内时
                     // 保证弹起处取消(从ItemA上选中拖拽到另一个ItemB时，ItemA选中状态需要取消)
@@ -4020,10 +4033,30 @@ namespace HC.View
                     if (aPageBreak)
                     {
                         Undo_New();
-                        UndoAction_ItemPageBreak(SelectInfo.StartItemNo, 0, true);
-                        vCurItem.PageBreak = true;
+                        if (this.Items.Count == 1)
+                        {
+                            // 补充一个空行
+                            HCCustomItem vItem = CreateDefaultTextItem();
+                            vItem.StyleNo = vCurItem.StyleNo;
+                            vItem.ParaNo = vCurItem.ParaNo;
+                            vItem.ParaFirst = true;
 
-                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0, true);
+                            UndoAction_ItemPageBreak(SelectInfo.StartItemNo, 0, true);
+                            vCurItem.PageBreak = true;
+
+                            Items.Insert(SelectInfo.StartItemNo, vItem);
+                            UndoAction_InsertItem(SelectInfo.StartItemNo, 0);
+
+                            SelectInfo.StartItemNo++;
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + 1, 1);
+                        }
+                        else  // 不是文档唯一Item
+                        {
+                            UndoAction_ItemPageBreak(SelectInfo.StartItemNo, 0, true);
+                            vCurItem.PageBreak = true;
+
+                            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0, true);
+                        }
                     }
                     else
                     {

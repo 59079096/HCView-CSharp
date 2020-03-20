@@ -244,6 +244,7 @@ namespace HC.View
                     case User.VK_DELETE:
                         FFloatItems.RemoveAt(FFloatItemIndex);
                         FFloatItemIndex = -1;
+                        FMouseMoveIndex = -1;
                         break;
 
                     case User.VK_LEFT:

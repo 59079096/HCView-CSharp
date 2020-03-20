@@ -69,6 +69,7 @@
     <Compile Include="HCBarCodeItem.cs" />
     <Compile Include="HCCanvas.cs" />
     <Compile Include="HCCheckBoxItem.cs" />
+    <Compile Include="HCCode128.cs" />
     <Compile Include="HCComboboxItem.cs">
       <SubType>Component</SubType>
     </Compile>

@@ -400,7 +400,7 @@ namespace HC.View
                 if (x + vW > vMonInfo.rcWork.Right)
                     x = vMonInfo.rcWork.Right - vW;
                 if (y + vH > vMonInfo.rcWork.Bottom)
-                    y = vBound.Top - vH;
+                    y = y - vH - 20;
 
                 if (x < vMonInfo.rcWork.Left)
                     x = vMonInfo.rcWork.Left;

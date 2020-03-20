@@ -799,6 +799,7 @@ namespace HC.View
 
         public void TextOut(int x, int y, string text)
         {
+            GDI.SetBkMode(FHandle, GDI.TRANSPARENT);
             GDI.ExtTextOut(FHandle, x, y, FTextFlags, IntPtr.Zero, text, text.Length, IntPtr.Zero);
             //MoveTo(x + TextWidth(text), y);
         }

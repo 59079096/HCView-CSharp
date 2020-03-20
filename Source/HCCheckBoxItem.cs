@@ -28,7 +28,7 @@ namespace HC.View
 
         private RECT GetBoxRect()
         {
-            return HC.Bounds(FMargin, (Height - CheckBoxSize) / 2, CheckBoxSize, CheckBoxSize);
+            return HC.Bounds(FPaddingLeft, (Height - CheckBoxSize) / 2, CheckBoxSize, CheckBoxSize);
         }
 
         protected void SetChecked(bool value)
@@ -79,7 +79,7 @@ namespace HC.View
             {
                 aRichData.Style.ApplyTempStyle(TextStyleNo);
                 SIZE vSize = aRichData.Style.TempCanvas.TextExtent(FText);
-                Width = FMargin + CheckBoxSize + FMargin + vSize.cx;
+                Width = FPaddingLeft + CheckBoxSize + FPaddingLeft + vSize.cx;
                 Height = Math.Max(vSize.cy, CheckBoxSize);
             }
 
@@ -114,7 +114,7 @@ namespace HC.View
             aCanvas.Brush.Style = HCBrushStyle.bsClear;
 
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
-            aCanvas.TextOut(aDrawRect.Left + FMargin + CheckBoxSize + FMargin, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
+            aCanvas.TextOut(aDrawRect.Left + FPaddingLeft + CheckBoxSize + FPaddingLeft, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
 
             if (FChecked)  // 勾选
                 User.DrawFrameControl(aCanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
@@ -144,7 +144,7 @@ namespace HC.View
             FChecked = aChecked;
             FText = aText;
             FMouseIn = false;
-            FMargin = 2;
+            FPaddingLeft = 2;
         }
 
         public override void Assign(HCCustomItem source)

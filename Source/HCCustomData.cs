@@ -1857,7 +1857,7 @@ namespace HC.View
             {
                 HCCustomItem vItem = FItems[SelectInfo.StartItemNo];
                 vItem.DisSelect();
-                vItem.Active = false;
+                //vItem.Active = false;
             }
 
             SelectInfo.StartItemNo = -1;
@@ -2341,22 +2341,24 @@ namespace HC.View
                         // 绘制文本                      
                         if (vText != "")
                         {
-                            aCanvas.Brush.Style = HCBrushStyle.bsClear;
-
-                            switch (vAlignHorz)  // 水平对齐方式
+                            if (!(aPaintInfo.Print && vItem.PrintInvisible))
                             {
-                                case ParaAlignHorz.pahLeft:
-                                case ParaAlignHorz.pahRight:
-                                case ParaAlignHorz.pahCenter:  // 一般对齐
-                                    int vLen = vText.Length;
-                                    GDI.ExtTextOut(aCanvas.Handle, vClearRect.Left, vTextDrawTop,
-                                        GDI.ETO_OPAQUE, IntPtr.Zero, vText, vLen, IntPtr.Zero);
-                                    break;
+                                aCanvas.Brush.Style = HCBrushStyle.bsClear;
+                                switch (vAlignHorz)  // 水平对齐方式
+                                {
+                                    case ParaAlignHorz.pahLeft:
+                                    case ParaAlignHorz.pahRight:
+                                    case ParaAlignHorz.pahCenter:  // 一般对齐
+                                        int vLen = vText.Length;
+                                        GDI.ExtTextOut(aCanvas.Handle, vClearRect.Left, vTextDrawTop,
+                                            GDI.ETO_OPAQUE, IntPtr.Zero, vText, vLen, IntPtr.Zero);
+                                        break;
 
-                                case ParaAlignHorz.pahJustify:
-                                case ParaAlignHorz.pahScatter:  // 两端、分散对齐
-                                    DrawTextJsutify(aCanvas, vClearRect, vText, IsLineLastDrawItem(i), vTextDrawTop);
-                                    break;
+                                    case ParaAlignHorz.pahJustify:
+                                    case ParaAlignHorz.pahScatter:  // 两端、分散对齐
+                                        DrawTextJsutify(aCanvas, vClearRect, vText, IsLineLastDrawItem(i), vTextDrawTop);
+                                        break;
+                                }
                             }
                         }
                         else  // 空行

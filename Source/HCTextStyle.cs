@@ -49,6 +49,7 @@ namespace HC.View
         private uint FOutlineTextmetric_otmEMSquare;
         private Int16 FFontHeader_Ascender;
         private Int16 FFontHeader_Descender;
+        private int FTextMetric_tmAveCharWidth;
         private int FTextMetric_tmExternalLeading;
         private int FTextMetric_tmHeight;
 
@@ -116,6 +117,7 @@ namespace HC.View
 
             TEXTMETRICW vTextMetric = new TEXTMETRICW();
             aCanvas.GetTextMetrics(ref vTextMetric);
+            FTextMetric_tmAveCharWidth = vTextMetric.tmAveCharWidth;
             FTextMetric_tmExternalLeading = vTextMetric.tmExternalLeading;
             FTextMetric_tmHeight = vTextMetric.tmHeight;
 
@@ -403,6 +405,11 @@ namespace HC.View
         public Int16 FontHeader_Descender
         {
             get { return FFontHeader_Descender; }
+        }
+
+        public int TextMetric_tmAveCharWidth
+        {
+            get { return FTextMetric_tmAveCharWidth; }
         }
 
         public int TextMetric_tmExternalLeading

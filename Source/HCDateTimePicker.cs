@@ -107,7 +107,7 @@ namespace HC.View
                 if (vIndex > 0)
                     vs = FFormat.Substring(0, vIndex);
 
-                aRect.Left = FMargin;
+                aRect.Left = FPaddingLeft;
                 if (vs != "")
                     aRect.Left += aCanvas.TextExtent(vs).cx;
 
@@ -375,11 +375,14 @@ namespace HC.View
                                 if ("012".IndexOf(key) >= 0)  // 10, 11, 12
                                 {
                                     vNumber = vNumber * 10 + int.Parse(key.ToString());
-                                    vDateTime = new DateTime(vDateTime.Year, vNumber, vDateTime.Day, 
+                                    vDateTime = new DateTime(vDateTime.Year, vNumber, vDateTime.Day,
                                         vDateTime.Hour, vDateTime.Minute, vDateTime.Second);  // 直接修改为新键入
                                 }
+                                else
+                                    vDateTime = new DateTime(vDateTime.Year, int.Parse(key.ToString()), vDateTime.Day,
+                                        vDateTime.Hour, vDateTime.Minute, vDateTime.Second);
                             }
-                            else  // // 不是连续输入，是第1次输入
+                            else  // 不是连续输入，是第1次输入
                             {
                                 if (key == '0')  // 月份第1位是0不处理
                                     return;
@@ -419,13 +422,13 @@ namespace HC.View
                                     return;  // 2位时再输入0不处理
 
                                 vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
-                                    vDateTime.Hour, vDateTime.Minute, vDateTime.Second);
+                                    int.Parse(key.ToString()), vDateTime.Minute, vDateTime.Second);
                             }
                             else  // 当前时是1位数字
                             if (FJoinKey)  // 当前时是连续输入
                             {
                                 vNumber = vNumber * 10 + int.Parse(key.ToString());
-                                if (vNumber > 24)
+                                if (vNumber > 23)
                                     vNumber = int.Parse(key.ToString());
 
                                 vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
@@ -455,7 +458,7 @@ namespace HC.View
                             if (FJoinKey)  // 当前分是连续输入
                             {
                                 vNumber = vNumber * 10 + int.Parse(key.ToString());
-                                if (vNumber > 60)
+                                if (vNumber > 59)
                                     vNumber = int.Parse(key.ToString());
 
                                 vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
@@ -486,7 +489,7 @@ namespace HC.View
                                 if (FJoinKey)  // 当前秒是连续输入
                                 {
                                     vNumber = vNumber * 10 + int.Parse(key.ToString());
-                                    if (vNumber > 60)
+                                    if (vNumber > 59)
                                         vNumber = int.Parse(key.ToString());
 
                                     vDateTime = new DateTime(vDateTime.Year, vDateTime.Month, vDateTime.Day,
@@ -539,7 +542,7 @@ namespace HC.View
             FDateTime = aDateTime;
             this.StyleNo = HCStyle.DateTimePicker;
             Width = 80;
-            this.FMargin = 2;
+            this.FPaddingLeft = 2;
             FActiveArea = DateTimeArea.dtaNone;
         }
 

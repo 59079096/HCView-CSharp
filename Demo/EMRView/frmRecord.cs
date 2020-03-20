@@ -366,7 +366,7 @@ namespace EMRView
 
                 if (value)
                 {
-                    FEmrView.AnnotatePre.Visible = false;
+                    //FEmrView.AnnotatePre.Visible = false;
 
                     HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
                     vAreas.Add(SectionArea.saPage);
@@ -374,8 +374,8 @@ namespace EMRView
                 }
                 else
                 {
-                    if ((FEmrView.TraceCount > 0) && (!FEmrView.AnnotatePre.Visible))
-                        FEmrView.AnnotatePre.Visible = true;
+                    //if ((FEmrView.TraceCount > 0) && (!FEmrView.AnnotatePre.Visible))
+                    //    FEmrView.AnnotatePre.Visible = true;
 
                     HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
                     vAreas.Add(SectionArea.saPage);

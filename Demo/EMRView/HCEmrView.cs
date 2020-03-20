@@ -186,8 +186,8 @@ namespace EMRView
                 {
                     FTraceCount++;
 
-                    if (!this.AnnotatePre.Visible)
-                        this.AnnotatePre.Visible = true;
+                    //if (!this.AnnotatePre.Visible)
+                    //    this.AnnotatePre.Visible = true;
                 }
 
                 DoSyncDeItem(sender, aData, aItem);
@@ -222,8 +222,8 @@ namespace EMRView
                 {
                     FTraceCount--;
 
-                    if ((FTraceCount == 0) && (this.AnnotatePre.Visible) && (this.AnnotatePre.Count == 0))
-                        this.AnnotatePre.Visible = false;
+                    //if ((FTraceCount == 0) && (this.AnnotatePre.Visible) && (this.AnnotatePre.Count == 0))
+                    //    this.AnnotatePre.Visible = false;
                 }
             }
 

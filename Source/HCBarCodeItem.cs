@@ -9,55 +9,57 @@
 {                                                       }
 {*******************************************************/
 
+using HC.Win32;
 using System;
 using System.IO;
-using HC.Win32;
-using System.Drawing;
 
 namespace HC.View
 {
     public class HCBarCodeItem : HCResizeRectItem
     {
-        private string FText;
+        private HCCode128 FCode128;
+
+        protected void DoCodeWidthChanged(object sender, EventArgs e)
+        {
+            this.Width = FCode128.Width;
+        }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom,
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            using (Image vImage = SharpZXingBarCode.Create(FText, 3, Width, Height))
-            {
-                if (vImage != null)
-                {
-                    if (aPaintInfo.Print)
-                        aCanvas.StretchPrintDrawImage(aDrawRect, vImage);
-                    else
-                        aCanvas.StretchDraw(aDrawRect, vImage);
-                }
-            }
-            // 绘制一维码
+            FCode128.PaintTo(aCanvas, aDrawRect);
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
                 aCanvas, aPaintInfo);
         }
 
+        protected override void SetWidth(int value)
+        {
+            base.SetWidth(FCode128.Width);
+        }
+
+        protected override void SetHeight(int value)
+        {
+            base.SetHeight(value);
+            FCode128.Height = this.Height;
+        }
 
         protected override string GetText()
         {
-            return FText;
+            return FCode128.Text;
         }
 
         protected override void SetText(string value)
         {
-            if (FText != value)
-            {
-                FText = value;
-            }
+            FCode128.Text = value;
         }
 
         public HCBarCodeItem(HCCustomData aOwnerData, string aText) : base(aOwnerData)
         {
             StyleNo = HCStyle.BarCode;
-            Width = 100;
+            FCode128 = new HCCode128(aText);
+            FCode128.OnWidthChanged = DoCodeWidthChanged;
+            Width = FCode128.Width;
             Height = 100;
-            SetText(aText);
         }
 
         ~HCBarCodeItem()
@@ -65,46 +67,43 @@ namespace HC.View
 
         }
 
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FCode128.Text = (source as HCBarCodeItem).Text;
+        }
+
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            HC.HCSaveTextToStream(aStream, FText);
+            HC.HCSaveTextToStream(aStream, FCode128.Text);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
+            string vText = "";
+            HC.HCLoadTextFromStream(aStream, ref vText, aFileVersion);
+            FCode128.Text = vText;
         }
 
         public override void ToXml(System.Xml.XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.InnerText = FText;
+            aNode.InnerText = FCode128.Text;
         }
 
         public override void ParseXml(System.Xml.XmlElement aNode)
         {
             base.ParseXml(aNode);
-            FText = aNode.InnerText;
+            FCode128.Text = aNode.InnerText;
         }
 
         /// <summary> 约束到指定大小范围内 </summary>
         public override void RestrainSize(int aWidth, int aHeight)
         {
-            if (Width > aWidth)
-            {
-                Single vBL = (float)Width / aWidth;
-                Width = aWidth;
-                Height = (int)Math.Round(Height / vBL);
-            }
-
-            if (Height > aHeight)
-            {
-                Single vBL = (float)Height / aHeight;
+            if (Height != aHeight)
                 Height = aHeight;
-                Width = (int)Math.Round(Width / vBL);
-            }
         }
     }
 }
