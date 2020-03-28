@@ -349,8 +349,6 @@ namespace HC.View
 
             FStyle.UpdateInfo.Selecting = false;
             FStyle.UpdateInfo.Draging = false;
-
-            base.OnMouseUp(e);
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)
@@ -640,26 +638,26 @@ namespace HC.View
                 }
             }
             else
-                if (vIData.GetDataPresent(DataFormats.Text))
-                    FData.InsertText(Clipboard.GetText());
-                else
-                    if (vIData.GetDataPresent(DataFormats.Bitmap))
-                    {
-                        Image vImage = (Image)vIData.GetData(typeof(Bitmap));
+            if (vIData.GetDataPresent(DataFormats.Text))
+                FData.InsertText(Clipboard.GetText());
+            else
+            if (vIData.GetDataPresent(DataFormats.Bitmap))
+            {
+                Image vImage = (Image)vIData.GetData(typeof(Bitmap));
 
-                        HCRichData vTopData = FData.GetTopLevelData() as HCRichData;
-                        HCImageItem vImageItem = new HCImageItem(vTopData);
+                HCRichData vTopData = FData.GetTopLevelData() as HCRichData;
+                HCImageItem vImageItem = new HCImageItem(vTopData);
 
-                        vImageItem.Image = new Bitmap(vImage);
+                vImageItem.Image = new Bitmap(vImage);
 
-                        vImageItem.Width = vImageItem.Image.Width;
-                        vImageItem.Height = vImageItem.Image.Height;
+                vImageItem.Width = vImageItem.Image.Width;
+                vImageItem.Height = vImageItem.Image.Height;
 
 
-                        vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
+                vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
 
-                        FData.InsertItem(vImageItem);
-                    }
+                FData.InsertItem(vImageItem);
+            }
         }
 
         protected bool DataChangeByAction(HCFunction aFun)

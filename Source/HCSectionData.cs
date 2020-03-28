@@ -167,18 +167,21 @@ namespace HC.View
         {
             bool vResult = false;
 
-            if ((e.Button == MouseButtons.Left) && (FMouseDownIndex >= 0))
+            if (e.Button == MouseButtons.Left)
             {
                 if (this.ReadOnly)
                     return true;
 
-                HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
-                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, 
-                    e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
-                vResult = vFloatItem.MouseMove(vMouseArgs);
+                if (FMouseDownIndex >= 0)
+                {
+                    HCCustomFloatItem vFloatItem = FFloatItems[FMouseDownIndex];
+                    MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
+                        e.X - vFloatItem.Left, e.Y - vFloatItem.Top, e.Delta);
+                    vResult = vFloatItem.MouseMove(vMouseArgs);
 
-                if (vResult)
-                    Style.UpdateInfoRePaint();
+                    if (vResult)
+                        Style.UpdateInfoRePaint();
+                }
             }
             else  // 普通鼠标移动
             {

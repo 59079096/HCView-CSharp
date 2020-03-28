@@ -60,7 +60,7 @@ namespace HC.View
 
     public class HCRadioGroup : HCControlItem
     {
-        private bool FMultSelect, FMouseIn;
+        private bool FMultSelect, FMouseIn, FItemHit;
         private HCList<HCRadioButton> FItems;
         private HCRadioStyle FRadioStyle = HCRadioStyle.Radio;
         public static byte RadioButtonWidth = 16;
@@ -68,20 +68,31 @@ namespace HC.View
         private int GetItemAt(int x, int y)
         {
             int Result = -1;
-            this.OwnerData.Style.ApplyTempStyle(TextStyleNo);
-            
-            //SIZE vSize = new SIZE();
+
+            if (FItemHit)
+                this.OwnerData.Style.ApplyTempStyle(TextStyleNo);
+
+            SIZE vSize = new SIZE();
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
-                //vSize = this.OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
-                //if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
-                //    RadioButtonWidth + vSize.cx, vSize.cy), x, y))
-
-                if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
-                    RadioButtonWidth, RadioButtonWidth), x, y))
+                if (FItemHit)
                 {
-                    Result = i;
-                    break;
+                    vSize = this.OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
+                    if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
+                        RadioButtonWidth + vSize.cx, vSize.cy), x, y))
+                    {
+                        Result = i;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
+                        RadioButtonWidth, RadioButtonWidth), x, y))
+                    {
+                        Result = i;
+                        break;
+                    }
                 }
             }
 
@@ -230,6 +241,7 @@ namespace HC.View
         {
             this.StyleNo = HCStyle.RadioGroup;
             Width = 100;
+            FItemHit = false;
             FItems = new HCList<HCRadioButton>();
             FItems.OnInsert += new EventHandler<NListEventArgs<HCRadioButton>>(DoItemNotify);
         }

@@ -97,7 +97,7 @@ namespace HC.View
             FirstIndent = 0;
             LeftIndent = 0;
             RightIndent = 0;
-            FLineSpaceMode = ParaLineSpaceMode.pls100;
+            FLineSpaceMode = ParaLineSpaceMode.pls150;
             FLineSpace = 1;
             FBreakRough = false;
             FBackColor = Color.Silver;

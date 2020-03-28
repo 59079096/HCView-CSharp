@@ -24,7 +24,7 @@ namespace HC.View
     public class HCCheckBoxItem : HCControlItem
     {
         private string FText;
-        private bool FChecked, FMouseIn;
+        private bool FChecked, FMouseIn, FItemHit;
 
         private RECT GetBoxRect()
         {
@@ -67,8 +67,19 @@ namespace HC.View
 
         public override bool MouseUp(MouseEventArgs e)
         {
-            if (OwnerData.CanEdit() && HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
-                Checked = !FChecked;
+            if (OwnerData.CanEdit())
+            {
+                if (FItemHit)
+                {
+                    OwnerData.Style.ApplyTempStyle(TextStyleNo);
+                    SIZE vSize = OwnerData.Style.TempCanvas.TextExtent(FText);
+                    if (HC.PtInRect(HC.Bounds(FPaddingLeft, 0, FPaddingLeft + CheckBoxSize + FPaddingLeft + vSize.cx, vSize.cy), e.X, e.Y))
+                        Checked = !FChecked;
+                }
+                else
+                if (HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
+                    Checked = !FChecked;
+            }
 
             return base.MouseUp(e);            
         }
@@ -144,6 +155,7 @@ namespace HC.View
             FChecked = aChecked;
             FText = aText;
             FMouseIn = false;
+            FItemHit = false;
             FPaddingLeft = 2;
         }
 

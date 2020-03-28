@@ -34,8 +34,8 @@ namespace HC.View
             /// <summary> 光标在RectItem后面 </summary>
             OffsetAfter = 2,
 
-            MinRowHeight = 10,
-            MinColWidth = 10;
+            MinRowHeight = 20,
+            MinColWidth = 20;
 
         public static Color clActiveBorder = Color.FromArgb(180, 180, 180);
         public static Color clBtnFace = Color.FromArgb(0xF0, 0xF0, 0xF0);
@@ -91,6 +91,8 @@ namespace HC.View
             #endif
                 ,
             DontLineLastChar = @"/\＼“‘",
+            /// <summary> 可以挤压宽度的字符 </summary>
+            LineSqueezeChar = "，。；、？“”",
             sLineBreak = "\r\n",
             HC_EXT = ".hcf",
             HC_EXT_DOCX = ".docx",
@@ -752,6 +754,11 @@ namespace HC.View
             {
                 return Image.FromStream(vStream);
             }
+        }
+
+        public static string HCDeleteBreak(string s)
+        {
+            return s.Replace(sLineBreak, "");
         }
 
         public static CharType GetUnicodeCharType(uint aChar)

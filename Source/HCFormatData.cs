@@ -525,6 +525,7 @@ namespace HC.View
             int viPlaceOffset,  // 能放下第几个字符
             viBreakOffset,  // 第几个字符放不下
             vFirstCharWidth;  // 第一个字符的宽度
+            bool vSqueeze = false;
 
             vLineFirst = vParaFirst || ((aPos.X == aFmtLeft) && (DrawItems[aLastDrawItemNo].Width != 0));
             viBreakOffset = 0;  // 换行位置，第几个字符放不下
@@ -534,12 +535,36 @@ namespace HC.View
                 viBreakOffset = 1;
             else
             {
-                for (int i = aCharOffset - 1; i <= vItemLen - 1; i++)
+                if (Style.FormatVersion == 2)
                 {
-                    if (vCharWidths[i] - aBasePos > aPlaceWidth)
+                    vSqueeze = false;
+                    for (int i = aCharOffset - 1; i <= vItemLen - 1; i++)
                     {
-                        viBreakOffset = i + 1;
-                        break;
+                        if (vCharWidths[i] - aBasePos > aPlaceWidth)
+                        {
+                            if (HC.PosCharHC(vText[i], HC.LineSqueezeChar) > 0)
+                            {
+                                if (vCharWidths[i] - aBasePos - aPlaceWidth > 3)  // (vCharWidths[i] - vCharWidths[i - 1]) / 2
+                                {
+                                    vSqueeze = true;
+                                    continue;
+                                }
+                            }
+
+                            viBreakOffset = i + 1;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = aCharOffset - 1; i <= vItemLen - 1; i++)
+                    {
+                        if (vCharWidths[i] - aBasePos > aPlaceWidth)
+                        {
+                            viBreakOffset = i + 1;
+                            break;
+                        }
                     }
                 }
             }
@@ -641,7 +666,10 @@ namespace HC.View
                     NewDrawItem(aItemNo, aOffset + aCharOffset - 1, viPlaceOffset - aCharOffset + 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
                     vParaFirst = false;
 
-                    vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
+                    if (vSqueeze)
+                        vRemainderWidth = 0;
+                    else
+                        vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
 
                     FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
 

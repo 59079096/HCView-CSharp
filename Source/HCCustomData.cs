@@ -541,6 +541,30 @@ namespace HC.View
                     return vLineSpacing;
             }
 
+            if (FStyle.FormatVersion == 2)
+            {
+                switch (aParaStyle.LineSpaceMode)
+                {
+                    case ParaLineSpaceMode.pls115:
+                        Result = Result + (int)Math.Round(aTextStyle.TextMetric_tmHeight * 0.15);
+                        break;
+
+                    case ParaLineSpaceMode.pls150:
+                        Result = Result + (int)Math.Round(aTextStyle.TextMetric_tmHeight * 0.5);
+                        break;
+
+                    case ParaLineSpaceMode.pls200:
+                        Result = Result + aTextStyle.TextMetric_tmHeight;
+                        break;
+
+                    case ParaLineSpaceMode.plsMult:
+                        Result = Result + (int)Math.Round(aTextStyle.TextMetric_tmHeight * aParaStyle.LineSpace);
+                        break;
+                }
+
+                return Result;
+            }
+
             ushort vAscent = 0, vDescent = 0;
             if ((aTextStyle.OutMetSize > 0) && aTextStyle.CJKFont)
             {

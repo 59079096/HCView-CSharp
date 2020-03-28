@@ -595,7 +595,7 @@ namespace HC.View
             bool vDrawCellData = false, vDrawDefault, vDrawBorder;
             HCTableCellData vCellData;
             RECT vCellRect;
-            int vFixHeight = GetFixRowHeight();
+            //int vFixHeight = GetFixRowHeight();
             int vBorderOffs = FBorderWidthPix / 2;
             bool vFirstDrawRowIsBreak = false;
             int vCellDataDrawTop = aDrawRect.Top + FBorderWidthPix;  // 第1行数据绘制起始位置，因为边框在ADrawRect.Top也占1像素，所以要减掉
@@ -2311,6 +2311,7 @@ namespace HC.View
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
             this.SizeChanged = true;
+            this.FormatDirty();
 
             return true;
         }
@@ -2349,7 +2350,8 @@ namespace HC.View
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
             this.SizeChanged = true;
-
+            this.FormatDirty();
+            
             return true;
         }
 
@@ -2383,6 +2385,7 @@ namespace HC.View
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
             this.SizeChanged = true;
+            this.FormatDirty();
 
             return true;
         }
@@ -2415,6 +2418,7 @@ namespace HC.View
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
             this.SizeChanged = true;
+            this.FormatDirty();
 
             return true;
         }
@@ -4842,7 +4846,8 @@ namespace HC.View
                     }
                 }
             }
-            
+
+            this.FormatDirty();
             return true;
         }
 
@@ -4961,7 +4966,8 @@ namespace HC.View
                     }
                 }
             }
-            
+
+            this.FormatDirty();
             return true;
         }
 

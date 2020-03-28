@@ -169,6 +169,7 @@ namespace HC.View
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
             FLineSpaceMin = 8;
             FShowParaLastMark = true;
+            FFormatVersion = 2;
             FStates = new HCStates();
             FUpdateInfo = new UpdateInfo();
             FTextStyles = new List<HCTextStyle>();
