@@ -22,15 +22,10 @@ namespace HC.View
 {
     public delegate POINT GetScreenCoordEventHandler(int x, int y);
 
-    public delegate HCCustomFloatItem FloatStyleItemEventHandler(HCSectionData aData, int aStyleNo);
-    public delegate void DataFloatItemEventHandler(HCSectionData aData, HCCustomFloatItem aItem);
-
     public class HCSectionData : HCViewData
     {
         private EventHandler FOnReadOnlySwitch;
         private GetScreenCoordEventHandler FOnGetScreenCoord;
-        private FloatStyleItemEventHandler FOnCreateFloatItemByStyle;
-        private DataFloatItemEventHandler FOnInsertFloatItem;
 
         private HCFloatItems FFloatItems;  // THCItems支持Add时控制暂时不用
         int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex;
@@ -56,8 +51,7 @@ namespace HC.View
 
         private void DoInsertFloatItem(HCCustomFloatItem aItem)
         {
-            if (FOnInsertFloatItem != null)
-                FOnInsertFloatItem(this, aItem);
+            DoInsertItem(aItem);
         }
 
         protected override void SetReadOnly(bool value)
@@ -170,7 +164,7 @@ namespace HC.View
             if (e.Button == MouseButtons.Left)
             {
                 if (this.ReadOnly)
-                    return true;
+                    return vResult;
 
                 if (FMouseDownIndex >= 0)
                 {
@@ -460,18 +454,6 @@ namespace HC.View
         {
             get { return FOnGetScreenCoord; }
             set { FOnGetScreenCoord = value; }
-        }
-
-        public FloatStyleItemEventHandler OnCreateFloatItemByStyle
-        {
-            get { return FOnCreateFloatItemByStyle; }
-            set { FOnCreateFloatItemByStyle = value; }
-        }
-
-        public DataFloatItemEventHandler OnInsertFloatItem
-        {
-            get { return FOnInsertFloatItem; }
-            set { FOnInsertFloatItem = value; }
         }
     }
 

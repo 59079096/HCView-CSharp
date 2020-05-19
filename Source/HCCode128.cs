@@ -1,4 +1,15 @@
-﻿using HC.Win32;
+﻿/*******************************************************}
+{                                                       }
+{               HCView V1.1  作者：荆通                 }
+{                                                       }
+{      本代码遵循BSD协议，你可以加入QQ群 649023932      }
+{            来获取更多的技术交流 2020-3-17             }
+{                                                       }
+{                 Code128条码实现单元                   }
+{                                                       }
+{*******************************************************/
+
+using HC.Win32;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -580,6 +591,7 @@ namespace HC.View
                     canvas.Font.EndUpdate();
                 }
 
+                canvas.Brush.Style = HCBrushStyle.bsClear;
                 if (this.FCode != "")
                 {
                     canvas.TextOut(rect.Left + (rect.Width - canvas.TextWidth(this.FText)) / 2,

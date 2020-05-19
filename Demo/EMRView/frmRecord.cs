@@ -19,6 +19,7 @@ using HC.View;
 using HC.Win32;
 using System.IO;
 using System.Drawing.Printing;
+using System.Runtime.Remoting.Channels;
 
 namespace EMRView
 {
@@ -31,7 +32,8 @@ namespace EMRView
 
     public partial class frmRecord : Form
     {
-        //private int FMouseDownTick;
+        private bool FPopupFormShow = false;  // 防止PopupForm在不必要时创建
+        private bool FMouseInElementFire = false;
         private HCEmrView FEmrView;
         private frmRecordPop frmRecordPop;
         private EventHandler FOnSave, FOnSaveStructure, FOnChangedSwitch, FOnReadOnlySwitch;
@@ -291,7 +293,7 @@ namespace EMRView
                 FEmrView.BeginUpdate();
                 try
                 {
-                    FEmrView.SetDeGroupText(vTopData, vDomain.BeginNo, vText);
+                    FEmrView.SetDataDeGroupText(vTopData, vDomain.BeginNo, vText);
                     FEmrView.FormatSection(FEmrView.ActiveSectionIndex);
                 }
                 finally
@@ -337,7 +339,9 @@ namespace EMRView
                 FEmrView.OnPasteRequest = DoPasteRequest;
                 FEmrView.OnSyntaxPaint = DoSyntaxPaint;
                 FEmrView.ContextMenuStrip = this.pmView;
+                #if VIEWTOOL
                 FEmrView.OnTableToolPropertyClick = mniTableProperty_Click;
+                #endif
                 //
                 this.Controls.Add(FEmrView);
                 FEmrView.Dock = DockStyle.Fill;
@@ -363,22 +367,18 @@ namespace EMRView
             if (FEmrView.HideTrace != value)
             {
                 FEmrView.HideTrace = value;
+                HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
+                vAreas.Add(SectionArea.saPage);
 
                 if (value)
                 {
                     //FEmrView.AnnotatePre.Visible = false;
-
-                    HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
-                    vAreas.Add(SectionArea.saPage);
                     TraverseElement(DoHideTraceTraverse, vAreas, TTravTag.HideTrace);
                 }
                 else
                 {
                     //if ((FEmrView.TraceCount > 0) && (!FEmrView.AnnotatePre.Visible))
                     //    FEmrView.AnnotatePre.Visible = true;
-
-                    HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
-                    vAreas.Add(SectionArea.saPage);
                     TraverseElement(DoHideTraceTraverse, vAreas, 0);
                 }
 
@@ -417,7 +417,11 @@ namespace EMRView
         /// <summary> 文档垂直滚动条滚动时触发 </summary>
         private void DoVerScroll(object sender, EventArgs e)
         {
-            PopupForm().Close();
+            if (FPopupFormShow)
+            {
+                PopupForm().Close();
+                FPopupFormShow = false;
+            }
         }
 
         /// <summary> 节整页绘制前事件 </summary>
@@ -502,6 +506,20 @@ namespace EMRView
         private void DoSetActiveDeItemExtra(DeItem aDeItem, Stream aStream)
         {
             FEmrView.SetActiveItemExtra(aStream);
+        }
+
+        private bool ActiveDeItemSync(DeItem activeDeItem)
+        {
+            bool vResult = false;
+            DeItem vSameDeItem = FEmrView.FindSameDeItem(activeDeItem);
+            if (vSameDeItem != null)
+            {
+                activeDeItem[DeProp.CMVVCode] = vSameDeItem[DeProp.CMVVCode];
+                FEmrView.SetActiveItemText(vSameDeItem.Text);
+                vResult = true;
+            }
+
+            return vResult;
         }
 
         private void DoDeComboboxGetItem(object sender, EventArgs e)
@@ -617,6 +635,45 @@ namespace EMRView
                 return true;
         }
 
+        protected void DoSectionDrawItemMouseMove(object sender, HCCustomData data,
+            int itemNo, int offset, int drawItemNo, MouseEventArgs e)
+        {
+            FMouseInElementFire = false;
+            if (data.Items[itemNo].StyleNo < HCStyle.Null)
+                return;
+
+            if (!(data.Items[itemNo] as DeItem).IsElement)
+                return;
+
+            string vText = data.GetDrawItemText(drawItemNo);
+            int vLen = vText.Length;
+            if (vLen == 1)
+            {
+                RECT vRect = new RECT(data.DrawItems[drawItemNo].Rect);
+                vRect.Offset(-vRect.Left, -vRect.Top);
+                int vWf = FEmrView.Style.TempCanvas.TextWidth(vText);
+                if ((e.X > vWf / 3) && (e.X < vRect.Right - vWf / 3))
+                {
+                    HC.View.HC.GCursor = Cursors.Arrow;
+                    FMouseInElementFire = true;
+                }
+            }
+            else
+            if (vLen > 1)
+            {
+                RECT vRect = new RECT(data.DrawItems[drawItemNo].Rect);
+                vRect.Offset(-vRect.Left, -vRect.Top);
+                FEmrView.Style.TextStyles[data.Items[itemNo].StyleNo].ApplyStyle(FEmrView.Style.TempCanvas);
+                int vWf = FEmrView.Style.TempCanvas.TextWidth(vText[1]);
+                int vWl = FEmrView.Style.TempCanvas.TextWidth(vText[vLen]);
+                if ((e.X > vWf / 2) && (e.X < vRect.Right - vWl / 2))
+                {
+                    HC.View.HC.GCursor = Cursors.Arrow;
+                    FMouseInElementFire = true;
+                }
+            }
+        }
+
         protected void DoEmrViewMouseDown(object sender, MouseEventArgs e)
         {
             PopupFormClose(this, null);
@@ -629,6 +686,9 @@ namespace EMRView
             if (vActiveItem is DeItem)
             {
                 DeItem vDeItem = vActiveItem as DeItem;
+                if (FEmrView.ActiveSection.ActiveData.ReadOnly || vDeItem.EditProtect)
+                    return;
+
                 if (vDeItem.StyleEx != StyleExtra.cseNone)
                 { 
                     
@@ -638,14 +698,15 @@ namespace EMRView
                     && (vDeItem[DeProp.Index] != "")
                     && (!vDeItem.IsSelectComplate)
                     && (!vDeItem.IsSelectPart)
-                    //&& (Environment.TickCount - FMouseDownTick < 500)
+                    && (FMouseInElementFire)
                     )
                 {
+                    if (((Control.ModifierKeys & Keys.Control) == Keys.Control) && ActiveDeItemSync(vDeItem))
+                        return;
 
                     POINT vPt = FEmrView.GetTopLevelDrawItemViewCoord();  // 得到相对EmrView的坐标
                     HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
-                    RECT vDrawItemRect = vActiveDrawItem.Rect;
-                    vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vDrawItemRect.Width, vDrawItemRect.Height);
+                    RECT vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vActiveDrawItem.Rect.Width, vActiveDrawItem.Rect.Height);
 
                     if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
                     {
@@ -657,6 +718,7 @@ namespace EMRView
                         {
                             if (!PopupForm().PopupDeItem(vDeItem, vPt))  // 不用弹出框处理值时，判断首次输入直接替换原内容
                             {
+                                FPopupFormShow = false;
                                 HCViewData vData = FEmrView.ActiveSectionTopLevelData() as HCViewData;
                                 if (vData.SelectExists())
                                     return;
@@ -667,6 +729,8 @@ namespace EMRView
                                         vData.SelectInfo.StartItemNo, vData.GetItemOffsetAfter(vData.SelectInfo.StartItemNo), false);
                                 }
                             }
+                            else
+                                FPopupFormShow = true;
                         }
                     }
                 }
@@ -1253,7 +1317,7 @@ namespace EMRView
                     {
                         HCRichData vTopData = FEmrView.ActiveSectionTopLevelData() as HCRichData;
                         DeImageItem vImageItem = new DeImageItem(vTopData);
-                        vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
+                        vImageItem.LoadGraphicFile(vOpenDlg.FileName);
                         vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
                         Application.DoEvents();
                         FEmrView.InsertItem(vImageItem);
@@ -1489,7 +1553,9 @@ namespace EMRView
 
         private void MniInputHelp_Click(object sender, EventArgs e)
         {
+            #if VIEWINPUTHELP
             FEmrView.InputHelpEnable = !FEmrView.InputHelpEnable;
+            #endif
         }
 
         private void MniShapeLine_Click(object sender, EventArgs e)
@@ -1672,10 +1738,14 @@ namespace EMRView
                     mniHideTrace.Text = "不显示痕迹";
             }
 
+#if VIEWINPUTHELP
             if (FEmrView.InputHelpEnable)
                 mniInputHelp.Text = "关闭辅助输入";
             else
                 mniInputHelp.Text = "开启辅助输入";
+#else
+            mniInputHelp.Visible = false;
+#endif
         }
 
         private void mniSaveAs_Click(object sender, EventArgs e)

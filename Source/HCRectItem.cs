@@ -567,6 +567,7 @@ namespace HC.View
     public class HCDomainItem : HCCustomRectItem  // 域
     {
         private byte FLevel;
+        private RECT FDrawRect;
         private MarkType FMarkType;
 
         public static Type HCDefaultDomainItemClass = typeof(HCDomainItem);
@@ -579,43 +580,8 @@ namespace HC.View
 
             if (!aPaintInfo.Print)
             {
-                if (FMarkType == View.MarkType.cmtBeg)
-                {
-                    aCanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        aCanvas.Pen.Width = 1;
-                        aCanvas.Pen.Style = HCPenStyle.psSolid;
-                        aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
-                    }
-                    finally
-                    {
-                        aCanvas.Pen.EndUpdate();
-                    }
-                    aCanvas.MoveTo(aDrawRect.Left + 2, aDrawRect.Top - 1);
-                    aCanvas.LineTo(aDrawRect.Left, aDrawRect.Top - 1);
-                    aCanvas.LineTo(aDrawRect.Left, aDrawRect.Bottom + 1);
-                    aCanvas.LineTo(aDrawRect.Left + 2, aDrawRect.Bottom + 1);
-                }
-                else
-                {
-                    aCanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        aCanvas.Pen.Width = 1;
-                        aCanvas.Pen.Style = HCPenStyle.psSolid;
-                        aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
-                    }
-                    finally
-                    {
-                        aCanvas.Pen.EndUpdate();
-                    }
-
-                    aCanvas.MoveTo(aDrawRect.Right - 2, aDrawRect.Top - 1);
-                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Top - 1);
-                    aCanvas.LineTo(aDrawRect.Right, aDrawRect.Bottom + 1);
-                    aCanvas.LineTo(aDrawRect.Right - 2, aDrawRect.Bottom + 1);
-                }
+                FDrawRect.ReSet(aDrawRect);
+                aPaintInfo.TopItems.Add(this);
             }
         }
 
@@ -623,6 +589,7 @@ namespace HC.View
             : base(aOwnerData)
         {
             this.StyleNo = HCStyle.Domain;
+            FDrawRect = new RECT();
             FLevel = 0;
             Width = 0;
             Height = aOwnerData.Style.TextStyles[0].FontHeight;
@@ -693,6 +660,50 @@ namespace HC.View
             }
         }
 
+        public override void PaintTop(HCCanvas aCanvas)
+        {
+            base.PaintTop(aCanvas);
+
+            aCanvas.Pen.Width = 1;
+            if (FMarkType == View.MarkType.cmtBeg)
+            {
+                aCanvas.Pen.BeginUpdate();
+                try
+                {
+                    aCanvas.Pen.Width = 1;
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
+                }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
+                aCanvas.MoveTo(FDrawRect.Left + 2, FDrawRect.Top - 1);
+                aCanvas.LineTo(FDrawRect.Left, FDrawRect.Top - 1);
+                aCanvas.LineTo(FDrawRect.Left, FDrawRect.Bottom + 1);
+                aCanvas.LineTo(FDrawRect.Left + 2, FDrawRect.Bottom + 1);
+            }
+            else
+            {
+                aCanvas.Pen.BeginUpdate();
+                try
+                {
+                    aCanvas.Pen.Width = 1;
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
+                }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
+
+                aCanvas.MoveTo(FDrawRect.Right - 2, FDrawRect.Top - 1);
+                aCanvas.LineTo(FDrawRect.Right, FDrawRect.Top - 1);
+                aCanvas.LineTo(FDrawRect.Right, FDrawRect.Bottom + 1);
+                aCanvas.LineTo(FDrawRect.Right - 2, FDrawRect.Bottom + 1);
+            }
+        }
+
         public override bool SaveToBitmap(ref Bitmap aBitmap)
         {
             return false;
@@ -702,12 +713,15 @@ namespace HC.View
         {
             base.SaveToStream(aStream, aStart, aEnd);
             aStream.WriteByte((byte)FMarkType);
+            aStream.WriteByte(FLevel);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
             FMarkType = (MarkType)aStream.ReadByte();
+            if (aFileVersion > 38)
+                FLevel = (byte)aStream.ReadByte();
         }
 
         public override void ToXml(XmlElement aNode)

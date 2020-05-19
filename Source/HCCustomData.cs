@@ -155,6 +155,7 @@ namespace HC.View
 
     public class HCCustomData : HCObject
     {
+        HCCustomData FParentData;
         private HCStyle FStyle;
         int FCurStyleNo, FCurParaNo;
         HCItems FItems;
@@ -510,18 +511,16 @@ namespace HC.View
                     if (FItems[FDrawItems[FCaretDrawItemNo].ItemNo].StyleNo < HCStyle.Null)
                     {
                         if (FSelectInfo.StartItemOffset == HC.OffsetInner)
-                        {
                             FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
-                            DoCaretItemChanged();
-                        }
                     }
                     else
                     //if ((FSelectInfo.StartItemOffset > 0)  // 在Item上
                     //    && (FSelectInfo.StartItemOffset < FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Length))
                     {
                         FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
-                        DoCaretItemChanged();
                     }
+
+                    DoCaretItemChanged();
                 }
             }
         }
@@ -713,6 +712,7 @@ namespace HC.View
 
         public HCCustomData(HCStyle aStyle)
         {
+            FParentData = null;
             FStyle = aStyle;
             FDrawItems = new HCDrawItems();
             FItems = new HCItems();
@@ -1811,12 +1811,19 @@ namespace HC.View
                 return Result;
             else
             {
-                Result = GetDrawItemNoByOffset(FSelectInfo.StartItemNo,
-                    FSelectInfo.StartItemOffset);
+                Result = GetDrawItemNoByOffset(FSelectInfo.StartItemNo, FSelectInfo.StartItemOffset);
 
-                if ((FSelectInfo.EndItemNo >= 0) && (Result < FItems.Count - 1)
-                  && (FDrawItems[Result].CharOffsetEnd() == FSelectInfo.StartItemOffset))
-                    Result++;
+                if ((FSelectInfo.EndItemNo >= 0) && (Result < FItems.Count - 1))
+                {
+                    if (FItems[FSelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+                    {
+                        if (FSelectInfo.StartItemOffset == HC.OffsetAfter)
+                            Result++;
+                    }
+                    else
+                    if (FDrawItems[Result].CharOffsetEnd() == FSelectInfo.StartItemOffset)
+                        Result++;
+                }
             }
 
             return Result;
@@ -2072,7 +2079,7 @@ namespace HC.View
                 ||
                 (
                     (vSelStartDItemNo == aFristDItemNo)
-                    && (SelectInfo.StartItemOffset == FDrawItems[vSelStartDItemNo].CharOffs)
+                    && (SelectInfo.StartItemOffset == FDrawItems[vSelStartDItemNo].CharOffsetStart())
                 )
             )
             &&
@@ -2081,7 +2088,7 @@ namespace HC.View
                 ||
                 (
                     (vSelEndDItemNo == aLastDItemNo)
-                    && (SelectInfo.EndItemOffset == FDrawItems[vSelEndDItemNo].CharOffs + FDrawItems[vSelEndDItemNo].CharLen)
+                    && (SelectInfo.EndItemOffset == FDrawItems[vSelEndDItemNo].CharOffsetEnd())
                 )
             );
     }
@@ -2622,15 +2629,30 @@ namespace HC.View
                     for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
                     {
                         if (DoSaveItem(i))
-                            Result = Result + FItems[i].Text;
+                        {
+                            if (FItems[i].ParaFirst)
+                                Result = Result + HC.sLineBreak + FItems[i].Text;
+                            else
+                                Result = Result + FItems[i].Text;
+                        }
                     }
 
                     if (DoSaveItem(aEndItemNo))
                     {
                         if (FItems[aEndItemNo].StyleNo > HCStyle.Null)
+                        {
+                            if (FItems[aEndItemNo].ParaFirst)
+                                Result = Result + HC.sLineBreak;
+
                             Result = Result + (FItems[aEndItemNo] as HCTextItem).SubString(1, aEndOffset);
+                        }
                         else
+                        {
+                            if (FItems[aEndItemNo].ParaFirst)
+                                Result = Result + HC.sLineBreak;
+
                             Result = (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
+                        }
                     }
                 }
                 else  // 选中在同一Item
@@ -2753,6 +2775,12 @@ namespace HC.View
 
             if (FItems[0].Length == 0)  // 删除Clear后默认的第一个空行Item
                 FItems.Delete(0);
+        }
+
+        public HCCustomData ParentData
+        {
+            get { return FParentData; }
+            set { FParentData = value; }
         }
 
         public HCStyle Style

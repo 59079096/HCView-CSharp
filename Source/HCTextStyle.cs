@@ -185,6 +185,7 @@ namespace HC.View
         public void AssignEx(HCTextStyle aSource)
         {
             this.FSize = aSource.Size;
+            this.FFontHeight = aSource.FontHeight;
             this.FFontStyles.Value = aSource.FontStyles.Value;
             this.FFamily = aSource.Family;
             this.FColor = aSource.Color;

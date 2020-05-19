@@ -10,6 +10,7 @@
 using HC.View;
 using HC.Win32;
 using System;
+using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
@@ -197,6 +198,10 @@ namespace EMRView
 
             if (FFrmtp == DeFrmtp.Number)  // 数值
             {
+                FTemplate = false;
+                FTemp = false;
+                FConCalcValue = false;
+
                 if (aDeItem[DeProp.Unit] != "")
                     tbxValue.Text = aDeItem.Text.Replace(aDeItem[DeProp.Unit], "");
                 else
@@ -219,6 +224,8 @@ namespace EMRView
                 }
                 else
                     cbbUnit.Text = aDeItem[DeProp.Unit];
+
+                cbxHideUnit.Checked = aDeItem[DeProp.HideUnit] == "1";
 
                 tabPop.SelectedIndex = 1;
                 this.Width = 185;
@@ -369,13 +376,18 @@ namespace EMRView
                 if (!cbxHideUnit.Checked)
                     vText += cbbUnit.Text;
 
-                FDeItem[DeProp.Unit] = cbbUnit.Text;
-
                 bool vCancel = false;
                 SetDeItemValue(vText, ref vCancel);
-
                 if (!vCancel)
+                {
+                    FDeItem[DeProp.Unit] = cbbUnit.Text;
+                    if (cbxHideUnit.Checked)
+                        FDeItem[DeProp.HideUnit] = "1";
+                    else
+                        FDeItem.DeleteProperty(DeProp.HideUnit);
+
                     this.Close();
+                }
             }
         }
 

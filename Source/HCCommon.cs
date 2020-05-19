@@ -123,11 +123,12 @@ namespace HC.View
             // 3.6 Combobox和RadioGrou的选项改为键值对的形式
             // 3.7 兼容Combobox无下拉选项时保存选项后打不开的问题
             // 3.8 浮动Item增加Lock属性用于锁定Item不可移动和修改
+            // 3.9 域Item保存时存Level
 
-            HC_FileVersion = "3.8";
+            HC_FileVersion = "3.9";
 
         public const ushort
-            HC_FileVersionInt = 38;
+            HC_FileVersionInt = 39;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -848,6 +849,46 @@ namespace HC.View
         public static void InflateRect(ref RECT ARect, int x, int y)
         {
             ARect.Inflate(x, y);
+        }
+
+        public static void HCDrawArrow(HCCanvas canvas, Color color, int left, int top, byte type)
+        {
+            switch (type)
+            {
+                case 0:  // 上
+                    canvas.Pen.Color = color;
+                    canvas.MoveTo(left, top);
+                    canvas.LineTo(left - 1, top);
+                    canvas.MoveTo(left - 1, top + 1);
+                    canvas.LineTo(left + 2, top + 1);
+                    canvas.MoveTo(left - 2, top + 2);
+                    canvas.LineTo(left + 3, top + 2);
+                    canvas.MoveTo(left - 3, top + 3);
+                    canvas.LineTo(left + 4, top + 3);
+                    canvas.MoveTo(left - 4, top + 4);
+                    canvas.LineTo(left + 5, top + 4);
+                    break;
+
+                case 1:  // 下
+                    canvas.Pen.Color = color;
+                    canvas.MoveTo(left, top);
+                    canvas.LineTo(left - 1, top);
+                    canvas.MoveTo(left - 1, top - 1);
+                    canvas.LineTo(left + 2, top - 1);
+                    canvas.MoveTo(left - 2, top - 2);
+                    canvas.LineTo(left + 3, top - 2);
+                    canvas.MoveTo(left - 3, top - 3);
+                    canvas.LineTo(left + 4, top - 3);
+                    canvas.MoveTo(left - 4, top - 4);
+                    canvas.LineTo(left + 5, top - 4);
+                    break;
+
+                case 2:  // 左
+                    break;
+
+                case 3:  // 右
+                    break;
+            }
         }
     }
 

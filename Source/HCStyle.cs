@@ -121,6 +121,8 @@ namespace HC.View
         private List<HCParaStyle> FParaStyles;
         private UpdateInfo FUpdateInfo;
         private bool FShowParaLastMark;  // 是否显示换行符
+        private bool FDrawActiveDomainRegion;
+        private bool FDrawHotDomainRegion;
         private int FHtmlFileTempName;
         private HCStates FStates;  // 全局操作状态
         private Byte FFormatVersion = 1;  // 排版算法版本
@@ -168,13 +170,16 @@ namespace HC.View
             FBackgroundColor = Color.FromArgb(255, 255, 255);
             FSelColor = Color.FromArgb(0xA6, 0xCA, 0xF0);
             FLineSpaceMin = 8;
-            FShowParaLastMark = true;
             FFormatVersion = 2;
+            FShowParaLastMark = true;
+            FDrawHotDomainRegion = true;
+            FDrawActiveDomainRegion = true;
             FStates = new HCStates();
             FUpdateInfo = new UpdateInfo();
             FTextStyles = new List<HCTextStyle>();
             FParaStyles = new List<HCParaStyle>();
             FDefaultTextStyle = new HCTextStyle();
+            FDefaultTextStyle.ApplyStyle(FTempCanvas);
         }
 
         public HCStyle(bool aDefTextStyle, bool aDefParaStyle) : this()
@@ -255,6 +260,7 @@ namespace HC.View
         {
             HCTextStyle vTextStyle = new HCTextStyle();
             FTextStyles.Add(vTextStyle);
+            vTextStyle.ApplyStyle(FTempCanvas);
             return FTextStyles.Count - 1;
         }
 
@@ -527,6 +533,18 @@ namespace HC.View
         public UpdateInfo UpdateInfo
         {
             get { return FUpdateInfo; }
+        }
+
+        public bool DrawActiveDomainRegion
+        {
+            get { return FDrawActiveDomainRegion; }
+            set { FDrawActiveDomainRegion = value; }
+        }
+
+        public bool DrawHotDomainRegion
+        {
+            get { return FDrawHotDomainRegion; }
+            set { FDrawHotDomainRegion = value; }
         }
 
         public bool ShowParaLastMark

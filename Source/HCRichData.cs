@@ -23,6 +23,7 @@ namespace HC.View
     public delegate bool TextItemActionEventHandler(HCTextItem aTextItem);
     public delegate bool RectItemActionEventHandler(HCCustomRectItem aRectItem);
     public delegate void ItemMouseEventHandler(HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e);
+    public delegate void DrawItemMouseEventHandle(HCCustomData data, int itemNo, int offset, int drawItemNo, MouseEventArgs e);
 
     public class HCRichData : HCUndoData
     {
@@ -47,6 +48,7 @@ namespace HC.View
         private bool FReadOnly, FSelecting, FDraging;
         private DataItemNoEventHandler FOnItemResized;
         private ItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
+        private DrawItemMouseEventHandle FOnDrawItemMouseMove;
         private EventHandler FOnCreateItem;  // 新建了Item(目前主要是为了打字和用中文输入法输入英文时痕迹的处理)
         private DataActionEventHandler FOnAcceptAction;
 
@@ -261,6 +263,7 @@ namespace HC.View
             FMouseDownItemOffset = -1;
             FMouseMoveItemNo = -1;
             FMouseMoveItemOffset = -1;
+            FMouseMoveDrawItemNo = -1;
             FMouseMoveRestrain = false;
             FSelecting = false;
             FDraging = false;
@@ -392,6 +395,9 @@ namespace HC.View
                     if (SelectInfo.EndItemNo >= 0)
                         Items[SelectInfo.EndItemNo].DisSelect();
 
+                    if ((aStartItemOffset == 0) || (aStartItemOffset == GetItemOffsetAfter(SelectInfo.StartItemNo)))  // 回到两头
+                        Items[SelectInfo.StartItemNo].DisSelect();
+
                     SelectInfo.StartItemNo = aStartItemNo;
                     SelectInfo.StartItemOffset = aStartItemOffset;
                     SelectInfo.EndItemNo = -1;
@@ -480,6 +486,12 @@ namespace HC.View
                 vResult = FOnAcceptAction(this, aItemNo, aOffset, aAction);
 
             return vResult;
+        }
+
+        protected virtual void DoDrawItemMouseMove(HCCustomData data, int itemNo, int offset, int drawItemNo, MouseEventArgs e)
+        {
+            if (FOnDrawItemMouseMove != null)
+                FOnDrawItemMouseMove(data, itemNo, offset, drawItemNo, e);
         }
 
         /// <summary> 用于从流加载完Items后，检查不合格的Item并删除 </summary>
@@ -598,6 +610,14 @@ namespace HC.View
                         Result = new HCSupSubScriptItem(this, "", "");
                         break;
 
+                    case HCStyle.FloatLine:
+                        Result = new HCFloatLineItem(this);
+                        break;
+
+                    case HCStyle.FloatBarCode:
+                        Result = new HCFloatBarCodeItem(this);
+                        break;
+
                     default:
                         throw new Exception("未找到类型 " + aStyleNo.ToString() + " 对应的创建Item代码！");
                 }
@@ -616,11 +636,12 @@ namespace HC.View
 
         public override bool CanEdit()
         {
-            bool Result = !FReadOnly;
-            if (!Result)
-                User.MessageBeep(0);
+            bool vResult = !FReadOnly;
+            if (vResult && (this.ParentData != null))
+                vResult = this.ParentData.CanEdit();
+            //User.MessageBeep(0);
 
-            return Result;
+            return vResult;
         }
 
         public override void Clear()
@@ -1419,7 +1440,10 @@ namespace HC.View
                             }
 
                             if (SelectInfo.StartItemNo > vFormatFirstItemNo)
+                            {
                                 SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
+                                SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
+                            }
                         }
                         else
                         {
@@ -2256,6 +2280,9 @@ namespace HC.View
                     return;
                 }
 
+                if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actSetItemText))
+                    return;
+
                 Undo_New();
                 UndoAction_SetItemText(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, aText);
                 Items[SelectInfo.StartItemNo].Text = aText;
@@ -2386,7 +2413,7 @@ namespace HC.View
         }
 
         #region MouseMove子方法
-        private void DoItemMouseMove(int aItemNo, int aOffset, MouseEventArgs e)
+        private void DoItemMouseMove(int aItemNo, int aOffset, MouseEventArgs e, bool aDrawItemMouseMove = false)
         {
             if (aItemNo < 0)
                 return;
@@ -2396,6 +2423,9 @@ namespace HC.View
 
             MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
             Items[aItemNo].MouseMove(vMouseArgs);
+
+            if (aDrawItemMouseMove)
+                DoDrawItemMouseMove(this, aItemNo, aOffset, FMouseMoveDrawItemNo, vMouseArgs);
         }
         #endregion
 
@@ -2461,6 +2491,7 @@ namespace HC.View
 
                     AdjustSelectRange(ref FMouseDownItemNo, ref FMouseDownItemOffset,
                       ref FMouseMoveItemNo, ref FMouseMoveItemOffset);  // 确定SelectRang
+
                     FSelectSeekNo = FMouseMoveItemNo;
                     FSelectSeekOffset = FMouseMoveItemOffset;
 
@@ -2469,7 +2500,7 @@ namespace HC.View
                     else
                         CaretDrawItemNo = FMouseMoveDrawItemNo;  // 按下上一下DrawItem最后，划选到下一个开始时，没有选中内容，要更换CaretDrawIemNo
                     
-                    if ((!vRestrain) && (Items[FMouseMoveItemNo].StyleNo < HCStyle.Null))
+                    if ((Items[FMouseMoveItemNo].StyleNo < HCStyle.Null) && (FMouseDownItemOffset == HC.OffsetInner))
                         DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
 
                     Style.UpdateInfoRePaint();
@@ -2522,7 +2553,7 @@ namespace HC.View
 
                         if (!vRestrain)
                         {
-                            DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
+                            DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e, true);
                             if ((Control.ModifierKeys & Keys.Control) == Keys.Control
                                 && (Items[FMouseMoveItemNo].HyperLink != ""))
                                 HC.GCursor = Cursors.Hand;
@@ -2612,11 +2643,13 @@ namespace HC.View
             {
                 FSelecting = false;
                 // 选中范围内的RectItem取消划选状态(此时表格的FSelecting为True)
-                //if SelectInfo.StartItemNo >= 0 then
-                for (int i = SelectInfo.StartItemNo; i <= SelectInfo.EndItemNo; i++)
+                if (SelectInfo.StartItemNo >= 0)
                 {
-                    if ((i != vUpItemNo) && (Items[i].StyleNo < HCStyle.Null))
-                        DoItemMouseUp(i, 0, e);
+                    for (int i = SelectInfo.StartItemNo; i <= SelectInfo.EndItemNo; i++)
+                    {
+                        if ((i != vUpItemNo) && (Items[i].StyleNo < HCStyle.Null))
+                            DoItemMouseUp(i, 0, e);
+                    }
                 }
 
                 if (SelectInfo.EndItemNo < 0)  // 在RectItem里划选或TextItem划选回起始位置
@@ -2687,6 +2720,7 @@ namespace HC.View
                 DoItemMouseLeave(FMouseMoveItemNo);
                 FMouseMoveItemNo = -1;
                 FMouseMoveItemOffset = -1;
+                FMouseMoveDrawItemNo = -1;
                 Style.UpdateInfoRePaint();
             }
         }
@@ -4922,7 +4956,10 @@ namespace HC.View
             GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
 
             if (Items[aStartNo].ParaFirst && (vFormatFirstDrawItemNo > 0))
+            {
                 vFormatFirstDrawItemNo--;
+                vFormatFirstDrawItemNo = GetFormatFirstDrawItem(vFormatFirstDrawItemNo);
+            }
 
             FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
@@ -5786,6 +5823,11 @@ namespace HC.View
             get { return FMouseMoveRestrain; }
         }
 
+        public int HotDrawItemNo
+        {
+            get { return FMouseMoveDrawItemNo; }
+        }
+
         public int Height
         {
             get { return GetHeight(); }
@@ -5818,6 +5860,12 @@ namespace HC.View
         {
             get { return FOnItemMouseUp; }
             set { FOnItemMouseUp = value; }
+        }
+
+        public DrawItemMouseEventHandle OnDrawItemMouseMove
+        {
+            get { return FOnDrawItemMouseMove; }
+            set { FOnDrawItemMouseMove = value; }
         }
 
         public EventHandler OnCreateItem

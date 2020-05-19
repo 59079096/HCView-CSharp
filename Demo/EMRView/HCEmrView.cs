@@ -23,15 +23,23 @@ namespace EMRView
     public delegate void SyncDeItemEventHandle(object sender, HCCustomData aData, HCCustomItem aItem);
     public delegate bool HCCopyPasteStreamEventHandler(Stream aStream);
 
-    public class HCEmrView : HCEmrViewIH
+    public class HCEmrView :
+        #if VIEWINPUTHELP
+        HCEmrViewIH
+        #else
+        HCView
+        #endif
     {
         private bool FDesignMode;
         private bool FHideTrace;  // 隐藏痕迹
         private bool FTrace;  // 是否处于留痕迹状态
+        private bool FSecret;
+        private bool FTraceInfoAnnotate;
         private bool FIgnoreAcceptAction = false;
         private int FTraceCount;  // 当前文档痕迹数量
         private Color FDeDoneColor, FDeUnDoneColor, FDeHotColor;
         private string FPageBlankTip;
+        private object FPropertyObject;
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
         private HCCopyPasteEventHandler FOnCopyRequest, FOnPasteRequest;
@@ -39,6 +47,34 @@ namespace EMRView
         // 语法检查相关事件
         private DataDomainItemNoEventHandler FOnSyntaxCheck;
         private SyntaxPaintEventHandler FOnSyntaxPaint;
+
+        private void SetHideTrace(bool value)
+        {
+            if (FHideTrace != value)
+            {
+                FHideTrace = value;
+                DeItem vDeItem;
+                HCItemTraverse vItemTraverse = new HCItemTraverse();
+                vItemTraverse.Areas.Add(SectionArea.saPage);
+                vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainInfo> domainStack, ref bool stop)
+                {
+                    if (data.Items[itemNo] is DeItem)
+                    {
+                        vDeItem = data.Items[itemNo] as DeItem;
+                        if (vDeItem.StyleEx == StyleExtra.cseDel)
+                            vDeItem.Visible = !FHideTrace;
+                    }
+                };
+
+                this.TraverseItem(vItemTraverse);
+                this.FormatData();
+                if (FHideTrace)
+                {
+                    if (!this.ReadOnly)
+                        this.ReadOnly = true;
+                }
+            }
+        }
 
         private void SetPageBlankTip(string value)
         {
@@ -178,19 +214,14 @@ namespace EMRView
             if (aItem is DeItem)
             {
                 DeItem vDeItem = aItem as DeItem;
-
-                //if (aData.Style.States.Contain(HCState.hosPasting))
-                //    DoPasteItem();
-
                 if (vDeItem.StyleEx != StyleExtra.cseNone)
                 {
                     FTraceCount++;
-
-                    //if (!this.AnnotatePre.Visible)
-                    //    this.AnnotatePre.Visible = true;
+                    if (FTraceInfoAnnotate)
+                        this.AnnotatePre.InsertDataAnnotate(null);
                 }
-
-                DoSyncDeItem(sender, aData, aItem);
+                else
+                    DoSyncDeItem(sender, aData, aItem);
             }
             else
             if (aItem is DeEdit)
@@ -245,6 +276,11 @@ namespace EMRView
             return vResult;
         }
 
+        protected override bool DoSectionPaintDomainRegion(object sender, HCCustomData data, int itemNo)
+        {
+            return (data.Items[itemNo] as DeGroup)[GroupProp.SubType] != SubType.Proc;
+        }
+
         protected override void DoSectionItemMouseDown(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e)
         {
             base.DoSectionItemMouseDown(sender, aData, aItemNo, aOffset, e);
@@ -274,18 +310,18 @@ namespace EMRView
                 return true;
 
             bool vResult = base.DoSectionAcceptAction(sender, aData, aItemNo, aOffset, aAction);
-            if (vResult && !FDesignMode)
+            if (vResult)
             {
                 switch (aAction)
                 {
                     case HCAction.actBackDeleteText:
                     case HCAction.actDeleteText:
                         {
-                            if (aData.Items[aItemNo] is DeItem)
+                            if (!FDesignMode && (aData.Items[aItemNo] is DeItem))
                             {
                                 DeItem vDeItem = aData.Items[aItemNo] as DeItem;
 
-                                if (vDeItem.IsElement && (vDeItem.Length == 1))
+                                if (vDeItem.IsElement && (vDeItem.Length == 1) && vDeItem.DeleteAllow)
                                 {
                                     if (vDeItem[DeProp.Name] != "")
                                         this.SetActiveItemText(vDeItem[DeProp.Name]);
@@ -300,11 +336,22 @@ namespace EMRView
                         }
                         break;
 
+                    case HCAction.actSetItemText:
+                        {
+                            if (aData.Items[aItemNo] is DeItem)
+                            {
+                                DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+                                vDeItem.AllocValue = true;
+                            }
+                        }
+                        break;
+
                     case HCAction.actReturnItem:
                         {
                             if (aData.Items[aItemNo] is DeItem)
                             {
-                                if ((aData.Items[aItemNo] as DeItem).IsElement)
+                                DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+                                if ((aOffset > 0) && (aOffset < vDeItem.Length) && vDeItem.IsElement)
                                     vResult = false;
                             }
                         }
@@ -665,6 +712,18 @@ namespace EMRView
             if (aPaintInfo.Print)
                 return;
 
+            if (aData.Items[aItemNo] is DeGroup)
+            {
+                if (((aData.Items[aItemNo] as DeGroup).MarkType == MarkType.cmtBeg)
+                    && ((aData.Items[aItemNo] as DeGroup)[GroupProp.SubType] == SubType.Proc))
+                {
+                    aCanvas.Pen.Style = HCPenStyle.psDashDotDot;
+                    aCanvas.Pen.Color = Color.Blue;
+                    aCanvas.MoveTo(aDataDrawLeft, aDrawRect.Top - 1);
+                    aCanvas.LineTo(aDataDrawRight, aDrawRect.Top - 1);
+                }
+            }
+
             if (!(aData.Items[aItemNo] is DeItem))
                 return;
 
@@ -722,35 +781,19 @@ namespace EMRView
                 if (vDeItem.StyleEx == StyleExtra.cseDel)  // 痕迹
                 {
                     int vTextHeight = Style.TextStyles[vDeItem.StyleNo].FontHeight;
-                    int vAlignVert = User.DT_BOTTOM;
+                    int vTop = aDrawRect.Top;
                     switch (Style.ParaStyles[vDeItem.ParaNo].AlignVert)
                     {
-                        case ParaAlignVert.pavCenter:
-                            vAlignVert = User.DT_CENTER;
-                            break;
-
                         case ParaAlignVert.pavTop:
-                            vAlignVert = User.DT_TOP;
+                            vTop = aDrawRect.Top + vTextHeight / 2;
+                            break;
+
+                        case ParaAlignVert.pavCenter:
+                            vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top) / 2;
                             break;
 
                         default:
-                            vAlignVert = User.DT_BOTTOM;
-                            break;
-                    }
-
-                    int vTop = aDrawRect.Top;
-                    switch (vAlignVert)
-                    {
-                        case User.DT_TOP:
-                            vTop = aDrawRect.Top;
-                            break;
-
-                        case User.DT_CENTER:
-                            vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top - vTextHeight) / 2;
-                            break;
-
-                        default:
-                            vTop = aDrawRect.Bottom - vTextHeight;
+                            vTop = aDrawRect.Bottom - vTextHeight / 2;
                             break;
                     }
 
@@ -760,13 +803,13 @@ namespace EMRView
                     {
                         aCanvas.Pen.Style = HCPenStyle.psSolid;
                         aCanvas.Pen.Color = Color.Red;
+                        aCanvas.Pen.Width = 1;
                     }
                     finally
                     {
                         aCanvas.Pen.EndUpdate();
                     }
 
-                    vTop = vTop + (aDrawRect.Bottom - vTop) / 2;
                     aCanvas.MoveTo(aDrawRect.Left, vTop - 1);
                     aCanvas.LineTo(aDrawRect.Right, vTop - 1);
                     aCanvas.MoveTo(aDrawRect.Left, vTop + 2);
@@ -775,11 +818,25 @@ namespace EMRView
                 else
                 if (vDeItem.StyleEx == StyleExtra.cseAdd)
                 {
+                    int vTextHeight = Style.TextStyles[vDeItem.StyleNo].FontHeight;
+                    int vTop = aDrawRect.Bottom;
+                    switch (Style.ParaStyles[vDeItem.ParaNo].AlignVert)
+                    {
+                        case ParaAlignVert.pavTop:
+                            vTop = aDrawRect.Top + vTextHeight;
+                            break;
+
+                        case ParaAlignVert.pavCenter:
+                            vTop = aDrawRect.Top + (aDrawRect.Bottom - aDrawRect.Top + vTextHeight) / 2;
+                            break;
+                    }
+
                     aCanvas.Pen.BeginUpdate();
                     try
                     {
                         aCanvas.Pen.Style = HCPenStyle.psSolid;
                         aCanvas.Pen.Color = Color.Blue;
+                        aCanvas.Pen.Width = 1;
                     }
                     finally
                     {
@@ -899,16 +956,51 @@ namespace EMRView
             }
         }
 
-        #region 子方法，绘制当前页以下空白的提示
+#region 子方法，绘制当前页以下空白的提示
         private void DrawBlankTip_(int aLeft, int aTop, int aRight, int aDataDrawBottom, HCCanvas aCanvas)
         {
             if (aTop + 14 <= aDataDrawBottom)
             {
-                aCanvas.Font.Size = 12;
+                aCanvas.Font.BeginUpdate();
+                try
+                {
+                    aCanvas.Font.Size = 12;
+                    aCanvas.Font.FontStyles.Value = 0;
+                    aCanvas.Font.Color = Color.Black;
+                }
+                finally
+                {
+                    aCanvas.Font.EndUpdate();
+                }
+
                 aCanvas.TextOut(aLeft + ((aRight - aLeft) - aCanvas.TextWidth(FPageBlankTip)) / 2, aTop, FPageBlankTip);
             }
         }
-        #endregion
+
+        private void DrawTraceHint_(DeItem deItem, RECT aDrawRect, int aDataDrawRight, HCCanvas aCanvas)
+        {
+            aCanvas.Font.Size = 12;
+            aCanvas.Font.Color = Color.Black;
+            string vTrace = deItem[DeProp.Trace];
+            SIZE vSize = aCanvas.TextExtent(vTrace);
+            RECT vRect = HC.View.HC.Bounds(aDrawRect.Left, aDrawRect.Top - vSize.cy - 5, vSize.cx, vSize.cy);
+            if (vRect.Right > aDataDrawRight)
+                vRect.Offset(aDataDrawRight - vRect.Right, 0);
+
+            if (deItem.StyleEx == StyleExtra.cseDel)
+                aCanvas.Brush.Color = HC.View.HC.clMedGray;
+            else
+                aCanvas.Brush.Color = HC.View.HC.clInfoBk;
+
+            aCanvas.TextRect(vRect, vRect.Left, vRect.Top, vTrace);
+            aCanvas.Pen.Color = Color.Gray;
+            aCanvas.Pen.Width = 2;
+            aCanvas.MoveTo(vRect.Left + 2, vRect.Bottom + 1);
+            aCanvas.LineTo(vRect.Right, vRect.Bottom + 1);
+            aCanvas.MoveTo(vRect.Right + 1, vRect.Top + 2);
+            aCanvas.LineTo(vRect.Right + 1, vRect.Bottom + 1);
+        }
+#endregion
 
         /// <summary> 文档某节的Item绘制完成 </summary>
         /// <param name="AData">当前绘制的Data</param>
@@ -946,12 +1038,72 @@ namespace EMRView
                     DeItem vDeItem = vItem as DeItem;
                     if (vDeItem.StyleEx != StyleExtra.cseNone)  // 添加批注
                     {
-                        HCDrawAnnotateDynamic vDrawAnnotate = new HCDrawAnnotateDynamic();
-                        vDrawAnnotate.DrawRect = aDrawRect;
-                        vDrawAnnotate.Title = vDeItem.GetHint();
-                        vDrawAnnotate.Text = aData.GetDrawItemText(aDrawItemNo);
+                        if (FTraceInfoAnnotate)
+                        {
+                            HCDrawAnnotateDynamic vDrawAnnotate = new HCDrawAnnotateDynamic();
+                            vDrawAnnotate.DrawRect = aDrawRect;
+                            vDrawAnnotate.Title = vDeItem.GetHint();
+                            vDrawAnnotate.Text = aData.GetDrawItemText(aDrawItemNo);
 
-                        this.AnnotatePre.AddDrawAnnotate(vDrawAnnotate);
+                            this.AnnotatePre.AddDrawAnnotate(vDrawAnnotate);
+                        }
+                        else
+                        if (aDrawItemNo == (aData as HCRichData).HotDrawItemNo)
+                            DrawTraceHint_(vDeItem, aDrawRect, aDataDrawRight, aCanvas);
+                    }
+                }
+            }
+
+            if (FSecret)
+            {
+                HCCustomItem vItem = aData.Items[aItemNo];
+                if ((vItem.StyleNo > HCStyle.Null) && ((vItem as DeItem)[DeProp.Secret] != ""))
+                {
+                    int vSecretLow = -1, vSecretHi = -1;
+                    DeItem.GetSecretRange((vItem as DeItem)[DeProp.Secret], ref vSecretLow, ref vSecretHi);
+                    if (vSecretLow > 0)
+                    {
+                        if (vSecretHi < 0)
+                            vSecretHi = vItem.Length;
+
+                        HCCustomDrawItem vDrawItem = aData.DrawItems[aDrawItemNo];
+                        if (vSecretLow <= vDrawItem.CharOffsetEnd())
+                        {
+                            if (vSecretLow < vDrawItem.CharOffs)
+                                vSecretLow = vDrawItem.CharOffs;
+
+                            if (vSecretHi > vDrawItem.CharOffsetEnd())
+                                vSecretHi = vDrawItem.CharOffsetEnd();
+
+                            vSecretLow = vSecretLow - vDrawItem.CharOffs + 1;
+                            if (vSecretLow > 0)
+                                vSecretLow--;
+
+                            vSecretHi = vSecretHi - vDrawItem.CharOffs + 1;
+
+                            if (vSecretHi >= 0)
+                            {
+                                aCanvas.Brush.Style = HCBrushStyle.bsDiagCross;
+                                aCanvas.FillRect(new RECT(aDrawRect.Left + aData.GetDrawItemOffsetWidth(aDrawItemNo, vSecretLow), aDrawRect.Top,
+                                    aDrawRect.Left + aData.GetDrawItemOffsetWidth(aDrawItemNo, vSecretHi), aDrawRect.Bottom));
+                                aCanvas.Brush.Style = HCBrushStyle.bsSolid;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if ((!aPaintInfo.Print) && (aData.Items[aItemNo] is DeGroup))  // 绘制病程的前后指示箭头
+            {
+                if ((aData.Items[aItemNo] as DeGroup).MarkType == MarkType.cmtBeg)
+                {
+                    if ((aData.Items[aItemNo] as DeGroup)[GroupProp.SubType] == SubType.Proc)
+                    {
+                        if ((aItemNo > 0) && (aData.Items[aItemNo - 1] is DeGroup)
+                            && ((aData.Items[aItemNo - 1] as DeGroup)[GroupProp.SubType] == SubType.Proc))
+                            HC.View.HC.HCDrawArrow(aCanvas, Color.Blue, aDrawRect.Left - 10, aDrawRect.Top, 0);
+
+                        HC.View.HC.HCDrawArrow(aCanvas, Color.Blue, aDrawRect.Left - 10, aDrawRect.Top + 12, 1);
                     }
                 }
             }
@@ -991,6 +1143,8 @@ namespace EMRView
         {
             this.Width = 100;
             this.Height = 100;
+            FSecret = false;
+            FTraceInfoAnnotate = true;
             FDeDoneColor = HC.View.HC.clBtnFace;
             FDeUnDoneColor = Color.FromArgb(0xFF, 0xDD, 0x80);
             FDeHotColor = Color.FromArgb(204, 224, 244);
@@ -1113,6 +1267,81 @@ namespace EMRView
             return vResult;            
         }
 
+        public bool SetDeImageGraphic(string deIndex, Stream graphicStream)
+        {
+            FPropertyObject = graphicStream;
+            return SetDeObjectProperty(deIndex, "Graphic", "");
+        }
+
+        public void SyncDeItem(HCCustomData startData, DeItem refDeItem)
+        {
+            bool vStart = false;
+            bool vFind = false;
+
+            HCCustomData vData;
+            if (startData != null)
+                vData = startData;
+            else
+                vData = this.ActiveSection.Page;
+
+            HCCustomItem vItem;
+            DeItem vDeItem;
+            HCItemTraverse vItemTraverse = new HCItemTraverse();
+            vItemTraverse.Tag = 0;
+            vItemTraverse.Areas.Add(SectionArea.saPage);
+            vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainInfo> domainStack, ref bool stop)
+            {
+                vItem = data.Items[itemNo];
+                if (vStart)
+                {
+                    if (vItem.StyleNo > HCStyle.Null)
+                    {
+                        vDeItem = vItem as DeItem;
+                        if (vDeItem[DeProp.Index] == refDeItem[DeProp.Index])
+                        {
+                            vDeItem.Text = refDeItem.Text;
+                            vDeItem.AllocValue = true;
+                            vDeItem[DeProp.CMVVCode] = refDeItem[DeProp.CMVVCode];
+                            vFind = true;
+                        }
+                    }
+                }
+                else
+                if (vItem == refDeItem)
+                    vStart = true;
+            };
+
+            this.TraverseItem(vItemTraverse);
+            if (vFind)
+                this.FormatData();
+        }
+
+        public DeItem FindSameDeItem(DeItem item)
+        {
+            DeItem vResult = null;
+            HCItemTraverse vItemTraverse = new HCItemTraverse();
+            vItemTraverse.Tag = 0;
+            vItemTraverse.Areas.Add(SectionArea.saPage);
+            vItemTraverse.Process = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
+            {
+                if (aData.Items[aItemNo].StyleNo > HCStyle.Null)
+                {
+                    DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+                    if (vDeItem[DeProp.Index] == item[DeProp.Index])
+                    {
+                        if (vDeItem.AllocValue)
+                        {
+                            vResult = vDeItem;
+                            aStop = true;
+                        }
+                    }
+                }
+            };
+
+            this.TraverseItem(vItemTraverse);
+            return vResult;
+        }
+
         /// <summary>
         /// 设置指定数据元的值
         /// </summary>
@@ -1121,7 +1350,7 @@ namespace EMRView
         /// <returns>是否设置成功</returns>
         public bool SetDeItemText(string aDeIndex, string aText)
         {
-            return SetDeItemProperty(aDeIndex, "Text", aText);
+            return SetDeObjectProperty(aDeIndex, "Text", aText);
         }
 
         /// <summary>
@@ -1131,9 +1360,11 @@ namespace EMRView
         /// <param name="aPropName"></param>
         /// <param name="aPropValue"></param>
         /// <returns>是否设置成功</returns>
-        public bool SetDeItemProperty(string aDeIndex, string aPropName, string aPropValue)
+        public bool SetDeObjectProperty(string aDeIndex, string aPropName, string aPropValue)
         {
             bool vResult = false;
+            bool vReFormat = false;
+
             HCItemTraverse vItemTraverse = new HCItemTraverse();  // 准备存放遍历信息的对象
             vItemTraverse.Areas.Add(SectionArea.saHeader);
             vItemTraverse.Areas.Add(SectionArea.saPage);  // 遍历正文中的信息
@@ -1146,20 +1377,63 @@ namespace EMRView
                 if ((vItem is DeItem) && (vItem as DeItem)[DeProp.Index] == aDeIndex)
                 {
                     if (aPropName == "Text")
-                        vItem.Text = aPropValue;
+                    {
+                        if (aPropValue != "")
+                        {
+                            vItem.Text = aPropValue;
+                            (vItem as DeItem).AllocValue = true;
+                        }
+
+                        vReFormat = true;
+                    }
+                    else
+                    if (aPropName == "Propertys")
+                    {
+                        Dictionary<string, string> vPropertys = new Dictionary<string, string>();
+                        DeProp.SetPropertyString(aPropValue, vPropertys);
+                        foreach (KeyValuePair<string, string> obj in vPropertys)
+                        {
+                            if (obj.Key == "Text")
+                            {
+                                if (obj.Value != "")
+                                {
+                                    vItem.Text = obj.Value;
+                                    (vItem as DeItem).AllocValue = true;
+                                }
+
+                                vReFormat = true;
+                            }
+                            else
+                                (vItem as DeItem)[obj.Key] = obj.Value;
+                        }
+                    }
                     else
                         (vItem as DeItem)[aPropName] = aPropValue;
 
                     vResult = true;
-                    //aStop = true;
+                }
+                else
+                if ((vItem is DeImageItem) && ((vItem as DeImageItem)[DeProp.Index] == aDeIndex))
+                {
+                    if (aPropName == "Graphic")
+                    {
+                        (vItem as DeImageItem).LoadGraphicStream((Stream)FPropertyObject, false);
+                        vReFormat = true;
+                    }
+
+                    vResult = true;
+                    aStop = true;
                 }
             };
 
             vItemTraverse.Process = vTraveEvent;  // 遍历到每一个文本对象是触发的事件
             this.TraverseItem(vItemTraverse);  // 开始遍历
 
-            if (vResult && (aPropName == "Text"))
-                this.FormatData();
+            if (vResult)
+            {
+                if (vReFormat)
+                    this.FormatData();
+            }
 
             return vResult;
         }
@@ -1333,7 +1607,7 @@ namespace EMRView
         /// <param name="aData">数据组所在的Data</param>
         /// <param name="aDeGroupNo">数据组的ItemNo</param>
         /// <param name="aText">文本内容</param>
-        public void SetDeGroupText(HCViewData aData, int aDeGroupNo, string aText)
+        public void SetDataDeGroupText(HCViewData aData, int aDeGroupNo, string aText)
         {
             int vGroupBeg = -1;
             int vGroupEnd = aData.GetDomainAnother(aDeGroupNo);
@@ -1359,6 +1633,103 @@ namespace EMRView
             finally
             {
                 FIgnoreAcceptAction = false;
+            }
+        }
+
+        public void SetActionDataDeGroupText(HCSection section, SectionArea area, string deIndex, string text, bool startLast = true)
+        {
+            int vStartNo = -1, vEndNo = -1;
+            HCSectionData vData = null;
+            switch (area)
+            {
+                case SectionArea.saHeader:
+                    vData = section.Header;
+                    break;
+
+                case SectionArea.saPage:
+                    vData = section.Page;
+                    break;
+
+                case SectionArea.saFooter:
+                    vData = section.Footer;
+                    break;
+            }
+
+            if (startLast)
+            {
+                vStartNo = vData.Items.Count - 1;
+                GetDataDeGroupItemNo(vData, deIndex, true, ref vStartNo, ref vEndNo);
+            }
+            else
+                GetDataDeGroupItemNo(vData, deIndex, false, ref vStartNo, ref vEndNo);
+
+            if (vEndNo > 0)
+            {
+                section.DataAction(vData, delegate ()
+                {
+                    vData.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
+                    FIgnoreAcceptAction = true;
+                    try
+                    {
+                        if (text != "")
+                            vData.InsertText(text);
+                        else
+                            vData.DeleteSelected();
+                    }
+                    finally
+                    {
+                        FIgnoreAcceptAction = false;
+                    }
+
+                    return true;
+                });
+            }
+        }
+        public void SetActionDataDeGroupStream(HCSection section, SectionArea area, string deIndex, Stream stream, bool startLast = true)
+        {
+            int vStartNo = -1, vEndNo = -1;
+            HCSectionData vData = null;
+            switch (area)
+            {
+                case SectionArea.saHeader:
+                    vData = section.Header;
+                    break;
+
+                case SectionArea.saPage:
+                    vData = section.Page;
+                    break;
+
+                case SectionArea.saFooter:
+                    vData = section.Footer;
+                    break;
+            }
+
+            if (startLast)
+            {
+                vStartNo = vData.Items.Count - 1;
+                GetDataDeGroupItemNo(vData, deIndex, true, ref vStartNo, ref vEndNo);
+            }
+            else
+                GetDataDeGroupItemNo(vData, deIndex, false, ref vStartNo, ref vEndNo);
+
+            if (vEndNo > 0)
+            {
+                section.DataAction(vData, delegate ()
+                {
+                    vData.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
+                    FIgnoreAcceptAction = true;
+                    try
+                    {
+                        this.InsertStream(stream);
+                        //vData.InsertStream(AStream);
+                    }
+                    finally
+                    {
+                        FIgnoreAcceptAction = false;
+                    }
+
+                    return true;
+                });
             }
         }
 
@@ -1460,7 +1831,7 @@ namespace EMRView
         public bool HideTrace
         {
             get { return FHideTrace; }
-            set { FHideTrace = value; }
+            set { SetHideTrace(value); }
         }
 
         /// <summary> 是否处于留痕状态 </summary>
@@ -1476,10 +1847,40 @@ namespace EMRView
             get { return FTraceCount; }
         }
 
+        public bool Secret
+        {
+            get { return FSecret; }
+            set { FSecret = value; }
+        }
+
+        public bool TraceInfoAnnotate
+        {
+            get { return FTraceInfoAnnotate; }
+            set { FTraceInfoAnnotate = value; }
+        }
+
         public string PageBlankTip
         {
             get { return FPageBlankTip; }
             set { SetPageBlankTip(value); }
+        }
+
+        public Color DeDoneColor
+        {
+            get { return FDeDoneColor; }
+            set { FDeDoneColor = value; }
+        }
+
+        public Color DeUnDoneColor
+        {
+            get { return FDeUnDoneColor; }
+            set { FDeUnDoneColor = value; }
+        }
+
+        public Color DeHotColor
+        {
+            get { return FDeHotColor; }
+            set { FDeHotColor = value; }
         }
 
         /// <summary> 当编辑只读状态的Data时触发 </summary>

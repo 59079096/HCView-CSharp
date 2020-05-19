@@ -73,6 +73,9 @@ namespace HC.View
 
     public delegate void SectionDataItemMouseEventHandler(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e);
 
+    public delegate void SectionDataDrawItemMouseEventHandler(object sender, HCCustomData data, int itemNo, int offset, int drawItemNo, MouseEventArgs e);
+
+
     public class HCCustomSection : HCObject
     {
         private HCStyle FStyle;
@@ -107,7 +110,11 @@ namespace HC.View
 
         GetScreenCoordEventHandler FOnGetScreenCoord;
 
-        SectionPaintEventHandler FOnPaintHeader, FOnPaintFooter, FOnPaintPage, FOnPaintPaperBefor, FOnPaintPaperAfter;
+        SectionPaintEventHandler
+            FOnPaintHeaderBefor, FOnPaintHeaderAfter,
+            FOnPaintFooterBefor, FOnPaintFooterAfter,
+            FOnPaintPageBefor, FOnPaintPageAfter,
+            FOnPaintPaperBefor, FOnPaintPaperAfter;
 
         SectionDrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
 
@@ -116,14 +123,14 @@ namespace HC.View
 
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
         SectionDataItemEventHandler FOnInsertItem, FOnRemoveItem;
-        SectionDataItemNoFunEvent FOnSaveItem;
+        SectionDataItemNoFunEvent FOnSaveItem, FOnPaintDomainRegion;
         SectionDataActionEventHandler FOnDataAcceptAction;
         SectionDataItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
+        SectionDataDrawItemMouseEventHandler FOnDrawItemMouseMove;
         DataItemNoEventHandler FOnItemResize;
         EventHandler FOnCreateItem, FOnCurParaNoChange, FOnActivePageChange;
         SectionDataItemEventHandler FOnCaretItemChanged;
         StyleItemEventHandler FOnCreateItemByStyle;
-        FloatStyleItemEventHandler FOnCreateFloatItemByStyle;
         OnCanEditEventHandler FOnCanEdit;
         TextEventHandler FOnInsertTextBefor;
         GetUndoListEventHandler FOnGetUndoList;
@@ -237,6 +244,14 @@ namespace HC.View
                 return true;
         }
 
+        private bool DoDataPaintDomainRegion(HCCustomData data, int itemNo)
+        {
+            if (FOnPaintDomainRegion != null)
+                return this.FOnPaintDomainRegion(this, data, itemNo);
+            else
+                return true;
+        }
+
         private bool DoDataAcceptAction(HCCustomData aData, int aItemNo, int aOffset, HCAction aAction)
         {
             if (FOnDataAcceptAction != null)
@@ -255,6 +270,12 @@ namespace HC.View
         {
             if (FOnItemMouseUp != null)
                 FOnItemMouseUp(this, aData, aItemNo, aOffset, e);
+        }
+
+        private void DoDataDrawItemMouseMove(HCCustomData data, int itemNo, int offset, int drawItemNo, MouseEventArgs e)
+        {
+            if (FOnDrawItemMouseMove != null)
+                FOnDrawItemMouseMove(this, data, itemNo, offset, drawItemNo, e);
         }
 
         protected void DoDataChanged(object sender)
@@ -299,14 +320,6 @@ namespace HC.View
         {
             if (FOnCreateItemByStyle != null)
                 return FOnCreateItemByStyle(aData, aStyleNo);
-            else
-                return null;
-        }
-
-        private HCCustomFloatItem DoDataCreateFloatStyleItem(HCSectionData aData, int aStyleNo)
-        {
-            if (FOnCreateFloatItemByStyle != null)
-                return FOnCreateFloatItemByStyle(aData, aStyleNo);
             else
                 return null;
         }
@@ -723,9 +736,10 @@ namespace HC.View
             aData.OnItemResized = DoDataItemResized;
             aData.OnItemMouseDown = DoDataItemMouseDown;
             aData.OnItemMouseUp = DoDataItemMouseUp;
+            aData.OnDrawItemMouseMove = DoDataDrawItemMouseMove;
             aData.OnItemRequestFormat = DoDataItemRequestFormat;
             aData.OnCreateItemByStyle = DoDataCreateStyleItem;
-            aData.OnCreateFloatItemByStyle = DoDataCreateFloatStyleItem;
+            aData.OnPaintDomainRegion = DoDataPaintDomainRegion;
             aData.OnCanEdit = DoDataCanEdit;
             aData.OnInsertTextBefor = DoDataInsertTextBefor;
             aData.OnCreateItem = DoDataCreateItem;
@@ -1413,6 +1427,11 @@ namespace HC.View
             DoSectionDataAction(FActiveData, vEvent);
         }
 
+        public bool DataAction(HCSectionData data, HCFunction action)
+        {
+            return DoSectionDataAction(data, action);
+        }
+
         /// <summary> 获取光标在Dtat中的位置信息并映射到指定页面 </summary>
         /// <param name="APageIndex">要映射到的页序号</param>
         /// <param name="aCaretInfo">光标位置信息</param>
@@ -1479,16 +1498,30 @@ namespace HC.View
 
             int vHeaderDataDrawTop = vPaperDrawTop + GetHeaderPageDrawTop();
 
-            FHeader.PaintData(vPageDrawLeft, vHeaderDataDrawTop, vPageDrawRight,
-                vPageDrawTop, Math.Max(vHeaderDataDrawTop, 0),
-                vScreenBottom, 0, aCanvas, aPaintInfo);
-
-            if (FOnPaintHeader != null)
+            if (FOnPaintHeaderBefor != null)
             {
                 int vDCState = GDI.SaveDC(aCanvas.Handle);
                 try
                 {
-                    FOnPaintHeader(this, aPageIndex,
+                    FOnPaintHeaderBefor(this, aPageIndex,
+                        new RECT(vPageDrawLeft, vHeaderDataDrawTop, vPageDrawRight, vPageDrawTop), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+
+            FHeader.PaintData(vPageDrawLeft, vHeaderDataDrawTop, vPageDrawRight,
+                vPageDrawTop, Math.Max(vHeaderDataDrawTop, 0),
+                vScreenBottom, 0, aCanvas, aPaintInfo);
+
+            if (FOnPaintHeaderAfter != null)
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintHeaderAfter(this, aPageIndex,
                         new RECT(vPageDrawLeft, vHeaderDataDrawTop, vPageDrawRight, vPageDrawTop), aCanvas, aPaintInfo);
                 }
                 finally
@@ -1509,15 +1542,29 @@ namespace HC.View
             else
                 vScreenBottom = aPaintInfo.WindowHeight;
 
-            FFooter.PaintData(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPaperDrawBottom,
-                Math.Max(vPageDrawBottom, 0), vPageDrawBottom + vScreenBottom, 0, aCanvas, aPaintInfo);
-
-            if (FOnPaintFooter != null)
+            if (FOnPaintFooterBefor != null)
             {
                 int vDCState = GDI.SaveDC(aCanvas.Handle);
                 try
                 {
-                    FOnPaintFooter(this, aPageIndex,
+                    FOnPaintFooterBefor(this, aPageIndex,
+                        new RECT(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPaperDrawBottom), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+
+            FFooter.PaintData(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPaperDrawBottom,
+                Math.Max(vPageDrawBottom, 0), vPageDrawBottom + vScreenBottom, 0, aCanvas, aPaintInfo);
+
+            if (FOnPaintFooterAfter != null)
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintFooterAfter(this, aPageIndex,
                         new RECT(vPageDrawLeft, vPageDrawBottom, vPageDrawRight, vPaperDrawBottom), aCanvas, aPaintInfo);
                 }
                 finally
@@ -1536,6 +1583,20 @@ namespace HC.View
             if ((FPages[aPageIndex].StartDrawItemNo < 0) || (FPages[aPageIndex].EndDrawItemNo < 0))
                 return;
 
+            if (FOnPaintPageBefor != null)
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintPageBefor(this, aPageIndex,
+                        new RECT(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+
             /* 绘制数据，把Data中指定位置的数据，绘制到指定的页区域中，并按照可显示出来的区域约束 }*/
             FPage.PaintData(vPageDrawLeft,  // 当前页数据要绘制到的Left
                 vPageDrawTop,     // 当前页数据要绘制到的Top
@@ -1549,12 +1610,12 @@ namespace HC.View
                 aCanvas,
                 aPaintInfo);
 
-            if (FOnPaintPage != null)
+            if (FOnPaintPageAfter != null)
             {
                 int vDCState = GDI.SaveDC(aCanvas.Handle);
                 try
                 {
-                    FOnPaintPage(this, aPageIndex,
+                    FOnPaintPageAfter(this, aPageIndex,
                         new RECT(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawBottom), aCanvas, aPaintInfo);
                 }
                 finally
@@ -1829,7 +1890,7 @@ namespace HC.View
                 #region 绘制页眉
                 if (vPageDrawTop > 0)
                 {
-                    vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
+                    vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPaperDrawLeft),
                         Math.Max(aPaintInfo.GetScaleY(vPaperDrawTop + FHeaderOffset), 0),
                         aPaintInfo.GetScaleX(vPaperDrawRight),  // 表格有时候会拖宽到页面外面vPageDrawRight
                         Math.Min(aPaintInfo.GetScaleY(vPageDrawTop), aPaintInfo.WindowHeight));
@@ -1850,7 +1911,7 @@ namespace HC.View
                 #region 绘制页脚
                 if (aPaintInfo.GetScaleY(vPageDrawBottom) < aPaintInfo.WindowHeight)  // 页脚可显示
                 {
-                    vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPageDrawLeft),
+                    vPaintRegion = (IntPtr)GDI.CreateRectRgn(aPaintInfo.GetScaleX(vPaperDrawLeft),
                         Math.Max(aPaintInfo.GetScaleY(vPageDrawBottom), 0),
                         aPaintInfo.GetScaleX(vPaperDrawRight),  // 表格有时候会拖宽到页面外面vPageDrawRight
                         Math.Min(aPaintInfo.GetScaleY(vPaperDrawBottom), aPaintInfo.WindowHeight));
@@ -3026,22 +3087,46 @@ namespace HC.View
             set { FOnItemMouseUp = value; }
         }
 
-        public SectionPaintEventHandler OnPaintHeader
+        public SectionDataDrawItemMouseEventHandler OnDrawItemMouseMove
         {
-            get { return FOnPaintHeader; }
-            set { FOnPaintHeader = value; }
+            get { return FOnDrawItemMouseMove; }
+            set { FOnDrawItemMouseMove = value; }
         }
 
-        public SectionPaintEventHandler OnPaintFooter
+        public SectionPaintEventHandler OnPaintHeaderBefor
         {
-            get { return FOnPaintFooter; }
-            set { FOnPaintFooter = value; }
+            get { return FOnPaintHeaderBefor; }
+            set { FOnPaintHeaderBefor = value; }
         }
 
-        public SectionPaintEventHandler OnPaintPage
+        public SectionPaintEventHandler OnPaintHeaderAfter
         {
-            get { return FOnPaintPage; }
-            set { FOnPaintPage = value; }
+            get { return FOnPaintHeaderAfter; }
+            set { FOnPaintHeaderAfter = value; }
+        }
+
+        public SectionPaintEventHandler OnPaintFooterBefor
+        {
+            get { return FOnPaintFooterBefor; }
+            set { FOnPaintFooterBefor = value; }
+        }
+
+        public SectionPaintEventHandler OnPaintFooterAfter
+        {
+            get { return FOnPaintFooterAfter; }
+            set { FOnPaintFooterAfter = value; }
+        }
+
+        public SectionPaintEventHandler OnPaintPageBefor
+        {
+            get { return FOnPaintPageBefor; }
+            set { FOnPaintPageBefor = value; }
+        }
+
+        public SectionPaintEventHandler OnPaintPageAfter
+        {
+            get { return FOnPaintPageAfter; }
+            set { FOnPaintPageAfter = value; }
         }
 
         public SectionPaintEventHandler OnPaintPaperBefor
@@ -3110,10 +3195,10 @@ namespace HC.View
             set { FOnCreateItemByStyle = value; }
         }
 
-        public FloatStyleItemEventHandler OnCreateFloatItemByStyle
+        public SectionDataItemNoFunEvent OnPaintDomainRegion
         {
-            get { return FOnCreateFloatItemByStyle; }
-            set { FOnCreateFloatItemByStyle = value; }
+            get { return FOnPaintDomainRegion; }
+            set { FOnPaintDomainRegion = value; }
         }
 
         public OnCanEditEventHandler OnCanEdit
@@ -3207,7 +3292,7 @@ namespace HC.View
 
         public string ToHtml(string aPath)
         {
-            return Page.ToHtml(aPath);
+            return Header.ToHtml(aPath) + HC.sLineBreak + Page.ToHtml(aPath) + HC.sLineBreak + Footer.ToHtml(aPath);
         }
 
         public void ToXml(XmlElement aNode)

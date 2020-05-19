@@ -300,6 +300,7 @@ namespace EMRView
             mniInsertAsDateTime.Visible = (FOnInsertAsDeDateTime != null) && (dgvDE.SelectedRows.Count > 0);
             mniInsertAsRadioGroup.Visible = (FOnInsertAsDeRadioGroup != null) && (dgvDE.SelectedRows.Count > 0);
             mniInsertAsCheckBox.Visible = (FOnInsertAsDeCheckBox != null) && (dgvDE.SelectedRows.Count > 0);
+            mniInsertAsImage.Visible = (FOnInsertAsDeImage != null) && (dgvDE.SelectedRows.Count > 0);
             mniInsertAsFloatBarCode.Visible = (FOnInsertAsDeFloatBarCode != null) && (dgvDE.SelectedRows.Count > 0);
         }
 

@@ -761,12 +761,28 @@ namespace EMRView
             }
         }
 
+        public string LeftTopText
+        {
+            get { return FLeftTopText; }
+            set { FLeftTopText = value; }
+        }
 
+        public string LeftBottomText
+        {
+            get { return FLeftBottomText; }
+            set { FLeftBottomText = value; }
+        }
 
+        public string RightTopText
+        {
+            get { return FRightTopText; }
+            set { FRightTopText = value; }
+        }
 
-
-
-
-
+        public string RightBottomText
+        {
+            get { return FRightBottomText; }
+            set { FRightBottomText = value; }
+        }
     }
 }

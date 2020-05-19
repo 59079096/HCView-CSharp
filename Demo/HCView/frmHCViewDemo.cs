@@ -261,7 +261,7 @@ namespace HCViewDemo
                     {
                         HCRichData vTopData = FHCView.ActiveSectionTopLevelData() as HCRichData;
                         HCImageItem vImageItem = new HCImageItem(vTopData);
-                        vImageItem.LoadFromBmpFile(vOpenDlg.FileName);
+                        vImageItem.LoadGraphicFile(vOpenDlg.FileName);
                         vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
                         Application.DoEvents();
                         FHCView.InsertItem(vImageItem);

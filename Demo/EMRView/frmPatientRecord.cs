@@ -433,7 +433,7 @@ namespace EMRView
                                     vText = vText + vXmlNode.ChildNodes[j].InnerText;
 
                                 if (vText != "")  // 得到不为空的节点内容并赋值给数据组
-                                    aEmrView.SetDeGroupText(vData, vItemNo, vText);
+                                    aEmrView.SetDataDeGroupText(vData, vItemNo, vText);
                             }
                         }
                         //else

@@ -77,6 +77,13 @@ namespace HC.Win32
             Bottom = 0;
         }
 
+        public void ReSet(RECT rect)
+        {
+            Left = rect.Left;
+            Top = rect.Top;
+            Right = rect.Right;
+            Bottom = rect.Bottom;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

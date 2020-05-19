@@ -33,13 +33,11 @@ namespace HC.View
             FActiveDomain;  // 当前激活域
 
         private IntPtr FHotDomainRGN, FActiveDomainRGN;
-
-        private bool FDrawActiveDomainRegion, FDrawHotDomainRegion;  // 是否绘制域边框
-
         private StyleItemEventHandler FOnCreateItemByStyle;
         private OnCanEditEventHandler FOnCanEdit;
         private TextEventHandler FOnInsertTextBefor;
         private DataItemEventHandler FOnCaretItemChanged;
+        private DataItemNoFunEventHandler FOnPaintDomainRegion;
 
         protected override bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
         {
@@ -87,75 +85,33 @@ namespace HC.View
         }
 
         /// <summary> 用于从流加载完Items后，检查不合格的Item并删除 </summary>
-        protected override int CheckInsertItemCount(int aStartNo, int  aEndNo)
+        protected override int CheckInsertItemCount(int aStartNo, int aEndNo)
         {
-            int Result = base.CheckInsertItemCount(aStartNo, aEndNo);
-            return Result;  // 目前的稳定性应该不会出现不匹配的问题了
-            // 检查加载或粘贴等从流插入Items不匹配的域起始结束标识并删除
-            int vDelCount = 0;
-            for (int i = aStartNo; i <= aEndNo; i++)  // 从前往后找没有插入起始标识的域，删除单独的域结束标识
+            int vResult = base.CheckInsertItemCount(aStartNo, aEndNo);
+            if (this.Loading)
+                return vResult;
+
+            int vLevel = -1;
+            HCDomainInfo vDomainInfo = new HCDomainInfo();
+            GetDomainFrom(aStartNo, 0, vDomainInfo);
+            if (vDomainInfo.BeginNo >= 0)
+                vLevel = (Items[vDomainInfo.BeginNo] as HCDomainItem).Level;
+
+            for (int i = aStartNo; i <= aEndNo; i++)
             {
-                if (Items[i] is HCDomainItem)
+                if (Items[i] is HCDomainItem)  // 域标识
                 {
-                    if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)
-                    {
-                        if (i < aEndNo)
-                            Items[i + 1].ParaFirst = Items[i].ParaFirst;
-                            
-                        Items.RemoveAt(i);
-                        vDelCount++;
-                        
-                        if ((i > aStartNo) && (i <= aEndNo - vDelCount))
-                        {
-                            if ((!Items[i - 1].ParaFirst)
-                                && (!Items[i].ParaFirst)
-                                && MergeItemText(Items[i - 1], Items[i]))  // 前后都不是段首，且能合并
-                            {
-                                Items.RemoveAt(i);
-                                vDelCount++;
-                            }
-                        }
-            
-                        break;
-                    }
-                    else  // 是起始域标记，不用担心了
-                        break;
+                    if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)  // 是起始
+                        vLevel++;
+
+                    (Items[i] as HCDomainItem).Level = (byte)vLevel;
+
+                    if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结束
+                        vLevel--;
                 }
             }
 
-            for (int i = aEndNo - vDelCount; i >= aStartNo; i--)  // 从后往前，找没有插入结束标识的域
-            {
-                if (Items[i] is HCDomainItem)
-                {
-                    if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)
-                    {
-                        if (i < aEndNo - vDelCount)
-                            Items[i + 1].ParaFirst = Items[i].ParaFirst;
-            
-                        Items.RemoveAt(i);
-                        vDelCount++;
-
-                        if ((i > aStartNo) && (i <= aEndNo - vDelCount))
-                        {
-                            if ((!Items[i - 1].ParaFirst)
-                                && (!Items[i].ParaFirst)
-                                && MergeItemText(Items[i - 1], Items[i]))  // 前后都不是段首，且能合并
-                            {
-                                Items.RemoveAt(i);
-                                vDelCount++;
-                            }
-                        }
-            
-                        break;
-                    }
-                    else  // 是结束域标记，不用担心了
-                        break;
-                }
-            }
-
-            Result = Result - vDelCount;
-
-            return Result;
+            return vResult;
         }
 
         protected override void DoCaretItemChanged()
@@ -174,13 +130,12 @@ namespace HC.View
             {
                 bool vDrawHotDomainBorde = false;
                 bool vDrawActiveDomainBorde = false;
-                int vItemNo = DrawItems[aDrawItemNo].ItemNo;
                 
-                if (FHotDomain.BeginNo >= 0)
-                    vDrawHotDomainBorde = FHotDomain.Contain(vItemNo);
+                if (this.Style.DrawHotDomainRegion && (FHotDomain.BeginNo >= 0))
+                    vDrawHotDomainBorde = FHotDomain.Contain(aItemNo);
                 
-                if (FActiveDomain.BeginNo >= 0)
-                    vDrawActiveDomainBorde = FActiveDomain.Contain(vItemNo);
+                if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
+                    vDrawActiveDomainBorde = FActiveDomain.Contain(aItemNo);
 
                 if (vDrawHotDomainBorde || vDrawActiveDomainBorde)  // 在Hot域或激活域中
                 {
@@ -188,10 +143,10 @@ namespace HC.View
                         aDrawRect.Left == aDrawRect.Right ? aDrawRect.Right + 3 : aDrawRect.Right, aDrawRect.Bottom);
                     try
                     {
-                        if ((FHotDomain.BeginNo >= 0) && vDrawHotDomainBorde)
+                        if (vDrawHotDomainBorde)
                             GDI.CombineRgn(FHotDomainRGN, FHotDomainRGN, vDliRGN, GDI.RGN_OR);
 
-                        if ((FActiveDomain.BeginNo >= 0) && vDrawActiveDomainBorde)
+                        if (vDrawActiveDomainBorde)
                             GDI.CombineRgn(FActiveDomainRGN, FActiveDomainRGN, vDliRGN, GDI.RGN_OR);
                     }
                     finally
@@ -280,6 +235,17 @@ namespace HC.View
             }
         }
 
+        protected bool DoPaintDomainRegion(int itemNo)
+        {
+            if (itemNo < 0)
+                return false;
+            else
+            if (FOnPaintDomainRegion != null)
+                return FOnPaintDomainRegion(this, itemNo);
+            else
+                return true;
+        }
+
         public HCViewData(HCStyle aStyle) : base(aStyle)
         {
             FCaretItemChanged = false;
@@ -323,10 +289,10 @@ namespace HC.View
         {
             if (!aPaintInfo.Print)
             {
-                if (FDrawHotDomainRegion)
+                if (this.Style.DrawHotDomainRegion)
                     FHotDomainRGN = (IntPtr)GDI.CreateRectRgn(0, 0, 0, 0);
                 
-                if (FDrawActiveDomainRegion)
+                if (this.Style.DrawActiveDomainRegion)
                     FActiveDomainRGN = (IntPtr)GDI.CreateRectRgn(0, 0, 0, 0);
             }
             
@@ -338,23 +304,29 @@ namespace HC.View
                 Color vOldColor = aCanvas.Brush.Color;  // 因为使用Brush绘制边框所以需要缓存原颜色
                 try
                 {
-                    if (FDrawHotDomainRegion)
+                    if (Style.DrawHotDomainRegion)
                     {
-                        aCanvas.Brush.Color = HC.clActiveBorder;
-                        //FieldInfo vField = typeof(Brush).GetField("nativeBrush", BindingFlags.NonPublic | BindingFlags.Instance);
-                        //IntPtr hbrush = (IntPtr)vField.GetValue(ACanvas.Brush);
-                        GDI.FrameRgn(aCanvas.Handle, FHotDomainRGN, aCanvas.Brush.Handle, 1, 1);
+                        if (DoPaintDomainRegion(FHotDomain.BeginNo))
+                        {
+                            aCanvas.Brush.Color = HC.clActiveBorder;
+                            //FieldInfo vField = typeof(Brush).GetField("nativeBrush", BindingFlags.NonPublic | BindingFlags.Instance);
+                            //IntPtr hbrush = (IntPtr)vField.GetValue(ACanvas.Brush);
+                            GDI.FrameRgn(aCanvas.Handle, FHotDomainRGN, aCanvas.Brush.Handle, 1, 1);
+                        }
+
                         GDI.DeleteObject(FHotDomainRGN);
                     }
-                
-                    if (FDrawActiveDomainRegion)
+
+                    if (Style.DrawActiveDomainRegion)
                     {
-                        aCanvas.Brush.Color = Color.Blue;
+                        if (DoPaintDomainRegion(FActiveDomain.BeginNo))
+                        {
+                            aCanvas.Brush.Color = Color.Blue;
+                            //FieldInfo vField = typeof(Brush).GetField("nativeBrush", BindingFlags.NonPublic | BindingFlags.Instance);
+                            //IntPtr hbrush = (IntPtr)vField.GetValue(ACanvas.Brush);
+                            GDI.FrameRgn(aCanvas.Handle, FActiveDomainRGN, aCanvas.Brush.Handle, 1, 1);
+                        }
 
-                        //FieldInfo vField = typeof(Brush).GetField("nativeBrush", BindingFlags.NonPublic | BindingFlags.Instance);
-                        //IntPtr hbrush = (IntPtr)vField.GetValue(ACanvas.Brush);
-
-                        GDI.FrameRgn(aCanvas.Handle, FActiveDomainRGN, aCanvas.Brush.Handle, 1, 1);
                         GDI.DeleteObject(FActiveDomainRGN);
                     }
                 }
@@ -378,29 +350,33 @@ namespace HC.View
         public override void GetCaretInfo(int aItemNo, int aOffset, ref HCCaretInfo aCaretInfo)
         {
             base.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
-            
+
+            bool vRePaint = false;
             // 赋值激活Group信息，清除在 MouseDown
             if (this.SelectInfo.StartItemNo >= 0)
             {
                 HCCustomData vTopData = GetTopLevelData();
                 if (vTopData == this)
                 {
-                    if (FActiveDomain.BeginNo >= 0)
-                    {
-                        FActiveDomain.Clear();
-                        FDrawActiveDomainRegion = false;
-                        Style.UpdateInfoRePaint();
-                        }
+                    if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
+                        vRePaint = true;
+
                     // 获取当前光标处ActiveDeGroup信息
                     GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
 
-                    if (FActiveDomain.BeginNo >= 0)
-                    {
-                        FDrawActiveDomainRegion = true;
-                        Style.UpdateInfoRePaint();
-                    }
+                    if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
+                        vRePaint = true;
                 }
             }
+            else
+            if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
+            {
+                FActiveDomain.Clear();
+                vRePaint = true;
+            }
+
+            if (vRePaint)
+                Style.UpdateInfoRePaint();
 
             if (FCaretItemChanged)
             {
@@ -511,44 +487,24 @@ namespace HC.View
             return true;
         }
 
-        public override void MouseDown(MouseEventArgs e)
-        {
-            if (FActiveDomain.BeginNo >= 0)
-                Style.UpdateInfoRePaint();
-
-            FActiveDomain.Clear();
-            FDrawActiveDomainRegion = false;
-
-            base.MouseDown(e);
-
-            if (e.Button == MouseButtons.Right)
-                Style.UpdateInfoReCaret();
-        }
-
         public override void MouseMove(MouseEventArgs e)
         {
-            if (FHotDomain.BeginNo >= 0)
-                Style.UpdateInfoRePaint();
-
+            bool vRePaint = this.Style.DrawHotDomainRegion && (FHotDomain.BeginNo >= 0);
             FHotDomain.Clear();
-            FDrawHotDomainRegion = false;
-
             base.MouseMove(e);
-
             if (!this.MouseMoveRestrain)
             {
                 this.GetDomainFrom(this.MouseMoveItemNo, this.MouseMoveItemOffset, FHotDomain);
-
                 HCViewData vTopData = this.GetTopLevelDataAt(e.X, e.Y) as HCViewData;
-                if ((vTopData == this) || (!vTopData.FDrawHotDomainRegion))
+                if ((vTopData == this) || (vTopData.HotDomain.BeginNo < 0))
                 {
-                    if (FHotDomain.BeginNo >= 0)
-                    {
-                        FDrawHotDomainRegion = true;
-                        Style.UpdateInfoRePaint();
-                    }
+                    if (this.Style.DrawHotDomainRegion && (FHotDomain.BeginNo >= 0))
+                        vRePaint = true;
                 }
             }
+
+            if (vRePaint)
+                Style.UpdateInfoRePaint();
         }
 
         public override bool InsertItem(HCCustomItem aItem)
@@ -1293,6 +1249,12 @@ namespace HC.View
         {
             get { return FOnInsertTextBefor; }
             set { FOnInsertTextBefor = value; }
+        }
+
+        public DataItemNoFunEventHandler OnPaintDomainRegion
+        {
+            get { return FOnPaintDomainRegion; }
+            set { FOnPaintDomainRegion = value; }
         }
     }
 }

@@ -153,13 +153,15 @@ namespace HC.View
 
         private void InitializeCellData(HCTableCellData aCellData)
         {
+            aCellData.ParentData = OwnerData;
             aCellData.OnInsertItem = (OwnerData as HCViewData).OnInsertItem;
             aCellData.OnRemoveItem = (OwnerData as HCViewData).OnRemoveItem;
             aCellData.OnSaveItem = OwnerData.OnSaveItem;
             aCellData.OnAcceptAction = (OwnerData as HCRichData).OnAcceptAction;
             aCellData.OnItemMouseDown = (OwnerData as HCViewData).OnItemMouseDown;
             aCellData.OnItemMouseUp = (OwnerData as HCViewData).OnItemMouseUp;
-            aCellData.OnItemRequestFormat = (OwnerData as HCViewData).OnItemRequestFormat;
+            aCellData.OnDrawItemMouseMove = (OwnerData as HCRichData).OnDrawItemMouseMove;
+            aCellData.OnItemRequestFormat = DoCellDataItemRequestFormat;
 
             aCellData.OnCreateItemByStyle = (OwnerData as HCViewData).OnCreateItemByStyle;      
             aCellData.OnDrawItemPaintBefor = (OwnerData as HCRichData).OnDrawItemPaintBefor;
@@ -173,6 +175,7 @@ namespace HC.View
 
             aCellData.OnCanEdit = (OwnerData as HCViewData).OnCanEdit;
             aCellData.OnInsertTextBefor = (OwnerData as HCViewData).OnInsertTextBefor;
+            aCellData.OnPaintDomainRegion = (OwnerData as HCViewData).OnPaintDomainRegion;
             aCellData.OnItemResized = (OwnerData as HCRichData).OnItemResized;
             aCellData.OnCurParaNoChange = (OwnerData as HCRichData).OnCurParaNoChange;
 
@@ -184,6 +187,11 @@ namespace HC.View
         private HCCustomData DoCellDataGetRootData()
         {
             return OwnerData.GetRootData();
+        }
+
+        private void DoCellDataItemRequestFormat(HCCustomData data, HCCustomItem item)
+        {
+            (OwnerData as HCRichData).ItemRequestFormat(this);
         }
 
         /// <summary> 表格行有添加时 </summary>
@@ -2273,6 +2281,8 @@ namespace HC.View
 
         protected bool InsertCol(int aCol, int aCount)
         {
+            Undo_Mirror();
+
             // TODO : 根据各行当前列平均减少一定的宽度给要插入的列
             int viDestRow = -1, viDestCol = -1;
             HCTableCell vCell;
@@ -2318,6 +2328,8 @@ namespace HC.View
 
         protected bool InsertRow(int aRow, int aCount)
         {
+            Undo_Mirror();
+
             int viDestRow = -1, viDestCol = -1;
             HCTableRow vTableRow;
 
@@ -2360,6 +2372,8 @@ namespace HC.View
             if (!ColCanDelete(aCol))
                 return false;
 
+            Undo_Mirror();
+
             int viDestRow = -1, viDestCol = -1;
             for (int vRow = 0; vRow <= RowCount - 1; vRow++)
             {
@@ -2394,6 +2408,8 @@ namespace HC.View
         {
             if (!RowCanDelete(aRow))
                 return false;
+
+            Undo_Mirror();
 
             int viDestRow = -1, viDestCol = -1;
             for (int vCol = 0; vCol <= FColWidths.Count - 1; vCol++)
@@ -4744,7 +4760,9 @@ namespace HC.View
             int vCurRow = FSelectCellRang.StartRow;
             int vCurCol = FSelectCellRang.StartCol;
             int vSrcRow = -1, vSrcCol = -1, vDestRow = -1, vDestCol = -1;
-            
+
+            Undo_Mirror();
+
             // 拆分时，光标所单元格RowSpan>=0，ColSpan>=0
             if (FRows[vCurRow][vCurCol].RowSpan > 0)
             {
@@ -4862,9 +4880,10 @@ namespace HC.View
 
             int vCurRow = FSelectCellRang.StartRow;
             int vCurCol = FSelectCellRang.StartCol;
-
             int vSrcRow = -1, vSrcCol = -1, vDestRow = -1, vDestCol = -1;
-            
+
+            this.Undo_Mirror();
+
             // 拆分时，光标所单元格RowSpan>=0，ColSpan>=0
             if (this[vCurRow, vCurCol].ColSpan > 0)
             {

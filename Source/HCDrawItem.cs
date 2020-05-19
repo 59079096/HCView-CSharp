@@ -64,6 +64,11 @@ namespace HC.View
             FOptions = new HashSet<DrawOption>();
         }
 
+        public int CharOffsetStart()
+        {
+            return CharOffs - 1;
+        }
+
         public int CharOffsetEnd()
         {
             return CharOffs + CharLen - 1;

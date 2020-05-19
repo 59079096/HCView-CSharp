@@ -10,7 +10,12 @@ using System.Windows.Forms;
 
 namespace EMRView
 {
-    public class HCEmrViewIH : HCViewTool
+    public class HCEmrViewIH :
+        #if VIEWTOOL
+        HCViewTool
+        #else
+        HCView
+        #endif
     {
         private frmInputHelper FInputHelper;
         private const string CARETSTOPCHAR = "，,。;；：:";
@@ -177,7 +182,7 @@ namespace EMRView
                 FInputHelper.CompWndMove(this.Handle, Caret.X, Caret.Y + Caret.Height);
         }
 
-        #region 取光标前后字符
+#region 取光标前后字符
         private bool GetCharBefor(int aOffset, ref string aChars)
         {
             for (int i = aOffset - 1; i >= 1 - 1; i--)
@@ -237,7 +242,7 @@ namespace EMRView
                     aAfter = aAfter + vText;
             }
         }
-        #endregion
+#endregion
 
         protected override void DoCaretChange()
         {

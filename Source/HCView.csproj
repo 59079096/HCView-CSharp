@@ -38,7 +38,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNPLACEHOLDERCHAR</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNPLACEHOLDERCHAR;CHECKNULLITEM;RESETTABLEUSEFIRSTROWHEIGHT;TABLEROWRESTOREAUTOHEIGHT</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
@@ -97,8 +97,6 @@
     <Compile Include="HCRadioGroup.cs" />
     <Compile Include="HCRectItem.cs" />
     <Compile Include="HCRichData.cs" />
-    <Compile Include="HCRtfReader.cs" />
-    <Compile Include="HCRtfRW.cs" />
     <Compile Include="HCShape.cs" />
     <Compile Include="HCStatusScrollBar.cs" />
     <Compile Include="HCToolBar.cs" />

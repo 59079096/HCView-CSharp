@@ -90,11 +90,6 @@ namespace HC.View
             return (offset >= FCaretOffset) && (offset <= FSelEnd);
         }
 
-        private bool SelectTextExists()
-        {
-            return (FSelEnd >= 0) && (FSelEnd != FCaretOffset);
-        }
-
         private void DeleteSelectText()
         {
             FText = FText.Remove(FCaretOffset, FSelEnd - FCaretOffset);
@@ -294,6 +289,9 @@ namespace HC.View
                 FCaretOffset = FSelEnd;
                 FSelEnd = vSel;
             }
+
+            if (OwnerData.Style.UpdateInfo.Draging)
+                this.DisSelect();
 
             return base.MouseUp(e);
         }
@@ -520,6 +518,52 @@ namespace HC.View
             FBorderSides.InClude((byte)BorderSide.cbsTop);
             FBorderSides.InClude((byte)BorderSide.cbsRight);
             FBorderSides.InClude((byte)BorderSide.cbsBottom);
+        }
+
+        public bool SelectTextExists()
+        {
+            return (FSelEnd >= 0) && (FSelEnd != FCaretOffset);
+        }
+
+        public override bool CoordInSelect(int x, int y)
+        {
+            return SelectExists() && HC.PtInRect(HC.Bounds(0, 0, Width, Height), x, y);
+        }
+
+        public override bool SelectExists()
+        {
+            return base.SelectExists() || SelectTextExists();
+        }
+
+        public override bool IsSelectComplateTheory()
+        {
+            return IsSelectComplate;
+        }
+
+        public override bool DeleteSelected()
+        {
+            bool vResult = base.DeleteSelected();
+            if (SelectTextExists())
+            {
+                DeleteSelectText();
+                vResult = true;
+            }
+
+            return vResult;
+        }
+
+        public override void DisSelect()
+        {
+            DisSelectText();
+            base.DisSelect();
+        }
+
+        public override string SaveSelectToText()
+        {
+            if (SelectTextExists())
+                return FText.Substring(FCaretOffset + 1 - 1, FSelEnd - FCaretOffset);
+            else
+                return base.SaveSelectToText();
         }
 
         public override void Assign(HCCustomItem source)

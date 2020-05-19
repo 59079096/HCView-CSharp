@@ -33,6 +33,7 @@ namespace EMRView
         /// <summary> 类别 单选、多选、数值、日期时间等 </summary>
         public const string Frmtp = "Frmtp";
         public const string Unit = "Unit";
+        public const string HideUnit = "HdUnit";
 
         /// <summary> 表示格式 </summary>
         public const string PreFormat = "PRFMT";
@@ -48,6 +49,9 @@ namespace EMRView
 
         /// <summary> 痕迹信息 </summary>
         public const string Trace = "Trace";
+
+        /// <summary> 隐私信息 </summary>
+        public const string Secret = "Secret";
 
         /// <summary> 元素填写后背景色 </summary>
         public static Color DE_CHECKCOLOR = Color.FromArgb(0xF0, 0xF0, 0xF0);
@@ -105,6 +109,18 @@ namespace EMRView
         public const string Time = "T";
         /// <summary> 日期时间 </summary>
         public const string DateTime = "DT";
+    }
+
+    public static class GroupProp : Object
+    {
+        /// <summary> 数据组类型 </summary>
+        public const string SubType = "RT";
+    }
+
+    public static class SubType : Object
+    {
+        /// <summary> 病程 </summary>
+        public const string Proc = "P";
     }
 
     public enum EmrSyntaxProblem : byte
@@ -206,7 +222,7 @@ namespace EMRView
 
         protected override void SetText(string value)
         {
-            FAllocValue = true;
+            //FAllocValue = true;
             if (value != "")
                 base.SetText(value);
             else
@@ -240,6 +256,35 @@ namespace EMRView
         ~DeItem()
         {
 
+        }
+
+        public static void GetSecretRange(string secret, ref int low, ref int hi)
+        {
+            low = -1;
+            hi = -1;
+
+            if (secret == "")
+                return;
+
+            int vPos = secret.IndexOf("-");
+            if (vPos < 0)  // 2
+                low = int.Parse(secret);
+            else
+            if (vPos == 0)  // -8  -
+            {
+                low = 1;
+                string vS = secret.Substring(vPos + 1, secret.Length - vPos - 1);
+                if (vS != "")  // -
+                    hi = int.Parse(vS);
+            }
+            else  // 2-7  3-
+            {
+                string vS = secret.Substring(0, vPos);
+                low = int.Parse(vS);
+                vS = secret.Substring(vPos + 1, secret.Length - vPos - 1);
+                if (vS != "")
+                    hi = int.Parse(vS);
+            }
         }
 
         public override void MouseEnter()
@@ -301,6 +346,12 @@ namespace EMRView
                 return this[DeProp.Trace];
         }
 
+        public void DeleteProperty(string propName)
+        {
+            if (FPropertys.Keys.Contains(propName))
+                FPropertys.Remove(propName);
+        }
+
         public override bool AcceptAction(int aOffset, bool aRestrain, HCAction aAction)
         {
             bool vResult = base.AcceptAction(aOffset, aRestrain, aAction);
@@ -320,7 +371,7 @@ namespace EMRView
                             vResult = false;
                         else
                         if (IsElement)
-                            vResult = !aRestrain;
+                            vResult = false;
 
                         break;
 
@@ -1442,7 +1493,7 @@ namespace EMRView
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
-            if ((this.Image.PixelFormat == System.Drawing.Imaging.PixelFormat.Undefined) && (!aPaintInfo.Print))  // 非打印状态下的空白图片
+            if ((this.Empty) && this.Active && (!aPaintInfo.Print))  // 非打印状态下的空白图片
             {
                 aCanvas.Font.Size = 12;
                 aCanvas.Font.FontStyles.InClude((byte)HCFontStyle.tsItalic);

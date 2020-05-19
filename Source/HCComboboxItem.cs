@@ -398,6 +398,7 @@ namespace HC.View
             base.Assign(Source);
             FItems.Clear();
             HCComboboxItem vCombobox = Source as HCComboboxItem;
+            FSaveItem = vCombobox.SaveItem;
             for (int i = 0; i < vCombobox.Items.Count; i++)
                 FItems.Add(vCombobox.Items[i]);
 

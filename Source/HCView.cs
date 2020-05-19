@@ -58,16 +58,19 @@ namespace HC.View
             FOnSectionCurParaNoChange, FOnSectionActivePageChange;
         private StyleItemEventHandler FOnSectionCreateStyleItem;
         private SectionDataItemEventHandler FOnSectionCaretItemChanged;
-        private FloatStyleItemEventHandler FOnSectionCreateFloatStyleItem;
         private OnCanEditEventHandler FOnSectionCanEdit;
         private TextEventHandler FOnSectionInsertTextBefor;
         private SectionDataItemEventHandler FOnSectionInsertItem, FOnSectionRemoveItem;
+        private SectionDataDrawItemMouseEventHandler FOnSectionDrawItemMouseMove;
         private SectionDataItemNoFunEvent FOnSectionSaveItem;
         private SectionDataActionEventHandler FOnSectionAcceptAction;
         private SectionDrawItemPaintEventHandler FOnSectionDrawItemPaintAfter, FOnSectionDrawItemPaintBefor;
 
-        private SectionPaintEventHandler FOnSectionPaintHeader, FOnSectionPaintFooter, FOnSectionPaintPage,
-          FOnSectionPaintPaperBefor, FOnSectionPaintPaperAfter;
+        private SectionPaintEventHandler
+            FOnSectionPaintHeaderBefor, FOnSectionPaintHeaderAfter,
+            FOnSectionPaintFooterBefor, FOnSectionPaintFooterAfter,
+            FOnSectionPaintPageBefor, FOnSectionPaintPageAfter,
+            FOnSectionPaintPaperBefor, FOnSectionPaintPaperAfter;
         private PaintEventHandler FOnPaintViewBefor, FOnPaintViewAfter;
 
         private EventHandler FOnChange, FOnChangedSwitch, FOnZoomChanged, FOnViewResize;
@@ -76,22 +79,41 @@ namespace HC.View
         {
             if (FSections[aSectionIndex].PaperSize == PaperKind.Custom)
             {
-                aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom",
-                    (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100),
-                    (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100));
+                if (FSections[aSectionIndex].PaperOrientation == PaperOrientation.cpoLandscape)
+                {
+                    aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom",
+                    (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100),
+                    (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100));
+                }
+                else
+                {
+                    aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Custom",
+                        (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100),
+                        (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100));
+                }
             }
             else
             {
-                aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize(FSections[aSectionIndex].PaperSize.ToString(),
-                    (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100),
-                    (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100));
+                if (FSections[aSectionIndex].PaperOrientation == PaperOrientation.cpoLandscape)
+                {
+                    aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize(FSections[aSectionIndex].PaperSize.ToString(),
+                    (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100),
+                    (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100));
+                }
+                else
+                {
+                    aPageSettings.PaperSize = new System.Drawing.Printing.PaperSize(FSections[aSectionIndex].PaperSize.ToString(),
+                        (int)Math.Round(FSections[aSectionIndex].PaperWidth / 25.4 * 100),
+                        (int)Math.Round(FSections[aSectionIndex].PaperHeight / 25.4 * 100));
+                }
             }
 
             aPageSettings.Margins.Left = 0;
             aPageSettings.Margins.Top = 0;
             aPageSettings.Margins.Right = 0;
             aPageSettings.Margins.Bottom = 0;
-            //aPageSettings.Landscape = FSections[vSectionIndex].PaperOrientation == PaperOrientation.cpoLandscape;
+
+            aPageSettings.Landscape = FSections[aSectionIndex].PaperOrientation == PaperOrientation.cpoLandscape;
         }
 
         private void GetViewWidth()
@@ -298,13 +320,25 @@ namespace HC.View
             DoViewResize();
         }
 
-        private void DoSectionPaintHeader(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private void DoSectionPaintHeaderBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            if (FOnSectionPaintHeader != null)
-                FOnSectionPaintHeader(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+            if (FOnSectionPaintHeaderBefor != null)
+                FOnSectionPaintHeaderBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        private void DoSectionPaintFooter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private void DoSectionPaintHeaderAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintHeaderAfter != null)
+                FOnSectionPaintHeaderAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        private void DoSectionPaintFooterBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintFooterBefor != null)
+                FOnSectionPaintFooterBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        private void DoSectionPaintFooterAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
             HCSection vSection = sender as HCSection;
             if (vSection.PageNoVisible)
@@ -337,14 +371,20 @@ namespace HC.View
                 aCanvas.TextOut(aRect.Left + (aRect.Width - aCanvas.TextWidth(vS)) / 2, aRect.Top + vSection.Footer.Height, vS);
             }
 
-            if (FOnSectionPaintFooter != null)
-                FOnSectionPaintFooter(vSection, aPageIndex, aRect, aCanvas, aPaintInfo);
+            if (FOnSectionPaintFooterAfter != null)
+                FOnSectionPaintFooterAfter(vSection, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        private void DoSectionPaintPage(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        private void DoSectionPaintPageBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
-            if (FOnSectionPaintPage != null)
-                FOnSectionPaintPage(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+            if (FOnSectionPaintPageBefor != null)
+                FOnSectionPaintPageBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        private void DoSectionPaintPageAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintPageAfter != null)
+                FOnSectionPaintPageAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
         private void DoSectionPaintPaperBefor(object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
@@ -462,7 +502,7 @@ namespace HC.View
             Result.OnCreateItem = DoSectionCreateItem;
             Result.OnDataAcceptAction = DoSectionAcceptAction;
             Result.OnCreateItemByStyle = DoSectionCreateStyleItem;
-            Result.OnCreateFloatItemByStyle = DoSectionCreateFloatStyleItem;
+            Result.OnPaintDomainRegion = DoSectionPaintDomainRegion;
             Result.OnCanEdit = DoSectionCanEdit;
             Result.OnInsertTextBefor = DoSectionInsertTextBefor;
             Result.OnInsertItem = DoSectionInsertItem;
@@ -470,15 +510,19 @@ namespace HC.View
             Result.OnSaveItem = DoSectionSaveItem;
             Result.OnItemMouseDown = DoSectionItemMouseDown;
             Result.OnItemMouseUp = DoSectionItemMouseUp;
+            Result.OnDrawItemMouseMove = DoSectionDrawItemMouseMove;
             Result.OnItemResize = DoSectionItemResize;
             Result.OnReadOnlySwitch = DoSectionReadOnlySwitch;
             Result.OnGetScreenCoord = DoSectionGetScreenCoord;
             Result.OnDrawItemPaintAfter = DoSectionDrawItemPaintAfter;
             Result.OnDrawItemPaintBefor = DoSectionDrawItemPaintBefor;
             Result.OnDrawItemPaintContent = DoSectionDrawItemPaintContent;
-            Result.OnPaintHeader = DoSectionPaintHeader;
-            Result.OnPaintFooter = DoSectionPaintFooter;
-            Result.OnPaintPage = DoSectionPaintPage;
+            Result.OnPaintHeaderBefor = DoSectionPaintHeaderBefor;
+            Result.OnPaintHeaderAfter = DoSectionPaintHeaderAfter;
+            Result.OnPaintFooterBefor = DoSectionPaintFooterBefor;
+            Result.OnPaintFooterAfter = DoSectionPaintFooterAfter;
+            Result.OnPaintPageBefor = DoSectionPaintPageBefor;
+            Result.OnPaintPageAfter = DoSectionPaintPageAfter;
             Result.OnPaintPaperBefor = DoSectionPaintPaperBefor;
             Result.OnPaintPaperAfter = DoSectionPaintPaperAfter;
             Result.OnInsertAnnotate = DoSectionInsertAnnotate;
@@ -977,18 +1021,15 @@ namespace HC.View
                 return null;
         }
 
+        protected virtual bool DoSectionPaintDomainRegion(object sender, HCCustomData data, int itemNo)
+        {
+            return true;
+        }
+
         protected virtual void DoSectionCaretItemChanged(Object sender, HCCustomData data, HCCustomItem item)
         {
             if (FOnSectionCaretItemChanged != null)
                 FOnSectionCaretItemChanged(sender, data, item);
-        }
-
-        protected virtual HCCustomFloatItem DoSectionCreateFloatStyleItem(HCSectionData aData, int aStyleNo)
-        {
-            if (FOnSectionCreateFloatStyleItem != null)
-                return FOnSectionCreateFloatStyleItem(aData, aStyleNo);
-            else
-                return null;
         }
 
         protected virtual void DoSectionInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
@@ -1020,6 +1061,12 @@ namespace HC.View
         {
             if (((Control.ModifierKeys & Keys.Control) == Keys.Control) && (aData.Items[aItemNo].HyperLink != ""))
                 System.Diagnostics.Process.Start(aData.Items[aItemNo].HyperLink);
+        }
+
+        protected virtual void DoSectionDrawItemMouseMove(object sender, HCCustomData data, int itemNo, int offset, int drawItemNo, MouseEventArgs e)
+        {
+            if (FOnSectionDrawItemMouseMove != null)
+                FOnSectionDrawItemMouseMove(sender, data, itemNo, offset, drawItemNo, e);
         }
 
         protected virtual bool DoSectionCanEdit(object sender)
@@ -1086,12 +1133,23 @@ namespace HC.View
         /// <summary> 复制前，便于控制是否允许复制 </summary>
         protected virtual bool DoCopyRequest(int aFormat)
         {
+            HCCustomItem vTopItem = ActiveSection.GetTopLevelItem();
+            if (vTopItem is HCEditItem)
+            {
+                if ((vTopItem as HCEditItem).SelectTextExists())
+                    return (aFormat == User.CF_TEXT) || (aFormat == User.CF_UNICODETEXT);
+            }
+
             return true;
         }
 
         /// <summary> 粘贴前，便于控制是否允许粘贴 </summary>
         protected virtual bool DoPasteRequest(int aFormat)
         {
+            HCCustomItem vTopItem = ActiveSection.GetTopLevelItem();
+            if (vTopItem is HCEditItem)
+                return (aFormat == User.CF_TEXT) || (aFormat == User.CF_UNICODETEXT);
+
             return true;
         }
 
@@ -1771,6 +1829,14 @@ namespace HC.View
             }
 
             return vResult;
+        }
+
+        public bool AppendStream(Stream stream)
+        {
+            ActiveSection.ActiveData.SelectLastItemAfterWithCaret();
+            InsertBreak();
+            ApplyParaAlignHorz(ParaAlignHorz.pahLeft);
+            return InsertStream(stream);
         }
 
         /// <summary> 插入文本(可包括\r\n) </summary>
@@ -4010,6 +4076,12 @@ namespace HC.View
             set { FOnSectionRemoveItem = value; }
         }
 
+        public SectionDataDrawItemMouseEventHandler OnSectionDrawItemMouseMove
+        {
+            get { return FOnSectionDrawItemMouseMove; }
+            set { FOnSectionDrawItemMouseMove = value; }
+        }
+
         public SectionDataItemNoFunEvent OnSectionSaveItem
         {
             get { return FOnSectionSaveItem; }
@@ -4037,24 +4109,42 @@ namespace HC.View
         }
 
         /// <summary> 节页眉绘制时触发 </summary>
-        public SectionPaintEventHandler OnSectionPaintHeader
+        public SectionPaintEventHandler OnSectionPaintHeaderBefor
         {
-            get { return FOnSectionPaintHeader; }
-            set { FOnSectionPaintHeader = value; }
+            get { return FOnSectionPaintHeaderBefor; }
+            set { FOnSectionPaintHeaderBefor = value; }
+        }
+
+        public SectionPaintEventHandler OnSectionPaintHeaderAfter
+        {
+            get { return FOnSectionPaintHeaderAfter; }
+            set { FOnSectionPaintHeaderAfter = value; }
         }
 
         /// <summary> 节页脚绘制时触发 </summary>
-        public SectionPaintEventHandler OnSectionPaintFooter
+        public SectionPaintEventHandler OnSectionPaintFooterBefor
         {
-            get { return FOnSectionPaintFooter; }
-            set { FOnSectionPaintFooter = value; }
+            get { return FOnSectionPaintFooterBefor; }
+            set { FOnSectionPaintFooterBefor = value; }
+        }
+
+        public SectionPaintEventHandler OnSectionPaintFooterAfter
+        {
+            get { return FOnSectionPaintFooterAfter; }
+            set { FOnSectionPaintFooterAfter = value; }
         }
 
         /// <summary> 节页面绘制时触发 </summary>
-        public SectionPaintEventHandler OnSectionPaintPage
+        public SectionPaintEventHandler OnSectionPaintPageBefor
         {
-            get { return FOnSectionPaintPage; }
-            set { FOnSectionPaintPage = value; }
+            get { return FOnSectionPaintPageBefor; }
+            set { FOnSectionPaintPageBefor = value; }
+        }
+
+        public SectionPaintEventHandler OnSectionPaintPageAfter
+        {
+            get { return FOnSectionPaintPageAfter; }
+            set { FOnSectionPaintPageAfter = value; }
         }
 
         /// <summary> 节整页绘制时触发 </summary>
@@ -4167,13 +4257,6 @@ namespace HC.View
         {
             get { return FOnSectionCreateStyleItem; }
             set { FOnSectionCreateStyleItem = value; }
-        }
-
-        /// <summary> 创建指定样式的FloatItem时触发 </summary>
-        public FloatStyleItemEventHandler OnSectionCreateFloatStyleItem
-        {
-            get { return FOnSectionCreateFloatStyleItem; }
-            set { FOnSectionCreateFloatStyleItem = value; }
         }
 
         /// <summary> 当编辑只读状态的Data时触发 </summary>
