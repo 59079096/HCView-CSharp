@@ -280,7 +280,7 @@ namespace EMRView
             else
             if (FFrmtp == DeFrmtp.String)
             {
-                return false;  // 文本的不弹了，使用直接在元素上修改的方式
+                //return false;  // 文本的不弹了，使用直接在元素上修改的方式；直接修改怎么解决光标在最后时不是输入纯文本呢
                 tbxMemo.Clear();
                 tabPop.SelectedIndex = 2;
                 this.Width = 260;

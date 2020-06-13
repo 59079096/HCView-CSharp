@@ -180,7 +180,7 @@ namespace HC.View
 
         public override void Clear()
         {
-            FImage = new Bitmap(FImage.Width, FImage.Height);
+            FImage = new Bitmap(this.Width, this.Height);
             FEmpty = true;
         }
 

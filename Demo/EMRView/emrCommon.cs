@@ -162,6 +162,7 @@ namespace EMRView
         private DateTime FInDateTime, FInDeptDateTime;
         private byte FCareLevel;  // 护理级别
         private byte FVisitID;  // 住院次数
+        private byte FSexCode;
 
         public void Assign(PatientInfo aSource)
         {
@@ -169,6 +170,7 @@ namespace EMRView
             FBedNo = aSource.BedNo;
             FName = aSource.Name;
             FSex = aSource.Sex;
+            FSexCode = aSource.SexCode;
             FAge = aSource.Age;
             FDeptID = aSource.DeptID;
             FDeptName = aSource.DeptName;
@@ -201,6 +203,13 @@ namespace EMRView
             get { return FSex; }
             set { FSex = value; }
         }
+
+        public byte SexCode
+        {
+            get { return FSexCode; }
+            set { FSexCode = value; }
+        }
+
         public string Age
         {
             get { return FAge; }

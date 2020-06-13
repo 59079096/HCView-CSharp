@@ -194,6 +194,10 @@ namespace HC.View
             if (vFileExt != HC.HC_EXT)
                 throw new Exception("加载失败，不是" + HC.HC_EXT + "文件！");
 
+            if (vFileVersion > HC.HC_FileVersionInt)
+                throw new Exception("加载失败，当前编辑器最高支持版本为"
+                    + HC.HC_FileVersionInt.ToString() + "的文件，无法打开版本为" + vFileVersion.ToString() + "的文件！");
+
             DoLoadStreamBefor(aStream, vFileVersion);  // 触发加载前事件
             aStyle.LoadFromStream(aStream, vFileVersion);  // 加载样式表
             aLoadSectionProc(vFileVersion);  // 加载节数量、节数据
@@ -318,114 +322,6 @@ namespace HC.View
         private void DoSectionItemResize(HCCustomData aData, int aItemNo)
         {
             DoViewResize();
-        }
-
-        private void DoSectionPaintHeaderBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            if (FOnSectionPaintHeaderBefor != null)
-                FOnSectionPaintHeaderBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
-        }
-
-        private void DoSectionPaintHeaderAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            if (FOnSectionPaintHeaderAfter != null)
-                FOnSectionPaintHeaderAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
-        }
-
-        private void DoSectionPaintFooterBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            if (FOnSectionPaintFooterBefor != null)
-                FOnSectionPaintFooterBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
-        }
-
-        private void DoSectionPaintFooterAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            HCSection vSection = sender as HCSection;
-            if (vSection.PageNoVisible)
-            {
-                int vSectionIndex = FSections.IndexOf(vSection);
-                int vSectionStartPageIndex = 0;
-                int vAllPageCount = 0;
-                for (int i = 0; i <= FSections.Count - 1; i++)
-                {
-                    if (i == vSectionIndex)
-                        vSectionStartPageIndex = vAllPageCount;
-
-                    vAllPageCount = vAllPageCount + FSections[i].PageCount;
-                }
-
-                string vS = string.Format(FPageNoFormat, vSectionStartPageIndex + vSection.PageNoFrom + aPageIndex, vAllPageCount);
-                aCanvas.Brush.Style = HCBrushStyle.bsClear;
-
-                aCanvas.Font.BeginUpdate();
-                try
-                {
-                    aCanvas.Font.Size = 10;
-                    aCanvas.Font.Family = "宋体";
-                }
-                finally
-                {
-                    aCanvas.Font.EndUpdate();
-                }
-
-                aCanvas.TextOut(aRect.Left + (aRect.Width - aCanvas.TextWidth(vS)) / 2, aRect.Top + vSection.Footer.Height, vS);
-            }
-
-            if (FOnSectionPaintFooterAfter != null)
-                FOnSectionPaintFooterAfter(vSection, aPageIndex, aRect, aCanvas, aPaintInfo);
-        }
-
-        private void DoSectionPaintPageBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            if (FOnSectionPaintPageBefor != null)
-                FOnSectionPaintPageBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
-        }
-
-        private void DoSectionPaintPageAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            if (FOnSectionPaintPageAfter != null)
-                FOnSectionPaintPageAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
-        }
-
-        private void DoSectionPaintPaperBefor(object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            if (aPaintInfo.Print && (FAnnotatePre.DrawCount > 0))
-                FAnnotatePre.ClearDrawAnnotate();
-
-            if (FOnSectionPaintPaperBefor != null)
-                FOnSectionPaintPaperBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
-        }
-
-        private void DoSectionPaintPaperAfter(object sender, int aPageIndex,
-            RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
-        {
-            // HCView广告信息，如介意可以删掉
-            if (!aPaintInfo.Print && (FViewModel == HCViewModel.hvmFilm) && ((sender as HCSection).PagePadding > 10))
-            {
-                aCanvas.Brush.Style = HCBrushStyle.bsClear;
-
-                aCanvas.Font.BeginUpdate();
-                try
-                {
-                    aCanvas.Font.Size = 10;
-                    aCanvas.Font.Family = "宋体";
-                    aCanvas.Font.Color = Color.FromArgb(0xD0, 0xD1, 0xD5);
-                    aCanvas.Font.FontStyles.Value = 0;
-                }
-                finally
-                {
-                    aCanvas.Font.EndUpdate();
-                }
-
-                aCanvas.Brush.Style = HCBrushStyle.bsClear;
-                aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供，技术交流QQ群：649023932");
-            }
-
-            if (FAnnotatePre.Visible)  // 当前页有批注，绘制批注
-                FAnnotatePre.PaintDrawAnnotate(sender, aRect, aCanvas, aPaintInfo);
-
-            if (FOnSectionPaintPaperAfter != null)
-                FOnSectionPaintPaperAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
         private void DoSectionDrawItemAnnotate(object sender, HCCustomData aData,
@@ -1071,7 +967,7 @@ namespace HC.View
 
         protected virtual bool DoSectionCanEdit(object sender)
         {
-            if (FOnSectionCanEdit != null)
+            if ((!Style.States.Contain(HCState.hosLoading)) && (FOnSectionCanEdit != null))
                 return FOnSectionCanEdit(sender);
             else
                 return true;
@@ -1083,6 +979,114 @@ namespace HC.View
                 return FOnSectionInsertTextBefor(aData, aItemNo, aOffset, aText);
             else
                 return true;
+        }
+
+        protected void DoSectionPaintHeaderBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintHeaderBefor != null)
+                FOnSectionPaintHeaderBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        protected void DoSectionPaintHeaderAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintHeaderAfter != null)
+                FOnSectionPaintHeaderAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        protected void DoSectionPaintFooterBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintFooterBefor != null)
+                FOnSectionPaintFooterBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        protected void DoSectionPaintFooterAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            HCSection vSection = sender as HCSection;
+            if (vSection.PageNoVisible)
+            {
+                int vSectionIndex = FSections.IndexOf(vSection);
+                int vSectionStartPageIndex = 0;
+                int vAllPageCount = 0;
+                for (int i = 0; i <= FSections.Count - 1; i++)
+                {
+                    if (i == vSectionIndex)
+                        vSectionStartPageIndex = vAllPageCount;
+
+                    vAllPageCount = vAllPageCount + FSections[i].PageCount;
+                }
+
+                string vS = string.Format(FPageNoFormat, vSectionStartPageIndex + vSection.PageNoFrom + aPageIndex, vAllPageCount);
+                aCanvas.Brush.Style = HCBrushStyle.bsClear;
+
+                aCanvas.Font.BeginUpdate();
+                try
+                {
+                    aCanvas.Font.Size = 10;
+                    aCanvas.Font.Family = "宋体";
+                }
+                finally
+                {
+                    aCanvas.Font.EndUpdate();
+                }
+
+                aCanvas.TextOut(aRect.Left + (aRect.Width - aCanvas.TextWidth(vS)) / 2, aRect.Top + vSection.Footer.Height, vS);
+            }
+
+            if (FOnSectionPaintFooterAfter != null)
+                FOnSectionPaintFooterAfter(vSection, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        protected virtual void DoSectionPaintPageBefor(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintPageBefor != null)
+                FOnSectionPaintPageBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        protected void DoSectionPaintPageAfter(Object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (FOnSectionPaintPageAfter != null)
+                FOnSectionPaintPageAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        protected void DoSectionPaintPaperBefor(object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            if (aPaintInfo.Print && (FAnnotatePre.DrawCount > 0))
+                FAnnotatePre.ClearDrawAnnotate();
+
+            if (FOnSectionPaintPaperBefor != null)
+                FOnSectionPaintPaperBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
+        }
+
+        protected void DoSectionPaintPaperAfter(object sender, int aPageIndex,
+            RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
+        {
+            // HCView广告信息，如介意可以删掉
+            if (!aPaintInfo.Print && (FViewModel == HCViewModel.hvmFilm) && ((sender as HCSection).PagePadding > 10))
+            {
+                aCanvas.Brush.Style = HCBrushStyle.bsClear;
+
+                aCanvas.Font.BeginUpdate();
+                try
+                {
+                    aCanvas.Font.Size = 10;
+                    aCanvas.Font.Family = "宋体";
+                    aCanvas.Font.Color = Color.FromArgb(0xD0, 0xD1, 0xD5);
+                    aCanvas.Font.FontStyles.Value = 0;
+                }
+                finally
+                {
+                    aCanvas.Font.EndUpdate();
+                }
+
+                aCanvas.Brush.Style = HCBrushStyle.bsClear;
+                aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供，技术交流QQ群：649023932");
+            }
+
+            if (FAnnotatePre.Visible)  // 当前页有批注，绘制批注
+                FAnnotatePre.PaintDrawAnnotate(sender, aRect, aCanvas, aPaintInfo);
+
+            if (FOnSectionPaintPaperAfter != null)
+                FOnSectionPaintPaperAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
         protected virtual void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
@@ -1689,7 +1693,7 @@ namespace HC.View
         }
 
         /// <summary> 全部清空(清除各节页眉、页脚、页面的Item及DrawItem) </summary>
-        public void Clear()
+        public virtual void Clear()
         {
             this.BeginUpdate();
             try
@@ -1723,6 +1727,11 @@ namespace HC.View
             {
                 this.EndUpdate();
             }
+        }
+
+        public void ClearUndo()
+        {
+            FUndoList.Clear();
         }
 
         /// <summary> 取消选中 </summary>
@@ -2283,6 +2292,13 @@ namespace HC.View
                     }
                 }
                 else
+                if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
+                {
+                    string vs = vIData.GetData(DataFormats.Rtf).ToString();
+                    HCRtfRW vRtfRW = new HCRtfRW();
+                    vRtfRW.InsertString(this, vs);
+                }
+                else
                 if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                     InsertText(Clipboard.GetText());
                 else
@@ -2602,7 +2618,7 @@ namespace HC.View
         public int GetPageCount()
         {
             int Result = 0;
-            for (int i = 0; i <= Sections.Count - 1; i++)
+            for (int i = 0; i <= FSections.Count - 1; i++)
                 Result = Result + FSections[i].PageCount;
 
             return Result;
@@ -2809,8 +2825,8 @@ namespace HC.View
         /// <summary> 以字符串形式获取文档各节正文内容 </summary>
         public string SaveToText()
         {
-            string vResult = "";
-            for (int i = 0; i <= Sections.Count - 1; i++)
+            string vResult = FSections[0].SaveToText();
+            for (int i = 1; i <= FSections.Count - 1; i++)
                 vResult = vResult + HC.sLineBreak + FSections[i].SaveToText();
 
             return vResult;
@@ -3014,7 +3030,7 @@ namespace HC.View
             byte vByte = (byte)FSections.Count;
             aStream.WriteByte(vByte);
             // 各节数据
-            for (int i = 0; i <= Sections.Count - 1; i++)
+            for (int i = 0; i <= FSections.Count - 1; i++)
                 FSections[i].SaveToStream(aStream, vArea);
             
             DoSaveStreamAfter(aStream);

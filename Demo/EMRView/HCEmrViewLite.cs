@@ -8,7 +8,7 @@ namespace EMRView
 {
     public delegate void HCImportAsTextEventHandler(string aText);
 
-    public class HCEmrViewLite : HCView
+    public class HCEmrViewLite : HCViewLite
     {
 
         protected override void Create()

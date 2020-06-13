@@ -32,11 +32,18 @@ namespace HC.View
             Clear();
         }
 
-        public void Clear()
+        public virtual void Clear()
         {
             Data = null;
             FBeginNo = -1;
             FEndNo = -1;
+        }
+
+        public virtual void Assign(HCDomainInfo source)
+        {
+            this.Data = source.Data;
+            this.FBeginNo = source.BeginNo;
+            this.FEndNo = source.EndNo;
         }
 
         public bool Contain(int aItemNo)
@@ -734,7 +741,10 @@ namespace HC.View
 
         public virtual bool CanEdit()
         {
-            return true;
+            if (this.ParentData != null)
+                return this.ParentData.CanEdit();
+            else
+                return true;
         }
 
         /// <summary> 全选 </summary>
@@ -999,7 +1009,7 @@ namespace HC.View
                 aDrawItemNo = vStartDItemNo;
                 aItemNo = FDrawItems[vStartDItemNo].ItemNo;
                 if (FItems[aItemNo].StyleNo < HCStyle.Null)
-                    aOffset = HC.OffsetBefor;  // GetDrawItemOffsetAt(vStartDItemNo, X)
+                    aOffset = GetDrawItemOffsetAt(vStartDItemNo, x);
                 else
                     aOffset = FDrawItems[vStartDItemNo].CharOffs - 1;  // DrawItem起始
             }
@@ -1009,7 +1019,7 @@ namespace HC.View
                 aDrawItemNo = vEndDItemNo;
                 aItemNo = FDrawItems[vEndDItemNo].ItemNo;
                 if (FItems[aItemNo].StyleNo < HCStyle.Null)
-                    aOffset = HC.OffsetAfter;  // GetDrawItemOffsetAt(vEndDItemNo, X)
+                    aOffset = GetDrawItemOffsetAt(vEndDItemNo, x);
                 else
                     aOffset = FDrawItems[vEndDItemNo].CharOffs + FDrawItems[vEndDItemNo].CharLen - 1;  // DrawItem最后
             }
@@ -1025,17 +1035,7 @@ namespace HC.View
                         aDrawItemNo = i;
                         aItemNo = FDrawItems[i].ItemNo;
                         if (FItems[aItemNo].StyleNo < HCStyle.Null)
-                        {
-                            if (ARestrain)
-                            {
-                                if (x < vDrawRect.Left + vDrawRect.Width / 2)
-                                    aOffset = HC.OffsetBefor;
-                                else
-                                    aOffset = HC.OffsetAfter;
-                            }
-                            else
-                                aOffset = GetDrawItemOffsetAt(i, x);
-                        }
+                            aOffset = GetDrawItemOffsetAt(i, x);
                         else  // TextItem
                             aOffset = FDrawItems[i].CharOffs + GetDrawItemOffsetAt(i, x) - 1;
 

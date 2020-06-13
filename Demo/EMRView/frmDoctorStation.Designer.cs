@@ -32,15 +32,17 @@
             this.模板制作ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.lvPatient = new System.Windows.Forms.ListView();
             this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader11 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader12 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader13 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -71,9 +73,11 @@
             this.columnHeader2,
             this.columnHeader3,
             this.columnHeader4,
-            this.columnHeader5,
             this.columnHeader6,
-            this.columnHeader7});
+            this.columnHeader7,
+            this.columnHeader13,
+            this.columnHeader12,
+            this.columnHeader11});
             this.lvPatient.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvPatient.FullRowSelect = true;
             this.lvPatient.Location = new System.Drawing.Point(0, 25);
@@ -88,6 +92,11 @@
             // columnHeader9
             // 
             this.columnHeader9.Text = "PID";
+            // 
+            // columnHeader10
+            // 
+            this.columnHeader10.Text = "诊次";
+            this.columnHeader10.Width = 40;
             // 
             // columnHeader8
             // 
@@ -109,13 +118,8 @@
             // 
             // columnHeader4
             // 
-            this.columnHeader4.Text = "入院时间";
+            this.columnHeader4.Text = "入科时间";
             this.columnHeader4.Width = 120;
-            // 
-            // columnHeader5
-            // 
-            this.columnHeader5.Text = "入院科室";
-            this.columnHeader5.Width = 80;
             // 
             // columnHeader6
             // 
@@ -124,15 +128,23 @@
             // 
             // columnHeader7
             // 
-            this.columnHeader7.Text = "入科时间";
+            this.columnHeader7.Text = "科室ID";
             this.columnHeader7.Width = 120;
             // 
-            // columnHeader10
+            // columnHeader11
             // 
-            this.columnHeader10.Text = "诊次";
-            this.columnHeader10.Width = 40;
+            this.columnHeader11.Text = "性别代码";
             // 
-            // frmMain
+            // columnHeader12
+            // 
+            this.columnHeader12.Text = "诊断";
+            this.columnHeader12.Width = 120;
+            // 
+            // columnHeader13
+            // 
+            this.columnHeader13.Text = "病情";
+            // 
+            // frmDoctorStation
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -140,7 +152,7 @@
             this.Controls.Add(this.lvPatient);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
-            this.Name = "frmMain";
+            this.Name = "frmDoctorStation";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "医生站";
             this.Load += new System.EventHandler(this.frmMain_Load);
@@ -160,12 +172,14 @@
         private System.Windows.Forms.ColumnHeader columnHeader2;
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.ColumnHeader columnHeader4;
-        private System.Windows.Forms.ColumnHeader columnHeader5;
         private System.Windows.Forms.ColumnHeader columnHeader6;
         private System.Windows.Forms.ColumnHeader columnHeader7;
         private System.Windows.Forms.ColumnHeader columnHeader8;
         private System.Windows.Forms.ColumnHeader columnHeader9;
         private System.Windows.Forms.ColumnHeader columnHeader10;
+        private System.Windows.Forms.ColumnHeader columnHeader11;
+        private System.Windows.Forms.ColumnHeader columnHeader12;
+        private System.Windows.Forms.ColumnHeader columnHeader13;
     }
 }
 

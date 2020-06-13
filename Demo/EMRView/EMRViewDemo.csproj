@@ -162,9 +162,7 @@
     <Compile Include="HCEmrView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="HCEmrViewLite.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
+    <Compile Include="HCEmrViewLite.cs" />
     <Compile Include="HCEmrYueJingItem.cs" />
     <Compile Include="frmDataElement.cs">
       <SubType>Form</SubType>

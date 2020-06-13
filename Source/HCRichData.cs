@@ -478,10 +478,7 @@ namespace HC.View
 
         protected virtual bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
         {
-            bool vResult = CanEdit();
-            if (vResult)
-                vResult = this.Items[aItemNo].AcceptAction(aOffset, SelectInfo.StartRestrain, aAction);
-                
+            bool vResult = this.Items[aItemNo].AcceptAction(aOffset, SelectInfo.StartRestrain, aAction);    
             if (vResult && (FOnAcceptAction != null))
                 vResult = FOnAcceptAction(this, aItemNo, aOffset, aAction);
 
@@ -636,12 +633,10 @@ namespace HC.View
 
         public override bool CanEdit()
         {
-            bool vResult = !FReadOnly;
-            if (vResult && (this.ParentData != null))
-                vResult = this.ParentData.CanEdit();
-            //User.MessageBeep(0);
-
-            return vResult;
+            if (!FReadOnly)
+                return base.CanEdit();
+            else
+                return false;
         }
 
         public override void Clear()
@@ -1276,6 +1271,9 @@ namespace HC.View
             if (!SelectExists())
                 return true;
 
+            if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actDeleteSelected))
+                return false;
+
             bool Result = false;
             bool vSelectSeekStart = IsSelectSeekStart();
 
@@ -1374,6 +1372,7 @@ namespace HC.View
 
                     Undo_New();
 
+                    bool vStartDel = false, vEndDel = false;
                     // 先处理选中结束Item
                     if (vEndItem.StyleNo < HCStyle.Null)
                     {
@@ -1383,7 +1382,7 @@ namespace HC.View
                             {
                                 UndoAction_DeleteItem(SelectInfo.EndItemNo, HC.OffsetAfter);
                                 Items.Delete(SelectInfo.EndItemNo);
-
+                                vEndDel = true;
                                 vDelCount++;
                             }
                         }
@@ -1401,6 +1400,7 @@ namespace HC.View
                             {
                                 UndoAction_DeleteItem(SelectInfo.EndItemNo, vEndItem.Length);
                                 Items.RemoveAt(SelectInfo.EndItemNo);
+                                vEndDel = true;
                                 vDelCount++;
                             }
                         }
@@ -1436,6 +1436,7 @@ namespace HC.View
                             {
                                 UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                 Items.Delete(SelectInfo.StartItemNo);
+                                vStartDel = true;
                                 vDelCount++;
                             }
 
@@ -1459,6 +1460,7 @@ namespace HC.View
                             {
                                 UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                 Items.RemoveAt(SelectInfo.StartItemNo);
+                                vStartDel = true;
                                 vDelCount++;
                             }
                         }
@@ -1473,7 +1475,7 @@ namespace HC.View
                         }
                     }
 
-                    if (vSelStartComplate && vSelEndComplate)  // 选中的Item都删除完
+                    if (SelectInfo.EndItemNo - SelectInfo.StartItemNo + 1 == vDelCount)  // 选中的Item都删除完
                     {
                         if (SelectInfo.StartItemNo == vFormatFirstItemNo)
                         {
@@ -1526,7 +1528,7 @@ namespace HC.View
                     }
                     else  // 选中范围内的Item没有删除完
                     {
-                        if (vSelStartComplate)  // 起始删除完了
+                        if (vStartDel)  // 起始删除完了
                         {
                             if (Items[SelectInfo.EndItemNo - vDelCount].ParaFirst != vSelStartParaFirst)
                             {
@@ -1536,7 +1538,7 @@ namespace HC.View
                         }
                         else
                         {
-                            if ((!vSelEndComplate) && (SelectInfo.StartItemNo + 1 == SelectInfo.EndItemNo - vDelCount))  // 起始和结束都没有删除完且中间没有不可删除的
+                            if ((!vEndDel) && (SelectInfo.StartItemNo + 1 == SelectInfo.EndItemNo - vDelCount))  // 起始和结束都没有删除完且中间没有不可删除的
                             {
                                 if (MergeItemText(Items[SelectInfo.StartItemNo], Items[SelectInfo.EndItemNo - vDelCount]))  // 起始和结束挨在一起了
                                 {
@@ -2344,6 +2346,8 @@ namespace HC.View
             int vMouseDownItemNo = -1, vMouseDownItemOffset = -1, vDrawItemNo = -1;
             bool vRestrain = false;
             GetItemAt(e.X, e.Y, ref vMouseDownItemNo, ref vMouseDownItemOffset, ref vDrawItemNo, ref vRestrain);
+            FSelectSeekNo = vMouseDownItemNo;
+            FSelectSeekOffset = vMouseDownItemOffset;
 
             if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // shift键重新确定选中范围
             {
@@ -2420,12 +2424,11 @@ namespace HC.View
 
             int vX = -1, vY = -1;
             CoordToItemOffset(e.X, e.Y, aItemNo, aOffset, ref vX, ref vY);
-
             MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
-            Items[aItemNo].MouseMove(vMouseArgs);
-
             if (aDrawItemMouseMove)
                 DoDrawItemMouseMove(this, aItemNo, aOffset, FMouseMoveDrawItemNo, vMouseArgs);
+            
+            Items[aItemNo].MouseMove(vMouseArgs);
         }
         #endregion
 
@@ -2774,14 +2777,12 @@ namespace HC.View
         #region KeyDown子方法CheckSelectEndEff 判断选择结束是否和起始在同一位置，是则取消选中
         private void CheckSelectEndEff()
         {
-            if ((SelectInfo.StartItemNo == SelectInfo.EndItemNo)
-                && (SelectInfo.StartItemOffset == SelectInfo.EndItemOffset))
-            {
-                Items[SelectInfo.EndItemNo].DisSelect();
+            int vStartNo = SelectInfo.StartItemNo,
+                vStartOffs = SelectInfo.StartItemOffset,
+                vEndNo = SelectInfo.EndItemNo,
+                vEndOffs = SelectInfo.EndItemOffset;
 
-                SelectInfo.EndItemNo = -1;
-                SelectInfo.EndItemOffset = -1;
-            }
+            AdjustSelectRange(ref vStartNo, ref vStartOffs, ref vEndNo, ref vEndOffs);
         }
 
         private void SetSelectSeekStart()
@@ -2837,21 +2838,31 @@ namespace HC.View
         {
             if (aOffset > 0)
             {
-                if (Items[aItemNo].StyleNo > HCStyle.Null)
-                    aOffset = aOffset - 1;
+                if (Items[aItemNo].StyleNo < HCStyle.Null)
+                {
+                    if (Items[aItemNo] is HCDomainItem)
+                        aOffset = (Items[aItemNo] as HCDomainItem).GetOffsetAt(0);
+                    else
+                        aOffset = HC.OffsetBefor;
+                }
                 else
-                    aOffset = HC.OffsetBefor;
+                    aOffset = aOffset - 1;
             }
             else
-                if (aItemNo > 0)
+            if (aItemNo > 0)
+            {
+                Items[aItemNo].DisSelect();
+                aItemNo = aItemNo - 1;
+                if (Items[aItemNo].StyleNo < HCStyle.Null)
                 {
-                    Items[aItemNo].DisSelect();
-                    aItemNo = aItemNo - 1;
-                    if (Items[aItemNo].StyleNo < HCStyle.Null)
-                        aOffset = HC.OffsetBefor;
+                    if (Items[aItemNo] is HCDomainItem)
+                        aOffset = (Items[aItemNo] as HCDomainItem).GetOffsetAt(0);
                     else
-                        aOffset = Items[aItemNo].Length - 1;  // 倒数第1个前面
+                        aOffset = HC.OffsetBefor;
                 }
+                else
+                    aOffset = Items[aItemNo].Length - 1;  // 倒数第1个前面
+            }
 
             #if UNPLACEHOLDERCHAR
             if ((Items[aItemNo].StyleNo > HCStyle.Null) && HC.IsUnPlaceHolderChar(Items[aItemNo].Text[aOffset + 1 - 1]))
@@ -2886,11 +2897,13 @@ namespace HC.View
                     if (IsSelectSeekStart())  // 游标在选中起始
                     {
                         SelectStartItemPrio();
+                        CheckSelectEndEff();
                         SetSelectSeekStart();
                     }
                     else  // 游标在选中结束
                     {
                         SelectEndItemPrio();
+                        CheckSelectEndEff();
                         SetSelectSeekEnd();
                     }
                 }
@@ -2906,12 +2919,15 @@ namespace HC.View
                     SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
 
                     SelectStartItemPrio();
+                    CheckSelectEndEff();
                     SetSelectSeekStart();
                 }
 
-                CheckSelectEndEff();
                 MatchItemSelectState();
                 Style.UpdateInfoRePaint();
+
+                if (!SelectExists(false))
+                    CaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
             else  // 没有按下Shift
             {
@@ -2929,7 +2945,11 @@ namespace HC.View
                     {
                         SelectInfo.StartItemOffset = SelectInfo.StartItemOffset - 1;
                         #if UNPLACEHOLDERCHAR
-                        if (HC.IsUnPlaceHolderChar(Items[SelectInfo.StartItemNo].Text[SelectInfo.StartItemOffset + 1 - 1]))
+                        Char vChar = Items[SelectInfo.StartItemNo].Text[SelectInfo.StartItemOffset + 1 - 1];
+                        if (HC.TibetanVowel.IndexOf(vChar) >= 0)
+                            ;
+                        else
+                        if (HC.IsUnPlaceHolderChar(vChar))
                             SelectInfo.StartItemOffset = GetItemActualOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset) - 1;                   
                         #endif
                     }
@@ -2988,7 +3008,12 @@ namespace HC.View
                     AItemNo++;
 
                     if (Items[AItemNo].StyleNo < HCStyle.Null)
-                        AOffset = HC.OffsetAfter;
+                    {
+                        if (Items[AItemNo] is HCDomainItem)
+                            AOffset = (Items[AItemNo] as HCDomainItem).GetOffsetAt(0);
+                        else
+                            AOffset = HC.OffsetAfter;
+                    }
                     else
                         AOffset = 1;
                 }
@@ -2996,7 +3021,12 @@ namespace HC.View
             else  // 不在最后
             {
                 if (Items[AItemNo].StyleNo < HCStyle.Null)
-                    AOffset = HC.OffsetAfter;
+                {
+                    if (Items[AItemNo] is HCDomainItem)
+                        AOffset = (Items[AItemNo] as HCDomainItem).GetOffsetAt(0);
+                    else
+                        AOffset = HC.OffsetAfter;
+                }
                 else
                     AOffset = AOffset + 1;
             }
@@ -3033,11 +3063,13 @@ namespace HC.View
                     if (IsSelectSeekStart())
                     {
                         SelectStartItemNext();
+                        CheckSelectEndEff();
                         SetSelectSeekStart();
                     }
                     else  // 游标在选中结束
                     {
                         SelectEndItemNext();
+                        CheckSelectEndEff();
                         SetSelectSeekEnd();
                     }
                 }
@@ -3067,12 +3099,15 @@ namespace HC.View
                     SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
 
                     SelectEndItemNext();
+                    CheckSelectEndEff();
                     SetSelectSeekEnd();
                 }
 
-                CheckSelectEndEff();
                 MatchItemSelectState();
                 Style.UpdateInfoRePaint();
+
+                if (!SelectExists(false))
+                    CaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
             else  // 没有按下Shift
             {
@@ -3150,7 +3185,12 @@ namespace HC.View
                     if (IsSelectSeekStart())  // 游标在选中起始
                     {
                         SelectInfo.StartItemNo = DrawItems[vFirstDItemNo].ItemNo;
-                        SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+                        if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                            SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                        else
+                            SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+
+                        CheckSelectEndEff();
                         SetSelectSeekStart();
                     }
                     else  // 游标在选中结束
@@ -3158,7 +3198,12 @@ namespace HC.View
                         if (DrawItems[vFirstDItemNo].ItemNo > SelectInfo.StartItemNo)
                         {
                             SelectInfo.EndItemNo = DrawItems[vFirstDItemNo].ItemNo;
-                            SelectInfo.EndItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+                            if (Items[SelectInfo.EndItemNo] is HCDomainItem)
+                                SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
+                            else
+                                SelectInfo.EndItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+
+                            CheckSelectEndEff();
                             SetSelectSeekEnd();
                         }
                         else
@@ -3168,7 +3213,12 @@ namespace HC.View
                                 if (DrawItems[vFirstDItemNo].CharOffs - 1 > SelectInfo.StartItemOffset)
                                 {
                                     SelectInfo.EndItemNo = SelectInfo.StartItemNo;
-                                    SelectInfo.EndItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+                                    if (Items[SelectInfo.EndItemNo] is HCDomainItem)
+                                        SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
+                                    else
+                                        SelectInfo.EndItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+
+                                    CheckSelectEndEff();
                                     SetSelectSeekEnd();
                                 }
                             }
@@ -3177,7 +3227,12 @@ namespace HC.View
                                 SelectInfo.EndItemNo = SelectInfo.StartItemNo;
                                 SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
                                 SelectInfo.StartItemNo = DrawItems[vFirstDItemNo].ItemNo;
-                                SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+                                if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                                    SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                                else
+                                    SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+
+                                CheckSelectEndEff();
                                 SetSelectSeekStart();
                             }
                         }
@@ -3188,13 +3243,20 @@ namespace HC.View
                     SelectInfo.EndItemNo = SelectInfo.StartItemNo;
                     SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
                     SelectInfo.StartItemNo = DrawItems[vFirstDItemNo].ItemNo;
-                    SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+                    if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                        SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                    else
+                        SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+
+                    CheckSelectEndEff();
                     SetSelectSeekStart();
                 }
 
-                CheckSelectEndEff();
                 MatchItemSelectState();
                 Style.UpdateInfoRePaint();
+
+                if (!SelectExists(false))
+                    CaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
             else
             {
@@ -3212,7 +3274,10 @@ namespace HC.View
                     int vLastDItemNo = -1;
                     GetLineDrawItemRang(ref vFirstDItemNo, ref vLastDItemNo);
                     SelectInfo.StartItemNo = DrawItems[vFirstDItemNo].ItemNo;
-                    SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
+                    if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                        SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                    else
+                        SelectInfo.StartItemOffset = DrawItems[vFirstDItemNo].CharOffs - 1;
                 }
 
                 if (!e.Handled)
@@ -3246,7 +3311,17 @@ namespace HC.View
                         if (DrawItems[vLastDItemNo].ItemNo > SelectInfo.EndItemNo)
                         {
                             SelectInfo.StartItemNo = DrawItems[vLastDItemNo].ItemNo;
-                            SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                            if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+                            {
+                                if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                                    SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                                else
+                                    SelectInfo.StartItemOffset = HC.OffsetAfter;
+                            }
+                            else
+                                SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+
+                            CheckSelectEndEff();
                             SetSelectSeekStart();
                         }
                         else
@@ -3255,13 +3330,23 @@ namespace HC.View
                                 SelectInfo.StartItemNo = SelectInfo.EndItemNo;
                                 if (DrawItems[vLastDItemNo].CharOffsetEnd() < SelectInfo.EndItemOffset)
                                 {
-                                    SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                                    if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                                        SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                                    else
+                                        SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+
+                                    CheckSelectEndEff();
                                     SetSelectSeekStart();
                                 }
                                 else
                                 {
                                     SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
-                                    SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                                    if (Items[SelectInfo.EndItemNo] is HCDomainItem)
+                                        SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
+                                    else
+                                        SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+
+                                    CheckSelectEndEff();
                                     SetSelectSeekEnd();
                                 }
                             }
@@ -3270,27 +3355,44 @@ namespace HC.View
                                 SelectInfo.StartItemNo = SelectInfo.EndItemNo;
                                 SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
                                 SelectInfo.EndItemNo = DrawItems[vLastDItemNo].ItemNo;
-                                SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                                if (Items[SelectInfo.EndItemNo] is HCDomainItem)
+                                    SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
+                                else
+                                    SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+
+                                CheckSelectEndEff();
                                 SetSelectSeekEnd();
                             }
                     }
                     else  // 游标在选中结束
                     {
                         SelectInfo.EndItemNo = DrawItems[vLastDItemNo].ItemNo;
-                        SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                        if (Items[SelectInfo.EndItemNo] is HCDomainItem)
+                            SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
+                        else
+                            SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+
+                        CheckSelectEndEff();
                         SetSelectSeekEnd();
                     }
                 }
                 else   // 没有选中
                 {
                     SelectInfo.EndItemNo = DrawItems[vLastDItemNo].ItemNo;
-                    SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                    if (Items[SelectInfo.EndItemNo] is HCDomainItem)
+                        SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
+                    else
+                        SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+
+                    CheckSelectEndEff();
                     SetSelectSeekEnd();
                 }
 
-                CheckSelectEndEff();
                 MatchItemSelectState();
                 Style.UpdateInfoRePaint();
+                
+                if (!SelectExists(false))
+                    CaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
             else
             {
@@ -3300,7 +3402,11 @@ namespace HC.View
                         Items[i].DisSelect();
 
                     SelectInfo.StartItemNo = SelectInfo.EndItemNo;
-                    SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
+                    if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                        SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                    else
+                        SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
+
                     SelectInfo.EndItemNo = -1;
                     SelectInfo.EndItemOffset = -1;
                 }
@@ -3310,7 +3416,10 @@ namespace HC.View
                     int vLastDItemNo = -1;
                     GetLineDrawItemRang(ref vFirstDItemNo, ref vLastDItemNo);
                     SelectInfo.StartItemNo = DrawItems[vLastDItemNo].ItemNo;
-                    SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                    if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                        SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
+                    else
+                        SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
                 }
 
                 if (!e.Handled)
@@ -3341,7 +3450,10 @@ namespace HC.View
                     if (DrawItems[i].Rect.Right > vX)
                     {
                         ADrawItemNo = i;
-                        ADrawItemOffset = DrawItems[i].CharOffs + GetDrawItemOffsetAt(i, vX) - 1;
+                        if (Items[DrawItems[i].ItemNo] is HCDomainItem)
+                            ADrawItemOffset = (Items[DrawItems[i].ItemNo] as HCDomainItem).GetOffsetAt(0);
+                        else
+                            ADrawItemOffset = DrawItems[i].CharOffs + GetDrawItemOffsetAt(i, vX) - 1;
 
                         return Result;  // 有合适，则退出
                     }
@@ -3349,7 +3461,10 @@ namespace HC.View
 
                 // 没合适则选择到最后
                 ADrawItemNo = vLastDItemNo;
-                ADrawItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                if (Items[DrawItems[vLastDItemNo].ItemNo] is HCDomainItem)
+                    ADrawItemOffset = (Items[DrawItems[vLastDItemNo].ItemNo] as HCDomainItem).GetOffsetAt(0);
+                else
+                    ADrawItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
             }
 
             return Result;
@@ -3371,6 +3486,7 @@ namespace HC.View
                         {
                             SelectInfo.StartItemNo = DrawItems[vDrawItemNo].ItemNo;
                             SelectInfo.StartItemOffset = vDrawItemOffset;
+                            CheckSelectEndEff();
                             SetSelectSeekStart();
                         }
                     }
@@ -3384,6 +3500,7 @@ namespace HC.View
                             {
                                 SelectInfo.EndItemNo = vDrawItemNo;
                                 SelectInfo.EndItemOffset = vDrawItemOffset;
+                                CheckSelectEndEff();
                                 SetSelectSeekEnd();
                             }
                             else
@@ -3393,12 +3510,14 @@ namespace HC.View
                                 if (vDrawItemOffset > SelectInfo.StartItemOffset)
                                 {
                                     SelectInfo.EndItemOffset = vDrawItemOffset;
+                                    CheckSelectEndEff();
                                     SetSelectSeekEnd();
                                 }
                                 else  // 移动到起始Offset前面
                                 {
                                     SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
                                     SelectInfo.StartItemOffset = vDrawItemOffset;
+                                    CheckSelectEndEff();
                                     SetSelectSeekStart();
                                 }
                             }
@@ -3408,6 +3527,7 @@ namespace HC.View
                                 SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
                                 SelectInfo.StartItemNo = DrawItems[vDrawItemNo].ItemNo;
                                 SelectInfo.StartItemOffset = vDrawItemOffset;
+                                CheckSelectEndEff();
                                 SetSelectSeekStart();
                             }
                         }
@@ -3423,13 +3543,16 @@ namespace HC.View
                         SelectInfo.EndItemOffset = SelectInfo.StartItemOffset;
                         SelectInfo.StartItemNo = DrawItems[vDrawItemNo].ItemNo;
                         SelectInfo.StartItemOffset = vDrawItemOffset;
+                        CheckSelectEndEff();
                         SetSelectSeekStart();
                     }
                 }
 
-                CheckSelectEndEff();
                 MatchItemSelectState();
                 Style.UpdateInfoRePaint();
+
+                if (!SelectExists(false))
+                    CaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
             else  // 无Shift按下
             {
@@ -3477,7 +3600,10 @@ namespace HC.View
                     if (DrawItems[i].Rect.Right > vX)
                     {
                         ADrawItemNo = i;
-                        ADrawItemOffset = DrawItems[i].CharOffs + GetDrawItemOffsetAt(i, vX) - 1;
+                        if (Items[DrawItems[i].ItemNo] is HCDomainItem)
+                            ADrawItemOffset = (Items[DrawItems[i].ItemNo] as HCDomainItem).GetOffsetAt(0);
+                        else
+                            ADrawItemOffset = DrawItems[i].CharOffs + GetDrawItemOffsetAt(i, vX) - 1;
 
                         return Result;  // 有合适，则退出
                     }
@@ -3485,7 +3611,10 @@ namespace HC.View
 
                 // 没合适则选择到最后
                 ADrawItemNo = vLastDItemNo;
-                ADrawItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                if (Items[DrawItems[vLastDItemNo].ItemNo] is HCDomainItem)
+                    ADrawItemOffset = (Items[DrawItems[vLastDItemNo].ItemNo] as HCDomainItem).GetOffsetAt(0);
+                else
+                    ADrawItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
             }
 
             return Result;
@@ -3508,6 +3637,7 @@ namespace HC.View
                             {
                                 SelectInfo.StartItemNo = SelectInfo.EndItemNo;
                                 SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
+                                CheckSelectEndEff();
                                 SetSelectSeekStart();
                             }
                             else
@@ -3517,12 +3647,14 @@ namespace HC.View
                                 if (vDrawItemOffset < SelectInfo.EndItemOffset)
                                 {
                                     SelectInfo.StartItemOffset = vDrawItemOffset;
+                                    CheckSelectEndEff();
                                     SetSelectSeekStart();
                                 }
                                 else  // 位置在结束Offset后面
                                 {
                                     SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
                                     SelectInfo.EndItemOffset = vDrawItemOffset;
+                                    CheckSelectEndEff();
                                     SetSelectSeekEnd();
                                 }
                             }
@@ -3532,6 +3664,7 @@ namespace HC.View
                                 SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
                                 SelectInfo.EndItemNo = DrawItems[vDrawItemNo].ItemNo;
                                 SelectInfo.EndItemOffset = vDrawItemOffset;
+                                CheckSelectEndEff();
                                 SetSelectSeekEnd();
                             }
                         }
@@ -3544,6 +3677,7 @@ namespace HC.View
                         {
                             SelectInfo.EndItemNo = DrawItems[vDrawItemNo].ItemNo;
                             SelectInfo.EndItemOffset = vDrawItemOffset;
+                            CheckSelectEndEff();
                             SetSelectSeekEnd();
                         }
                     }
@@ -3556,13 +3690,16 @@ namespace HC.View
                     {
                         SelectInfo.EndItemNo = DrawItems[vDrawItemNo].ItemNo;
                         SelectInfo.EndItemOffset = vDrawItemOffset;
+                        CheckSelectEndEff();
                         SetSelectSeekEnd();
                     }
                 }
 
-                CheckSelectEndEff();
                 MatchItemSelectState();
                 Style.UpdateInfoRePaint();
+
+                if (!SelectExists(false))
+                    CaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
             else  // 无Shift按下
             {
@@ -3661,6 +3798,9 @@ namespace HC.View
                         {
                             if (vRectItem.WantKeyDown(e))
                                 SelectInfo.StartItemOffset = HC.OffsetInner;
+                            else
+                            if (vRectItem is HCDomainItem)
+                                SelectInfo.StartItemOffset = vRectItem.GetOffsetAt(0);
                             else
                                 SelectInfo.StartItemOffset = HC.OffsetAfter;
 
@@ -3969,6 +4109,9 @@ namespace HC.View
                         {
                             if (vRectItem.WantKeyDown(e))
                                 SelectInfo.StartItemOffset = HC.OffsetInner;
+                            else
+                            if (vRectItem is HCDomainItem)
+                                SelectInfo.StartItemOffset = vRectItem.GetOffsetAt(0);
                             else
                                 SelectInfo.StartItemOffset = HC.OffsetBefor;
 
@@ -4953,7 +5096,13 @@ namespace HC.View
             this.InitializeField();
 
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
-            GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+            GetFormatRange(aStartNo, 0, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+
+            int vFormatDrawItemNo2 = 0;
+            if ((!aKeepPara) && (aEndNo < Items.Count - 1) && (Items[aEndNo + 1].ParaFirst))
+                GetFormatRange(aEndNo + 1, GetItemOffsetAfter(aEndNo + 1), ref vFormatDrawItemNo2, ref vFormatLastItemNo);
+            else
+                GetFormatRange(aEndNo, GetItemOffsetAfter(aEndNo), ref vFormatDrawItemNo2, ref vFormatLastItemNo);
 
             if (Items[aStartNo].ParaFirst && (vFormatFirstDrawItemNo > 0))
             {

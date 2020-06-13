@@ -111,18 +111,6 @@ namespace EMRView
         public const string DateTime = "DT";
     }
 
-    public static class GroupProp : Object
-    {
-        /// <summary> 数据组类型 </summary>
-        public const string SubType = "RT";
-    }
-
-    public static class SubType : Object
-    {
-        /// <summary> 病程 </summary>
-        public const string Proc = "P";
-    }
-
     public enum EmrSyntaxProblem : byte
     {
         espContradiction, espWrong

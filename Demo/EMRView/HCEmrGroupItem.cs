@@ -18,10 +18,30 @@ using System.Xml;
 
 namespace EMRView
 {
+    public static class GroupProp : Object
+    {
+        /// <summary> 数据组唯一索引 </summary>
+        public const string Index = "Index";
+        /// <summary> 数据组名称 </summary>
+        public const string Name = "Name";
+        /// <summary> 数据组类型 </summary>
+        public const string SubType = "RT";
+        /// <summary> 全部属性 </summary>
+        public const string Propertys = "Propertys";
+    }
+
+    public static class SubType : Object
+    {
+        /// <summary> 病程 </summary>
+        public const string Proc = "P";
+    }
+
     public class DeGroup : HCDomainItem
     {
         private bool FReadOnly;
-
+        #if PROCSERIES
+        private bool FIsProc;
+        #endif
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -40,6 +60,24 @@ namespace EMRView
             FPropertys[key] = value;
         }
 
+        #if PROCSERIES
+        private bool GetIsProcBegin()
+        {
+            if (this.MarkType == MarkType.cmtBeg)
+                return FIsProc;
+            else
+                return false;
+        }
+
+        private bool GetIsProcEnd()
+        {
+            if (this.MarkType == MarkType.cmtEnd)
+                return FIsProc;
+            else
+                return false;
+        }
+        #endif
+
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
@@ -50,6 +88,9 @@ namespace EMRView
         {
             FPropertys = new Dictionary<string, string>();
             FReadOnly = false;
+            #if PROCSERIES
+            FIsProc = false;
+            #endif
         }
 
         ~DeGroup()
@@ -69,14 +110,29 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             DeProp.SetPropertyString(vS, FPropertys);
+            CheckPropertys();
         }
 
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
             string vS = DeProp.GetPropertyString((source as DeGroup).Propertys);
-            DeProp.SetPropertyString(vS, FPropertys);
             FReadOnly = (source as DeGroup).ReadOnly;
+            DeProp.SetPropertyString(vS, FPropertys);
+            CheckPropertys();
+        }
+
+        public override int GetOffsetAt(int x)
+        {
+            #if PROCSERIES
+            if (GetIsProcEnd())
+                return HC.View.HC.OffsetBefor;
+            else
+            if (GetIsProcBegin())
+                return HC.View.HC.OffsetAfter;
+            else
+            #endif
+                return base.GetOffsetAt(x);
         }
 
         public override void ToXml(XmlElement aNode)
@@ -89,6 +145,7 @@ namespace EMRView
         {
             base.ParseXml(aNode);
             DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            CheckPropertys();
         }
 
         public void ToJson(string aJsonObj)
@@ -99,6 +156,13 @@ namespace EMRView
         public void ParseJson(string aJsonObj)
         {
 
+        }
+
+        public void CheckPropertys()
+        {
+            #if PROCSERIES
+            FIsProc = this.GetValue(GroupProp.SubType) == SubType.Proc;
+            #endif
         }
 
         public Dictionary<string, string> Propertys
@@ -112,10 +176,49 @@ namespace EMRView
             set { FReadOnly = value; }
         }
 
+        #if PROCSERIES
+        public bool IsProc
+        {
+            get { return FIsProc; }
+        }
+
+        public bool IsProcBegin
+        {
+            get { return GetIsProcBegin(); }
+        }
+
+        public bool IsProcEnd
+        {
+            get { return GetIsProcEnd(); }
+        }
+        #endif
+
         public string this[string aKey]
         {
             get { return GetValue(aKey); }
             set { SetValue(aKey, value); }
+        }
+    }
+
+    public class ProcInfo : HCDomainInfo
+    {
+        private string FIndex;
+  
+        public ProcInfo() : base()
+        {
+            FIndex = "";
+        }
+
+        public override void Clear()
+        {
+            FIndex = "";
+            base.Clear();
+        }
+
+        public string Index
+        {
+            get { return FIndex; }
+            set { FIndex = value; }
         }
     }
 }

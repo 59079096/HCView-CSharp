@@ -31,6 +31,11 @@ namespace HC.Win32
             return new POINT(Left, Top);
         }
 
+        public POINT BottomRight()
+        {
+            return new POINT(Right, Bottom);
+        }
+
         public void SetWidth(int value)
         {
             Right = Left + value;

@@ -91,6 +91,10 @@ namespace EMRView
 
                             // 替换数据组的内容
                             SyncDeGroupByStruct(vFrmRecord.EmrView);
+                            if (PatientInfo.SexCode == 1)  // 男性
+                                vFrmRecord.EmrView.DeleteDeGroup("191");  // 删除月经史
+
+                            vFrmRecord.EmrView.ClearUndo();
                             vFrmRecord.EmrView.FormatData();
                             vFrmRecord.EmrView.IsChanged = true;
                         }

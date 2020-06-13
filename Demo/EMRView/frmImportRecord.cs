@@ -14,14 +14,14 @@ namespace EMRView
 {
     public partial class frmImportRecord : Form
     {
-        private HCEmrViewLite FEmrViewLite;
+        private HCEmrView FEmrViewLite;
         private HCImportAsTextEventHandler FOnImportAsText;
 
         public frmImportRecord()
         {
             InitializeComponent();
 
-            FEmrViewLite = new HCEmrViewLite();
+            FEmrViewLite = new HCEmrView();
             this.pnlRecord.Controls.Add(FEmrViewLite);
             FEmrViewLite.Dock = DockStyle.Fill;
             FEmrViewLite.Show();
@@ -39,7 +39,7 @@ namespace EMRView
                 FOnImportAsText(FEmrViewLite.SaveToText());
         }
 
-        public HCEmrViewLite EmrView
+        public HCEmrView EmrView
         {
             get { return FEmrViewLite; }
         }

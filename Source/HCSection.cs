@@ -1692,7 +1692,24 @@ namespace HC.View
                 aCanvas.FillRect(new RECT(vPaperDrawLeft, vPaperDrawTop, Math.Min(vPaperDrawRight, vScaleWidth),  // 约束边界
                     Math.Min(vPaperDrawBottom, vScaleHeight)));
                 #endregion
+            }
 
+            if (FOnPaintPaperBefor != null)  // 公开页面绘制前事件
+            {
+                int vDCState = GDI.SaveDC(aCanvas.Handle);
+                try
+                {
+                    FOnPaintPaperBefor(this, aPageIndex,
+                        new RECT(vPaperDrawLeft, vPaperDrawTop, vPaperDrawRight, vPaperDrawBottom), aCanvas, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.RestoreDC(aCanvas.Handle, vDCState);
+                }
+            }
+
+            if (!aPaintInfo.Print)
+            {
                 if (aPaintInfo.ViewModel == HCViewModel.hvmFilm)
                 {
                     #region 页眉边距指示符
@@ -1868,20 +1885,6 @@ namespace HC.View
 
                         aCanvas.DrawLine(vPaperDrawLeft, vPageDrawBottom, vPaperDrawRight, vPageDrawBottom);
                     }
-                }
-            }
-
-            if (FOnPaintPaperBefor != null)  // 公开页面绘制前事件
-            {
-                int vDCState = GDI.SaveDC(aCanvas.Handle);
-                try
-                {
-                    FOnPaintPaperBefor(this, aPageIndex,
-                        new RECT(vPaperDrawLeft, vPaperDrawTop, vPaperDrawRight, vPaperDrawBottom), aCanvas, aPaintInfo);
-                }
-                finally
-                {
-                    GDI.RestoreDC(aCanvas.Handle, vDCState);
                 }
             }
 

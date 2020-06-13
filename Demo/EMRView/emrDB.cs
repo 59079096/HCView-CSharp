@@ -294,7 +294,7 @@ namespace EMRView
 
         public emrMSDB()
         {
-            FDBConnectstring = @"user=emr;password=emr;database=emrDB;server=(local)";
+            FDBConnectstring = @"user=sa;password=emr;database=emrDB;server=(local)";
             FConn = new SqlConnection(FDBConnectstring);
             FDataSetDT = this.GetData("SELECT id, pid, Name, Class, Type FROM Comm_DataElementSet WHERE pid = 0 ORDER BY od");
             GetDataElement();

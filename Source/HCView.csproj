@@ -97,6 +97,8 @@
     <Compile Include="HCRadioGroup.cs" />
     <Compile Include="HCRectItem.cs" />
     <Compile Include="HCRichData.cs" />
+    <Compile Include="HCRtfReader.cs" />
+    <Compile Include="HCRtfRW.cs" />
     <Compile Include="HCShape.cs" />
     <Compile Include="HCStatusScrollBar.cs" />
     <Compile Include="HCToolBar.cs" />
@@ -124,6 +126,7 @@
     </Compile>
     <Compile Include="HCLineItem.cs" />
     <Compile Include="HCViewDevData.cs" />
+    <Compile Include="HCViewLite.cs" />
     <Compile Include="HCViewTool.cs">
       <SubType>UserControl</SubType>
     </Compile>

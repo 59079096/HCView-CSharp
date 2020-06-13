@@ -492,7 +492,7 @@ namespace HC.View
             bool vRePaint = this.Style.DrawHotDomainRegion && (FHotDomain.BeginNo >= 0);
             FHotDomain.Clear();
             base.MouseMove(e);
-            if (!this.MouseMoveRestrain)
+            //if (!this.MouseMoveRestrain)
             {
                 this.GetDomainFrom(this.MouseMoveItemNo, this.MouseMoveItemOffset, FHotDomain);
                 HCViewData vTopData = this.GetTopLevelDataAt(e.X, e.Y) as HCViewData;
@@ -686,6 +686,7 @@ namespace HC.View
                                     vCount--;
                                 else
                                 {
+                                    aDomainInfo.Data = this;
                                     aDomainInfo.BeginNo = i;
                                     vLevel = (Items[i] as HCDomainItem).Level;
                                     break;
@@ -749,6 +750,7 @@ namespace HC.View
                                 {
                                     if ((Items[i] as HCDomainItem).Level == vLevel)
                                     {
+                                        aDomainInfo.Data = this;
                                         aDomainInfo.BeginNo = i;
                                         break;
                                     }

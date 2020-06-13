@@ -50,7 +50,7 @@ namespace EMRView
         {
             lvPatient.Items.Clear();
             DataTable dt = emrMSDB.DB.GetData("SELECT PI.Patient_ID AS PatID, PI.Visit_ID AS VisitID, PI.INP_NO AS InpNo, PI.Name, "
-                + "SX.Name AS Sex,   PI.AgeYear AS Age, BedNo, PI.Link_TEL AS LinkPhone, PI.Diagnosis, "
+                + "SX.Name AS Sex, SX.Code AS SexCode, PI.AgeYear AS Age, BedNo, PI.Link_TEL AS LinkPhone, PI.Diagnosis, "
                 + "PI.IN_Dept_DT as InDate,  Dept.ID AS DeptID, Dept.Name AS DeptName, "
                 + "PI.Allergic_Drug AS AllergicDrug,   (CASE Nurs.Name WHEN '特级护理' THEN '特' "
                 + "WHEN 'Ⅰ级护理' THEN 'Ⅰ' WHEN 'Ⅱ级护理' THEN 'Ⅱ'   "
@@ -74,11 +74,12 @@ namespace EMRView
                     lvi.SubItems.Add(dt.Rows[i]["Name"].ToString());
                     lvi.SubItems.Add(dt.Rows[i]["sex"].ToString());
                     lvi.SubItems.Add(dt.Rows[i]["age"].ToString());
-                    lvi.SubItems.Add(dt.Rows[i]["IllState"].ToString());
-                    lvi.SubItems.Add(dt.Rows[i]["Diagnosis"].ToString());
+                    lvi.SubItems.Add(dt.Rows[i]["InDate"].ToString());
                     lvi.SubItems.Add(dt.Rows[i]["DeptName"].ToString());
                     lvi.SubItems.Add(dt.Rows[i]["DeptID"].ToString());
-                    lvi.SubItems.Add(dt.Rows[i]["InDate"].ToString());
+                    lvi.SubItems.Add(dt.Rows[i]["IllState"].ToString());   
+                    lvi.SubItems.Add(dt.Rows[i]["Diagnosis"].ToString());
+                    lvi.SubItems.Add(dt.Rows[i]["SexCode"].ToString());
                 }
             }
             finally
@@ -95,10 +96,11 @@ namespace EMRView
             FPatientInfo.Name = lvPatient.SelectedItems[0].SubItems[3].Text;
             FPatientInfo.Sex = lvPatient.SelectedItems[0].SubItems[4].Text;
             FPatientInfo.Age = lvPatient.SelectedItems[0].SubItems[5].Text;
-            FPatientInfo.DeptName = lvPatient.SelectedItems[0].SubItems[8].Text;
-            FPatientInfo.DeptID = int.Parse(lvPatient.SelectedItems[0].SubItems[9].Text);
-            FPatientInfo.InDeptDateTime = DateTime.Parse(lvPatient.SelectedItems[0].SubItems[10].Text);
-            
+            FPatientInfo.DeptName = lvPatient.SelectedItems[0].SubItems[7].Text;
+            FPatientInfo.DeptID = int.Parse(lvPatient.SelectedItems[0].SubItems[8].Text);
+            FPatientInfo.InDeptDateTime = DateTime.Parse(lvPatient.SelectedItems[0].SubItems[6].Text);
+            FPatientInfo.SexCode = byte.Parse(lvPatient.SelectedItems[0].SubItems[11].Text);
+
 
             frmPatientRecord vfrmPatientRecord = new frmPatientRecord();
             vfrmPatientRecord.UserInfo = FUserInfo;

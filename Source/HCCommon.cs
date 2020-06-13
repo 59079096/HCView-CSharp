@@ -64,7 +64,7 @@ namespace HC.View
               AnnotationWidth = 200,  // 批注显示区域宽度
               DMPAPER_HC_16K = -1000;
 
-        public const string 
+        public const string
             HC_EXCEPTION = "HC异常：",
             HCS_EXCEPTION_NULLTEXT = HC_EXCEPTION + "文本Item的内容出现为空的情况！",
             HCS_EXCEPTION_TEXTOVER = HC_EXCEPTION + "TextItem的内容超出允许的最大字节数4294967295！",
@@ -75,14 +75,16 @@ namespace HC.View
             HCS_EXCEPTION_TIMERRESOURCEOUTOF = HC_EXCEPTION + "安装计时器的资源不足！",
 
             #if UNPLACEHOLDERCHAR
-            UnPlaceholderChar = "\u0F74\u0F7A\u0F7C\u0F72"
-                + "\u0FB8\u0F7E\u0F83\u0F37\u0F35\u0F7F\u0FB7\u0FBA\u0F95"
+            TibetanVowel = "\u0F74\u0F7A\u0F7C\u0F72",
+            TibetanOther = 
+                  "\u0FB8\u0F7E\u0F83\u0F37\u0F35\u0F7F\u0FB7\u0FBA\u0F95"
                 + "\u0F96\u0F7B\u0FB2\u0F9F\u0FB1\u0FAD\u0F80\u0F7D\u0FA5"
                 + "\u0FA9\u0FAA\u0FAB\u0FB0\u0FB6\u0FA1\u0FA6\u0F94\u0FA8"
                 + "\u0F84\u0F92\u0F92\u0FAE\u0FAF\u0FB4\u0F90\u0F91\u0FA4"
                 + "\u0FA3\u0FA0\u0F97\u0F99\u0FBC\u0FBB\u0F19\u0F71\u0F3E"
                 + "\u0F3F\u0F87\u0F86\u0F76\u0F77\u0F78\u0F79\u0F73\u0F9A"
                 + "\u0F75\u0F73\u0F9C\u0FC6\u0FB5\u0FB9\u0F82\u0F9E\u0F9B",
+            UnPlaceholderChar = TibetanVowel + TibetanOther,
             #endif
             // 不能在行首的字符
             DontLineFirstChar = @"`-=[]\;,./~!@#$%^&*()_+{}|:""<>?·－＝【】＼；’，。、～！＠＃￥％……＆×（）——＋｛｝｜：”《》？°"
@@ -222,10 +224,8 @@ namespace HC.View
             vPenParams.lbColor = aPen.Color.ToRGB_UInt();
             vPenParams.lbHatch = 0;
 
-            //if (aPen.Width != 1)
-                return (IntPtr)(GDI.ExtCreatePen(GDI.PS_GEOMETRIC | GDI.PS_ENDCAP_SQUARE | GDI.PS_JOIN_MITER, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
-            //else
-            //    return (IntPtr)(GDI.ExtCreatePen(GDI.PS_COSMETIC | GDI.PS_ENDCAP_SQUARE, aPen.Width, ref vPenParams, 0, IntPtr.Zero));
+            return (IntPtr)(GDI.ExtCreatePen(((aPen.Width != 1) ? GDI.PS_GEOMETRIC : GDI.PS_COSMETIC) | GDI.PS_ENDCAP_SQUARE | vPenParams.lbStyle,
+                aPen.Width, ref vPenParams, 0, IntPtr.Zero));
         }
 
         public static int PosCharHC(Char aChar, string aStr)
@@ -971,7 +971,8 @@ namespace HC.View
         actItemProperty,  // Item属性变化
         actItemSelf,  // Item自己管理
         actItemMirror,  // Item镜像
-        actConcatText  // 粘接文本(两头)
+        actConcatText,  // 粘接文本(两头)
+        actDeleteSelected
     }
 
     public struct HCCaretInfo

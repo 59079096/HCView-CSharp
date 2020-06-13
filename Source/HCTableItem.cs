@@ -821,6 +821,7 @@ namespace HC.View
                                 {
                                     aCanvas.Pen.Color = HC.clActiveBorder;
                                     aCanvas.Pen.Style = HCPenStyle.psDot;
+                                    aCanvas.Pen.Width = 1;
                                 }
                             }
                             finally

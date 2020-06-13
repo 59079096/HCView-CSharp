@@ -329,6 +329,7 @@ namespace EMRView
                 FEmrView.OnSectionItemInsert = DoItemInsert;
                 FEmrView.MouseDown += DoEmrViewMouseDown;
                 FEmrView.MouseUp += DoEmrViewMouseUp;
+                FEmrView.OnSectionDrawItemMouseMove += DoSectionDrawItemMouseMove;
                 FEmrView.OnCaretChange = DoCaretChange;
                 FEmrView.OnVerScroll = DoVerScroll;
                 FEmrView.OnChangedSwitch = DoChangedSwitch;
@@ -664,8 +665,8 @@ namespace EMRView
                 RECT vRect = new RECT(data.DrawItems[drawItemNo].Rect);
                 vRect.Offset(-vRect.Left, -vRect.Top);
                 FEmrView.Style.TextStyles[data.Items[itemNo].StyleNo].ApplyStyle(FEmrView.Style.TempCanvas);
-                int vWf = FEmrView.Style.TempCanvas.TextWidth(vText[1]);
-                int vWl = FEmrView.Style.TempCanvas.TextWidth(vText[vLen]);
+                int vWf = FEmrView.Style.TempCanvas.TextWidth(vText[0]);
+                int vWl = FEmrView.Style.TempCanvas.TextWidth(vText[vLen - 1]);
                 if ((e.X > vWf / 2) && (e.X < vRect.Right - vWl / 2))
                 {
                     HC.View.HC.GCursor = Cursors.Arrow;
