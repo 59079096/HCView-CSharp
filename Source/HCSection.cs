@@ -2148,9 +2148,15 @@ namespace HC.View
             if (vMoveData != FMoveData)
             {
                 if (FMoveData != null)
-                    FMoveData.MouseLeave();
-
-                FMoveData = vMoveData;
+                {
+                    if (!FMoveData.SelectedResizing())
+                    {
+                        FMoveData.MouseLeave();
+                        FMoveData = vMoveData;
+                    }
+                }
+                else
+                    FMoveData = vMoveData;
             }
 
             PaperCoordToData(FMousePageIndex, FActiveData, ref vX, ref vY, e.Button != MouseButtons.None);
@@ -2252,6 +2258,12 @@ namespace HC.View
             }
 
             return Result;
+        }
+
+        public int GetPageDataHeight(int pageIndex)
+        {
+            return this.Page.DrawItems[FPages[pageIndex].EndDrawItemNo].Rect.Bottom
+                - this.Page.DrawItems[FPages[pageIndex].StartDrawItemNo].Rect.Top;
         }
 
         /// <summary> 页眉内容在页中绘制时的起始位置 </summary>

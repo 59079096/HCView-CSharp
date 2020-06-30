@@ -102,7 +102,7 @@ namespace HC.View
         /// <summary> 约束到指定大小范围内 </summary>
         public override void RestrainSize(int aWidth, int aHeight)
         {
-            if (Height != aHeight)
+            if (Height > aHeight)
                 Height = aHeight;
         }
     }

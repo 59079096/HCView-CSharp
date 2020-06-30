@@ -493,7 +493,7 @@ namespace HC.View
             return Result;
         }
 
-        public static string GetPaperSizeStr(int aPaperSize)
+        public static string GetPaperSizeName(int aPaperSize)
         {
             string Result = "";
             switch (aPaperSize)

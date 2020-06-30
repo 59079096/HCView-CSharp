@@ -43,7 +43,13 @@ namespace HC.View
             HCParaStyle vParaStyle = null;
             POINT vPos = new POINT();
 
-            FFormatStartDrawItemNo = aStartDrawItemNo;
+            if (FFormatChange)
+            {
+                if (FFormatStartDrawItemNo < aStartDrawItemNo)
+                    FFormatStartDrawItemNo = aStartDrawItemNo;
+            }
+            else
+                FFormatStartDrawItemNo = aStartDrawItemNo;
 
             // 获取起始DrawItem的上一个序号及格式化开始位置
             if (aStartDrawItemNo > 0)
@@ -821,11 +827,15 @@ namespace HC.View
 
         protected void FormatInit()
         {
-            FFormatHeightChange = false;
+            if (!FFormatChange)
+            {
+                FFormatHeightChange = false;
+                FFormatStartDrawItemNo = -1;
+            }
+
             FFormatDrawItemCountChange = false;
             FFormatStartTop = 0;
             FFormatEndBottom = 0;
-            FFormatStartDrawItemNo = -1;
             FLastFormatParaNo = HCStyle.Null;
         }
 
@@ -959,18 +969,19 @@ namespace HC.View
             int vDrawItemCount = DrawItems.Count;  // 格式化前的DrawItem数量
             FormatRange(AFirstDrawItemNo, vLastItemNo);  // 格式化指定范围内的Item
             FFormatDrawItemCountChange = DrawItems.Count != vDrawItemCount;  // 格式化前后DrawItem数量有变化
-      
+
+            bool vFmtHeightChange = false;
             // 计算格式化后段的底部位置变化
             int vLastDrawItemNo = GetItemLastDrawItemNo(vLastItemNo);
             if ((Items[vLastItemNo] is HCCustomRectItem) && (Items[vLastItemNo] as HCCustomRectItem).SizeChanged)
-                FFormatHeightChange = true;
+                vFmtHeightChange = true;
             else
-                FFormatHeightChange = AForceClearExtra
+                vFmtHeightChange = AForceClearExtra
                     || ((DrawItems[AFirstDrawItemNo].Rect.Top != FFormatStartTop)  // 段格式化后，高度的增量
                     || (DrawItems[vLastDrawItemNo].Rect.Bottom != FFormatEndBottom));
 
             //FFormatChange = false;
-            if (FFormatHeightChange || (AExtraItemCount != 0) || FFormatDrawItemCountChange)
+            if (vFmtHeightChange || (AExtraItemCount != 0) || FFormatDrawItemCountChange)
             {
                 FFormatChange = true;
                 vLastItemNo = -1;
@@ -990,7 +1001,7 @@ namespace HC.View
                         }
                     }
 
-                    if (FFormatHeightChange)
+                    if (vFmtHeightChange)
                     {
                         // 将原格式化因分页等原因引起的整体下移或增加的高度恢复回来
                         // 如果不考虑上面处理ItemNo的偏移，可将TTableCellData.ClearFormatExtraHeight方法写到基类，这里直接调用
@@ -1007,6 +1018,14 @@ namespace HC.View
                     }
                 }
             }
+
+            if (FFormatChange)
+            {
+                if (!FFormatHeightChange)
+                    FFormatHeightChange = vFmtHeightChange;
+            }
+            else
+                FFormatHeightChange = vFmtHeightChange;
         }
 
         public HCFormatData(HCStyle aStyle)

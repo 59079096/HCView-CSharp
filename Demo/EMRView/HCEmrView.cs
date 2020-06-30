@@ -257,7 +257,6 @@ namespace EMRView
                 else
                     DoSyncDeItem(sender, aData, aItem);
             }
-            else
             #if PROCSERIES
             if (aItem is DeGroup)
             {
@@ -778,12 +777,19 @@ namespace EMRView
                     aCanvas.FillRect(new RECT(aRect.Left, aRect.Top, aRect.Right, vPt.Y));
                 }
 
-                vPt = vData.DrawItems[vData.Items[FEditProcInfo.EndNo].FirstDItemNo].Rect.BottomRight();
-                vPt = this.GetFormatPointToViewCoord(vPt);
-                if (vPt.Y < aRect.Bottom)
+                if (FEditProcInfo.EndNo < vData.Items.Count - 1)
                 {
-                    aCanvas.Brush.Color = HC.View.HC.clBtnFace;
-                    aCanvas.FillRect(new RECT(aRect.Left, vPt.Y, aRect.Right, aRect.Bottom));
+                    vPt = vData.DrawItems[vData.Items[FEditProcInfo.EndNo].FirstDItemNo].Rect.BottomRight();
+                    vPt = this.GetFormatPointToViewCoord(vPt);
+                    if (vPt.Y < aRect.Bottom)
+                    {
+                        aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                        vPt.X = aRect.Top + ((HCSection)sender).GetPageDataHeight(aPageIndex);
+                        if (vPt.X < aRect.Bottom)
+                            aCanvas.FillRect(new RECT(aRect.Left, vPt.Y, aRect.Right, vPt.X));
+                        else
+                            aCanvas.FillRect(new RECT(aRect.Left, vPt.Y, aRect.Right, aRect.Bottom));
+                    }
                 }
             }
             #endif
@@ -1360,12 +1366,7 @@ namespace EMRView
         {
             DeItem Result = new DeItem();
             Result.Text = aText;
-
-            if (this.CurStyleNo > HCStyle.Null)
-                Result.StyleNo = this.CurStyleNo;
-            else
-                Result.StyleNo = 0;
-
+            Result.StyleNo = this.Style.GetStyleNo(this.Style.DefaultTextStyle, true);
             Result.ParaNo = this.CurParaNo;
 
             return Result;
@@ -1589,6 +1590,7 @@ namespace EMRView
                         {
                             vItem.Text = aPropValue;
                             (vItem as DeItem).AllocValue = true;
+                            aData.SilenceChange();
                         }
 
                         vReFormat = true;
@@ -1606,6 +1608,7 @@ namespace EMRView
                                 {
                                     vItem.Text = obj.Value;
                                     (vItem as DeItem).AllocValue = true;
+                                    aData.SilenceChange();
                                 }
 
                                 vReFormat = true;
@@ -2350,7 +2353,6 @@ namespace EMRView
             HC.View.HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
             this.Style.SaveToStream(aStream);
             aData.SaveItemToStream(aStream, aDeGroupStartNo + 1, 0, aDeGroupEndNo - 1, aData.Items[aDeGroupEndNo - 1].Length);
-
         }
 
         public void SetDataDeGroupFromStream(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo, Stream aStream)

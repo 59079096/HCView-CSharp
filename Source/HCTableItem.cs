@@ -182,11 +182,17 @@ namespace HC.View
             aCellData.OnCreateItem = (OwnerData as HCRichData).OnCreateItem;
             aCellData.OnGetUndoList = this.GetSelfUndoList;
             aCellData.OnGetRootData = DoCellDataGetRootData;
+            aCellData.OnSilenceChange = DoCellDataSilenceChange;
         }
 
         private HCCustomData DoCellDataGetRootData()
         {
             return OwnerData.GetRootData();
+        }
+
+        private void DoCellDataSilenceChange(object sender, EventArgs e)
+        {
+            this.SilenceChange();
         }
 
         private void DoCellDataItemRequestFormat(HCCustomData data, HCCustomItem item)
@@ -1257,6 +1263,8 @@ namespace HC.View
                     }
                 }
             }
+            else
+                this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].CellData.CellSelectedAll = false;
         }
 
         #endregion

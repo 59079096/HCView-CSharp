@@ -347,6 +347,8 @@ namespace HC.View
 
         public virtual void Clear() { }
 
+        public virtual void SilenceChange() { }
+
         /// <summary> 当前RectItem是否有需要处理的Data(为松耦合请返回TCustomRichData类型) </summary>
         public virtual HCCustomData GetActiveData()
         {
@@ -1356,6 +1358,12 @@ namespace HC.View
         public HCDataItem(HCCustomData aOwnerData, int aWidth, int aHeight) : base(aOwnerData, aWidth, aHeight)
         {
 
+        }
+
+        public override void SilenceChange()
+        {
+            this.FormatDirty();
+            this.OwnerData.SilenceChange();
         }
     }
 }

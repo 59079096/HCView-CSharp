@@ -75,7 +75,7 @@ namespace EMRView
 
         public void SetHCView(HCView aHCView)
         {
-            cbxPaper.SelectedIndex = cbxPaper.Items.IndexOf(HC.View.HC.GetPaperSizeStr((int)aHCView.ActiveSection.PaperSize));
+            cbxPaper.SelectedIndex = cbxPaper.Items.IndexOf(HC.View.HC.GetPaperSizeName((int)aHCView.ActiveSection.PaperSize));
             if (cbxPaper.SelectedIndex < 0)
                 cbxPaper.SelectedIndex = 0;
 

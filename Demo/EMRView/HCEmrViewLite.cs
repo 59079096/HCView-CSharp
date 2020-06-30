@@ -67,5 +67,26 @@ namespace EMRView
                     return null;
             }
         }
+
+        public void TraverseItem(HCItemTraverse traverse)
+        {
+            if (traverse.Areas.Count == 0)
+                return;
+
+            for (int i = 0; i < this.Sections.Count; i++)
+            {
+                if (!traverse.Stop)
+                {
+                    if (traverse.Areas.Contains(SectionArea.saHeader))
+                        this.Sections[i].Header.TraverseItem(traverse);
+
+                    if ((!traverse.Stop) && (traverse.Areas.Contains(SectionArea.saPage)))
+                        this.Sections[i].Page.TraverseItem(traverse);
+
+                    if ((!traverse.Stop) && (traverse.Areas.Contains(SectionArea.saFooter)))
+                        this.Sections[i].Footer.TraverseItem(traverse);
+                }
+            }
+        }
     }
 }

@@ -507,7 +507,7 @@ namespace HC.View
             Items[aItemNo].MouseEnter();
         }
 
-        protected void DoItemResized(int aItemNo)
+        protected virtual void DoItemResized(int aItemNo)
         {
             if (FOnItemResized != null)
                 FOnItemResized(this, aItemNo);
@@ -2438,6 +2438,7 @@ namespace HC.View
             {
                 FMouseMoveItemNo = FMouseDownItemNo;
                 FMouseMoveItemOffset = FMouseDownItemOffset;
+                FMouseMoveDrawItemNo = GetDrawItemNoByOffset(FMouseMoveItemNo, FMouseMoveItemOffset);
                 FMouseMoveRestrain = false;
                 DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
                 Style.UpdateInfoRePaint();
@@ -5433,8 +5434,17 @@ namespace HC.View
                     if ((!vNewItem.ParaFirst) && vTextItem.ParaFirst)
                     {
                         vNewItem.ParaFirst = true;
-                        UndoAction_ItemParaFirst(SelectInfo.StartItemNo, 0, false);
-                        vTextItem.ParaFirst = false;
+                        if (vTextItem.Length == 0)
+                        {
+                            UndoAction_DeleteItem(this.SelectInfo.StartItemNo, 0);
+                            this.Items.RemoveAt(this.SelectInfo.StartItemNo);
+                            vAddCount--;
+                        }
+                        else
+                        {
+                            UndoAction_ItemParaFirst(this.SelectInfo.StartItemNo, 0, false);
+                            vTextItem.ParaFirst = false;
+                        }
                     }
 
                     Items.Insert(SelectInfo.StartItemNo, vNewItem);
@@ -5597,7 +5607,7 @@ namespace HC.View
                 {
                     bool vNewPara = false;
                     int vAddCount = 0;
-                    CurStyleNo = Items[SelectInfo.StartItemNo].StyleNo;  // 防止静默移动选中位置没有更新当前样式
+                    CurStyleNo = Style.GetStyleNo(Style.DefaultTextStyle, true);  // 防止静默移动选中位置没有更新当前样式
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 

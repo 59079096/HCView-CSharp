@@ -680,5 +680,17 @@ namespace HC.View
         {
             get { return GetPageCount(); }
         }
+
+        public List<HCSection> Sections
+        {
+            get { return FSections; }
+        }
+
+
+        /// <summary> 当前文档样式表 </summary>
+        public HCStyle Style
+        {
+            get { return FStyle; }
+        }
     }
 }

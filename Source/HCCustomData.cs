@@ -794,6 +794,8 @@ namespace HC.View
             FCaretDrawItemNo = -1;
         }
 
+        public virtual void SilenceChange() { }
+
         /// <summary> 嵌套时获取根级Data </summary>
         public virtual HCCustomData GetRootData()
         {
