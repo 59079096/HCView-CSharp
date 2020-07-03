@@ -499,7 +499,7 @@ namespace HC.View
             else  // 保存为Base64
             {
                 Result = "<img width=\"" + FWidth.ToString() + "\" height=\"" + FHeight.ToString()
-                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(vBitmap, vBitmap.RawFormat) + "\" alt=\"THCImageItem\" />";
+                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(vBitmap, vBitmap.RawFormat) + "\" alt=\"" + this.GetType().Name + "\" />";
             }
 
             return Result;

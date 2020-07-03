@@ -447,29 +447,95 @@ namespace EMRView
             }
         }
 
+        private void SetDeItemText_(HCCustomData data, int itemNo, int offset, DeItem deItem, string str)
+        { 
+            FEmrView.UndoGroupBegin();
+            try
+            {
+                FEmrView.SetActiveItemText(str);
+                (data as HCRichData).UndoItemMirror(itemNo, offset);
+                if (deItem.Propertys.ContainsKey(DeProp.CMVVCode))
+                    deItem[DeProp.CMVVCode] = "";
+
+                deItem.AllocValue = true;
+            }
+            finally
+            {
+                FEmrView.UndoGroupEnd();
+            }
+        }
+
         private bool DoInsertTextBefor(HCCustomData aData, int aItemNo, int aOffset, string aText)
         {
             HCCustomItem vItem = aData.Items[aItemNo];
+            #if DEITEMINPUT
+            if (vItem is DeTable)
+            {
+                DeTable vDeTable = vItem as DeTable;
+                HCTableCell vTableCell = vDeTable.GetEditCell();
+                if (vTableCell.CellData != null)
+                {
+                    HCTableCellData vData = vTableCell.CellData;
+                    if (vData.SelectExists())
+                    {
+                        if (vData.SelectInfo.StartItemNo == vData.SelectInfo.EndItemNo)
+                        {
+                            return DoInsertTextBefor(vData, vData.SelectInfo.StartItemNo,
+                                vData.SelectInfo.StartItemOffset, aText);
+                        }
+                    }
+                    else  // 没有选中
+                    {
+                        return DoInsertTextBefor(vData, vData.SelectInfo.StartItemNo,
+                            vData.SelectInfo.StartItemOffset, aText);
+                    }
+                }
+            }
+            else
+            if (vItem is DeItem)
+            {
+                DeItem vDeItem = vItem as DeItem;
+                if (vDeItem.IsElement)
+                {
+                    if (vItem.IsSelectComplate)  // Item全选了
+                    {
+                        SetDeItemText_(aData, aItemNo, aOffset, vDeItem, aText);
+                        return false;
+                    }
+                    else
+                    if (vDeItem.IsSelectPart)  // 选中了一部分
+                    {
+                        string vS = vDeItem.Text;
+                        vS = vS.Remove(aOffset + 1 - 1, aData.SelectInfo.EndItemOffset - aOffset);
+                        vS = vS.Insert(aOffset + 1 - 1, aText);
+                        SetDeItemText_(aData, aItemNo, aOffset, vDeItem, vS);
+                        aData.SelectInfo.StartItemOffset = aOffset + aText.Length;
+                        FEmrView.Style.UpdateInfoReCaret(true);
+                        return false;
+                    }
+                    else
+                    //if vDeItem.InputContinue then
+                    {
+                        string vS = vItem.Text;
+                        vS = vS.Insert(aOffset + 1 - 1, aText);
+                        SetDeItemText_(aData, aItemNo, aOffset, vDeItem, vS);
+                        aData.SelectInfo.StartItemOffset = aOffset + aText.Length;
+                        FEmrView.Style.UpdateInfoReCaret(true);
+                        return false;
+                    }
+                }
+            }
+            #else
             if (vItem is DeItem)
             {
                 DeItem vDeItem = vItem as DeItem;
                 if (vDeItem.IsElement && !vDeItem.AllocValue && vItem.IsSelectComplate)  // 数据元没赋过值且全选中了（无弹出框时处理为全选中、手动全选中）
                 {
-                    FEmrView.UndoGroupBegin();
-                    try
-                    {
-                        FEmrView.SetActiveItemText(aText);
-                        (aData as HCRichData).UndoItemMirror(aItemNo, aOffset);
-                        vDeItem.Propertys.Remove(DeProp.CMVVCode);
-                    }
-                    finally
-                    {
-                        FEmrView.UndoGroupEnd();
-                    }
-
+                    SetDeItemText_(aData, aItemNo, aOffset, vDeItem, aText);
                     return false;
                 }
             }
+            #endif
 
             return true;
         }
@@ -705,9 +771,15 @@ namespace EMRView
                     if (((Control.ModifierKeys & Keys.Control) == Keys.Control) && ActiveDeItemSync(vDeItem))
                         return;
 
+                    #if DEITEMINPUT
+                    return;
+                    #endif
+
                     POINT vPt = FEmrView.GetTopLevelDrawItemViewCoord();  // 得到相对EmrView的坐标
                     HCCustomDrawItem vActiveDrawItem = FEmrView.GetTopLevelDrawItem();
-                    RECT vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, vActiveDrawItem.Rect.Width, vActiveDrawItem.Rect.Height);
+                    RECT vDrawItemRect = HC.View.HC.Bounds(vPt.X, vPt.Y, 
+                        FEmrView.ZoomIn(vActiveDrawItem.Rect.Width),
+                        FEmrView.ZoomIn(vActiveDrawItem.Rect.Height));
 
                     if (HC.View.HC.PtInRect(vDrawItemRect, new POINT(e.X, e.Y)))
                     {

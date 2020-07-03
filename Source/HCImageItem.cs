@@ -28,6 +28,7 @@ namespace HC.View
         {
             //if (FImage.PixelFormat != System.Drawing.Imaging.PixelFormat.Format24bppRgb)
             //    FImage = FImage.Clone(new Rectangle(0, 0, FImage.Width, FImage.Height), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            FEmpty = false;
         }
 
         protected override int GetWidth()

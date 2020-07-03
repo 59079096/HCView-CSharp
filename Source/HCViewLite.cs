@@ -26,7 +26,7 @@ namespace HC.View
             return Result;
         }
 
-        private void  DoLoadFromStream(Stream stream, HCStyle style, LoadSectionProcHandler loadSectionProc)
+        private void DoLoadFromStream(Stream stream, HCStyle style, LoadSectionProcHandler loadSectionProc)
         {
             stream.Position = 0;
             string vFileExt = "";
@@ -121,6 +121,7 @@ namespace HC.View
             FStyle = new HCStyle(true, true);
             FSections = new List<HCSection>();
             FSections.Add(NewDefaultSection());
+            FActiveSectionIndex = 0;
         }
 
         ~HCViewLite()

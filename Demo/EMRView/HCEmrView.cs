@@ -18,6 +18,7 @@ using HC.Win32;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Controls;
+using System.Configuration;
 
 namespace EMRView
 {
@@ -1486,12 +1487,6 @@ namespace EMRView
             bool vStart = false;
             bool vFind = false;
 
-            HCCustomData vData;
-            if (startData != null)
-                vData = startData;
-            else
-                vData = this.ActiveSection.Page;
-
             HCCustomItem vItem;
             DeItem vDeItem;
             HCItemTraverse vItemTraverse = new HCItemTraverse();
@@ -1648,17 +1643,18 @@ namespace EMRView
             return vResult;
         }
 
-#if PROCSERIES
+        #if PROCSERIES
         public bool InsertProc(string procIndex, string propertys, string beforProcIndex)
         {
             if (procIndex == "")
                 return false;
 
             bool vResult = false;
-            HCViewData vData = this.ActiveSectionTopLevelData() as HCViewData;
-            if (vData == this.ActiveSection.Page)  // 只能在正文插入病程
+            HCSection vSection = this.ActiveSection;
+            HCViewData vPageData = this.ActiveSectionTopLevelData() as HCViewData;
+            if (vPageData == this.ActiveSection.Page)  // 只能在正文插入病程
             {
-                DeGroup vDeGroup = new DeGroup(vData);
+                DeGroup vDeGroup = new DeGroup(vPageData);
                 vDeGroup[DeProp.Index] = procIndex;
                 vDeGroup[GroupProp.SubType] = SubType.Proc;
 
@@ -1679,26 +1675,33 @@ namespace EMRView
                 FIgnoreAcceptAction = true;
                 try
                 {
-                    int vStartNo = -1, vEndNo = -1;
+                    int vStartNo = -1, vEndNo = -1, vSectionIndex = -1; ;
 
                     if (beforProcIndex != "")  // 在指定病程前面插入
                     {
-                        if (GetProcItemNo(beforProcIndex, ref vStartNo, ref vEndNo))  // 有效
-                            vData.SetSelectBound(vEndNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetAfter);
+                        if (GetProcItemNo(beforProcIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))  // 有效
+                        {
+                            if (vSectionIndex != this.ActiveSectionIndex)
+                                this.ActiveSectionIndex = vSectionIndex;
+
+                            vSection = this.Sections[vSectionIndex];
+                            vPageData = vSection.Page;
+                            vPageData.SetSelectBound(vEndNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetAfter);
+                        }
                         else
                             return false;
                     }
                     else  // 在最后追加
-                        vData.SelectLastItemAfterWithCaret();
+                        vPageData.SelectLastItemAfterWithCaret();
 
-                    if (!vData.IsEmptyData())
+                    if (!vPageData.IsEmptyData())
                         this.InsertBreak();
 
                     this.ApplyParaAlignHorz(ParaAlignHorz.pahLeft);
                     vResult = this.InsertDeGroup(vDeGroup);
 
-                    vEndNo = vData.SelectInfo.StartItemNo;
-                    vData.SetSelectBound(vEndNo, HC.View.HC.OffsetBefor, vEndNo, HC.View.HC.OffsetBefor);
+                    vEndNo = vPageData.SelectInfo.StartItemNo;
+                    vPageData.SetSelectBound(vEndNo, HC.View.HC.OffsetBefor, vEndNo, HC.View.HC.OffsetBefor);
                     GetCurProcInfo(this.ActiveSection.Page, FCurProcInfo);
                 }
                 finally
@@ -1715,8 +1718,8 @@ namespace EMRView
             if (procIndex == "")
                 return false;
 
-            int vStartNo = -1, vEndNo = -1;
-            if (GetProcItemNo(procIndex, ref vStartNo, ref vEndNo))
+            int vStartNo = -1, vEndNo = -1, vSectionIndex = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
             {
                 return this.ActiveSection.DataAction(this.ActiveSection.Page, delegate ()
                 {
@@ -1736,7 +1739,7 @@ namespace EMRView
             return false;
         }
 
-        public void GetProcInfo(HCSectionData data, int itemNo, int offset, ProcInfo procInfo)
+        public void GetProcInfoAt(HCSectionData data, int itemNo, int offset, ProcInfo procInfo)
         {
             procInfo.Clear();
 
@@ -1906,11 +1909,10 @@ namespace EMRView
 
         public string GetProcProperty(string procIndex, string propName)
         {
-            int vBeginNo = -1;
-            int vEndNo = -1;
-            if (GetProcItemNo(procIndex, ref vBeginNo, ref vEndNo))
+            int vBeginNo = -1, vEndNo = -1, vSectionIndex = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vBeginNo, ref vEndNo))
             {
-                DeGroup vBeginGroup = this.ActiveSection.Page.Items[vBeginNo] as DeGroup;
+                DeGroup vBeginGroup = this.Sections[vSectionIndex].Page.Items[vBeginNo] as DeGroup;
 
                 if (propName == GroupProp.Name)
                     return vBeginGroup[DeProp.Name];
@@ -1926,11 +1928,11 @@ namespace EMRView
 
         public bool SetProcProperty(string procIndex, string propName, string propValue)
         {
-            int vBeginNo = -1, vEndNo = -1;
-            if (GetProcItemNo(procIndex, ref vBeginNo, ref vEndNo))
+            int vBeginNo = -1, vEndNo = -1, vSectionIndex = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vBeginNo, ref vEndNo))
             {
-                DeGroup vBeginGroup = this.ActiveSection.Page.Items[vBeginNo] as DeGroup;
-                DeGroup vEndGroup = this.ActiveSection.Page.Items[vEndNo] as DeGroup;
+                DeGroup vBeginGroup = this.Sections[vSectionIndex].Page.Items[vBeginNo] as DeGroup;
+                DeGroup vEndGroup = this.Sections[vSectionIndex].Page.Items[vEndNo] as DeGroup;
 
                 if (propName == GroupProp.Name)
                 {
@@ -1977,11 +1979,12 @@ namespace EMRView
 
         public bool SetProcStream(string procIndex, Stream stream)
         {
-            int vStartNo = -1;
-            int vEndNo = -1;
-
-            if (GetProcItemNo(procIndex, ref vStartNo, ref vEndNo))
+            int vStartNo = -1, vEndNo = -1, vSectionIndex = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
             {
+                if (this.ActiveSectionIndex != vSectionIndex)
+                    this.ActiveSectionIndex = vSectionIndex;
+
                 this.ActiveSection.DataAction(this.ActiveSection.Page, delegate ()
                 {
                     this.ActiveSection.Page.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
@@ -2010,10 +2013,13 @@ namespace EMRView
             {
                 FEditProcIndex = value;
                 FEditProcInfo.Clear();
-                int vBeginNo = -1, vEndNo = -1;
-                GetProcItemNo(value, ref vBeginNo, ref vEndNo);
+                int vBeginNo = -1, vEndNo = -1, vSectionIndex = -1;
+                GetProcItemNo(value, ref vSectionIndex, ref vBeginNo, ref vEndNo);
                 if (vEndNo > 0)
                 {
+                    if (this.ActiveSectionIndex != vSectionIndex)
+                        this.ActiveSectionIndex = vSectionIndex;
+
                     FEditProcInfo.BeginNo = vBeginNo;
                     FEditProcInfo.EndNo = vEndNo;
                     FEditProcInfo.Data = this.ActiveSection.Page;
@@ -2022,19 +2028,25 @@ namespace EMRView
             }
         }
 
-        public bool GetProcItemNo(string procIndex, ref int startNo, ref int endNo)
+        public bool GetProcItemNo(string procIndex, ref int sectionIndex, ref int startNo, ref int endNo)
         {
             bool vResult = false;
             startNo = -1;
             endNo = -1;
+            sectionIndex = -1;
 
-            HCSectionData vData = this.ActiveSection.Page;
-            for (int i = 0; i < vData.Items.Count; i++)
+            HCSectionData vData = null;
+            for (int i = 0; i < this.Sections.Count; i++)
             {
-                if ((vData.Items[i] is DeGroup) && ((vData.Items[i] as DeGroup)[DeProp.Index] == procIndex))
+                vData = this.Sections[i].Page;
+                for (int j = 0; i < vData.Items.Count; i++)
                 {
-                    startNo = i;
-                    break;
+                    if ((vData.Items[j] is DeGroup) && ((vData.Items[j] as DeGroup)[DeProp.Index] == procIndex))
+                    {
+                        sectionIndex = i;
+                        startNo = i;
+                        break;
+                    }
                 }
             }
 
@@ -2049,7 +2061,7 @@ namespace EMRView
 
         public void GetCurProcInfo(HCSectionData data, ProcInfo procInfo)
         {
-            GetProcInfo(data, data.SelectInfo.StartItemNo, data.SelectInfo.StartItemOffset, procInfo);
+            GetProcInfoAt(data, data.SelectInfo.StartItemNo, data.SelectInfo.StartItemOffset, procInfo);
         }
         #endif
 

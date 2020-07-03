@@ -2568,7 +2568,7 @@ namespace HC.View
         }
 
         #region MouseUp子方法DoItemMouseUp
-        private void DoItemMouseUp(int aItemNo, int aOffset, MouseEventArgs e)
+        private void DoItemMouseUp(int aItemNo, int aOffset, bool vRestrain, MouseEventArgs e)
         {
             if (aItemNo < 0)
                 return;
@@ -2579,7 +2579,7 @@ namespace HC.View
             MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
             Items[aItemNo].MouseUp(vMouseArgs);
 
-            if (FOnItemMouseUp != null)
+            if ((!vRestrain) && (FOnItemMouseUp != null))
                 FOnItemMouseUp(this, aItemNo, aOffset, vMouseArgs);
         }
         #endregion
@@ -2608,7 +2608,7 @@ namespace HC.View
                 Style.UpdateInfoReCaret();
 
             //if (Items[vUpItemNo].StyleNo < HCStyle.Null)
-            DoItemMouseUp(vUpItemNo, vUpItemOffset, e);  // 弹起，因为可能是移出Item后弹起，所以这里不受vRestrain约束
+            DoItemMouseUp(vUpItemNo, vUpItemOffset, vRestrain, e);  // 弹起，因为可能是移出Item后弹起，所以这里不受vRestrain约束
         }
         #endregion
 
@@ -2622,12 +2622,13 @@ namespace HC.View
             if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))
                 return;
 
+            bool vRestrain = false;
             if (SelectedResizing())
             {
                 Undo_New();
                 UndoAction_ItemSelf(FMouseDownItemNo, FMouseDownItemOffset);
 
-                DoItemMouseUp(FMouseDownItemNo, FMouseDownItemOffset, e);
+                DoItemMouseUp(FMouseDownItemNo, FMouseDownItemOffset, vRestrain, e);
                 DoItemResized(FMouseDownItemNo);  // 缩放完成事件(可控制缩放不要超过页面)
 
                 int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
@@ -2640,7 +2641,6 @@ namespace HC.View
             }
 
             int vUpItemNo = -1, vUpItemOffset = -1, vDrawItemNo = -1;
-            bool vRestrain = false;
             GetItemAt(e.X, e.Y, ref vUpItemNo, ref vUpItemOffset, ref vDrawItemNo, ref vRestrain);
 
             if (FSelecting || Style.UpdateInfo.Selecting)
@@ -2652,20 +2652,20 @@ namespace HC.View
                     for (int i = SelectInfo.StartItemNo; i <= SelectInfo.EndItemNo; i++)
                     {
                         if ((i != vUpItemNo) && (Items[i].StyleNo < HCStyle.Null))
-                            DoItemMouseUp(i, 0, e);
+                            DoItemMouseUp(i, 0, vRestrain, e);
                     }
                 }
 
                 if (SelectInfo.EndItemNo < 0)  // 在RectItem里划选或TextItem划选回起始位置
                 {
                     if ((FMouseDownItemNo >= 0) && (Items[FMouseDownItemNo].StyleNo < HCStyle.Null))  // 弹起时在RectItem
-                        DoItemMouseUp(FMouseDownItemNo, HC.OffsetInner, e);
+                        DoItemMouseUp(FMouseDownItemNo, HC.OffsetInner, vRestrain, e);
                     else
-                        DoItemMouseUp(vUpItemNo, vUpItemOffset,e);
+                        DoItemMouseUp(vUpItemNo, vUpItemOffset, vRestrain, e);
                 }
                 else
                 if (Items[vUpItemNo].StyleNo < HCStyle.Null)
-                    DoItemMouseUp(vUpItemNo, vUpItemOffset, e);
+                    DoItemMouseUp(vUpItemNo, vUpItemOffset, vRestrain, e);
             }
             else
             {
@@ -4587,8 +4587,7 @@ namespace HC.View
                 return;
             }
 
-            int vCurItemNo = -1, vLen = -1, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
-            int vParaNo = -1, vDelCount = 0;
+            int vCurItemNo = -1, vLen = -1, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1, vParaNo = -1;
             bool vParaFirst = false;
             if (SelectInfo.StartItemOffset == 0)
             {
