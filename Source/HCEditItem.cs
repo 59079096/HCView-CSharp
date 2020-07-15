@@ -511,7 +511,7 @@ namespace HC.View
             FPaddingBottom = 4;
             FCaretOffset = -1;
             Width = 50;
-            FPrintOnlyText = false;
+            FPrintOnlyText = true;
             FBorderWidth = 1;
             FBorderSides = new HCBorderSides();
             FBorderSides.InClude((byte)BorderSide.cbsLeft);

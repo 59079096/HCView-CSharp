@@ -850,7 +850,11 @@ namespace HC.View
             SelectInfo.StartItemOffset = aOffset;
 
             if (FFormatCount != 0)
+            {
+                FCurStyleNo = Items[SelectInfo.StartItemNo].StyleNo;
+                FCurParaNo = Items[SelectInfo.StartItemNo].ParaNo;
                 return;
+            }
 
             int vOffset = 0;
             if (Items[aItemNo].StyleNo > HCStyle.Null)

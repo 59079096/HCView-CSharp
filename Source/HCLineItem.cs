@@ -35,8 +35,15 @@ namespace HC.View
 
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
-            Width = (aRichData as HCRichData).Width;
-            Height = FLineHeight;
+            //Width = (aRichData as HCRichData).Width;
+            //Height = FLineHeight;
+        }
+
+        private void PaintLine(HCCanvas canvas, RECT drawRect)
+        {
+            int vTop = (drawRect.Top + drawRect.Bottom) / 2;
+            canvas.MoveTo(drawRect.Left, vTop);
+            canvas.LineTo(drawRect.Right, vTop);
         }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
@@ -47,15 +54,28 @@ namespace HC.View
                 aCanvas.Pen.Width = FLineHeight;
                 aCanvas.Pen.Style = FLineStyle;
                 aCanvas.Pen.Color = Color.Black;
+
+                if (this.Height > 1)
+                {
+                    IntPtr vExtPen = HC.CreateExtPen(aCanvas.Pen, GDI.PS_ENDCAP_FLAT);
+                    IntPtr vOldPen = (IntPtr)GDI.SelectObject(aCanvas.Handle, vExtPen);
+                    try
+                    {
+                        PaintLine(aCanvas, aDrawRect);
+                    }
+                    finally
+                    {
+                        GDI.SelectObject(aCanvas.Handle, vOldPen);
+                        GDI.DeleteObject(vExtPen);
+                    }
+                }
+                else
+                    PaintLine(aCanvas, aDrawRect);
             }
             finally
             {
                 aCanvas.Pen.EndUpdate();
             }
-
-            int vTop = (aDrawRect.Top + aDrawRect.Bottom) / 2;
-            aCanvas.MoveTo(aDrawRect.Left, vTop);
-            aCanvas.LineTo(aDrawRect.Right, vTop);
         }
 
         public HCLineItem(HCCustomData aOwnerData, int aWidth, int aHeight)

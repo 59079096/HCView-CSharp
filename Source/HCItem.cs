@@ -468,7 +468,6 @@ namespace HC.View
             aNode.SetAttribute("pno", FParaNo.ToString());
             aNode.SetAttribute("parafirst", this.ParaFirst.ToString());
             aNode.SetAttribute("pagebreak", this.PageBreak.ToString());
-
             if (FPrintInvisible)
                 aNode.SetAttribute("printvisible", "1");
         }

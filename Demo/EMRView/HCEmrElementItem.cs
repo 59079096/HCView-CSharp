@@ -448,7 +448,9 @@ namespace EMRView
                 aNode.SetAttribute("deleteallow", "1");
 
             aNode.SetAttribute("styleex", ((byte)FStyleEx).ToString());
-            aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
+            string vS = DeProp.GetPropertyString(FPropertys);
+            if (vS != "")
+                aNode.SetAttribute("property", vS);
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -467,8 +469,11 @@ namespace EMRView
             byte vByte = 0;
             bool vHasValue = byte.TryParse(aNode.GetAttribute("styleex"), out vByte);
             FStyleEx = (StyleExtra)vByte;
-            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
-            DeProp.SetPropertyString(vProp, FPropertys);
+            if (aNode.HasAttribute("property"))
+            {
+                string vProp = HC.View.HC.GetXmlRN(aNode.GetAttribute("property"));
+                DeProp.SetPropertyString(vProp, FPropertys);
+            }
         }
 
         public void ToJson(string aJsonObj)

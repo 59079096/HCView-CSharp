@@ -326,7 +326,7 @@ namespace EMRView
             if (FEmrView == null)
             {
                 FEmrView = new HCEmrView();
-                FEmrView.OnSectionItemInsert = DoItemInsert;
+                FEmrView.OnSectionItemInsert = DoInsertItem;
                 FEmrView.MouseDown += DoEmrViewMouseDown;
                 FEmrView.MouseUp += DoEmrViewMouseUp;
                 FEmrView.OnSectionDrawItemMouseMove += DoSectionDrawItemMouseMove;
@@ -589,7 +589,7 @@ namespace EMRView
             return vResult;
         }
 
-        private void DoDeComboboxGetItem(object sender, EventArgs e)
+        private void DoDeComboboxPopupItem(object sender, EventArgs e)
         {
             DeCombobox vCombobox = sender as DeCombobox;
             //if (DoDeItemPopup(vCombobox))
@@ -811,10 +811,10 @@ namespace EMRView
         }
 
         /// <summary> 病历有新的Item插入时触发 </summary>
-        protected void DoItemInsert(object sender, HCCustomData aData, HCCustomItem aItem)
+        protected void DoInsertItem(object sender, HCCustomData aData, HCCustomItem aItem)
         {
             if (aItem is DeCombobox)
-                (aItem as DeCombobox).OnPopupItem = DoDeComboboxGetItem;
+                (aItem as DeCombobox).OnPopupItem = DoDeComboboxPopupItem;
 
             if (FOnInsertDeItem != null)
                 FOnInsertDeItem(FEmrView, sender as HCSection, aData, aItem);
@@ -1661,7 +1661,7 @@ namespace EMRView
                 {
                     if (vTopData.Items[i].StyleNo < HCStyle.Null)
                     {
-                        MessageBox.Show("禁止编辑只能应用于文本内容，选中内容中存在非文本对象！");
+                        MessageBox.Show("禁止复制只能应用于文本内容，选中内容中存在非文本对象！");
                         return;
                     }
                 }
@@ -1670,12 +1670,12 @@ namespace EMRView
                     && (vTopData.SelectInfo.StartItemOffset == 0)
                     && (vTopData.SelectInfo.EndItemOffset == vTopData.GetItemOffsetAfter(vTopData.SelectInfo.StartItemNo)))  // 在同一个Item
                 {
-                    (vTopData.Items[vTopData.SelectInfo.StartItemNo] as DeItem).EditProtect = true;
+                    (vTopData.Items[vTopData.SelectInfo.StartItemNo] as DeItem).CopyProtect = true;
                     return;
                 }
 
                 for (int i = vTopData.SelectInfo.StartItemNo; i <= vTopData.SelectInfo.EndItemNo; i++)
-                    (vTopData.Items[i] as DeItem).EditProtect = false;
+                    (vTopData.Items[i] as DeItem).CopyProtect = false;
 
                 string vS = vTopData.GetSelectText();
                 vS = vS.Replace("\n", "").Replace("\t", "").Replace("\r", "");

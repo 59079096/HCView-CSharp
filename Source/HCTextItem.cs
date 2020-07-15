@@ -159,14 +159,18 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.SetAttribute("link", FHyperLink);
+            if (FHyperLink != "")
+                aNode.SetAttribute("link", FHyperLink);
+
             aNode.InnerText = Text;
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            FHyperLink = aNode.Attributes["link"].Value;
+            if (aNode.HasAttribute("link"))
+                FHyperLink = aNode.GetAttribute("link");
+
             FText = aNode.InnerText;
         }
 

@@ -51,6 +51,9 @@ namespace EMRView
             cbbAlignHorz.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignHorz;
             cbbAlignVert.SelectedIndex = (byte)aHCView.Style.ParaStyles[aHCView.CurParaNo].AlignVert;
             pnlBackColor.BackColor = aHCView.Style.ParaStyles[aHCView.CurParaNo].BackColor;
+            tbxFirstIndent.Text = string.Format("{0:0.#}", aHCView.Style.ParaStyles[aHCView.CurParaNo].FirstIndent);
+            tbxLeftIndent.Text = string.Format("{0:0.#}", aHCView.Style.ParaStyles[aHCView.CurParaNo].LeftIndent);
+            tbxRightIndent.Text = string.Format("{0:0.#}", aHCView.Style.ParaStyles[aHCView.CurParaNo].RightIndent);
             cbxBreakRough.Checked = aHCView.Style.ParaStyles[aHCView.CurParaNo].BreakRough;
 
             this.ShowDialog();
@@ -71,6 +74,21 @@ namespace EMRView
                     aHCView.ApplyParaAlignHorz((ParaAlignHorz)cbbAlignHorz.SelectedIndex);
                     aHCView.ApplyParaAlignVert((ParaAlignVert)cbbAlignVert.SelectedIndex);
                     aHCView.ApplyParaBackColor(pnlBackColor.BackColor);
+                    if (Single.TryParse(tbxFirstIndent.Text, out vFloat))
+                        aHCView.ApplyParaFirstIndent(vFloat);
+                    else
+                        aHCView.ApplyParaFirstIndent(0);
+
+                    if (Single.TryParse(tbxLeftIndent.Text, out vFloat))
+                        aHCView.ApplyParaLeftIndent(vFloat);
+                    else
+                        aHCView.ApplyParaLeftIndent(0);
+
+                    if (Single.TryParse(tbxRightIndent.Text, out vFloat))
+                        aHCView.ApplyParaRightIndent(vFloat);
+                    else
+                        aHCView.ApplyParaRightIndent(0);
+
                     aHCView.ApplyParaBreakRough(cbxBreakRough.Checked);
                 }
                 finally

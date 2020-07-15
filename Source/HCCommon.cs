@@ -55,7 +55,7 @@ namespace HC.View
         public static System.Windows.Forms.Cursor GCursor;
 
         public const byte
-            HC_PROGRAMLANGUAGE = 2,  // 1字节表示使用的编程语言 1:delphi, 2:C#, 3:VC++, 4:HTML5
+            HC_PROGRAMLANGUAGE = 2,  // 1字节表示使用的编程语言 1:delphi, 2:C#, 3:C++, 4:HTML5
             TabCharWidth = 28;  // 默认Tab宽度(五号) 14 * 2个
 
         public const int
@@ -126,11 +126,12 @@ namespace HC.View
             // 3.7 兼容Combobox无下拉选项时保存选项后打不开的问题
             // 3.8 浮动Item增加Lock属性用于锁定Item不可移动和修改
             // 3.9 域Item保存时存Level
+            // 4.0 RadioGroup存储更多的属性，HCView存页码格式
 
-            HC_FileVersion = "3.9";
+            HC_FileVersion = "4.0";
 
         public const ushort
-            HC_FileVersionInt = 39;
+            HC_FileVersionInt = 40;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -185,7 +186,50 @@ namespace HC.View
                 || (aKey == User.VK_DOWN));
         }
 
-        public static IntPtr CreateExtPen(HCPen aPen)
+        public static void HCDrawFrameControl(HCCanvas canvas, RECT rect, HCControlState state, HCControlStyle style)
+        {
+            RECT vRect = new RECT();
+            vRect.ReSetBounds(rect.Left + (rect.Width - 16) / 2, rect.Top + (rect.Height - 16) / 2 + 1, 16 - 2, 16 - 2);
+
+            canvas.Pen.BeginUpdate();
+            try
+            {
+                canvas.Pen.Color = Color.FromArgb(0x84, 0x84, 0x84);
+                canvas.Pen.Width = 1;
+                canvas.Pen.Style = HCPenStyle.psSolid;
+            }
+            finally
+            {
+                canvas.Pen.EndUpdate();
+            }
+
+            canvas.Brush.Style = HCBrushStyle.bsClear;
+            if (style == HCControlStyle.hcyRadio)
+            {
+                canvas.Ellipse(vRect.Left, vRect.Top, vRect.Right, vRect.Bottom);
+                if (state == HCControlState.hcsChecked)
+                {
+                    canvas.Pen.Style = HCPenStyle.psClear;
+                    canvas.Brush.Color = Color.Black;
+                    vRect.Inflate(-2, -2);
+                    canvas.Ellipse(vRect.Left, vRect.Top, vRect.Right, vRect.Bottom);
+                }
+            }
+            else
+            {
+                canvas.Rectangle(vRect);
+                if (state == HCControlState.hcsChecked)
+                {
+                    canvas.Pen.Color = Color.Black;
+                    canvas.Pen.Width = 2;
+                    canvas.MoveTo(vRect.Left + 3, vRect.Top + 16 / 2);
+                    canvas.LineTo(vRect.Left - 2 + 16 / 2, vRect.Bottom - 3);
+                    canvas.LineTo(vRect.Right - 3, vRect.Top + 3);
+                }
+            }
+        }
+
+        public static IntPtr CreateExtPen(HCPen aPen, int endCap = GDI.PS_ENDCAP_SQUARE)
         {
             LOGBRUSH vPenParams = new LOGBRUSH();
 
@@ -224,7 +268,7 @@ namespace HC.View
             vPenParams.lbColor = aPen.Color.ToRGB_UInt();
             vPenParams.lbHatch = 0;
 
-            return (IntPtr)(GDI.ExtCreatePen(((aPen.Width != 1) ? GDI.PS_GEOMETRIC : GDI.PS_COSMETIC) | GDI.PS_ENDCAP_SQUARE | vPenParams.lbStyle,
+            return (IntPtr)(GDI.ExtCreatePen(((aPen.Width != 1) ? GDI.PS_GEOMETRIC : GDI.PS_COSMETIC) | endCap | vPenParams.lbStyle,
                 aPen.Width, ref vPenParams, 0, IntPtr.Zero));
         }
 
@@ -643,7 +687,8 @@ namespace HC.View
 
         public static string GetColorXmlRGB(Color aColor)
         {
-            if (aColor == HCTransparentColor)
+            if ((aColor.A == HCTransparentColor.A) && (aColor.R == HCTransparentColor.R)
+                && (aColor.G == HCTransparentColor.G) && (aColor.B == HCTransparentColor.B))
                 return "0,255,255,255";
             else
                 return string.Format("255,{0},{1},{2}", aColor.R, aColor.G, aColor.B);
@@ -973,6 +1018,18 @@ namespace HC.View
         actItemMirror,  // Item镜像
         actConcatText,  // 粘接文本(两头)
         actDeleteSelected
+    }
+
+    public enum HCControlState : byte
+    {
+        hcsCustom,
+        hcsChecked
+    }
+
+    public enum HCControlStyle : byte
+    {
+        hcyRadio,
+        hcyCheck
     }
 
     public struct HCCaretInfo

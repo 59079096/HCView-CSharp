@@ -37,6 +37,10 @@ namespace EMRView
             cbxMulSelect.Checked = aRadioGroup.MultSelect;
             cbxDeleteAllow.Checked = aRadioGroup.DeleteAllow;
 
+            tbxColume.Text = aRadioGroup.Columns.ToString();
+            cbxColumnAlign.Checked = aRadioGroup.ColumnAlign;
+            cbxItemHit.Checked = aRadioGroup.ItemHit;
+
             dgvRadioGroup.RowCount = aRadioGroup.Propertys.Count + 1;
             int vRow = 0;
             if (aRadioGroup.Propertys.Count > 0)
@@ -80,6 +84,7 @@ namespace EMRView
 
                 aRadioGroup.MultSelect = cbxMulSelect.Checked;
                 aRadioGroup.DeleteAllow = cbxDeleteAllow.Checked;
+                aRadioGroup.ItemHit = cbxItemHit.Checked;
 
                 string vsValue = "";
                 aRadioGroup.Propertys.Clear();
@@ -97,19 +102,35 @@ namespace EMRView
                         aRadioGroup.Propertys.Add(dgvRadioGroup.Rows[i].Cells[0].Value.ToString(), vsValue);
                 }
 
-                aRadioGroup.Items.Clear();
-                for (int i = 0; i < dgvItem.RowCount; i++)
+                aRadioGroup.BeginAdd();
+                try
                 {
-                    if (dgvItem.Rows[i].Cells[0].Value == null)
-                        continue;
-
-                    if (dgvItem.Rows[i].Cells[1].Value == null)
-                        vsValue = "";
+                    byte vByte = 0;
+                    if (byte.TryParse(tbxColume.Text, out vByte))
+                        aRadioGroup.Columns = vByte;
                     else
-                        vsValue = dgvItem.Rows[i].Cells[1].Value.ToString();
+                        aRadioGroup.Columns = 0;
 
-                    if (dgvItem.Rows[i].Cells[0].Value.ToString().Trim() != "")
-                        aRadioGroup.AddItem(dgvItem.Rows[i].Cells[0].Value.ToString(), vsValue);
+                    aRadioGroup.ColumnAlign = cbxColumnAlign.Checked;
+
+                    aRadioGroup.Items.Clear();
+                    for (int i = 0; i < dgvItem.RowCount; i++)
+                    {
+                        if (dgvItem.Rows[i].Cells[0].Value == null)
+                            continue;
+
+                        if (dgvItem.Rows[i].Cells[1].Value == null)
+                            vsValue = "";
+                        else
+                            vsValue = dgvItem.Rows[i].Cells[1].Value.ToString();
+
+                        if (dgvItem.Rows[i].Cells[0].Value.ToString().Trim() != "")
+                            aRadioGroup.AddItem(dgvItem.Rows[i].Cells[0].Value.ToString(), vsValue);
+                    }
+                }
+                finally
+                {
+                    aRadioGroup.EndAdd();
                 }
 
                 aHCView.BeginUpdate();

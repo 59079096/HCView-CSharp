@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace HC.Win32
 {	 
@@ -88,6 +89,14 @@ namespace HC.Win32
             Top = rect.Top;
             Right = rect.Right;
             Bottom = rect.Bottom;
+        }
+
+        public void ReSetBounds(int x, int y, int w, int h)
+        {
+            Left = x;
+            Top = y;
+            Right = x + w;
+            Bottom = y + h;
         }
     }
 

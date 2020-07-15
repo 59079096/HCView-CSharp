@@ -3260,6 +3260,19 @@ namespace HC.View
 
         }
 
+        public void AssignPaper(HCCustomSection source)
+        {
+            this.PaperSize = source.PaperSize;
+            this.PaperWidth = source.PaperWidth;
+            this.PaperHeight = source.PaperHeight;
+            this.PaperMarginTop = source.PaperMarginTop;
+            this.PaperMarginLeft = source.PaperMarginLeft;
+            this.PaperMarginRight = source.PaperMarginRight;
+            this.PaperMarginBottom = source.PaperMarginBottom;
+            this.PaperOrientation = source.PaperOrientation;
+            this.HeaderOffset = source.HeaderOffset;
+        }
+
         /// <summary> 当前位置开始查找指定的内容 </summary>
         /// <param name="aKeyword">要查找的关键字</param>
         /// <param name="aForward">True：向前，False：向后</param>

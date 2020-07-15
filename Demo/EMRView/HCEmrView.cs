@@ -43,13 +43,13 @@ namespace EMRView
         private string FPageBlankTip;
         private object FPropertyObject;
 
-        #if PROCSERIES
+#if PROCSERIES
         private bool FShowProcSplit;
         private int FProcCount;  // 当前文档病程数量
-        private ProcInfo FCurProcInfo,  // 当前光标处的病程信息
+        private ProcInfo FCaretProcInfo,  // 当前光标处的病程信息
             FEditProcInfo;  // 当前正在编辑的病程信息
         private string FEditProcIndex;  // 当前允许编辑的病程
-        #endif
+#endif
 
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
@@ -162,20 +162,21 @@ namespace EMRView
             HCCustomItem vActiveItem = this.GetTopLevelItem();
             if (vActiveItem != null)
             {
-                #if PROCSERIES
+#if PROCSERIES
                 if ((FProcCount > 0) && (data == this.ActiveSection.Page))
                 {
-                    this.GetCurProcInfo(this.ActiveSection.Page, FCurProcInfo);
-                    if (FCurProcInfo.EndNo > 0)
+                    this.GetSectionCaretProcInfo(this.ActiveSection.Page, FCaretProcInfo);
+                    FCaretProcInfo.SectionIndex = this.ActiveSectionIndex;
+                    if (FCaretProcInfo.EndNo > 0)
                     {
-                        vDeGroup = this.ActiveSection.ActiveData.Items[FCurProcInfo.BeginNo] as DeGroup;
+                        vDeGroup = this.ActiveSection.ActiveData.Items[FCaretProcInfo.BeginNo] as DeGroup;
                         vInfo = vDeGroup[DeProp.Name];
                     }
 
-                    if (FCurProcInfo.Index == FEditProcIndex)
-                        FEditProcInfo.Assign(FCurProcInfo);
+                    if (FCaretProcInfo.Index == FEditProcIndex)
+                        FEditProcInfo.Assign(FCaretProcInfo);
                 }
-                #endif
+#endif
 
                 HCViewData vData = this.ActiveSectionTopLevelData() as HCViewData;
 
@@ -339,6 +340,9 @@ namespace EMRView
         /// <returns>True：可编辑，False：不可编辑</returns>
         protected override bool DoSectionCanEdit(Object sender)
         {
+            if (FIgnoreAcceptAction)
+                return true;
+
             bool vResult = base.DoSectionCanEdit(sender);
             if (vResult)
             {
@@ -1267,13 +1271,13 @@ namespace EMRView
             this.Style.DefaultTextStyle.Size = HC.View.HC.GetFontSize("小四");
             this.Style.DefaultTextStyle.Family = "宋体";
             this.HScrollBar.AddStatus(200);
-            #if PROCSERIES
+#if PROCSERIES
             FShowProcSplit = true;
             FProcCount = 0;
-            FCurProcInfo = new ProcInfo();
+            FCaretProcInfo = new ProcInfo();
             FEditProcInfo = new ProcInfo();
             FEditProcIndex = "";
-            #endif
+#endif
         }
 
         ~HCEmrView()
@@ -1284,12 +1288,12 @@ namespace EMRView
         public override void Clear()
         {
             FTraceCount = 0;
-            #if PROCSERIES
+#if PROCSERIES
             FProcCount = 0;
-            FCurProcInfo.Clear();
+            FCaretProcInfo.Clear();
             FEditProcInfo.Clear();
             FEditProcIndex = "";
-            #endif
+#endif
             base.Clear();
         }
 
@@ -1304,6 +1308,8 @@ namespace EMRView
             {
                 if (!aTraverse.Stop)
                 {
+                    aTraverse.SectionIndex = i;
+
                     if (aTraverse.Areas.Contains(SectionArea.saHeader))
                         this.Sections[i].Header.TraverseItem(aTraverse);
 
@@ -1576,6 +1582,22 @@ namespace EMRView
             HCCustomItem vItem;
             TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
             {
+                if (!aData.CanEdit())
+                {
+                    aStop = true;
+                    return;
+                }
+
+#if PROCSERIES
+                if (this.FEditProcIndex != "")
+                {
+                    if ((FEditProcInfo.SectionIndex == vItemTraverse.SectionIndex) && (aData == FEditProcInfo.Data))
+                    {
+                        if ((aItemNo < FEditProcInfo.BeginNo) || (aItemNo > FEditProcInfo.EndNo))
+                            return;
+                    }
+                }
+#endif
                 vItem = aData.Items[aItemNo];
                 if ((vItem is DeItem) && (vItem as DeItem)[DeProp.Index] == aDeIndex)
                 {
@@ -1643,7 +1665,7 @@ namespace EMRView
             return vResult;
         }
 
-        #if PROCSERIES
+#if PROCSERIES
         public bool InsertProc(string procIndex, string propertys, string beforProcIndex)
         {
             if (procIndex == "")
@@ -1702,7 +1724,7 @@ namespace EMRView
 
                     vEndNo = vPageData.SelectInfo.StartItemNo;
                     vPageData.SetSelectBound(vEndNo, HC.View.HC.OffsetBefor, vEndNo, HC.View.HC.OffsetBefor);
-                    GetCurProcInfo(this.ActiveSection.Page, FCurProcInfo);
+                    GetSectionCaretProcInfo(this.ActiveSection.Page, FCaretProcInfo);
                 }
                 finally
                 {
@@ -1710,6 +1732,7 @@ namespace EMRView
                 }
             }
 
+            this.UpdateView();
             return vResult;
         }
 
@@ -1889,11 +1912,11 @@ namespace EMRView
                 procInfo.Index = (data.Items[procInfo.EndNo] as DeGroup)[GroupProp.Index];
         }
 
-        public string GetCurProcProperty(string propName)
+        public string GetCaretProcProperty(string propName)
         {
-            if (FCurProcInfo.EndNo > 0)
+            if (FCaretProcInfo.EndNo > 0)
             {
-                DeGroup vBeginGroup = this.ActiveSection.Page.Items[FCurProcInfo.BeginNo] as DeGroup;
+                DeGroup vBeginGroup = this.ActiveSection.Page.Items[FCaretProcInfo.BeginNo] as DeGroup;
 
                 if (propName == GroupProp.Name)
                     return vBeginGroup[DeProp.Name];
@@ -2020,11 +2043,14 @@ namespace EMRView
                     if (this.ActiveSectionIndex != vSectionIndex)
                         this.ActiveSectionIndex = vSectionIndex;
 
+                    FEditProcInfo.SectionIndex = vSectionIndex;
+                    FEditProcInfo.Data = this.ActiveSection.Page;
                     FEditProcInfo.BeginNo = vBeginNo;
                     FEditProcInfo.EndNo = vEndNo;
-                    FEditProcInfo.Data = this.ActiveSection.Page;
                     FEditProcInfo.Index = value;
                 }
+
+                this.UpdateView();
             }
         }
 
@@ -2059,11 +2085,11 @@ namespace EMRView
             return vResult;
         }
 
-        public void GetCurProcInfo(HCSectionData data, ProcInfo procInfo)
+        public void GetSectionCaretProcInfo(HCSectionData data, ProcInfo procInfo)
         {
             GetProcInfoAt(data, data.SelectInfo.StartItemNo, data.SelectInfo.StartItemOffset, procInfo);
         }
-        #endif
+#endif
 
         /// <summary> 直接设置当前数据元的值为扩展内容 </summary>
         /// <param name="aStream">扩展内容流</param>
@@ -2284,14 +2310,33 @@ namespace EMRView
 
             if (startLast)
             {
-                vStartNo = vData.Items.Count - 1;
+#if PROCSERIES
+                if (FEditProcIndex != "")
+                    vStartNo = FEditProcInfo.EndNo;
+                else
+#endif
+                    vStartNo = vData.Items.Count - 1;
                 GetDataDeGroupItemNo(vData, deIndex, true, ref vStartNo, ref vEndNo);
             }
             else
-                GetDataDeGroupItemNo(vData, deIndex, false, ref vStartNo, ref vEndNo);
+            {
+#if PROCSERIES
+                if (FEditProcIndex != "")
+                    vStartNo = FEditProcInfo.BeginNo;
+                else
+#endif
+                    GetDataDeGroupItemNo(vData, deIndex, false, ref vStartNo, ref vEndNo);
+            }
 
             if (vEndNo > 0)
             {
+#if PROCSERIES
+                if (FEditProcIndex != "")
+                {
+                    if ((vStartNo < FEditProcInfo.BeginNo) || (vEndNo > FEditProcInfo.EndNo))
+                        return;
+                }
+#endif
                 section.DataAction(vData, delegate ()
                 {
                     vData.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
@@ -2333,14 +2378,33 @@ namespace EMRView
 
             if (startLast)
             {
-                vStartNo = vData.Items.Count - 1;
+#if PROCSERIES
+                if (FEditProcIndex != "")
+                    vStartNo = FEditProcInfo.EndNo;
+                else
+#endif
+                    vStartNo = vData.Items.Count - 1;
                 GetDataDeGroupItemNo(vData, deIndex, true, ref vStartNo, ref vEndNo);
             }
             else
-                GetDataDeGroupItemNo(vData, deIndex, false, ref vStartNo, ref vEndNo);
+            {
+#if PROCSERIES
+                if (FEditProcIndex != "")
+                    vStartNo = FEditProcInfo.BeginNo;
+                else
+#endif
+                    GetDataDeGroupItemNo(vData, deIndex, false, ref vStartNo, ref vEndNo);
+            }
 
             if (vEndNo > 0)
             {
+#if PROCSERIES
+                if (FEditProcIndex != "")
+                {
+                    if ((vStartNo < FEditProcInfo.BeginNo) || (vEndNo > FEditProcInfo.EndNo))
+                        return;
+                }
+#endif
                 section.DataAction(vData, delegate ()
                 {
                     vData.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
@@ -2492,7 +2556,13 @@ namespace EMRView
         }
         #endif
 
-public bool Secret
+        public bool IgnoreAcceptAction
+        {
+            get { return FIgnoreAcceptAction; }
+            set { IgnoreAcceptAction = value; }
+        }
+
+        public bool Secret
         {
             get { return FSecret; }
             set { FSecret = value; }

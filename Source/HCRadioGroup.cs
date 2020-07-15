@@ -43,7 +43,7 @@ namespace HC.View
 
         public string Text = "";
         public string TextValue = "";
-        public POINT Position = new POINT();
+        public RECT Rect = new RECT();
 
         public bool Checked
         {
@@ -61,25 +61,136 @@ namespace HC.View
     public class HCRadioGroup : HCControlItem
     {
         private bool FMultSelect, FMouseIn, FItemHit;
+        private Byte FColumns, FBatchCount;
+        private bool FColumnAlign;
         private HCList<HCRadioButton> FItems;
         private HCRadioStyle FRadioStyle = HCRadioStyle.Radio;
         public static byte RadioButtonWidth = 16;
+
+        private void ReLayout()
+        {
+            if (FBatchCount > 0)
+                return;
+
+            //if (FItems == null)
+            //    return;
+
+            OwnerData.Style.ApplyTempStyle(TextStyleNo);
+            int vLeft = FPaddingLeft;
+            int vTop = FPaddingTop;
+            SIZE vSize = new SIZE();
+            if (FColumns == 0)
+            {
+                for (int i = 0; i < FItems.Count; i++)
+                {
+                    if (FItems[i].Text != "")
+                        vSize = OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
+                    else
+                        vSize = OwnerData.Style.TempCanvas.TextExtent("H");
+
+                    if (this.AutoSize && (vLeft + vSize.cx + RadioButtonWidth > Width))
+                    {
+                        vLeft = FPaddingLeft;
+                        vTop += vSize.cy + FPaddingBottom;
+                    }
+
+                    FItems[i].Rect.ReSetBounds(vLeft, vTop, RadioButtonWidth + vSize.cx, vSize.cy);
+                    vLeft += RadioButtonWidth + vSize.cx + FPaddingRight;
+                }
+
+                if (this.AutoSize)
+                    Width = vLeft;
+
+                Height = vTop + vSize.cy + FPaddingBottom;
+            }
+            else
+            {
+                int vWMax = 0;
+                vSize.cy = 0;
+                int vCol = 1, vColumnAct = FColumns;
+                if (FColumns > FItems.Count)
+                    vColumnAct = FItems.Count;
+
+                for (int i = 0; i < FItems.Count; i++)
+                {
+                    if (FItems[i].Text != "")
+                        vSize = OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
+                    else
+                        vSize = OwnerData.Style.TempCanvas.TextExtent("H");
+
+                    FItems[i].Rect.ReSetBounds(vLeft, vTop, RadioButtonWidth + vSize.cx, vSize.cy);
+                    vLeft += RadioButtonWidth + vSize.cx + FPaddingRight;
+
+                    if (vCol == vColumnAct)
+                    {
+                        if (vLeft > vWMax)
+                            vWMax = vLeft;
+
+                        if (i < FItems.Count - 1)
+                        {
+                            vCol = 1;
+                            vLeft = FPaddingLeft;
+                            vTop += vTop + vSize.cy + FPaddingBottom;
+                        }
+                    }
+                    else
+                        vCol++;
+                }
+
+                Height = vTop + vSize.cy + FPaddingBottom;
+
+                if (FColumnAlign)
+                {
+                    for (int i = 0; i < vColumnAct - 1; i++)
+                    {
+                        vCol = i;
+                        vWMax = FItems[vCol].Rect.Right;
+                        while (vCol + vColumnAct < FItems.Count)
+                        {
+                            vCol += vColumnAct;
+                            if (vWMax < FItems[vCol].Rect.Right)
+                                vWMax = FItems[vCol].Rect.Right;
+                        }
+
+                        vWMax += FPaddingRight;
+                        vCol = i + 1;
+                        FItems[vCol].Rect.Offset(vWMax - FItems[vCol].Rect.Left, 0);
+                        while (vCol + vColumnAct < FItems.Count)
+                        {
+                            vCol += vColumnAct;
+                            FItems[vCol].Rect.Offset(vWMax - FItems[vCol].Rect.Left, 0);
+                        }
+                    }
+
+                    if (AutoSize)
+                    {
+                        vCol = vColumnAct - 1;
+                        vWMax = FItems[vCol].Rect.Right;
+                        while (vCol + vColumnAct < FItems.Count)
+                        {
+                            vCol += vColumnAct;
+                            if (vWMax < FItems[vCol].Rect.Right)
+                                vWMax = FItems[vCol].Rect.Right;
+                        }
+
+                        Width = vWMax + FPaddingRight;
+                    }
+                }
+                else
+                if (AutoSize)
+                    Width = vWMax;
+            }
+        }
 
         private int GetItemAt(int x, int y)
         {
             int Result = -1;
 
-            if (FItemHit)
-                this.OwnerData.Style.ApplyTempStyle(TextStyleNo);
-
-            SIZE vSize = new SIZE();
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
                 if (FItemHit)
                 {
-                    vSize = this.OwnerData.Style.TempCanvas.TextExtent(FItems[i].Text);
-                    if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
-                        RadioButtonWidth + vSize.cx, vSize.cy), x, y))
+                    if (HC.PtInRect(FItems[i].Rect, x, y))
                     {
                         Result = i;
                         break;
@@ -87,7 +198,7 @@ namespace HC.View
                 }
                 else
                 {
-                    if (HC.PtInRect(HC.Bounds(FItems[i].Position.X, FItems[i].Position.Y,
+                    if (HC.PtInRect(HC.Bounds(FItems[i].Rect.Left, FItems[i].Rect.Top,
                         RadioButtonWidth, RadioButtonWidth), x, y))
                     {
                         Result = i;
@@ -99,9 +210,33 @@ namespace HC.View
             return Result;
         }
 
+        private void SetColumns(Byte value)
+        {
+            if (FColumns != value)
+            {
+                FColumns = value;
+                ReLayout();
+            }
+        }
+
+        private void SetColumnAlig(bool value)
+        {
+            if (FColumnAlign != value)
+            {
+                FColumnAlign = value;
+                ReLayout();
+            }
+        }
+
         protected void DoItemNotify(object sender, NListEventArgs<HCRadioButton> e)
         {
             e.Item.OnSetChecked = DoItemSetChecked;
+            this.ReLayout();
+        }
+
+        private void OnItemDelete(object sender, NListEventArgs<HCRadioButton> e)
+        {
+            this.ReLayout();
         }
 
         protected void DoItemSetChecked(object sender, EventArgs e)
@@ -117,40 +252,60 @@ namespace HC.View
             }
         }
 
-        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
+        protected void DoPaintItems(HCCanvas canvas, RECT drawRect, PaintInfo paintInfo)
         {
-            Height = FMinHeight;
-
-            aRichData.Style.ApplyTempStyle(TextStyleNo);
-
-            int vLeft = FPaddingLeft;
-            int vTop = FPaddingTop;
-            SIZE vSize = new SIZE();
-
+            POINT vPoint = new POINT();
+            RECT vItemRect;
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
-                if (FItems[i].Text != "")
-                    vSize = aRichData.Style.TempCanvas.TextExtent(FItems[i].Text);
-                else
-                    vSize = aRichData.Style.TempCanvas.TextExtent("H");
-                
-                if (this.AutoSize && vLeft + vSize.cx + RadioButtonWidth > Width)
+                vPoint.X = FItems[i].Rect.Left;
+                vPoint.Y = FItems[i].Rect.Top;
+                vPoint.Offset(drawRect.Left, drawRect.Top);
+                vItemRect = HC.Bounds(vPoint.X, vPoint.Y, RadioButtonWidth, RadioButtonWidth);
+
+                if (paintInfo.Print)
                 {
-                    vLeft = FPaddingLeft;
-                    vTop = vTop + vSize.cy + FPaddingBottom;
+                    if (FItems[i].Checked)
+                    {
+                        if (FRadioStyle == HCRadioStyle.Radio)
+                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsChecked, HCControlStyle.hcyRadio);
+                        else
+                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsChecked, HCControlStyle.hcyCheck);
+                    }
+                    else
+                    {
+                        if (FRadioStyle == HCRadioStyle.Radio)
+                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsCustom, HCControlStyle.hcyRadio);
+                        else
+                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsCustom, HCControlStyle.hcyCheck);
+                    }
+
+                    canvas.Brush.Style = HCBrushStyle.bsClear;
+                }
+                else
+                {
+                    if (FItems[i].Checked)
+                    {
+                        if (FRadioStyle == HCRadioStyle.Radio)
+                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONRADIO);
+                        else
+                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONCHECK);
+                    }
+                    else
+                    {
+                        if (FRadioStyle == HCRadioStyle.Radio)
+                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONRADIO);
+                        else
+                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONCHECK);
+                    }
                 }
 
-                FItems[i].Position.X = vLeft;
-                FItems[i].Position.Y = vTop;
-
-                vLeft = vLeft + RadioButtonWidth + vSize.cx + FPaddingRight;
+                canvas.TextOut(vPoint.X + RadioButtonWidth, vPoint.Y, FItems[i].Text);
             }
+        }
 
-            if (this.AutoSize)
-                Width = vLeft;
-
-            Height = vTop + vSize.cy + FPaddingBottom;
-            
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
+        {
             if (Width < FMinWidth)
                 Width = FMinWidth;
             if (Height < FMinHeight)
@@ -163,6 +318,12 @@ namespace HC.View
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop,
                 aDataScreenBottom, aCanvas, aPaintInfo);
             
+            if (this.IsSelectComplate)
+            {
+                aCanvas.Brush.Color = aStyle.SelColor;
+                aCanvas.FillRect(aDrawRect);
+            }
+            else
             if (FMouseIn)
             {
                 aCanvas.Brush.Color = HC.clBtnFace;
@@ -170,22 +331,21 @@ namespace HC.View
             }
 
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
-            
-            POINT vPoint = new POINT();
-            RECT vItemRect = new RECT();
-            for (int i = 0; i <= FItems.Count - 1; i++)
+            if (!AutoSize)
             {
-                vPoint.X = FItems[i].Position.X;
-                vPoint.Y = FItems[i].Position.Y;
-                vPoint.Offset(aDrawRect.Left, aDrawRect.Top);
-                vItemRect = HC.Bounds(vPoint.X, vPoint.Y, RadioButtonWidth, RadioButtonWidth);
-                if (FItems[i].Checked)
-                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | (FRadioStyle == HCRadioStyle.Radio ? Kernel.DFCS_BUTTONRADIO : Kernel.DFCS_BUTTONCHECK));
-                else
-                    User.DrawFrameControl(aCanvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, (FRadioStyle == HCRadioStyle.Radio ? Kernel.DFCS_BUTTONRADIO : Kernel.DFCS_BUTTONCHECK));
-                
-                aCanvas.TextOut(vPoint.X + RadioButtonWidth, vPoint.Y, FItems[i].Text);
+                IntPtr vPaintRegion = GDI.CreateRectRgn(aDrawRect.Left, aDrawRect.Top, aDrawRect.Right, aDrawRect.Bottom);
+                try
+                {
+                    GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
+                    DoPaintItems(aCanvas, aDrawRect, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.DeleteObject(vPaintRegion);
+                }
             }
+            else
+                DoPaintItems(aCanvas, aDrawRect, aPaintInfo);
         }
 
         public override bool MouseDown(MouseEventArgs e)
@@ -241,9 +401,13 @@ namespace HC.View
         {
             this.StyleNo = HCStyle.RadioGroup;
             Width = 100;
+            FBatchCount = 0;
+            FColumns = 0;
+            FColumnAlign = true;
             FItemHit = false;
             FItems = new HCList<HCRadioButton>();
             FItems.OnInsert += new EventHandler<NListEventArgs<HCRadioButton>>(DoItemNotify);
+            FItems.OnDelete += OnItemDelete;
         }
 
         ~HCRadioGroup()
@@ -261,6 +425,20 @@ namespace HC.View
                 AddItem(vSource.Items[i].Text, vSource.Items[i].TextValue, vSource.Items[i].Checked);
         }
 
+        public void BeginAdd()
+        {
+            FBatchCount++;
+        }
+
+        public void EndAdd()
+        {
+            if (FBatchCount > 0)
+                FBatchCount--;
+
+            if (FBatchCount == 0)
+                ReLayout();
+        }
+
         public void AddItem(string aText, string aTextValue = "", bool AChecked = false)
         {
             HCRadioButton vRadioButton = new HCRadioButton();
@@ -274,6 +452,18 @@ namespace HC.View
         {
             base.SaveToStream(aStream, aStart, aEnd);
             string vTexts = "", vTextValues = "";
+            Byte vByte = 0;
+            if (FMultSelect)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FItemHit)
+                vByte = (byte)(vByte | (1 << 6));
+
+            if (FColumnAlign)
+                vByte = (byte)(vByte | (1 << 5));
+
+            aStream.WriteByte(vByte);
+
             if (FItems.Count > 0)
             {
                 vTexts = FItems[0].Text;
@@ -301,43 +491,71 @@ namespace HC.View
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            FItems.Clear();
-
-            string vS = "";
-            byte[] vBuffer;
-            HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
-            if (vS != "")
+            BeginAdd();
+            try
             {
-                string[] vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-                for (int i = 0; i < vStrings.Length; i++)
-                    AddItem(vStrings[i]);
+                byte[] vBuffer;
 
-                if (aFileVersion > 35)
+                if (aFileVersion > 39)
                 {
-                    HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
-                    if (vS != "")
+                    FColumns = (byte)aStream.ReadByte();
+                    Byte vByte = (byte)aStream.ReadByte();
+                    FMultSelect = HC.IsOdd(vByte >> 7);
+                    FItemHit = HC.IsOdd(vByte >> 6);
+                    FColumnAlign = HC.IsOdd(vByte >> 5);
+                }
+
+                FItems.Clear();
+                string vS = "";
+                HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                if (vS != "")
+                {
+                    string[] vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                    for (int i = 0; i < vStrings.Length; i++)
+                        AddItem(vStrings[i]);
+
+                    if (aFileVersion > 35)
                     {
-                        vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-                        for (int i = 0; i < vStrings.Length; i++)
-                            FItems[i].TextValue = vStrings[i];
+                        HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                        if (vS != "")
+                        {
+                            vStrings = vS.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                            for (int i = 0; i < vStrings.Length; i++)
+                                FItems[i].TextValue = vStrings[i];
+                        }
+                    }
+
+                    vBuffer = BitConverter.GetBytes(false);
+                    for (int i = 0; i < FItems.Count; i++)
+                    {
+                        aStream.Read(vBuffer, 0, vBuffer.Length);
+                        FItems[i].Checked = BitConverter.ToBoolean(vBuffer, 0);
                     }
                 }
 
-                vBuffer = BitConverter.GetBytes(false);
-                for (int i = 0; i < FItems.Count; i++)
-                {
-                    aStream.Read(vBuffer, 0, vBuffer.Length);
-                    FItems[i].Checked = BitConverter.ToBoolean(vBuffer, 0);
-                }
+                if (aFileVersion > 33)
+                    this.FRadioStyle = (HCRadioStyle)aStream.ReadByte();
             }
-
-            if (aFileVersion > 33)
-                this.FRadioStyle = (HCRadioStyle)aStream.ReadByte();
+            finally
+            {
+                EndAdd();
+            }
         }
 
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
+
+            aNode.SetAttribute("col", FColumns.ToString());
+            if (FMultSelect)
+                aNode.SetAttribute("multsel", "1");
+
+            if (FItemHit)
+                aNode.SetAttribute("itemhit", "1");
+
+            if (FColumnAlign)
+                aNode.SetAttribute("colalign", "1");
+
             string vText = "", vTextValue = "";
             if (FItems.Count > 0)
             {
@@ -353,17 +571,23 @@ namespace HC.View
             aNode.SetAttribute("item", vText);
             aNode.SetAttribute("itemvalue", vTextValue);
 
-            vText = "";
             if (FItems.Count > 0)
             {
-                for (int i = 0; i < FItems.Count; i++)
+                if (FItems[0].Checked)
+                    vText = "1";
+                else
+                    vText = "0";
+
+                for (int i = 1; i < FItems.Count; i++)
                 {
                     if (FItems[i].Checked)
-                        vText += "1" + HC.sLineBreak;
+                        vText += HC.sLineBreak + "1";
                     else
-                        vText += "0" + HC.sLineBreak;
+                        vText += HC.sLineBreak + "0";
                 }
             }
+            else
+                vText = "";
 
             aNode.SetAttribute("check", vText);
             aNode.SetAttribute("radiostyle", ((byte)FRadioStyle).ToString());
@@ -372,32 +596,52 @@ namespace HC.View
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            FItems.Clear();
-            string vText = aNode.Attributes["item"].Value;
-            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-            for (int i = 0; i < vStrings.Length; i++)
-                AddItem(vStrings[i]);
-
-            if (aNode.HasAttribute("itemvalue"))
+            BeginAdd();
+            try
             {
-                vText = aNode.Attributes["itemvalue"].Value;
-                vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                if (aNode.HasAttribute("col"))
+                    FColumns = byte.Parse(aNode.GetAttribute("col"));
+
+                if (aNode.HasAttribute("multsel"))
+                    FMultSelect = bool.Parse(aNode.GetAttribute("multsel"));
+
+                if (aNode.HasAttribute("itemhit"))
+                    FItemHit = bool.Parse(aNode.GetAttribute("itemhit"));
+
+                if (aNode.HasAttribute("colalign"))
+                    FColumnAlign = bool.Parse(aNode.GetAttribute("colalign"));
+
+                FItems.Clear();
+                string vText = aNode.Attributes["item"].Value;
+                string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
                 for (int i = 0; i < vStrings.Length; i++)
-                    FItems[i].TextValue = vStrings[i];
+                    AddItem(vStrings[i]);
+
+                if (aNode.HasAttribute("itemvalue"))
+                {
+                    vText = aNode.Attributes["itemvalue"].Value;
+                    vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                    for (int i = 0; i < vStrings.Length; i++)
+                        FItems[i].TextValue = vStrings[i];
+                }
+
+                vText = aNode.Attributes["check"].Value;
+                vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+
+                for (int i = 0; i < vStrings.Length; i++)
+                {
+                    if (vStrings[i] == "1")
+                        FItems[i].Checked = true;
+                    else
+                        FItems[i].Checked = false;
+                }
+
+                FRadioStyle = (HCRadioStyle)(byte.Parse(aNode.Attributes["radiostyle"].Value));
             }
-
-            vText = aNode.Attributes["check"].Value;
-            vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
-
-            for (int i = 0; i < vStrings.Length; i++)
+            finally
             {
-                if (vStrings[i] == "1")
-                    FItems[i].Checked = true;
-                else
-                    FItems[i].Checked = false;
+                EndAdd();
             }
-
-            FRadioStyle = (HCRadioStyle)(byte.Parse(aNode.Attributes["radiostyle"].Value));
         }
     
         public bool MultSelect
@@ -410,6 +654,24 @@ namespace HC.View
         {
             get { return FRadioStyle; }
             set { FRadioStyle = value; }
+        }
+
+        public bool ItemHit
+        {
+            get { return FItemHit; }
+            set { FItemHit = value; }
+        }
+
+        public byte Columns
+        {
+            get { return FColumns; }
+            set { SetColumns(value); }
+        }
+
+        public bool ColumnAlign
+        {
+            get { return FColumnAlign; }
+            set { SetColumnAlig(value); }
         }
 
         public List<HCRadioButton> Items

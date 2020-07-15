@@ -1956,14 +1956,23 @@ namespace HC.View
         public bool InsertSectionBreak()
         {
             bool Result = false;
-            HCSection vSection = NewDefaultSection();
-            FSections.Insert(FActiveSectionIndex + 1, vSection);
-            FActiveSectionIndex = FActiveSectionIndex + 1;
-            Result = true;
-            FStyle.UpdateInfoRePaint();
-            FStyle.UpdateInfoReCaret();
-            FStyle.UpdateInfoReScroll();
-            DoChange();
+            this.BeginUpdate();
+            try
+            {
+                HCSection vSection = NewDefaultSection();
+                vSection.AssignPaper(FSections[FActiveSectionIndex]);
+                FSections.Insert(FActiveSectionIndex + 1, vSection);
+                FActiveSectionIndex = FActiveSectionIndex + 1;
+                Result = true;
+                FStyle.UpdateInfoRePaint();
+                FStyle.UpdateInfoReCaret();
+                FStyle.UpdateInfoReScroll();
+                DoChange();
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
 
             return Result;
         }

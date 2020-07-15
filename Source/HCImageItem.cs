@@ -278,7 +278,7 @@ namespace HC.View
                     FImage = new Bitmap(vImgStream);
                 }
 
-                FEmpty = false;
+                DoImageChange(this);
             }
             else
             {
@@ -288,8 +288,6 @@ namespace HC.View
 
             if (aFileVersion > 26)
                 FShapeManager.LoadFromStream(aStream);
-
-            DoImageChange(this);
         }
 
         public override string ToHtml(string aPath)
@@ -314,7 +312,9 @@ namespace HC.View
             base.ToXml(aNode);
 
             XmlElement vNode = aNode.OwnerDocument.CreateElement("img");
-            vNode.InnerText = HC.GraphicToBase64(FImage, FImage.RawFormat);
+            if (!FEmpty)
+                vNode.InnerText = HC.GraphicToBase64(FImage, FImage.RawFormat);
+
             aNode.AppendChild(vNode);
 
             vNode = aNode.OwnerDocument.CreateElement("shapes");
@@ -325,21 +325,30 @@ namespace HC.View
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
+            FEmpty = true;
             if (aNode.HasChildNodes)
             {
                 for (int i = 0; i < aNode.ChildNodes.Count; i++)
                 {
                     if (aNode.ChildNodes[i].Name == "img")
-                        FImage = new Bitmap(HC.Base64ToGraphic(aNode.ChildNodes[i].InnerText));
+                    {
+                        if (aNode.ChildNodes[i].InnerText != "")
+                        {
+                            FImage = new Bitmap(HC.Base64ToGraphic(aNode.ChildNodes[i].InnerText));
+                            DoImageChange(this);
+                        }
+                    }
                     else
                     if (aNode.ChildNodes[i].Name == "shapes")
                         FShapeManager.ParseXml(aNode.ChildNodes[i] as XmlElement);
                 }
             }
             else
+            if (aNode.InnerText != "")
+            {
                 FImage = (Bitmap)HC.Base64ToGraphic(aNode.InnerText);
-
-            DoImageChange(this);
+                DoImageChange(this);
+            }
         }
 
         /// <summary> 恢复到原始尺寸 </summary>

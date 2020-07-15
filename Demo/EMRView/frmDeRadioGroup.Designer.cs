@@ -29,6 +29,9 @@
         private void InitializeComponent()
         {
             this.pnlSize = new System.Windows.Forms.Panel();
+            this.cbxMulSelect = new System.Windows.Forms.CheckBox();
+            this.cbbRadioStyle = new System.Windows.Forms.ComboBox();
+            this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.cbxDeleteAllow = new System.Windows.Forms.CheckBox();
             this.tbxHeight = new System.Windows.Forms.TextBox();
@@ -36,18 +39,19 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.cbxAutoSize = new System.Windows.Forms.CheckBox();
-            this.label4 = new System.Windows.Forms.Label();
-            this.cbbRadioStyle = new System.Windows.Forms.ComboBox();
-            this.cbxMulSelect = new System.Windows.Forms.CheckBox();
             this.btnSave = new System.Windows.Forms.Button();
             this.dgvItem = new System.Windows.Forms.DataGridView();
             this.dataGridViewTextBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.label5 = new System.Windows.Forms.Label();
             this.dgvRadioGroup = new System.Windows.Forms.DataGridView();
             this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.label5 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.tbxColume = new System.Windows.Forms.TextBox();
+            this.cbxColumnAlign = new System.Windows.Forms.CheckBox();
+            this.cbxItemHit = new System.Windows.Forms.CheckBox();
             this.pnlSize.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvItem)).BeginInit();
             this.panel1.SuspendLayout();
@@ -56,6 +60,10 @@
             // 
             // pnlSize
             // 
+            this.pnlSize.Controls.Add(this.cbxItemHit);
+            this.pnlSize.Controls.Add(this.cbxColumnAlign);
+            this.pnlSize.Controls.Add(this.tbxColume);
+            this.pnlSize.Controls.Add(this.label6);
             this.pnlSize.Controls.Add(this.cbxMulSelect);
             this.pnlSize.Controls.Add(this.cbbRadioStyle);
             this.pnlSize.Controls.Add(this.label4);
@@ -69,13 +77,44 @@
             this.pnlSize.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlSize.Location = new System.Drawing.Point(0, 0);
             this.pnlSize.Name = "pnlSize";
-            this.pnlSize.Size = new System.Drawing.Size(329, 92);
+            this.pnlSize.Size = new System.Drawing.Size(329, 122);
             this.pnlSize.TabIndex = 2;
+            // 
+            // cbxMulSelect
+            // 
+            this.cbxMulSelect.AutoSize = true;
+            this.cbxMulSelect.Location = new System.Drawing.Point(200, 44);
+            this.cbxMulSelect.Name = "cbxMulSelect";
+            this.cbxMulSelect.Size = new System.Drawing.Size(48, 16);
+            this.cbxMulSelect.TabIndex = 18;
+            this.cbxMulSelect.Text = "多选";
+            this.cbxMulSelect.UseVisualStyleBackColor = true;
+            // 
+            // cbbRadioStyle
+            // 
+            this.cbbRadioStyle.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbbRadioStyle.FormattingEnabled = true;
+            this.cbbRadioStyle.Items.AddRange(new object[] {
+            "RadioButton",
+            "CheckBox"});
+            this.cbbRadioStyle.Location = new System.Drawing.Point(100, 40);
+            this.cbbRadioStyle.Name = "cbbRadioStyle";
+            this.cbbRadioStyle.Size = new System.Drawing.Size(85, 20);
+            this.cbbRadioStyle.TabIndex = 17;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(14, 43);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(83, 12);
+            this.label4.TabIndex = 16;
+            this.label4.Text = "RadioItem样式";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(14, 73);
+            this.label3.Location = new System.Drawing.Point(14, 104);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(209, 12);
             this.label3.TabIndex = 15;
@@ -133,40 +172,9 @@
             this.cbxAutoSize.Text = "自动计算宽高";
             this.cbxAutoSize.UseVisualStyleBackColor = true;
             // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(14, 43);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(83, 12);
-            this.label4.TabIndex = 16;
-            this.label4.Text = "RadioItem样式";
-            // 
-            // cbbRadioStyle
-            // 
-            this.cbbRadioStyle.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbbRadioStyle.FormattingEnabled = true;
-            this.cbbRadioStyle.Items.AddRange(new object[] {
-            "RadioButton",
-            "CheckBox"});
-            this.cbbRadioStyle.Location = new System.Drawing.Point(100, 40);
-            this.cbbRadioStyle.Name = "cbbRadioStyle";
-            this.cbbRadioStyle.Size = new System.Drawing.Size(85, 20);
-            this.cbbRadioStyle.TabIndex = 17;
-            // 
-            // cbxMulSelect
-            // 
-            this.cbxMulSelect.AutoSize = true;
-            this.cbxMulSelect.Location = new System.Drawing.Point(200, 44);
-            this.cbxMulSelect.Name = "cbxMulSelect";
-            this.cbxMulSelect.Size = new System.Drawing.Size(48, 16);
-            this.cbxMulSelect.TabIndex = 18;
-            this.cbxMulSelect.Text = "多选";
-            this.cbxMulSelect.UseVisualStyleBackColor = true;
-            // 
             // btnSave
             // 
-            this.btnSave.Location = new System.Drawing.Point(120, 358);
+            this.btnSave.Location = new System.Drawing.Point(123, 392);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(75, 23);
             this.btnSave.TabIndex = 19;
@@ -182,7 +190,7 @@
             this.dataGridViewTextBoxColumn3,
             this.dataGridViewTextBoxColumn4});
             this.dgvItem.Dock = System.Windows.Forms.DockStyle.Top;
-            this.dgvItem.Location = new System.Drawing.Point(0, 238);
+            this.dgvItem.Location = new System.Drawing.Point(0, 268);
             this.dgvItem.Name = "dgvItem";
             this.dgvItem.RowHeadersVisible = false;
             this.dgvItem.RowTemplate.Height = 23;
@@ -204,10 +212,19 @@
             // 
             this.panel1.Controls.Add(this.label5);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(0, 204);
+            this.panel1.Location = new System.Drawing.Point(0, 234);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(329, 34);
             this.panel1.TabIndex = 17;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(12, 15);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(29, 12);
+            this.label5.TabIndex = 0;
+            this.label5.Text = "选项";
             // 
             // dgvRadioGroup
             // 
@@ -217,7 +234,7 @@
             this.dataGridViewTextBoxColumn1,
             this.dataGridViewTextBoxColumn2});
             this.dgvRadioGroup.Dock = System.Windows.Forms.DockStyle.Top;
-            this.dgvRadioGroup.Location = new System.Drawing.Point(0, 92);
+            this.dgvRadioGroup.Location = new System.Drawing.Point(0, 122);
             this.dgvRadioGroup.Name = "dgvRadioGroup";
             this.dgvRadioGroup.RowHeadersVisible = false;
             this.dgvRadioGroup.RowTemplate.Height = 23;
@@ -235,20 +252,48 @@
             this.dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
             this.dataGridViewTextBoxColumn2.Width = 200;
             // 
-            // label5
+            // label6
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(12, 15);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(29, 12);
-            this.label5.TabIndex = 0;
-            this.label5.Text = "选项";
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(16, 74);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(17, 12);
+            this.label6.TabIndex = 19;
+            this.label6.Text = "列";
+            // 
+            // tbxColume
+            // 
+            this.tbxColume.Location = new System.Drawing.Point(40, 70);
+            this.tbxColume.Name = "tbxColume";
+            this.tbxColume.Size = new System.Drawing.Size(45, 21);
+            this.tbxColume.TabIndex = 20;
+            this.tbxColume.Text = "0";
+            // 
+            // cbxColumnAlign
+            // 
+            this.cbxColumnAlign.AutoSize = true;
+            this.cbxColumnAlign.Location = new System.Drawing.Point(100, 73);
+            this.cbxColumnAlign.Name = "cbxColumnAlign";
+            this.cbxColumnAlign.Size = new System.Drawing.Size(84, 16);
+            this.cbxColumnAlign.TabIndex = 21;
+            this.cbxColumnAlign.Text = "列自动对齐";
+            this.cbxColumnAlign.UseVisualStyleBackColor = true;
+            // 
+            // cbxItemHit
+            // 
+            this.cbxItemHit.AutoSize = true;
+            this.cbxItemHit.Location = new System.Drawing.Point(200, 72);
+            this.cbxItemHit.Name = "cbxItemHit";
+            this.cbxItemHit.Size = new System.Drawing.Size(120, 16);
+            this.cbxItemHit.TabIndex = 22;
+            this.cbxItemHit.Text = "点击文本切换选中";
+            this.cbxItemHit.UseVisualStyleBackColor = true;
             // 
             // frmDeRadioGroup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(329, 393);
+            this.ClientSize = new System.Drawing.Size(329, 423);
             this.Controls.Add(this.btnSave);
             this.Controls.Add(this.dgvItem);
             this.Controls.Add(this.panel1);
@@ -292,5 +337,9 @@
         private System.Windows.Forms.DataGridView dgvRadioGroup;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
+        private System.Windows.Forms.CheckBox cbxItemHit;
+        private System.Windows.Forms.CheckBox cbxColumnAlign;
+        private System.Windows.Forms.TextBox tbxColume;
+        private System.Windows.Forms.Label label6;
     }
 }

@@ -107,42 +107,34 @@ namespace HC.View
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop, aDataScreenBottom,
                 aCanvas, aPaintInfo);
 
-            if ((FMouseIn) && (!aPaintInfo.Print))
-            {
-                aCanvas.Brush.Color = HC.clBtnFace;
-                aCanvas.FillRect(aDrawRect);
-            }
-
             RECT vBoxRect = GetBoxRect();
             HC.OffsetRect(ref vBoxRect, aDrawRect.Left, aDrawRect.Top);
 
-            if (this.IsSelectComplate && (!aPaintInfo.Print))
+            if (aPaintInfo.Print)
             {
-                aCanvas.Brush.Color = aStyle.SelColor;
-                aCanvas.FillRect(aDrawRect);
+                if (FChecked)
+                    HC.HCDrawFrameControl(aCanvas, vBoxRect, HCControlState.hcsChecked, HCControlStyle.hcyCheck);
+                else
+                    HC.HCDrawFrameControl(aCanvas, vBoxRect, HCControlState.hcsCustom, HCControlStyle.hcyCheck);
             }
-
-            aCanvas.Brush.Style = HCBrushStyle.bsClear;
-
-            aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
-            aCanvas.TextOut(aDrawRect.Left + FPaddingLeft + CheckBoxSize + FPaddingLeft, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
-
-            if (FChecked)  // 勾选
-                User.DrawFrameControl(aCanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
-
-            aCanvas.Pen.Style = HCPenStyle.psSolid;
-            if (FMouseIn && (!aPaintInfo.Print))  // 鼠标在其中，且非打印
+            else
             {
-                aCanvas.Pen.Color = Color.Blue;
-                aCanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
-                HC.InflateRect(ref vBoxRect, 1, 1);
-                aCanvas.Pen.Color = HC.clBtnFace;
-                aCanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
-            }
-            else  // 鼠标不在其中或打印
-            {
-                aCanvas.Pen.Color = Color.Black;
-                aCanvas.Rectangle(vBoxRect.Left, vBoxRect.Top, vBoxRect.Right, vBoxRect.Bottom);
+                if (this.IsSelectComplate)
+                {
+                    aCanvas.Brush.Color = aStyle.SelColor;
+                    aCanvas.FillRect(aDrawRect);
+                }
+                else
+                if (FMouseIn)
+                {
+                    aCanvas.Brush.Color = HC.clBtnFace;
+                    aCanvas.FillRect(aDrawRect);
+                }
+
+                if (FChecked)
+                    User.DrawFrameControl(aCanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
+
+                HC.HCDrawFrameControl(aCanvas, vBoxRect, HCControlState.hcsCustom, HCControlStyle.hcyCheck);
             }
         }
 

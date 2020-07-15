@@ -437,6 +437,7 @@ namespace HC.View
         {
             aNode.SetAttribute("fscount", FTextStyles.Count.ToString());
             aNode.SetAttribute("pscount", FParaStyles.Count.ToString());
+            aNode.SetAttribute("fmtver", FFormatVersion.ToString());
 
             XmlElement vNode = aNode.OwnerDocument.CreateElement("textstyles");
             for (int i = 0; i <= FTextStyles.Count - 1; i++)
@@ -459,6 +460,9 @@ namespace HC.View
 
         public void ParseXml(XmlElement aNode)
         {
+            if (aNode.HasAttribute("fmtver"))
+                FFormatVersion = byte.Parse(aNode.GetAttribute("fmtver"));
+
             for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
             {
                 if (aNode.ChildNodes[i].Name == "textstyles")

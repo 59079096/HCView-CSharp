@@ -836,8 +836,13 @@ namespace HC.View
 
             if (!aSilence)
             {
-                ReSetSelectAndCaret(vStartNo, aStartOffset, true);
+                ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, true);
                 this.Style.UpdateInfoRePaint();
+            }
+            else
+            {
+                FCurStyleNo = Items[SelectInfo.StartItemNo].StyleNo;
+                FCurParaNo = Items[SelectInfo.StartItemNo].ParaNo;
             }
         }
 

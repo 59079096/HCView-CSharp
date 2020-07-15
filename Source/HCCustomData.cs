@@ -68,6 +68,7 @@ namespace HC.View
 
     public class HCItemTraverse : Object
     {
+        public int SectionIndex;
         public HashSet<SectionArea> Areas;
         public int Tag;
         public bool Stop;
@@ -164,7 +165,7 @@ namespace HC.View
     {
         HCCustomData FParentData;
         private HCStyle FStyle;
-        int FCurStyleNo, FCurParaNo;
+        protected int FCurStyleNo, FCurParaNo;
         HCItems FItems;
         HCDrawItems FDrawItems;
         SelectInfo FSelectInfo;
@@ -241,6 +242,47 @@ namespace HC.View
                 if (FOnCurParaNoChange != null)
                     FOnCurParaNoChange(this, null);
             }
+        }
+
+        public int MatchTextStyleNoAt(int itemNo, int offset)
+        {
+            if (FItems[itemNo].StyleNo < HCStyle.Null)  // 在RectItem前后或其上
+            {
+                if (offset == HC.OffsetBefor)  // RectItem在前
+                {
+                    if (!FItems[itemNo].ParaFirst)  // RectItem不是段首
+                    {
+                        if (FItems[itemNo - 1].StyleNo < HCStyle.Null)  // 在2个RectItem中间
+                            return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);
+                        else
+                            return FItems[itemNo - 1].StyleNo;
+                    }
+                    else  // RectItem是段首，AOffset在段最前
+                        return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);  // 默认文本样式
+                }
+                else
+                if (offset == HC.OffsetAfter)  // RectItem后面
+                {
+                    if (itemNo < FItems.Count - 1)  // 不是最后一个
+                    {
+                        if (!FItems[itemNo + 1].ParaFirst)  // RectItem同段后面还有内容
+                        {
+                            if (FItems[itemNo + 1].StyleNo < HCStyle.Null)  // 在2个RectItem中间
+                                return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);
+                            else
+                                return FItems[itemNo + 1].StyleNo;
+                        }
+                        else  // 当前段最后一个RectItem后面
+                            return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);
+                    }
+                    else  // 在最后一个RectItem后面
+                        return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);
+                }
+                else  // 在RectItem上
+                    return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);  // 默认文本样式
+            }
+            else  // 当前位置是TextItem
+                return FItems[itemNo].StyleNo;  // 防止静默移动选中位置没有更新当前样式
         }
 
         protected bool MergeItemText(HCCustomItem aDestItem, HCCustomItem aSrcItem)

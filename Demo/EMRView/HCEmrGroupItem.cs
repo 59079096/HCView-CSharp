@@ -202,23 +202,26 @@ namespace EMRView
 
     public class ProcInfo : HCDomainInfo
     {
-        private string FIndex;
+        public string Index;
+        public int SectionIndex;
   
         public ProcInfo() : base()
         {
-            FIndex = "";
+            Clear();
         }
 
         public override void Clear()
         {
-            FIndex = "";
+            Index = "";
+            SectionIndex = -1;
             base.Clear();
         }
 
-        public string Index
+        public override void Assign(HCDomainInfo source)
         {
-            get { return FIndex; }
-            set { FIndex = value; }
+            base.Assign(source);
+            Index = (source as ProcInfo).Index;
+            SectionIndex = (source as ProcInfo).SectionIndex;
         }
     }
 }

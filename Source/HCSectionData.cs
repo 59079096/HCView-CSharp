@@ -673,6 +673,22 @@ namespace HC.View
             return true;
         }
 
+        public override void ToXml(XmlElement aNode)
+        {
+            if (FShowUnderLine)
+                aNode.SetAttribute("SUL", FShowUnderLine.ToString());
+
+            base.ToXml(aNode);
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            if (aNode.HasAttribute("SUL"))
+                FShowUnderLine = bool.Parse(aNode.GetAttribute("SUL"));
+
+            base.ParseXml(aNode);
+        }
+
         public bool ShowLineActiveMark
         {
             get { return FShowLineActiveMark; }

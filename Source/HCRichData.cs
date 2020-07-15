@@ -293,7 +293,8 @@ namespace HC.View
             {
                 vLeftToRight = true;
 
-                if (aStartItemOffset == GetItemOffsetAfter(aStartItemNo))  // 起始在Item最后面，改为下一个Item开始
+                if ((Items[aStartItemNo].Length > 0)
+                    && (aStartItemOffset == GetItemOffsetAfter(aStartItemNo)))  // 起始在Item最后面，改为下一个Item开始
                 {
                     if (aStartItemNo < Items.Count - 1)
                     {
@@ -302,7 +303,8 @@ namespace HC.View
                     }
                 }
 
-                if ((aStartItemNo != aEndItemNo) && (aEndItemNo >= 0) && (aEndItemNoOffset == 0))
+                if ((aStartItemNo != aEndItemNo) && (aEndItemNo >= 0)
+                    && (Items[aEndItemNo].Length > 0) && (aEndItemNoOffset == 0))
                 {
                     Items[aEndItemNo].DisSelect();  // 从前往后选，鼠标移动到前一次前面，原鼠标处被移出选中范围
 
@@ -1133,6 +1135,11 @@ namespace HC.View
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
                 }
             }
+
+            if (FSelectSeekNo >= 0)
+                FCurParaNo = Items[FSelectSeekNo].ParaNo;
+            else
+                FCurParaNo = Items[SelectInfo.StartItemNo].ParaNo;
 
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
@@ -2852,7 +2859,7 @@ namespace HC.View
             else
             if (aItemNo > 0)
             {
-                Items[aItemNo].DisSelect();
+                //Items[aItemNo].DisSelect();
                 aItemNo = aItemNo - 1;
                 if (Items[aItemNo].StyleNo < HCStyle.Null)
                 {
@@ -2862,11 +2869,18 @@ namespace HC.View
                         aOffset = HC.OffsetBefor;
                 }
                 else
-                    aOffset = Items[aItemNo].Length - 1;  // 倒数第1个前面
+                {
+                    if (Items[aItemNo].Length > 0)
+                        aOffset = Items[aItemNo].Length - 1;  // 倒数第1个前面
+                    else
+                        aOffset = 0;
+                }
             }
 
             #if UNPLACEHOLDERCHAR
-            if ((Items[aItemNo].StyleNo > HCStyle.Null) && HC.IsUnPlaceHolderChar(Items[aItemNo].Text[aOffset + 1 - 1]))
+            if ((Items[aItemNo].StyleNo > HCStyle.Null)
+                && (Items[aItemNo].Length > 0)
+                && HC.IsUnPlaceHolderChar(Items[aItemNo].Text[aOffset + 1 - 1]))
                 aOffset = GetItemActualOffset(aItemNo, aOffset) - 1;
             #endif
         }
@@ -3016,7 +3030,10 @@ namespace HC.View
                             AOffset = HC.OffsetAfter;
                     }
                     else
+                    if (Items[AItemNo].Length > 0)
                         AOffset = 1;
+                    else
+                        AOffset = 0;
                 }
             }
             else  // 不在最后
@@ -5565,13 +5582,13 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
+            if (!DeleteSelected())
+                return false;
+
             if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actInsertText))
                 return false;
 
             if (!DoInsertTextBefor(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, aText))
-                return false;
-
-            if (!DeleteSelected())
                 return false;
 
             bool Result = false;
@@ -5606,7 +5623,7 @@ namespace HC.View
                 {
                     bool vNewPara = false;
                     int vAddCount = 0;
-                    CurStyleNo = Style.GetStyleNo(Style.DefaultTextStyle, true);  // 防止静默移动选中位置没有更新当前样式
+                    CurStyleNo = MatchTextStyleNoAt(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);  // 防止静默移动选中位置没有更新当前样式
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
