@@ -136,6 +136,10 @@ namespace HC.View
 
                 HC.HCDrawFrameControl(aCanvas, vBoxRect, HCControlState.hcsCustom, HCControlStyle.hcyCheck);
             }
+
+            aCanvas.Brush.Style = HCBrushStyle.bsClear;
+            aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
+            aCanvas.TextOut(aDrawRect.Left + FPaddingLeft + CheckBoxSize + FPaddingLeft, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
         }
 
         public byte CheckBoxSize = 14;
