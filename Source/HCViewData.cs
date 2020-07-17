@@ -111,6 +111,16 @@ namespace HC.View
                 }
             }
 
+            if (Style.States.Contain(HCState.hosDomainWholeReplace))
+            {
+                if ((!Items[aStartNo].ParaFirst) && (aStartNo > 0)
+                    && (Items[aStartNo - 1] is HCDomainItem) && Items[aStartNo - 1].ParaFirst)
+                    Items[aStartNo - 1].ParaNo = Items[aStartNo].ParaNo;
+
+                if (IsParaLastItem(aEndNo + 1) && (Items[aEndNo + 1] is HCDomainItem))
+                    Items[aEndNo + 1].ParaNo = Items[aEndNo].ParaNo;
+            }
+
             return vResult;
         }
 

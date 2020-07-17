@@ -749,6 +749,9 @@ namespace EMRView
 
         protected void DoEmrViewMouseUp(object sender, MouseEventArgs e)
         {
+            if (!FEmrView.ActiveSectionTopLevelData().CanEdit())
+                return;
+
             HCCustomItem vActiveItem = FEmrView.GetTopLevelItem();
             if (vActiveItem is DeItem)
             {

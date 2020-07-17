@@ -45,7 +45,7 @@ namespace HC.View
 
     public class HCComboboxItem : HCEditItem
     {
-        private bool FSaveItem;
+        private bool FSaveItem, FStatic;
         private List<HCCbbItem> FItems;
         private List<HCCbbItem> FItemValues;
         private int FItemIndex, FMoveItemIndex;
@@ -292,9 +292,22 @@ namespace HC.View
             }
         }
 
+        public override void KeyDown(KeyEventArgs e)
+        {
+            if (!FStatic)
+                base.KeyDown(e);
+        }
+
+        public override void KeyPress(ref char key)
+        {
+            if (!FStatic)
+                base.KeyPress(ref key);
+        }
+
         public override bool MouseDown(MouseEventArgs e)
         {
-            if (OwnerData.CanEdit() && (e.Button == MouseButtons.Left) && HC.PtInRect(FButtonRect, e.X, e.Y))
+            if (!this.ReadOnly && OwnerData.CanEdit()
+                && (e.Button == MouseButtons.Left) && HC.PtInRect(FButtonRect, e.X, e.Y))
             {
                 DoPopup();
                 return true;
@@ -371,6 +384,7 @@ namespace HC.View
             Width = 80;
             FPaddingRight = BTNWIDTH;
             FSaveItem = true;
+            FStatic = false;
             FItems = new List<HCCbbItem>();
             FItemValues = new List<HCCbbItem>();
 
@@ -410,8 +424,16 @@ namespace HC.View
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            byte[] vBuffer = BitConverter.GetBytes(FSaveItem);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
+
+            byte vByte = 0;
+            if (FStatic)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FSaveItem)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
+
             if (FSaveItem)
             {
                 string vText = "";
@@ -444,9 +466,19 @@ namespace HC.View
 
             if (aFileVersion > 36)
             {
-                byte[] vBuffer = BitConverter.GetBytes(FSaveItem);
-                AStream.Read(vBuffer, 0, vBuffer.Length);
-                FSaveItem = BitConverter.ToBoolean(vBuffer, 0);
+                if (aFileVersion > 40)
+                {
+                    byte vByte = (byte)AStream.ReadByte();
+                    FStatic = HC.IsOdd(vByte >> 7);
+                    FSaveItem = HC.IsOdd(vByte >> 6);
+                }
+                else
+                {
+                    byte[] vBuffer = BitConverter.GetBytes(FSaveItem);
+                    AStream.Read(vBuffer, 0, vBuffer.Length);
+                    FSaveItem = BitConverter.ToBoolean(vBuffer, 0);
+                }
+
                 if (FSaveItem)
                 {
                     HC.HCLoadTextFromStream(AStream, ref vText, aFileVersion);
@@ -510,6 +542,9 @@ namespace HC.View
                 }
 
                 aNode.SetAttribute("itemvalue", vText);
+
+                if (FStatic)
+                    aNode.SetAttribute("static", "1");
             }
         }
 
@@ -537,6 +572,9 @@ namespace HC.View
                 FSaveItem = bool.Parse(aNode.Attributes["saveitem"].Value);
             else
                 FSaveItem = FItems.Count > 0;
+
+            if (aNode.HasAttribute("static"))
+                FStatic = bool.Parse(aNode.GetAttribute("static"));
         }
 
         public List<HCCbbItem> Items
@@ -560,6 +598,13 @@ namespace HC.View
             get { return FSaveItem; }
             set { FSaveItem = value; }
         }
+
+        public bool Static
+        {
+            get { return FStatic; }
+            set { FStatic = value; }
+        }
+
         public EventHandler OnPopupItem
         {
             get { return FOnPopupItem; }

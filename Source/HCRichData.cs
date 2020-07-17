@@ -265,6 +265,8 @@ namespace HC.View
             FMouseMoveItemOffset = -1;
             FMouseMoveDrawItemNo = -1;
             FMouseMoveRestrain = false;
+            FSelectSeekNo = -1;
+            FSelectSeekOffset = -1;
             FSelecting = false;
             FDraging = false;
         }
@@ -476,6 +478,13 @@ namespace HC.View
             {
                 this.EndFormat();
             }
+        }
+
+        protected override void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
+        {
+            base.ReSetSelectAndCaret(aItemNo, aOffset, aNextWhenMid);
+            FSelectSeekNo = SelectInfo.StartItemNo;
+            FSelectSeekOffset = SelectInfo.StartItemOffset;
         }
 
         protected virtual bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)

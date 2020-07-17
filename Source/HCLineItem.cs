@@ -54,28 +54,28 @@ namespace HC.View
                 aCanvas.Pen.Width = FLineHeight;
                 aCanvas.Pen.Style = FLineStyle;
                 aCanvas.Pen.Color = Color.Black;
-
-                if (this.Height > 1)
-                {
-                    IntPtr vExtPen = HC.CreateExtPen(aCanvas.Pen, GDI.PS_ENDCAP_FLAT);
-                    IntPtr vOldPen = (IntPtr)GDI.SelectObject(aCanvas.Handle, vExtPen);
-                    try
-                    {
-                        PaintLine(aCanvas, aDrawRect);
-                    }
-                    finally
-                    {
-                        GDI.SelectObject(aCanvas.Handle, vOldPen);
-                        GDI.DeleteObject(vExtPen);
-                    }
-                }
-                else
-                    PaintLine(aCanvas, aDrawRect);
             }
             finally
             {
                 aCanvas.Pen.EndUpdate();
             }
+
+            if (this.Height > 1)
+            {
+                IntPtr vExtPen = HC.CreateExtPen(aCanvas.Pen, GDI.PS_ENDCAP_FLAT);
+                IntPtr vOldPen = (IntPtr)GDI.SelectObject(aCanvas.Handle, vExtPen);
+                try
+                {
+                    PaintLine(aCanvas, aDrawRect);
+                }
+                finally
+                {
+                    GDI.SelectObject(aCanvas.Handle, vOldPen);
+                    GDI.DeleteObject(vExtPen);
+                }
+            }
+            else
+                PaintLine(aCanvas, aDrawRect);
         }
 
         public HCLineItem(HCCustomData aOwnerData, int aWidth, int aHeight)

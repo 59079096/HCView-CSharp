@@ -169,7 +169,6 @@ namespace HC.View
         HCItems FItems;
         HCDrawItems FDrawItems;
         SelectInfo FSelectInfo;
-        HashSet<DrawOption> FDrawOptions;
         bool FLoading;
         int FCaretDrawItemNo;  // 当前Item光标处的DrawItem限定其只在相关的光标处理中使用(解决同一Item分行后Offset为行尾时不能区分是上行尾还是下行始)
 
@@ -773,7 +772,6 @@ namespace HC.View
             FCurParaNo = 0;
             FCaretDrawItemNo = -1;
             FSelectInfo = new SelectInfo();
-            FDrawOptions = new HashSet<DrawOption>();
         }
 
         ~HCCustomData()
@@ -2857,12 +2855,6 @@ namespace HC.View
         public SelectInfo SelectInfo
         {
             get { return FSelectInfo; }
-        }
-
-        public HashSet<DrawOption> DrawOptions
-        {
-            get { return FDrawOptions; }
-            set { FDrawOptions = value; }
         }
 
         public int CaretDrawItemNo

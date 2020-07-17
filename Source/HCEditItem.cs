@@ -130,12 +130,18 @@ namespace HC.View
 
             if (!aPaintInfo.Print)
             {
+                if (FReadOnly)
+                {
+                    aCanvas.Brush.Color = HC.clBtnFace;
+                    aCanvas.FillRect(aDrawRect);
+                }
+                else
                 if (this.IsSelectComplate)
                 {
                     aCanvas.Brush.Color = aStyle.SelColor;
                     aCanvas.FillRect(aDrawRect);
                 }
-                else
+                
                 if (SelectTextExists())
                 {
                     aCanvas.Brush.Color = aStyle.SelColor;

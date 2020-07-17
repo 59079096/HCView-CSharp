@@ -44,6 +44,7 @@ namespace EMRView
         private object FPropertyObject;
 
 #if PROCSERIES
+        private Color FUnEditProcBKColor;
         private bool FShowProcSplit;
         private int FProcCount;  // 当前文档病程数量
         private ProcInfo FCaretProcInfo,  // 当前光标处的病程信息
@@ -343,6 +344,14 @@ namespace EMRView
             if (FIgnoreAcceptAction)
                 return true;
 
+#if PROCSERIES
+            if (FEditProcIndex != "")  // 有正在编辑的病程
+            {
+                if (FEditProcIndex != FCaretProcInfo.Index)  // 光标处和当前允许编辑的不同
+                    return false;  // 不允许编辑
+            }
+#endif
+
             bool vResult = base.DoSectionCanEdit(sender);
             if (vResult)
             {
@@ -361,13 +370,13 @@ namespace EMRView
             if (FIgnoreAcceptAction)
                 return true;
 
-            #if PROCSERIES
+#if PROCSERIES
             if ((aAction == HCAction.actDeleteSelected) && (aData == this.ActiveSection.Page) && (FEditProcInfo.EndNo > 0))
             {
                 if ((aData.SelectInfo.StartItemNo < FEditProcInfo.BeginNo) || (aData.SelectInfo.EndItemNo > FEditProcInfo.EndNo))
                     return false;
             }
-            #endif
+#endif
 
             bool vResult = base.DoSectionAcceptAction(sender, aData, aItemNo, aOffset, aAction);
             if (vResult)
@@ -770,7 +779,7 @@ namespace EMRView
         {
             base.DoSectionPaintPageBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
 
-            #if PROCSERIES
+#if PROCSERIES
             if ((!aPaintInfo.Print) && (FEditProcInfo.EndNo > 0))
             {
                 HCPageData vData = FEditProcInfo.Data as HCPageData;
@@ -778,7 +787,7 @@ namespace EMRView
                 vPt = this.GetFormatPointToViewCoord(vPt);
                 if (vPt.Y > aRect.Top)
                 {
-                    aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                    aCanvas.Brush.Color = FUnEditProcBKColor;
                     aCanvas.FillRect(new RECT(aRect.Left, aRect.Top, aRect.Right, vPt.Y));
                 }
 
@@ -788,7 +797,7 @@ namespace EMRView
                     vPt = this.GetFormatPointToViewCoord(vPt);
                     if (vPt.Y < aRect.Bottom)
                     {
-                        aCanvas.Brush.Color = HC.View.HC.clBtnFace;
+                        aCanvas.Brush.Color = FUnEditProcBKColor;
                         vPt.X = aRect.Top + ((HCSection)sender).GetPageDataHeight(aPageIndex);
                         if (vPt.X < aRect.Bottom)
                             aCanvas.FillRect(new RECT(aRect.Left, vPt.Y, aRect.Right, vPt.X));
@@ -797,7 +806,7 @@ namespace EMRView
                     }
                 }
             }
-            #endif
+#endif
         }
 
         protected override void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
@@ -806,7 +815,7 @@ namespace EMRView
             if (aPaintInfo.Print)
                 return;
 
-            #if PROCSERIES
+#if PROCSERIES
             if (FShowProcSplit && (FProcCount > 0))
             {
                 if ((aData is HCPageData) && (aData.Items[aItemNo] is DeGroup))
@@ -821,7 +830,7 @@ namespace EMRView
                     }
                 }
             }
-            #endif
+#endif
 
             if (!(aData.Items[aItemNo] is DeItem))
                 return;
@@ -1192,7 +1201,7 @@ namespace EMRView
                 }
             }
 
-            #if PROCSERIES
+#if PROCSERIES
             if ((!aPaintInfo.Print) && (aData.Items[aItemNo] is DeGroup))  // 绘制病程的前后指示箭头
             {
                 DeGroup vDeGroup = aData.Items[aItemNo] as DeGroup;
@@ -1225,7 +1234,7 @@ namespace EMRView
                     }
                 }
             }
-            #endif
+#endif
 
             if ((FPageBlankTip != "") && (aData is HCPageData))
             {
@@ -1272,6 +1281,7 @@ namespace EMRView
             this.Style.DefaultTextStyle.Family = "宋体";
             this.HScrollBar.AddStatus(200);
 #if PROCSERIES
+            FUnEditProcBKColor = HC.View.HC.clBtnFace;
             FShowProcSplit = true;
             FProcCount = 0;
             FCaretProcInfo = new ProcInfo();
@@ -1439,14 +1449,14 @@ namespace EMRView
         public bool SetSignatureGraphic(string deIndex, Stream graphicStream)
         {
             int vBeginNo = -1, vEndNo = -1;
-            #if PROCSERIES
+#if PROCSERIES
             if (this.FEditProcInfo.EndNo > 0)
             {
                 vBeginNo = FEditProcInfo.BeginNo;
                 vEndNo = FEditProcInfo.EndNo;
             }
             else
-            #endif
+#endif
             {
                 vBeginNo = 0;
                 vEndNo = this.ActiveSection.Page.Items.Count - 1;
@@ -2014,11 +2024,25 @@ namespace EMRView
                     FIgnoreAcceptAction = true;
                     try
                     {
-                        this.InsertStream(stream);
+                        this.Style.States.Include(HCState.hosDomainWholeReplace);
+                        try
+                        {
+                            this.InsertStream(stream);
+                        }
+                        finally
+                        {
+                            this.Style.States.Exclude(HCState.hosDomainWholeReplace);
+                        }
                     }
                     finally
                     {
                         FIgnoreAcceptAction = false;
+                    }
+
+                    if (procIndex == FEditProcIndex)
+                    {
+                        FEditProcIndex = "";  // 便于触发SetEditProcIndex
+                        SetEditProcIndex(procIndex);
                     }
 
                     return true;
@@ -2028,6 +2052,30 @@ namespace EMRView
             }
 
             return false;
+        }
+
+        public void ScrollToProc(string procIndex)
+        {
+            if (procIndex == "")
+                return;
+
+            int vItemNo = -1, vSecIndex = -1, vEndNo = -1;
+            if (procIndex == FEditProcIndex)
+            {
+                vItemNo = FEditProcInfo.BeginNo;
+                vSecIndex = FEditProcInfo.SectionIndex;
+            }
+            else
+                GetProcItemNo(procIndex, ref vSecIndex, ref vItemNo, ref vEndNo);
+
+            if (vItemNo >= 0)
+            {
+                HCPageData vPage = this.Sections[vSecIndex].Page;
+                int vPos = vPage.DrawItems[vPage.Items[vItemNo].FirstDItemNo].Rect.Top;
+                vPos = this.Sections[vSecIndex].PageDataFormtToFilmCoord(vPos);
+                vPos = vPos + this.GetSectionTopFilm(vSecIndex);
+                this.VScrollBar.Position = vPos;
+            }
         }
 
         public void SetEditProcIndex(string value)
@@ -2537,7 +2585,7 @@ namespace EMRView
             get { return FTraceCount; }
         }
 
-        #if PROCSERIES
+#if PROCSERIES
         public int ProcCount
         {
             get { return FProcCount; }
@@ -2554,12 +2602,18 @@ namespace EMRView
             get { return FShowProcSplit; }
             set { FShowProcSplit = value; }
         }
-        #endif
+
+        public Color UnEditProcBKColor
+        {
+            get { return FUnEditProcBKColor; }
+            set { FUnEditProcBKColor = value; }
+        }
+#endif
 
         public bool IgnoreAcceptAction
         {
             get { return FIgnoreAcceptAction; }
-            set { IgnoreAcceptAction = value; }
+            set { FIgnoreAcceptAction = value; }
         }
 
         public bool Secret

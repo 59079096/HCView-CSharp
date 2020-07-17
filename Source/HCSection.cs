@@ -671,30 +671,6 @@ namespace HC.View
             }
         }
 
-        /// <summary> 返回数据格式化AVertical位置在胶卷中的位置 </summary>
-        /// <param name="aVertical"></param>
-        /// <returns></returns>
-        protected int GetDataFmtTopFilm(int aVertical)
-        {
-            int Result = 0, vTop = 0;
-            int vPageHeight = GetPageHeight();
-
-            for (int i = 0; i <= FPages.Count - 1; i++)
-            {
-                vTop = vTop + vPageHeight;
-                if (vTop >= aVertical)
-                {
-                    vTop = aVertical - (vTop - vPageHeight);
-                    break;
-                }
-                else
-                    Result = Result + FPagePadding + FPaper.HeightPix;
-            }
-            Result = Result + FPagePadding + GetHeaderAreaHeight() + vTop;
-
-            return Result;
-        }
-
         protected bool DoSectionDataAction(HCSectionData aData, HCFunction aAction)
         {
             if (!aData.CanEdit())
@@ -884,6 +860,30 @@ namespace HC.View
         public POINT GetTopLevelRectDrawItemCoord()
         {
             return FActiveData.GetTopLevelRectDrawItemCoord();
+        }
+
+        /// <summary> 返回数据格式化AVertical位置在胶卷中的位置 </summary>
+        /// <param name="aVertical"></param>
+        /// <returns></returns>
+        public int PageDataFormtToFilmCoord(int aVertical)
+        {
+            int Result = 0, vTop = 0;
+            int vPageHeight = GetPageHeight();
+
+            for (int i = 0; i <= FPages.Count - 1; i++)
+            {
+                vTop = vTop + vPageHeight;
+                if (vTop >= aVertical)
+                {
+                    vTop = aVertical - (vTop - vPageHeight);
+                    break;
+                }
+                else
+                    Result = Result + FPagePadding + FPaper.HeightPix;
+            }
+            Result = Result + FPagePadding + GetHeaderAreaHeight() + vTop;
+
+            return Result;
         }
 
         /// <summary> 返回光标或选中结束位置所在页序号 </summary>
