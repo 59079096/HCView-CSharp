@@ -31,7 +31,7 @@ namespace HC.View
         private bool FCaretItemChanged = false;
         private HCDomainInfo FHotDomain,  // 当前高亮域
             FActiveDomain;  // 当前激活域
-
+        private int FDomainCount;
         private IntPtr FHotDomainRGN, FActiveDomainRGN;
         private StyleItemEventHandler FOnCreateItemByStyle;
         private OnCanEditEventHandler FOnCanEdit;
@@ -127,6 +127,24 @@ namespace HC.View
         protected override void DoCaretItemChanged()
         {
             FCaretItemChanged = true;
+        }
+
+        protected override void DoInsertItem(HCCustomItem aItem)
+        {
+            if (HCDomainItem.IsBeginMark(aItem))
+                FDomainCount++;
+
+            FHotDomain.Clear();
+            base.DoInsertItem(aItem);
+        }
+
+        protected override void DoRemoveItem(HCCustomItem aItem)
+        {
+            if (HCDomainItem.IsBeginMark(aItem))
+                FDomainCount--;
+
+            FHotDomain.Clear();
+            base.DoRemoveItem(aItem);
         }
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, 
@@ -256,14 +274,21 @@ namespace HC.View
                 return true;
         }
 
-        public HCViewData(HCStyle aStyle) : base(aStyle)
+        protected override void CreateBefor()
         {
+            base.CreateBefor();
+            FDomainCount = 0;
             FCaretItemChanged = false;
             FDomainStartDeletes = new List<int>();
             FHotDomain = new HCDomainInfo();
             FHotDomain.Data = this;
             FActiveDomain = new HCDomainInfo();
             FActiveDomain.Data = this;
+        }
+
+        public HCViewData(HCStyle aStyle) : base(aStyle)
+        {
+            
         }
 
         ~HCViewData()
@@ -371,8 +396,10 @@ namespace HC.View
                     if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
                         vRePaint = true;
 
-                    // 获取当前光标处ActiveDeGroup信息
-                    GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
+                    if (FDomainCount > 0) // 获取当前光标处ActiveDeGroup信息
+                        GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
+                    else
+                        FActiveDomain.Clear();
 
                     if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
                         vRePaint = true;
@@ -504,7 +531,11 @@ namespace HC.View
             base.MouseMove(e);
             //if (!this.MouseMoveRestrain)
             {
-                this.GetDomainFrom(this.MouseMoveItemNo, this.MouseMoveItemOffset, FHotDomain);
+                if (FDomainCount > 0)
+                    this.GetDomainFrom(this.MouseMoveItemNo, this.MouseMoveItemOffset, FHotDomain);
+                else
+                    FHotDomain.Clear();
+
                 HCViewData vTopData = this.GetTopLevelDataAt(e.X, e.Y) as HCViewData;
                 if ((vTopData == this) || (vTopData.HotDomain.BeginNo < 0))
                 {
@@ -932,8 +963,7 @@ namespace HC.View
             Array.Reverse(arr);
             string vS = new string(arr);
 
-
-            int i = vS.IndexOf(vSubStr);
+            int i = vS.IndexOf(vSubStr) + 1;
             if (i > 0)
             {
                 i = S.Length - i - SubStr.Length + 2;
@@ -979,7 +1009,7 @@ namespace HC.View
                     if (!AMatchCase)
                         vText = vText.ToUpper();
                         
-                    vPos = vText.IndexOf(vKeyword);
+                    vPos = vText.IndexOf(vKeyword) + 1;
                 }
                
                 if (vPos > 0)
@@ -1015,7 +1045,7 @@ namespace HC.View
                             if (!AMatchCase)
                                 vConcatText = vConcatText.ToUpper();
             
-                            vPos = vConcatText.IndexOf(vKeyword);
+                            vPos = vConcatText.IndexOf(vKeyword) + 1;
                             if (vPos > 0)
                             {
                                 this.SelectInfo.StartItemNo = vItemNo - 1;
@@ -1058,7 +1088,7 @@ namespace HC.View
                             if (!AMatchCase)
                                 vConcatText = vConcatText.ToUpper();
             
-                            vPos = vConcatText.IndexOf(vKeyword);
+                            vPos = vConcatText.IndexOf(vKeyword) + 1;
                             if (vPos > 0)
                             {
                                 this.SelectInfo.StartItemNo = AItemNo;
@@ -1117,8 +1147,18 @@ namespace HC.View
             else
             if (this.SelectInfo.EndItemNo >= 0)
             {
-                vItemNo = this.SelectInfo.EndItemNo;
-                vOffset = this.SelectInfo.EndItemOffset;
+                if (aForward)
+                {
+                    vItemNo = this.SelectInfo.StartItemNo;
+                    vOffset = this.SelectInfo.StartItemOffset;
+                }
+                else
+                {
+                    vItemNo = this.SelectInfo.EndItemNo;
+                    vOffset = this.SelectInfo.EndItemOffset;
+                }
+
+                DisSelect();
             }
             else
             {
@@ -1160,14 +1200,22 @@ namespace HC.View
                 {
                     if (!aForward)
                     {
-                        this.SelectInfo.StartItemNo = this.SelectInfo.EndItemNo;
-                        this.SelectInfo.StartItemOffset = this.SelectInfo.EndItemOffset;
+                        vItemNo = this.SelectInfo.EndItemNo;
+                        vOffset = this.SelectInfo.EndItemOffset;
+                    }
+                    else
+                    {
+                        vItemNo = this.SelectInfo.StartItemNo;
+                        vOffset = this.SelectInfo.StartItemOffset;
                     }
 
-                    this.SelectInfo.EndItemNo = -1;
-                    this.SelectInfo.EndItemOffset = -1;
+                    this.DisSelect();
+                    this.SelectInfo.StartItemNo = vItemNo;
+                    this.SelectInfo.StartItemOffset = vOffset;
                 }
             }
+            else
+                this.MatchItemSelectState();
 
             this.Style.UpdateInfoRePaint();
             this.Style.UpdateInfoReCaret();
@@ -1248,6 +1296,11 @@ namespace HC.View
         public HCDomainInfo ActiveDomain
         {
             get { return FActiveDomain; }
+        }
+
+        public int DomainCount
+        {
+            get { return FDomainCount; }
         }
 
         public StyleItemEventHandler OnCreateItemByStyle

@@ -318,6 +318,11 @@ namespace HC.View
             base.DoPaint(aStyle, aDrawRect, aDataDrawTop, aDataDrawBottom, aDataScreenTop,
                 aDataScreenBottom, aCanvas, aPaintInfo);
             
+            if (aPaintInfo.Print)
+            {
+
+            }
+            else
             if (this.IsSelectComplate)
             {
                 aCanvas.Brush.Color = aStyle.SelColor;

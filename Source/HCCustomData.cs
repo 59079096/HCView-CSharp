@@ -179,6 +179,12 @@ namespace HC.View
         DrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
 
+        private void DoRemoveItem_(HCCustomItem item)
+        {
+            if (!FStyle.States.Contain(HCState.hosDestroying))
+                DoRemoveItem(item);
+        }
+
         private void DrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
@@ -707,7 +713,7 @@ namespace HC.View
 
         protected virtual void DoRemoveItem(HCCustomItem aItem)
         {
-            if ((FOnRemoveItem != null) && (!FStyle.States.Contain(HCState.hosDestroying)))
+            if (FOnRemoveItem != null)
                 FOnRemoveItem(this, aItem);
         }
 
@@ -765,7 +771,7 @@ namespace HC.View
             FDrawItems = new HCDrawItems();
             FItems = new HCItems();
             FItems.OnInsertItem += DoInsertItem;
-            FItems.OnRemoveItem += DoRemoveItem;
+            FItems.OnRemoveItem += DoRemoveItem_;
 
             FLoading = false;
             FCurStyleNo = 0;
@@ -2251,6 +2257,9 @@ namespace HC.View
                 {
                     vDrawItem = FDrawItems[i];
                     vItem = FItems[vDrawItem.ItemNo];
+                    if (!vItem.Visible)
+                        continue;
+
                     vDrawRect = vDrawItem.Rect;
                     vDrawRect.Offset(aDataDrawLeft, vVOffset);  // 偏移到指定的画布绘制位置(SectionData时为页数据在格式化中可显示起始位置)
 
@@ -2307,7 +2316,7 @@ namespace HC.View
                         DrawItemPaintContent(this, vDrawItem.ItemNo, i, vDrawRect, vClearRect, "", aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
                             aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
-                        if (vRectItem.IsSelectComplate)  // 选中背景区域
+                        if (!aPaintInfo.Print && vRectItem.IsSelectComplate)  // 选中背景区域
                         {
                             aCanvas.Brush.Color = FStyle.SelColor;
                             aCanvas.FillRect(vDrawRect);
@@ -2729,6 +2738,12 @@ namespace HC.View
                 {
                     this.SaveToStream(aStream, FSelectInfo.StartItemNo, FSelectInfo.StartItemOffset, FSelectInfo.EndItemNo, FSelectInfo.EndItemOffset);
                 }
+            }
+            else
+            {
+                Int64 vBegPos = 0;
+                byte[] vBuffer = System.BitConverter.GetBytes(vBegPos);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
             }
         }
 

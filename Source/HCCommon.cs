@@ -1048,6 +1048,16 @@ namespace HC.View
 
     public class HCObject : IDisposable
     {
+        public HCObject() : base()
+        {
+            CreateBefor();
+        }
+
+        protected virtual void CreateBefor()
+        {
+
+        }
+
         public virtual void Dispose()
         {
             //GC.SuppressFinalize(this);

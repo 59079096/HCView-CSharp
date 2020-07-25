@@ -28,6 +28,7 @@ namespace HC.View
 
     public delegate void PaintEventHandler(HCCanvas aCanvas, PaintInfo aPaintInfo);
     public delegate bool HCCopyPasteEventHandler(int aFormat);
+    public delegate void HCLoadProc(ushort fileVersion, HCStyle style);
 
     // HCView必需是第一个类
     public class HCView : UserControl
@@ -437,7 +438,7 @@ namespace HC.View
             return HC.Bounds(0, 0, FViewWidth, FViewHeight);
         }
 
-        private int GetPageIndexTop(int aPageIndex)
+        private int GetPageIndexFilmTop(int aPageIndex)
         {
             int vPageIndex = -1;
             int vSectionIndex = GetSectionPageIndexByPageIndex(aPageIndex, ref vPageIndex);
@@ -458,14 +459,14 @@ namespace HC.View
         {
             int vPageIndex = GetPagePreviewFirst();
             if (vPageIndex > 0)
-                FVScrollBar.Position = GetPageIndexTop(vPageIndex - 1);
+                FVScrollBar.Position = GetPageIndexFilmTop(vPageIndex - 1);
         }
 
         private void DoPageDown(object sender, EventArgs e)
         {
             int vPageIndex = GetPagePreviewFirst();
             if (vPageIndex < GetPageCount() - 1)
-                FVScrollBar.Position = GetPageIndexTop(vPageIndex + 1);
+                FVScrollBar.Position = GetPageIndexFilmTop(vPageIndex + 1);
         }
 
         private void ReBuildCaret()
@@ -1459,6 +1460,26 @@ namespace HC.View
             base.WndProc(ref Message);
         }
 
+        protected void DataSaveLiteStream(Stream stream, HCProcedure proc)
+        {
+            HC._SaveFileFormatAndVersion(stream);
+            FStyle.SaveToStream(stream);
+            proc();
+        }
+
+        protected void DataLoadLiteStream(Stream stream, HCLoadProc proc)
+        {
+            string vFileFormat = "";
+            ushort vFileVersion = 0;
+            byte vLang = 0;
+            HC._LoadFileFormatAndVersion(stream, ref vFileFormat, ref vFileVersion, ref vLang);
+            using (HCStyle vStyle = new HCStyle())
+            {
+                vStyle.LoadFromStream(stream, vFileVersion);
+                proc(vFileVersion, vStyle);
+            }
+        }
+
         protected void CalcScrollRang()
         {
             int vVMax = 0, vHMax = 0, vWidth = 0;
@@ -1840,6 +1861,25 @@ namespace HC.View
             return vResult;
         }
 
+        public bool InsertLiteStream(Stream stream)
+        {
+            bool vResult = false;
+            DataLoadLiteStream(stream, delegate (ushort fileVersion, HCStyle style)
+            {
+                this.BeginUpdate();
+                try
+                {
+                    vResult = ActiveSection.InsertStream(stream, style, fileVersion);
+                }
+                finally
+                {
+                    this.EndUpdate();
+                }
+            });
+
+            return vResult;
+        }
+
         public bool AppendStream(Stream stream)
         {
             ActiveSection.ActiveData.SelectLastItemAfterWithCaret();
@@ -2156,13 +2196,6 @@ namespace HC.View
                     MemoryStream vStream = new MemoryStream();
                     try
                     {
-                        HC._SaveFileFormatAndVersion(vStream);  // 保存文件格式和版本
-                        DoCopyAsStream(vStream);  // 通知保存事件
-
-                        //HashSet<SectionArea> vSaveParts = new HashSet<SectionArea>() { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-                        FStyle.SaveToStream(vStream);
-                        this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
-
                         //IDataObject vDataObj = new DataObject();
                         //vDataObj.SetData(HC.HC_EXT, vStream);
                         //vDataObj.SetData(DataFormats.Text, this.ActiveSectionTopLevelData().SaveSelectToText());  // 文本格式
@@ -2174,9 +2207,16 @@ namespace HC.View
                         {
                             if (vMem == IntPtr.Zero)
                                 throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
+
                             IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMem);
                             try
                             {
+                                DoCopyAsStream(vStream);  // 通知保存事件
+                                DataSaveLiteStream(vStream, delegate ()
+                                {
+                                    this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
+                                });
+                                
                                 vStream.Position = 0;
                                 vBuffer = vStream.ToArray();
                                 System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);
@@ -2266,33 +2306,11 @@ namespace HC.View
                     MemoryStream vStream = (MemoryStream)vIData.GetData(HC.HC_EXT);
                     try
                     {
-                        string vFileFormat = "";
-                        ushort vFileVersion = 0;
-                        byte vLang = 0;
-
                         vStream.Position = 0;
-                        HC._LoadFileFormatAndVersion(vStream, ref vFileFormat, ref vFileVersion, ref vLang);  // 文件格式和版本
                         if (!DoPasteFormatStream(vStream))
                             return;
 
-                        HCStyle vStyle = new HCStyle();
-                        try
-                        {
-                            vStyle.LoadFromStream(vStream, vFileVersion);
-                            this.BeginUpdate();
-                            try
-                            {
-                                ActiveSection.InsertStream(vStream, vStyle, vFileVersion);
-                            }
-                            finally
-                            {
-                                this.EndUpdate();
-                            }
-                        }
-                        finally
-                        {
-                            vStyle.Dispose();
-                        }
+                        InsertLiteStream(vStream);
                     }
                     finally
                     {

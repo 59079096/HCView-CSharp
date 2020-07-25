@@ -168,7 +168,7 @@ namespace EMRView
 
         private void DoSyntaxCheck(HCCustomData aData, Stack<HCDomainInfo> aDomainStack, int aItemNo)
         {
-            /*DeItem vDeItem = aData.Items[aItemNo] as DeItem;
+            DeItem vDeItem = aData.Items[aItemNo] as DeItem;
             vDeItem.SyntaxClear();
             string vText = vDeItem.Text;
 
@@ -176,8 +176,8 @@ namespace EMRView
             {
                 int vPos = vText.IndexOf("子宫");
                 if (vPos >= 0)
-                    vDeItem.SyntaxAdd(vPos + 1, 2);
-            }*/
+                    vDeItem.SyntaxAdd(vPos + 1, 2, EmrSyntaxProblem.espContradiction);
+            }
         }
 
         private void PrepareSyncData(int aDesID)
@@ -870,7 +870,7 @@ namespace EMRView
             XmlDocument vXmlDoc = GetStructureToXml(aFrmRecord);
             if (vXmlDoc == null)
                 return;
-            vXmlDoc.Save("c:\\a.xml");
+            //vXmlDoc.Save("c:\\a.xml");
             using (MemoryStream vSM = new MemoryStream())
             {
                 vXmlDoc.Save(vSM);

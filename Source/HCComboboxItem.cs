@@ -264,20 +264,23 @@ namespace HC.View
             base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop,
                 ADataScreenBottom, ACanvas, APaintInfo);
 
-            if (APaintInfo.Print && this.PrintOnlyText)
+            if (!APaintInfo.Print)
+            {
+                if (IsSelectComplate)
+                    ACanvas.Brush.Color = AStyle.SelColor;
+                else
+                if (FMouseInButton)
+                    ACanvas.Brush.Color = HC.clMenu;
+                else
+                    ACanvas.Brush.Color = HC.clWindow;
+
+                FButtonDrawRect = FButtonRect;
+                FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
+                ACanvas.FillRect(FButtonDrawRect);
+            }
+            else
+            if (PrintOnlyText)
                 return;
-
-            if (IsSelectComplate)
-                ACanvas.Brush.Color = AStyle.SelColor;
-            else
-            if (FMouseInButton)
-                ACanvas.Brush.Color = HC.clMenu;
-            else
-                ACanvas.Brush.Color = HC.clWindow;
-
-            FButtonDrawRect = FButtonRect;
-            FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
-            ACanvas.FillRect(FButtonDrawRect);
 
             ACanvas.Pen.Color = Color.Black;
             int vLeft = FButtonDrawRect.Left + (BTNWIDTH - 7) / 2;

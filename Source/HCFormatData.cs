@@ -118,7 +118,7 @@ namespace HC.View
         /// <summary> 重整行 </summary>
         /// <param name="AEndDItemNo">行最后一个DItem</param>
         /// <param name="aRemWidth">行剩余宽度</param>
-        private void FinishLine(int aItemNo, int aLineEndDItemNo, int aRemWidth)
+        private bool FinishLine(int aItemNo, int aLineEndDItemNo, int aRemWidth)
         {
             int vLineBegDItemNo,  // 行第一个DItem
                 vMaxBottom,
@@ -140,6 +140,23 @@ namespace HC.View
                 }
             }
             //Assert((vLineBegDItemNo >= 0), '断言失败：行起始DItemNo小于0！');
+
+            vMaxBottom = -1;
+            for (int i = vLineBegDItemNo; i <= aLineEndDItemNo; i++)
+            {
+                if (Items[DrawItems[i].ItemNo].Visible)
+                {
+                    vMaxBottom = i;
+                    break;
+                }
+            }
+
+            bool vResult = vMaxBottom >= 0;
+            if (!vResult)
+                return false;
+
+            vLineBegDItemNo = vMaxBottom;
+
             // 找行DrawItem中最高的
             vMaxBottom = DrawItems[aLineEndDItemNo].Rect.Bottom;  // 先默认行最后一个DItem的Rect底位置最大
             for (int i = aLineEndDItemNo - 1; i >= vLineBegDItemNo; i--)
@@ -180,7 +197,7 @@ namespace HC.View
                         if (vParaStyle.AlignHorz == ParaAlignHorz.pahJustify)  // 两端对齐
                         {
                             if (IsParaLastDrawItem(aLineEndDItemNo))  // 两端对齐，段最后一行不处理
-                                return;
+                                return vResult;
                         }
                         else  // 分散对齐，空行或只有一个字符时居中
                         {
@@ -190,7 +207,7 @@ namespace HC.View
                                 {
                                     viSplitW = aRemWidth / 2;
                                     DrawItems[vLineBegDItemNo].Rect.Offset(viSplitW, 0);
-                                    return;
+                                    return vResult;
                                 }
                             }
                         }
@@ -203,6 +220,9 @@ namespace HC.View
 
                         for (int i = vLineBegDItemNo; i <= aLineEndDItemNo; i++)  // 计算空余分成几份
                         {
+                            if (!Items[DrawItems[i].ItemNo].Visible)
+                                continue;
+
                             if (GetDrawItemStyle(i) < HCStyle.Null)  // RectItem
                             {
                                 if ((Items[DrawItems[i].ItemNo] as HCCustomRectItem).JustifySplit()
@@ -256,6 +276,13 @@ namespace HC.View
 
                         for (int i = vLineBegDItemNo + 1; i <= aLineEndDItemNo; i++)  // 以第一个为基准，其余各DrawItem增加的空间
                         {
+                            if (!Items[DrawItems[i].ItemNo].Visible)
+                            {
+                                DrawItems[i].Rect.Left = DrawItems[i - 1].Rect.Right;
+                                DrawItems[i].Rect.Right = DrawItems[i].Rect.Left;
+                                continue;
+                            }
+
                             vW = DrawItems[i].Width;  // DrawItem原来Width
                             if (vDrawItemSplitCounts[i - vLineBegDItemNo] > 0)  // 有分到间距
                             {
@@ -295,6 +322,8 @@ namespace HC.View
                     }
                     break;
             }
+
+            return vResult;
         }
 
         private void NewDrawItem(int aItemNo, int aCharOffs, int aCharLen, RECT aRect, bool aParaFirst, bool aLineFirst,
@@ -706,9 +735,6 @@ namespace HC.View
         /// <param name="vPageBoundary">数据页底部边界</param>
         private void FormatItemToDrawItems(int aItemNo, int aOffset, int aFmtLeft, int aFmtRight, int aContentWidth, ref POINT aPos, ref int aLastDrawItemNo)
         {
-            if (!Items[aItemNo].Visible)
-                return;
-
             bool vParaFirst = false, vLineFirst = false;
             HCCustomRectItem vRectItem = null;
             string vText = "";

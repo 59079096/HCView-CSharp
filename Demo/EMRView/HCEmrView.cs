@@ -19,6 +19,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Controls;
 using System.Configuration;
+using System.Windows.Documents;
 
 namespace EMRView
 {
@@ -127,8 +128,7 @@ namespace EMRView
 
         private bool CanNotEdit()
         {
-            bool Result = (!this.ActiveSection.ActiveData.CanEdit()) 
-                || (!(this.ActiveSectionTopLevelData() as HCRichData).CanEdit());
+            bool Result = !(this.ActiveSectionTopLevelData() as HCRichData).CanEdit();
 
             if (Result && (FOnCanNotEdit != null))
                 FOnCanNotEdit(this, null);
@@ -166,16 +166,12 @@ namespace EMRView
 #if PROCSERIES
                 if ((FProcCount > 0) && (data == this.ActiveSection.Page))
                 {
-                    this.GetSectionCaretProcInfo(this.ActiveSection.Page, FCaretProcInfo);
-                    FCaretProcInfo.SectionIndex = this.ActiveSectionIndex;
+                    CheckCaretProcInfo();
                     if (FCaretProcInfo.EndNo > 0)
                     {
                         vDeGroup = this.ActiveSection.ActiveData.Items[FCaretProcInfo.BeginNo] as DeGroup;
                         vInfo = vDeGroup[DeProp.Name];
                     }
-
-                    if (FCaretProcInfo.Index == FEditProcIndex)
-                        FEditProcInfo.Assign(FCaretProcInfo);
                 }
 #endif
 
@@ -310,9 +306,6 @@ namespace EMRView
             bool vResult = base.DoSectionSaveItem(sender, aData, aItemNo);
             if (Style.States.Contain(HCState.hosCopying))  // 非设计模式、复制保存
             {
-                if ((aData.Items[aItemNo] is DeGroup) && (!FDesignMode))
-                    vResult = false;
-                else
                 if (aData.Items[aItemNo] is DeItem)
                     vResult = !(aData.Items[aItemNo] as DeItem).CopyProtect;  // 是否禁止复制
             }
@@ -1337,7 +1330,11 @@ namespace EMRView
         /// <returns>True：成功，False：失败</returns>
         public bool InsertDeGroup(DeGroup aDeGroup)
         {
-            return this.InsertDomain(aDeGroup);
+            bool vResult = this.InsertDomain(aDeGroup);
+#if PROCSERIES
+            CheckCaretProcInfo();
+#endif
+            return vResult;
         }
 
         public bool DeleteDeGroup(string deIndex)
@@ -1349,12 +1346,12 @@ namespace EMRView
             GetDataDeGroupItemNo(this.ActiveSection.Page, deIndex, false, ref vStartNo, ref vEndNo);
             if (vEndNo > 0)
             {
-                return this.ActiveSection.DataAction(this.ActiveSection.Page, delegate ()
+                bool vRe = this.ActiveSection.DataAction(this.ActiveSection.Page, delegate ()
                 {
                     FIgnoreAcceptAction = true;
                     try
                     {
-                        this.ActiveSection.Page.DeleteItems(vStartNo, vEndNo, false);
+                        this.ActiveSection.Page.DeleteDomainByItemNo(vStartNo, vEndNo);
                     }
                     finally
                     {
@@ -1363,6 +1360,11 @@ namespace EMRView
 
                     return true;
                 });
+
+#if PROCSERIES
+                CheckCaretProcInfo();
+#endif
+                return vRe;
             }
 
             return false;
@@ -1734,7 +1736,6 @@ namespace EMRView
 
                     vEndNo = vPageData.SelectInfo.StartItemNo;
                     vPageData.SetSelectBound(vEndNo, HC.View.HC.OffsetBefor, vEndNo, HC.View.HC.OffsetBefor);
-                    GetSectionCaretProcInfo(this.ActiveSection.Page, FCaretProcInfo);
                 }
                 finally
                 {
@@ -1742,6 +1743,7 @@ namespace EMRView
                 }
             }
 
+            CheckCaretProcInfo();
             this.UpdateView();
             return vResult;
         }
@@ -1754,12 +1756,13 @@ namespace EMRView
             int vStartNo = -1, vEndNo = -1, vSectionIndex = -1;
             if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
             {
-                return this.ActiveSection.DataAction(this.ActiveSection.Page, delegate ()
+                HCPageData vPage = this.Sections[vSectionIndex].Page;
+                bool vRe = this.Sections[vSectionIndex].DataAction(vPage, delegate ()
                 {
                     FIgnoreAcceptAction = true;
                     try
                     {
-                        this.ActiveSection.Page.DeleteItems(vStartNo, vEndNo, false);
+                        vPage.DeleteDomainByItemNo(vStartNo, vEndNo);
                     }
                     finally
                     {
@@ -1767,6 +1770,13 @@ namespace EMRView
                     }
                     return true;
                 });
+
+#if PROCSERIES
+                CheckCaretProcInfo();
+                if (procIndex == FEditProcIndex)
+                    FEditProcInfo.Clear();
+#endif
+                return vRe;
             }
 
             return false;
@@ -2010,44 +2020,183 @@ namespace EMRView
             return false;
         }
 
-        public bool SetProcStream(string procIndex, Stream stream)
+        public bool GetProcAsText(string procIndex, ref string text)
         {
+            int vSectionIndex = -1, vStartNo = -1, vEndNo = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
+            {
+                if (vEndNo == vStartNo + 1)
+                    return false;
+
+                text = Sections[vSectionIndex].Page.SaveToText(vStartNo + 1, 0,
+                    vEndNo - 1, Sections[vSectionIndex].Page.GetItemOffsetAfter(vEndNo - 1));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool SetProcByText(string procIndex, string text)
+        {
+            if (CanNotEdit())
+                return false;
+
+            int vSectionIndex = -1, vStartNo = -1, vEndNo = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
+            {
+                this.BeginUpdate();
+                try
+                {
+                    this.UndoGroupBegin();
+                    try
+                    {
+                        HCSection vSection = this.Sections[vSectionIndex];
+                        vSection.Page.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
+                        FIgnoreAcceptAction = true;
+                        try
+                        {
+                            vSection.InsertText(text);
+                        }
+                        finally
+                        {
+                            FIgnoreAcceptAction = false;
+                        }
+
+                        CheckCaretProcInfo();
+                        return true;
+                    }
+                    finally
+                    {
+                        this.UndoGroupEnd();
+                    }
+                }
+                finally
+                {
+                    this.EndUpdate();
+                }
+            }
+
+            return false;
+        }
+
+        public bool GetProcAsStream(string procIndex, Stream stream)
+        {
+            int vSectionIndex = -1, vStartNo = -1, vEndNo = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
+            {
+                if (vEndNo == vStartNo + 1)
+                    return false;
+
+                DataSaveLiteStream(stream, delegate ()
+                {
+                    HCSection vSection = Sections[vSectionIndex];
+                    bool vParaFirst = vSection.Page.Items[vStartNo].ParaFirst;
+                    if (!vParaFirst)
+                        vSection.Page.Items[vStartNo].ParaFirst = true;
+
+                    try
+                    {
+                        vSection.Page.SaveToStream(stream, vStartNo + 1, 0,
+                            vEndNo - 1, vSection.Page.GetItemOffsetAfter(vEndNo - 1));
+                    }
+                    finally
+                    {
+                        if (!vParaFirst)
+                            vSection.Page.Items[vStartNo].ParaFirst = false;
+                    }
+                });
+            }
+
+            return false;
+        }
+
+        public bool SetProcByStream(string procIndex, Stream stream)
+        {
+            if (CanNotEdit())
+                return false;
+
+            int vSectionIndex = -1, vStartNo = -1, vEndNo = -1;
+            if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
+            {
+                DataLoadLiteStream(stream, delegate (ushort fileVersion, HCStyle style)
+                {
+                    this.BeginUpdate();
+                    try
+                    {
+                        this.UndoGroupBegin();
+                        try
+                        {
+                            HCSection vSection = this.Sections[vSectionIndex];
+                            vSection.Page.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
+                            FIgnoreAcceptAction = true;
+                            try
+                            {
+                                this.Style.States.Include(HCState.hosDomainWholeReplace);
+                                try
+                                {
+                                    vSection.InsertStream(stream, style, fileVersion);
+                                }
+                                finally
+                                {
+                                    this.Style.States.Exclude(HCState.hosDomainWholeReplace);
+                                }
+                            }
+                            finally
+                            {
+                                FIgnoreAcceptAction = false;
+                            }
+                        }
+                        finally
+                        {
+                            this.UndoGroupEnd();
+                        }
+                    }
+                    finally
+                    {
+                        this.EndUpdate();
+                    }
+                });
+
+                CheckCaretProcInfo();
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool SetProcByFileSteam(string procIndex, Stream stream)
+        {
+            if (CanNotEdit())
+                return false;
+
             int vStartNo = -1, vEndNo = -1, vSectionIndex = -1;
             if (GetProcItemNo(procIndex, ref vSectionIndex, ref vStartNo, ref vEndNo))
             {
                 if (this.ActiveSectionIndex != vSectionIndex)
                     this.ActiveSectionIndex = vSectionIndex;
 
-                this.ActiveSection.DataAction(this.ActiveSection.Page, delegate ()
+                HCSection vSection = this.Sections[vSectionIndex];
+                vSection.Page.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
+                FIgnoreAcceptAction = true;
+                try
                 {
-                    this.ActiveSection.Page.SetSelectBound(vStartNo, HC.View.HC.OffsetAfter, vEndNo, HC.View.HC.OffsetBefor);
-                    FIgnoreAcceptAction = true;
+                    this.Style.States.Include(HCState.hosDomainWholeReplace);
                     try
                     {
-                        this.Style.States.Include(HCState.hosDomainWholeReplace);
-                        try
-                        {
-                            this.InsertStream(stream);
-                        }
-                        finally
-                        {
-                            this.Style.States.Exclude(HCState.hosDomainWholeReplace);
-                        }
+                        this.InsertStream(stream);
                     }
                     finally
                     {
-                        FIgnoreAcceptAction = false;
+                        this.Style.States.Exclude(HCState.hosDomainWholeReplace);
                     }
+                }
+                finally
+                {
+                    FIgnoreAcceptAction = false;
+                }
 
-                    if (procIndex == FEditProcIndex)
-                    {
-                        FEditProcIndex = "";  // 便于触发SetEditProcIndex
-                        SetEditProcIndex(procIndex);
-                    }
-
-                    return true;
-                });
-
+                CheckCaretProcInfo();
                 return true;
             }
 
@@ -2133,9 +2282,18 @@ namespace EMRView
             return vResult;
         }
 
-        public void GetSectionCaretProcInfo(HCSectionData data, ProcInfo procInfo)
+        private void CheckCaretProcInfo()
         {
-            GetProcInfoAt(data, data.SelectInfo.StartItemNo, data.SelectInfo.StartItemOffset, procInfo);
+            this.GetSectionCaretProcInfo(this.ActiveSectionIndex, this.FCaretProcInfo);
+            if (this.FCaretProcInfo.Index == this.FEditProcIndex)
+                this.FEditProcInfo.Assign(this.FCaretProcInfo);
+        }
+
+        private void GetSectionCaretProcInfo(int sectionIndex, ProcInfo procInfo)
+        {
+            HCPageData vPage = this.Sections[sectionIndex].Page;
+            this.GetProcInfoAt(vPage, vPage.SelectInfo.StartItemNo, vPage.SelectInfo.StartItemOffset, procInfo);
+            procInfo.SectionIndex = sectionIndex;
         }
 #endif
 
@@ -2143,14 +2301,8 @@ namespace EMRView
         /// <param name="aStream">扩展内容流</param>
         public void SetActiveItemExtra(Stream aStream)
         {
-            string vFileFormat = "";
-            ushort vFileVersion = 0;
-            byte vLang = 0;
-            HC.View.HC._LoadFileFormatAndVersion(aStream, ref vFileFormat, ref vFileVersion, ref vLang);
-            HCStyle vStyle = new HCStyle();
-            try
+            this.DataLoadLiteStream(aStream, delegate (ushort fileVersion, HCStyle style)
             {
-                vStyle.LoadFromStream(aStream, vFileVersion);
                 this.BeginUpdate();
                 try
                 {
@@ -2159,7 +2311,7 @@ namespace EMRView
                     {
                         HCRichData vTopData = this.ActiveSectionTopLevelData() as HCRichData;
                         this.DeleteActiveDataItems(vTopData.SelectInfo.StartItemNo);
-                        ActiveSection.InsertStream(aStream, vStyle, vFileVersion);
+                        ActiveSection.InsertStream(aStream, style, fileVersion);
                     }
                     finally
                     {
@@ -2170,11 +2322,7 @@ namespace EMRView
                 {
                     this.EndUpdate();
                 }
-            }
-            finally
-            {
-                vStyle.Dispose();
-            }
+            });
         }
 
         public bool CheckDeGroupStart(HCViewData aData, int aItemNo, string aDeIndex)
@@ -2285,6 +2433,16 @@ namespace EMRView
             return Result;
         }
 
+        public string GetDeGroupAsText(string deIndex)
+        {
+            int vStartNo = -1, vEndNo = -1;
+            GetDataDeGroupItemNo(ActiveSection.Page, deIndex, false, ref vStartNo, ref vEndNo);
+            if (vEndNo > 0)
+                return GetDataDeGroupText(ActiveSection.Page, vStartNo, vEndNo);
+            else
+                return "";
+        }
+
         /// <summary> 从当前数据组起始位置往前找相同数据组的内容Index域内容 </summary>
         /// <param name="AData">指定从哪个Data里获取</param>
         /// <param name="ADeGroupStartNo">指定从哪个位置开始往前找</param>
@@ -2335,9 +2493,12 @@ namespace EMRView
             {
                 FIgnoreAcceptAction = false;
             }
-        }
 
-        public void SetActionDataDeGroupText(HCSection section, SectionArea area, string deIndex, string text, bool startLast = true)
+#if PROCSERIES
+            CheckCaretProcInfo();
+#endif
+        }
+        public void SetDeGroupByText(HCSection section, SectionArea area, string deIndex, string text, bool startLast = true)
         {
             int vStartNo = -1, vEndNo = -1;
             HCSectionData vData = null;
@@ -2403,9 +2564,13 @@ namespace EMRView
 
                     return true;
                 });
+
+#if PROCSERIES
+                CheckCaretProcInfo();
+#endif
             }
         }
-        public void SetActionDataDeGroupStream(HCSection section, SectionArea area, string deIndex, Stream stream, bool startLast = true)
+        public void SetDeGroupByFileStream(HCSection section, SectionArea area, string deIndex, Stream stream, bool startLast = true)
         {
             int vStartNo = -1, vEndNo = -1;
             HCSectionData vData = null;
@@ -2469,57 +2634,84 @@ namespace EMRView
 
                     return true;
                 });
+
+#if PROCSERIES
+                CheckCaretProcInfo();
+#endif
             }
         }
 
         public void GetDataDeGroupToStream(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo, Stream aStream)
         {
-            HC.View.HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
-            this.Style.SaveToStream(aStream);
-            aData.SaveItemToStream(aStream, aDeGroupStartNo + 1, 0, aDeGroupEndNo - 1, aData.Items[aDeGroupEndNo - 1].Length);
+            DataSaveLiteStream(aStream, delegate ()
+            {
+                aData.SaveItemToStream(aStream, aDeGroupStartNo + 1, 0, aDeGroupEndNo - 1,
+                    aData.Items[aDeGroupEndNo - 1].Length);
+            });
         }
 
         public void SetDataDeGroupFromStream(HCViewData aData, int aDeGroupStartNo, int aDeGroupEndNo, Stream aStream)
         {
-            FIgnoreAcceptAction = true;
-            try
+            this.DataLoadLiteStream(aStream, delegate (ushort fileVersion, HCStyle style)
             {
-                this.BeginUpdate();
+                FIgnoreAcceptAction = true;
                 try
                 {
-                    aData.BeginFormat();
+                    this.BeginUpdate();
                     try
                     {
-                        if (aDeGroupEndNo - aDeGroupStartNo > 1)  // 中间有内容
-                            aData.DeleteItems(aDeGroupStartNo + 1, aDeGroupEndNo - aDeGroupStartNo - 1, false);
-                        else
-                            aData.SetSelectBound(aDeGroupStartNo, HC.View.HC.OffsetAfter, aDeGroupStartNo, HC.View.HC.OffsetAfter);
+                        aData.BeginFormat();
+                        try
+                        {
+                            if (aDeGroupEndNo - aDeGroupStartNo > 1)  // 中间有内容
+                                aData.DeleteItems(aDeGroupStartNo + 1, aDeGroupEndNo - 1, false);
+                            else
+                                aData.SetSelectBound(aDeGroupStartNo, HC.View.HC.OffsetAfter, aDeGroupStartNo, HC.View.HC.OffsetAfter);
 
-                        aStream.Position = 0;
-                        string vFileExt = "";
-                        ushort viVersion = 0;
-                        byte vLang = 0;
-                        HC.View.HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref viVersion, ref vLang);  // 文件格式和版本
-                        HCStyle vStyle = new HCStyle();
-                        vStyle.LoadFromStream(aStream, viVersion);
-                        aData.InsertStream(aStream, vStyle, viVersion);
+                            aData.InsertStream(aStream, style, fileVersion);
+                        }
+                        finally
+                        {
+                            aData.EndFormat(false);
+                        }
+
+                        this.FormatData();
                     }
                     finally
                     {
-                        aData.EndFormat(false);
+                        this.EndUpdate();
                     }
-
-                    this.FormatData();
                 }
                 finally
                 {
-                    this.EndUpdate();
+                    FIgnoreAcceptAction = false;
                 }
-            }
-            finally
+            });
+
+#if PROCSERIES
+            CheckCaretProcInfo();
+#endif
+        }
+
+        public string SaveSelectToText()
+        {
+            return this.ActiveSectionTopLevelData().SaveSelectToText();
+        }
+
+        public void SaveSelectToStream(Stream stream)
+        {
+            this.DataSaveLiteStream(stream, delegate ()
             {
-                FIgnoreAcceptAction = false;
-            }
+                this.Style.States.Include(HCState.hosCopying);
+                try
+                {
+                    this.ActiveSectionTopLevelData().SaveSelectToStream(stream);
+                }
+                finally
+                {
+                    this.Style.States.Exclude(HCState.hosCopying);
+                }
+            });
         }
 
         public void SyntaxCheck()

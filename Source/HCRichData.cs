@@ -1609,6 +1609,13 @@ namespace HC.View
 
         public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
+            Int64 vDataSize = 0;
+            byte[] vBuffer = BitConverter.GetBytes(vDataSize);
+            aStream.Read(vBuffer, 0, vBuffer.Length);
+            vDataSize = BitConverter.ToInt64(vBuffer, 0);
+            if (vDataSize == 0)
+                return false;
+
             if (!CanEdit())
                 return false;
 
@@ -1647,6 +1654,7 @@ namespace HC.View
                             else
                                 UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
+                            aStream.Position -= vBuffer.Length;
                             Result = (Items[vInsPos] as HCCustomRectItem).InsertStream(aStream, aStyle, aFileVersion);
                             ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
@@ -1684,13 +1692,6 @@ namespace HC.View
                         }
                     }
                 }
-
-                Int64 vDataSize = 0;
-                byte[] vBuffer = BitConverter.GetBytes(vDataSize);
-                aStream.Read(vBuffer, 0, vBuffer.Length);
-                vDataSize = BitConverter.ToInt64(vBuffer, 0);
-                if (vDataSize == 0)
-                    return Result;
 
                 int vItemCount = 0;
                 vBuffer = BitConverter.GetBytes(vItemCount);
@@ -5194,7 +5195,8 @@ namespace HC.View
             if ((aStartNo < 0) || (aStartNo > Items.Count - 1))
                 return;
 
-            HCCustomItem vActiveItem = Items[aStartNo];
+            HCCustomItem vActiveItem = this.GetActiveItem();
+
             if ((vActiveItem.StyleNo < HCStyle.Null)  // 当前位置是 RectItem)
                 && (SelectInfo.StartItemOffset == HC.OffsetInner))  // 在其上输入内容
             {
