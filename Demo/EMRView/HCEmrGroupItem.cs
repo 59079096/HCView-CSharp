@@ -101,7 +101,7 @@ namespace EMRView
         public override void SaveToStream(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStream(aStream, aStart, aEnd);
-            HC.View.HC.HCSaveTextToStream(aStream, DeProp.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -109,16 +109,16 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
-            DeProp.SetPropertyString(vS, FPropertys);
+            HC.View.HC.SetPropertyString(vS, FPropertys);
             CheckPropertys();
         }
 
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            string vS = DeProp.GetPropertyString((source as DeGroup).Propertys);
+            string vS = HC.View.HC.GetPropertyString((source as DeGroup).Propertys);
             FReadOnly = (source as DeGroup).ReadOnly;
-            DeProp.SetPropertyString(vS, FPropertys);
+            HC.View.HC.SetPropertyString(vS, FPropertys);
             CheckPropertys();
         }
 
@@ -138,13 +138,13 @@ namespace EMRView
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.SetAttribute("property", DeProp.GetPropertyString(FPropertys));
+            aNode.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            DeProp.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
+            HC.View.HC.SetPropertyString(aNode.Attributes["property"].Value, FPropertys);
             CheckPropertys();
         }
 

@@ -696,11 +696,6 @@ namespace HC.View
             return Result;
         }
 
-        protected HCStyle Style
-        {
-            get { return FStyle; }
-        }
-
         // HCCustomSection子方法
         protected void SetDataProperty(int vWidth, HCSectionData aData)
         {
@@ -730,6 +725,15 @@ namespace HC.View
             aData.OnGetUndoList = DoDataGetUndoList;
             aData.OnCurParaNoChange = DoDataCurParaNoChange;
             aData.OnCaretItemChanged = DoDataCaretItemChanged;
+        }
+
+        protected virtual void DoSaveToStream(Stream stream) { }
+    
+        protected virtual void DoLoadFromStream(Stream stream, ushort fileVersion) { }
+
+        protected HCStyle Style
+        {
+            get { return FStyle; }
         }
 
         public HCCustomSection(HCStyle aStyle)
@@ -2656,6 +2660,8 @@ namespace HC.View
             vBegPos = aStream.Position;
             vBuffer = BitConverter.GetBytes(vBegPos);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位，便于越过
+
+            this.DoSaveToStream(aStream);
             //
             if (aSaveParts.Count > 0)
             {
@@ -2721,6 +2727,9 @@ namespace HC.View
 
             aStream.Read(vBuffer, 0, vBuffer.Length);
             vDataSize = BitConverter.ToInt64(vBuffer, 0);
+
+            if (aFileVersion > 41)
+                this.DoLoadFromStream(aStream, aFileVersion);
 
             vBuffer = BitConverter.GetBytes(FSymmetryMargin);
             aStream.Read(vBuffer, 0, vBuffer.Length);
@@ -3255,9 +3264,25 @@ namespace HC.View
 
     public class HCSection : HCCustomSection
     {
+        private Dictionary<string, string> FPropertys;
+
+        protected override void DoSaveToStream(Stream stream)
+        {
+            base.DoSaveToStream(stream);
+            HC.HCSaveTextToStream(stream, HC.GetPropertyString(FPropertys));
+        }
+
+        protected override void DoLoadFromStream(Stream stream, ushort fileVersion)
+        {
+            base.DoLoadFromStream(stream, fileVersion);
+            string vS = "";
+            HC.HCLoadTextFromStream(stream, ref vS, fileVersion);
+            HC.SetPropertyString(vS, FPropertys);
+        }
+
         public HCSection(HCStyle AStyle) : base(AStyle)
         {
-
+            FPropertys = new Dictionary<string, string>();
         }
 
         public void AssignPaper(HCCustomSection source)
@@ -3340,6 +3365,8 @@ namespace HC.View
                 + string.Format("{0:0.#}", this.PaperMarginRight) + ","
                 + string.Format("{0:0.#}", this.PaperMarginBottom));
 
+            aNode.SetAttribute("property", HC.GetPropertyString(FPropertys));
+
             // 存页眉
             XmlElement vNode = aNode.OwnerDocument.CreateElement("header");
             vNode.SetAttribute("offset", HeaderOffset.ToString());
@@ -3376,6 +3403,12 @@ namespace HC.View
             this.PaperMarginRight = Single.Parse(vStrings[2]);
             this.PaperMarginBottom = Single.Parse(vStrings[3]);
 
+            if (aNode.HasAttribute("property"))
+            {
+                string vProp = HC.GetXmlRN(aNode.GetAttribute("property"));
+                HC.SetPropertyString(vProp, FPropertys);
+            }
+
             Page.Width = this.GetPageWidth();
 
             for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
@@ -3398,6 +3431,11 @@ namespace HC.View
             }
 
             BuildSectionPages(0);
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
         }
     }
 }

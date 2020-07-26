@@ -2196,6 +2196,13 @@ namespace HC.View
                     MemoryStream vStream = new MemoryStream();
                     try
                     {
+
+                        DoCopyAsStream(vStream);  // 通知保存事件
+                        DataSaveLiteStream(vStream, delegate ()
+                        {
+                            this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
+                        });
+
                         //IDataObject vDataObj = new DataObject();
                         //vDataObj.SetData(HC.HC_EXT, vStream);
                         //vDataObj.SetData(DataFormats.Text, this.ActiveSectionTopLevelData().SaveSelectToText());  // 文本格式
@@ -2207,16 +2214,9 @@ namespace HC.View
                         {
                             if (vMem == IntPtr.Zero)
                                 throw new Exception(HC.HCS_EXCEPTION_MEMORYLESS);
-
                             IntPtr vPtr = (IntPtr)Kernel.GlobalLock(vMem);
                             try
                             {
-                                DoCopyAsStream(vStream);  // 通知保存事件
-                                DataSaveLiteStream(vStream, delegate ()
-                                {
-                                    this.ActiveSectionTopLevelData().SaveSelectToStream(vStream);
-                                });
-                                
                                 vStream.Position = 0;
                                 vBuffer = vStream.ToArray();
                                 System.Runtime.InteropServices.Marshal.Copy(vBuffer, 0, vPtr, vBuffer.Length);

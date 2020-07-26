@@ -1379,9 +1379,10 @@ namespace HC.View
                     vFormatFirstItemNo = GetParaFirstItemNo(SelectInfo.StartItemNo);  // 取段第一个为起始
                     vFormatFirstDrawItemNo = Items[vFormatFirstItemNo].FirstDItemNo;
                     vFormatLastItemNo = GetParaLastItemNo(SelectInfo.EndItemNo);  // 取段最后一个为结束，如果变更注意下面
-
+                    
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
+                    int vUnDeleteItemNo = -1;
                     bool vSelStartParaFirst = Items[SelectInfo.StartItemNo].ParaFirst;
                     bool vSelStartComplate = Items[SelectInfo.StartItemNo].IsSelectComplate;  // 起始是否全选
                     bool vSelEndComplate = Items[SelectInfo.EndItemNo].IsSelectComplate;  // 结尾是否全选
@@ -1401,6 +1402,8 @@ namespace HC.View
                                 vEndDel = true;
                                 vDelCount++;
                             }
+                            else
+                                vUnDeleteItemNo = SelectInfo.EndItemNo;
                         }
                         else
                         {
@@ -1419,6 +1422,8 @@ namespace HC.View
                                 vEndDel = true;
                                 vDelCount++;
                             }
+                            else
+                                vUnDeleteItemNo = SelectInfo.EndItemNo;
                         }
                         else  // 文本且不在选中结束Item最后
                         if (DoAcceptAction(SelectInfo.EndItemNo, SelectInfo.EndItemOffset, HCAction.actBackDeleteText))
@@ -1429,6 +1434,8 @@ namespace HC.View
                                 vEndItem.Length - SelectInfo.EndItemOffset);
                             vEndItem.Text = vText;
                         }
+                        else
+                            vUnDeleteItemNo = SelectInfo.EndItemNo;
                     }
 
                     // 删除选中起始Item下一个到结束Item上一个
@@ -1440,7 +1447,10 @@ namespace HC.View
                             Items.Delete(i);
 
                             vDelCount++;
+                            vUnDeleteItemNo--;
                         }
+                        else
+                            vUnDeleteItemNo = i;
                     }
 
                     HCCustomItem vStartItem = Items[SelectInfo.StartItemNo];  // 选中起始Item
@@ -1454,13 +1464,10 @@ namespace HC.View
                                 Items.Delete(SelectInfo.StartItemNo);
                                 vStartDel = true;
                                 vDelCount++;
+                                vUnDeleteItemNo--;
                             }
-
-                            if (SelectInfo.StartItemNo > vFormatFirstItemNo)
-                            {
-                                SelectInfo.StartItemNo = SelectInfo.StartItemNo - 1;
-                                SelectInfo.StartItemOffset = GetItemOffsetAfter(SelectInfo.StartItemNo);
-                            }
+                            else
+                                vUnDeleteItemNo = SelectInfo.StartItemNo;
                         }
                         else
                         {
@@ -1478,7 +1485,10 @@ namespace HC.View
                                 Items.RemoveAt(SelectInfo.StartItemNo);
                                 vStartDel = true;
                                 vDelCount++;
+                                vUnDeleteItemNo--;
                             }
+                            else
+                                vUnDeleteItemNo = SelectInfo.StartItemNo;
                         }
                         else
                         //if SelectInfo.StartItemOffset < vStartItem.Length then  // 在中间(不用判断了吧？)
@@ -1489,6 +1499,8 @@ namespace HC.View
                             string vText = (vStartItem as HCTextItem).SubString(1, SelectInfo.StartItemOffset);
                             vStartItem.Text = vText;  // 起始留下的内容
                         }
+                        else
+                            vUnDeleteItemNo = SelectInfo.StartItemNo;
                     }
 
                     if (SelectInfo.EndItemNo - SelectInfo.StartItemNo + 1 == vDelCount)  // 选中的Item都删除完
@@ -1546,10 +1558,10 @@ namespace HC.View
                     {
                         if (vStartDel)  // 起始删除完了
                         {
-                            if (Items[SelectInfo.EndItemNo - vDelCount].ParaFirst != vSelStartParaFirst)
+                            if (Items[vUnDeleteItemNo].ParaFirst != vSelStartParaFirst)
                             {
-                                UndoAction_ItemParaFirst(SelectInfo.EndItemNo - vDelCount, 0, vSelStartParaFirst);
-                                Items[SelectInfo.EndItemNo - vDelCount].ParaFirst = vSelStartParaFirst;
+                                UndoAction_ItemParaFirst(vUnDeleteItemNo, 0, vSelStartParaFirst);
+                                Items[vUnDeleteItemNo].ParaFirst = vSelStartParaFirst;
                             }
                         }
                         else

@@ -128,11 +128,12 @@ namespace HC.View
             // 3.9 域Item保存时存Level
             // 4.0 RadioGroup存储更多的属性，HCView存页码格式
             // 4.1 Combobox增加Static属性控制只选不可编辑
+            // 4.2 Section存属性信息
 
-            HC_FileVersion = "4.1";
+            HC_FileVersion = "4.2";
 
         public const ushort
-            HC_FileVersionInt = 41;
+            HC_FileVersionInt = 42;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -624,6 +625,38 @@ namespace HC.View
             }
             else
                 s = "";
+        }
+
+        public static string GetPropertyString(Dictionary<string, string> aProperty)
+        {
+            string vS = "";
+            for (int i = 0; i < aProperty.Count; i++)
+            {
+                var element = aProperty.ElementAt(i);
+                if (element.Key != "")
+                    vS = vS + element.Key + "=" + element.Value + HC.sLineBreak;
+            }
+
+            return vS;
+        }
+
+        public static void SetPropertyString(string aStrings, Dictionary<string, string> aPropertys)
+        {
+            aPropertys.Clear();
+
+            if (aStrings != "")
+            {
+                string[] vStrings = aStrings.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                for (int i = 0; i < vStrings.Length; i++)
+                {
+                    if (vStrings[i] != "")
+                    {
+                        string[] vKv = vStrings[i].Split(new string[] { "=" }, StringSplitOptions.None);
+                        if (vKv[0] != "")
+                            aPropertys.Add(vKv[0], vKv[1]);
+                    }
+                }
+            }
         }
 
         /// <summary> 保存文件格式、版本 </summary>

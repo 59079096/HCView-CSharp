@@ -421,36 +421,39 @@ namespace EMRView
 
                     case HCAction.actDeleteItem:
                         {
-                            HCCustomItem vItem = aData.Items[aItemNo];
-                            if (vItem is DeGroup)  // 非设计模式不允许删除数据组
-                                vResult = false;
-                            else
-                            if (vItem is DeItem)
-                                vResult = (vItem as DeItem).DeleteAllow;
-                            else
-                            if (vItem is DeTable)
-                                vResult = (vItem as DeTable).DeleteAllow;
-                            else
-                            if (vItem is DeCheckBox)
-                                vResult = (vItem as DeCheckBox).DeleteAllow;
-                            else
-                            if (vItem is DeEdit)
-                                vResult = (vItem as DeEdit).DeleteAllow;
-                            else
-                            if (vItem is DeCombobox)
-                                vResult = (vItem as DeCombobox).DeleteAllow;
-                            else
-                            if (vItem is DeDateTimePicker)
-                                vResult = (vItem as DeDateTimePicker).DeleteAllow;
-                            else
-                            if (vItem is DeRadioGroup)
-                                vResult = (vItem as DeRadioGroup).DeleteAllow;
-                            else
-                            if (vItem is DeFloatBarCodeItem)
-                                vResult = (vItem as DeFloatBarCodeItem).DeleteAllow;
-                            else
-                            if (vItem is DeImageItem)
-                                vResult = (vItem as DeImageItem).DeleteAllow;
+                            if (!FDesignMode)
+                            {
+                                HCCustomItem vItem = aData.Items[aItemNo];
+                                if (vItem is DeGroup)  // 非设计模式不允许删除数据组
+                                    vResult = false;
+                                else
+                                if (vItem is DeItem)
+                                    vResult = (vItem as DeItem).DeleteAllow;
+                                else
+                                if (vItem is DeTable)
+                                    vResult = (vItem as DeTable).DeleteAllow;
+                                else
+                                if (vItem is DeCheckBox)
+                                    vResult = (vItem as DeCheckBox).DeleteAllow;
+                                else
+                                if (vItem is DeEdit)
+                                    vResult = (vItem as DeEdit).DeleteAllow;
+                                else
+                                if (vItem is DeCombobox)
+                                    vResult = (vItem as DeCombobox).DeleteAllow;
+                                else
+                                if (vItem is DeDateTimePicker)
+                                    vResult = (vItem as DeDateTimePicker).DeleteAllow;
+                                else
+                                if (vItem is DeRadioGroup)
+                                    vResult = (vItem as DeRadioGroup).DeleteAllow;
+                                else
+                                if (vItem is DeFloatBarCodeItem)
+                                    vResult = (vItem as DeFloatBarCodeItem).DeleteAllow;
+                                else
+                                if (vItem is DeImageItem)
+                                    vResult = (vItem as DeImageItem).DeleteAllow;
+                            }
                         }
 
                         break;
@@ -1628,7 +1631,7 @@ namespace EMRView
                     if (aPropName == "Propertys")
                     {
                         Dictionary<string, string> vPropertys = new Dictionary<string, string>();
-                        DeProp.SetPropertyString(aPropValue, vPropertys);
+                        HC.View.HC.SetPropertyString(aPropValue, vPropertys);
                         foreach (KeyValuePair<string, string> obj in vPropertys)
                         {
                             if (obj.Key == "Text")
@@ -1936,6 +1939,9 @@ namespace EMRView
         {
             if (FCaretProcInfo.EndNo > 0)
             {
+                if (propName == GroupProp.Index)
+                    return FCaretProcInfo.Index;
+
                 DeGroup vBeginGroup = this.ActiveSection.Page.Items[FCaretProcInfo.BeginNo] as DeGroup;
 
                 if (propName == GroupProp.Name)
