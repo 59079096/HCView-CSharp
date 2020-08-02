@@ -659,6 +659,11 @@ namespace HC.View
             }
         }
 
+        public static void RemoveProperty(Dictionary<string, string> propertys, string propName)
+        {
+            propertys.Remove(propName);
+        }
+
         /// <summary> 保存文件格式、版本 </summary>
         public static void _SaveFileFormatAndVersion(Stream aStream)
         {

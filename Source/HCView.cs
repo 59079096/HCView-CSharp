@@ -474,12 +474,6 @@ namespace HC.View
             if (FCaret == null)
                 return;
 
-            if ((!this.Focused && !FStyle.UpdateInfo.Draging) || ActiveSection.SelectExists())
-            {
-                FCaret.Hide();
-                return;
-            }
-
             // 初始化光标信息，为处理表格内往外迭代，只能放在这里
             HCCaretInfo vCaretInfo = new HCCaretInfo();
             vCaretInfo.X = 0;
@@ -489,7 +483,7 @@ namespace HC.View
 
             ActiveSection.GetPageCaretInfo(ref vCaretInfo);
 
-            if (!vCaretInfo.Visible)
+            if (!this.Focused || !vCaretInfo.Visible)
             {
                 FCaret.Hide();
                 return;
@@ -797,13 +791,13 @@ namespace HC.View
         {
             base.OnDragEnter(drgevent);
             drgevent.Effect = DragDropEffects.All;
-            FStyle.UpdateInfo.Draging = true;
+            FStyle.UpdateInfo.DragingSelected = true;
         }
 
         protected override void OnDragLeave(EventArgs e)
         {
             base.OnDragLeave(e);
-            FStyle.UpdateInfo.Draging = false;
+            FStyle.UpdateInfo.DragingSelected = false;
         }
 
         protected override void OnDragOver(DragEventArgs drgevent)
@@ -817,7 +811,7 @@ namespace HC.View
         protected override void OnDragDrop(DragEventArgs drgevent)
         {
             base.OnDragDrop(drgevent);
-            FStyle.UpdateInfo.Draging = false;
+            FStyle.UpdateInfo.DragingSelected = false;
             if (DoPasteRequest(User.CF_TEXT))
                 this.InsertText(drgevent.Data.GetData(DataFormats.Text).ToString());
         }
@@ -1090,11 +1084,11 @@ namespace HC.View
                 FOnSectionPaintPaperAfter(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
         }
 
-        protected virtual void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoSectionDrawItemPaintBefor(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnSectionDrawItemPaintBefor != null)
-                FOnSectionDrawItemPaintBefor(this, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnSectionDrawItemPaintBefor(this, aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
@@ -1104,7 +1098,7 @@ namespace HC.View
             // 背景处理完，绘制文本前触发，可处理高亮关键字
         }
 
-        protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (aData.Items[aItemNo].HyperLink != "")
@@ -1125,7 +1119,7 @@ namespace HC.View
             }
 
             if (FOnSectionDrawItemPaintAfter != null)
-                FOnSectionDrawItemPaintAfter(this, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnSectionDrawItemPaintAfter(this, aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
@@ -1247,7 +1241,7 @@ namespace HC.View
 
             CheckUpdateInfo();
 
-            if (FStyle.UpdateInfo.Draging)
+            if (FStyle.UpdateInfo.DragingSelected)
                 Cursor.Current = HC.GCursor;
             else
                 this.Cursor = HC.GCursor;
@@ -1270,7 +1264,7 @@ namespace HC.View
                 FSections[FActiveSectionIndex].MouseUp(vMouseArgs);
             }
 
-            if (FStyle.UpdateInfo.Draging)
+            if (FStyle.UpdateInfo.DragingSelected)
                 HC.GCursor = Cursors.Default;
 
             this.Cursor = HC.GCursor;
@@ -1278,7 +1272,7 @@ namespace HC.View
             CheckUpdateInfo();
 
             FStyle.UpdateInfo.Selecting = false;
-            FStyle.UpdateInfo.Draging = false;
+            FStyle.UpdateInfo.DragingSelected = false;
 
             base.OnMouseUp(e);
         }
@@ -2365,6 +2359,11 @@ namespace HC.View
         public int ZoomOut(int Value)
         {
             return (int)Math.Round(Value / FZoom);
+        }
+
+        public void MapChange()
+        {
+            this.DoMapChanged();
         }
 
         /// <summary> 重绘客户区域 </summary>
@@ -3954,6 +3953,11 @@ namespace HC.View
         public bool Replace(string aText)
         {
             return this.ActiveSection.Replace(aText);
+        }
+
+        public int NumberOfWords()
+        {
+            return this.SaveToText().Length;
         }
 
         // 属性部分

@@ -29,7 +29,7 @@ namespace EMRView
         }
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo,
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
+            RECT aDrawRect, RECT aClearRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if ((!aPaintInfo.Print) && (aData.Items[aItemNo] is DeItem))

@@ -384,12 +384,6 @@ namespace HC.View
             FMouseIn = false;
         }
 
-        public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
-        {
-            if (this.Active)
-                aCaretInfo.Visible = false;
-        }
-
         public override int GetOffsetAt(int x)
         {
             if (x <= FPaddingLeft)

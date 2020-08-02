@@ -59,7 +59,7 @@ namespace HC.View
             if (FCaret == null)
                 return;
 
-            if ((!this.Focused) || (!FStyle.UpdateInfo.Draging && FData.SelectExists()))
+            if ((!this.Focused) || (!FStyle.UpdateInfo.DragingSelected && FData.SelectExists()))
             {
                 FCaret.Hide();
                 return;
@@ -321,7 +321,7 @@ namespace HC.View
             //if (ShowHint)
             //    ProcessHint();
 
-            if (FStyle.UpdateInfo.Draging)
+            if (FStyle.UpdateInfo.DragingSelected)
                 Cursor.Current = HC.GCursor;
             else
                 this.Cursor = HC.GCursor;
@@ -340,7 +340,7 @@ namespace HC.View
                 e.Y - this.Padding.Top + FVScrollBar.Position, e.Delta);
             FData.MouseUp(vArgs);
 
-            if (FStyle.UpdateInfo.Draging)
+            if (FStyle.UpdateInfo.DragingSelected)
                 HC.GCursor = Cursors.Default;
 
             this.Cursor = HC.GCursor;
@@ -348,7 +348,7 @@ namespace HC.View
             CheckUpdateInfo();
 
             FStyle.UpdateInfo.Selecting = false;
-            FStyle.UpdateInfo.Draging = false;
+            FStyle.UpdateInfo.DragingSelected = false;
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)
@@ -413,7 +413,7 @@ namespace HC.View
             }
         }
 
-        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo) { }
 

@@ -152,7 +152,7 @@ namespace HC.View
     public delegate bool DataActionEventHandler(HCCustomData aData, int aItemNo, int aOffset, HCAction aAction);
 
     public delegate void DrawItemPaintEventHandler(HCCustomData aData, int aItemNo,
-      int aDrawItemNo, RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight,
+      int aDrawItemNo, RECT aDrawRect, RECT aClearRect, int aDataDrawLeft, int aDataDrawRight,
       int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
       HCCanvas aCanvas, PaintInfo aPaintInfo);
 
@@ -185,14 +185,14 @@ namespace HC.View
                 DoRemoveItem(item);
         }
 
-        private void DrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        private void DrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             int vDCState = ACanvas.Save();
             try
             {
-                this.DoDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
+                this.DoDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
                     aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
             }
             finally
@@ -201,14 +201,14 @@ namespace HC.View
             }
         }
 
-        private void DrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        private void DrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             int vDCState = aCanvas.Save();
             try
             {
-                this.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
+                this.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom, 
                     aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
             finally
@@ -354,6 +354,7 @@ namespace HC.View
                     if (SelectInfo.StartItemOffset == 0)
                         Items[aItemNo].SelectComplate();
                     else
+                    if (SelectInfo.StartItemOffset < this.GetItemOffsetAfter(aItemNo))
                         Items[aItemNo].SelectPart();
                 }
             }
@@ -364,6 +365,7 @@ namespace HC.View
                     if (SelectInfo.EndItemOffset == HC.OffsetAfter)
                         Items[aItemNo].SelectComplate();
                     else
+                    if (SelectInfo.EndItemOffset > HC.OffsetBefor)
                         Items[aItemNo].SelectPart();
                 
                 }
@@ -537,46 +539,37 @@ namespace HC.View
 
         protected void SetCaretDrawItemNo(int value)
         {
-            int vItemNo;
-
-            if (FCaretDrawItemNo != value)
+            if ((FCaretDrawItemNo >= 0) && (FCaretDrawItemNo < FDrawItems.Count))
             {
-                if ((FCaretDrawItemNo >= 0) && (FCaretDrawItemNo < FDrawItems.Count))
+                int vItemNo = FDrawItems[FCaretDrawItemNo].ItemNo;
+                if ((value >= 0) && (vItemNo != FDrawItems[value].ItemNo))
+                    FItems[vItemNo].Active = false;
+            }
+
+            FCaretDrawItemNo = value;
+
+            if (FStyle.States.Contain(HCState.hosLoading))
+                return;
+
+            SetCurStyleNo(FItems[FDrawItems[FCaretDrawItemNo].ItemNo].StyleNo);
+            SetCurParaNo(FItems[FDrawItems[FCaretDrawItemNo].ItemNo].ParaNo);
+
+            if (FCaretDrawItemNo >= 0)
+            {
+                if (FItems[FDrawItems[FCaretDrawItemNo].ItemNo].StyleNo < HCStyle.Null)
                 {
-                    vItemNo = FDrawItems[FCaretDrawItemNo].ItemNo;
-                    if ((value >= 0) && (vItemNo != FDrawItems[value].ItemNo))
-                        FItems[vItemNo].Active = false;
+                    if (FSelectInfo.StartItemOffset == HC.OffsetInner)
+                        FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
                 }
                 else
+                //if ((FSelectInfo.StartItemOffset > 0)  // 在Item上
+                //    && (FSelectInfo.StartItemOffset < FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Length))
                 {
-                    vItemNo = -1;
-                }
-
-                FCaretDrawItemNo = value;
-
-                if (FStyle.States.Contain(HCState.hosLoading))
-                    return;
-
-                SetCurStyleNo(FItems[FDrawItems[FCaretDrawItemNo].ItemNo].StyleNo);
-                SetCurParaNo(FItems[FDrawItems[FCaretDrawItemNo].ItemNo].ParaNo);
-
-                if ((FCaretDrawItemNo >= 0) && (FDrawItems[FCaretDrawItemNo].ItemNo != vItemNo))
-                {
-                    if (FItems[FDrawItems[FCaretDrawItemNo].ItemNo].StyleNo < HCStyle.Null)
-                    {
-                        if (FSelectInfo.StartItemOffset == HC.OffsetInner)
-                            FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
-                    }
-                    else
-                    //if ((FSelectInfo.StartItemOffset > 0)  // 在Item上
-                    //    && (FSelectInfo.StartItemOffset < FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Length))
-                    {
-                        FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
-                    }
-
-                    DoCaretItemChanged();
+                    FItems[FDrawItems[FCaretDrawItemNo].ItemNo].Active = true;
                 }
             }
+
+            DoCaretItemChanged();
         }
 
         protected int CalculateLineHeight(HCTextStyle aTextStyle, HCParaStyle aParaStyle)
@@ -719,13 +712,13 @@ namespace HC.View
 
         protected virtual void DoItemAction(int aItemNo, int aOffset, HCAction aAction) { }
 
-        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnDrawItemPaintBefor != null)
             {
-                FOnDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
         }
@@ -741,13 +734,13 @@ namespace HC.View
             }
         }
 
-        protected virtual void DoDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        protected virtual void DoDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             if (FOnDrawItemPaintAfter != null)
             {
-                FOnDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
             }
         }
@@ -1863,6 +1856,11 @@ namespace HC.View
 
                 if ((FSelectInfo.EndItemNo >= 0) && (Result < FItems.Count - 1))
                 {
+                    if (FDrawItems[Result + 1].ParaFirst)
+                    {
+
+                    }
+                    else
                     if (FItems[FSelectInfo.StartItemNo].StyleNo < HCStyle.Null)
                     {
                         if (FSelectInfo.StartItemOffset == HC.OffsetAfter)
@@ -1907,6 +1905,11 @@ namespace HC.View
                 else
                     return (vStartDNo == GetSelectEndDrawItemNo());
             }
+        }
+
+        public bool SelectInSameItem()
+        {
+            return FSelectInfo.StartItemNo == FSelectInfo.EndItemNo;
         }
 
         /// <summary> 取消选中 </summary>
@@ -2266,8 +2269,11 @@ namespace HC.View
                     if (FDrawItems[i].LineFirst)
                         vLineSpace = GetLineBlankSpace(i);
 
+                    vClearRect = vDrawRect;
+                    vClearRect.Inflate(0, -vLineSpace / 2);  // 除去行间距净Rect，即内容的显示区域
+
                     // 绘制内容前
-                    DrawItemPaintBefor(this, vDrawItem.ItemNo, i, vDrawRect, aDataDrawLeft, aDataDrawRight, 
+                    DrawItemPaintBefor(this, vDrawItem.ItemNo, i, vDrawRect, vClearRect, aDataDrawLeft, aDataDrawRight, 
                         aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
                     if (vPrioParaNo != vItem.ParaNo)  // 水平对齐方式
@@ -2276,8 +2282,6 @@ namespace HC.View
                         vAlignHorz = FStyle.ParaStyles[vItem.ParaNo].AlignHorz;  // 段内容水平对齐方式
                     }
 
-                    vClearRect = vDrawRect;
-                    vClearRect.Inflate(0, -vLineSpace / 2);  // 除去行间距净Rect，即内容的显示区域
                     if (vItem.StyleNo < HCStyle.Null)  // RectItem自行处理绘制
                     {
                         vRectItem = vItem as HCCustomRectItem;
@@ -2450,7 +2454,7 @@ namespace HC.View
                         }
                     }
 
-                    DrawItemPaintAfter(this, vDrawItem.ItemNo, i, vClearRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
+                    DrawItemPaintAfter(this, vDrawItem.ItemNo, i, vDrawRect, vClearRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
                         aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);  // 绘制内容后
                 }
             }

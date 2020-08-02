@@ -530,11 +530,6 @@ namespace HC.View
             return false;
         }
 
-        public override void GetCaretInfo(ref HCCaretInfo aCaretInfo)
-        {
-            aCaretInfo.Visible = false;
-        }
-
         public HCDateTimePicker(HCCustomData aOwnerData, DateTime aDateTime)
             : base(aOwnerData, string.Format("{0:yyyy-MM-dd HH:mm:ss}", aDateTime))
         {

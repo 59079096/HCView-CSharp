@@ -358,7 +358,7 @@ namespace EMRView
                 return;
 
             DeItem vDeItem = aData.Items[aItemNo] as DeItem;
-            if (vDeItem.StyleEx == StyleExtra.cseDel)
+            if (vDeItem.TraceStyle == DeTraceStyle.cseDel)
                 vDeItem.Visible = !(aTags == TTravTag.HideTrace);  // 隐藏/显示痕迹
         }
 
@@ -759,7 +759,7 @@ namespace EMRView
                 if (FEmrView.ActiveSection.ActiveData.ReadOnly || vDeItem.EditProtect)
                     return;
 
-                if (vDeItem.StyleEx != StyleExtra.cseNone)
+                if (vDeItem.TraceStyle != DeTraceStyle.cseNone)
                 { 
                     
                 }
@@ -1023,6 +1023,36 @@ namespace EMRView
             FEmrView.TraverseItem(vItemTraverse);
 
             FEmrView.FormatData();
+        }
+
+        public void NextDeItemAutoComplate()
+        {
+            HCViewData vViewData = FEmrView.ActiveSectionTopLevelData() as HCViewData;
+            int vItemNo = vViewData.GetActiveItemNo();
+
+            for (int i = vItemNo + 1; i < vViewData.Items.Count; i++)
+            {
+                if (vViewData.Items[i].StyleNo > HCStyle.Null
+                    && (vViewData.Items[i] as DeItem).IsElement)
+                {
+                    FEmrView.Style.UpdateInfoReCaret(false);
+                    FEmrView.Style.UpdateInfoReScroll();
+                    vViewData.SetSelectBound(i, 0, i, 0, false);
+                    FEmrView.MapChange();
+
+                    HCCustomDrawItem vDrawItem = FEmrView.GetTopLevelDrawItem();
+                    POINT vPt = FEmrView.GetTopLevelDrawItemViewCoord();
+                    vPt.Y += FEmrView.ZoomIn(vDrawItem.Height);
+                    vPt.Offset(FEmrView.Left, FEmrView.Top);
+                    HC.Win32.User.ClientToScreen(this.Handle, ref vPt);
+
+                    DeItem vDeItem = vViewData.Items[i] as DeItem;
+                    if (DoDeItemPopup(vDeItem))
+                        PopupForm().PopupDeItem(vDeItem, vPt);
+
+                    break;
+                }
+            }
         }
 
         /// <summary>

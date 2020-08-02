@@ -29,14 +29,14 @@ namespace HC.View
             ReStyle,  // 重新计算光标时获取光标处样式
             ReScroll,  // 滚动到光标位置
             Selecting,  // 全局划选标识
-            Draging;  // 全局拖拽标识
+            DragingSelected;  // 全局拖拽标识
         
         public UpdateInfo()
         {
             RePaint = false;
             ReCaret = false;
             ReStyle = false;
-            Draging = false;
+            DragingSelected = false;
         }
     }
 

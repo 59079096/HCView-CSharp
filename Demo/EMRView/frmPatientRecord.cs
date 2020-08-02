@@ -145,19 +145,19 @@ namespace EMRView
 
             if (TTravTag.Contains(aTags, TTravTag.WriteTraceInfo))
             {
-                switch (vDeItem.StyleEx)
+                switch (vDeItem.TraceStyle)
                 {
-                    case StyleExtra.cseNone:
+                    case DeTraceStyle.cseNone:
                         vDeItem[DeProp.Trace] = "";
                          break;
 
-                    case StyleExtra.cseDel:
+                    case DeTraceStyle.cseDel:
                         if (vDeItem[DeProp.Trace] == "")
                             vDeItem[DeProp.Trace] = UserInfo.Name + "(" + UserInfo.ID + ") 删除 "
                             + string.Format("{0:yyyy-MM-dd}", FServerInfo.DateTime);
                         break;
 
-                    case StyleExtra.cseAdd:
+                    case DeTraceStyle.cseAdd:
                         if (vDeItem[DeProp.Trace] == "")
                             vDeItem[DeProp.Trace] = UserInfo.Name + "(" + UserInfo.ID + ") 添加 "
                             + string.Format("{0:yyyy-MM-dd}", FServerInfo.DateTime);

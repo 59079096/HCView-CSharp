@@ -259,7 +259,10 @@ namespace HC.View
         }
 
         /// <summary> 更新光标位置 </summary>
-        public virtual void GetCaretInfo(ref HCCaretInfo aCaretInfo) { }
+        public virtual void GetCaretInfo(ref HCCaretInfo aCaretInfo)
+        {
+            aCaretInfo.Visible = false;
+        }
 
         public virtual void CheckFormatPageBreakBefor() { }
 
@@ -1280,13 +1283,6 @@ namespace HC.View
         public override bool CanDrag()
         {
             return !FResizing;
-        }
-
-        /// <summary> 更新光标位置 </summary>
-        public override void GetCaretInfo(ref HCCaretInfo ACaretInfo)
-        {
-            if (this.Active)
-                ACaretInfo.Visible = false;
         }
 
         public override bool SelectExists()

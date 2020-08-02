@@ -124,7 +124,7 @@ namespace EMRView
                 if (vActiveItem is DeItem)
                 {
                     DeItem vDeItem = vActiveItem as DeItem;
-                    if (vDeItem.StyleEx != StyleExtra.cseNone)
+                    if (vDeItem.TraceStyle != DeTraceStyle.cseNone)
                         vInfo += "-" + vDeItem.GetHint();
                     else
                     if (vDeItem.Active

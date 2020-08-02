@@ -1301,7 +1301,7 @@ namespace HC.View
             {
                 if (FMouseLBDowning || (e.Button == MouseButtons.Left))
                 {
-                    if (FDraging || OwnerData.Style.UpdateInfo.Draging)
+                    if (FDraging || OwnerData.Style.UpdateInfo.DragingSelected)
                     {
                         FMouseMoveRow = vMoveRow;
                         FMouseMoveCol = vMoveCol;
@@ -1372,7 +1372,7 @@ namespace HC.View
                         HC.GCursor = Cursors.HSplit;
             }
 
-            if (OwnerData.Style.UpdateInfo.Draging)
+            if (OwnerData.Style.UpdateInfo.DragingSelected)
                 FSelectCellRang.SetStart(FMouseMoveRow, FMouseMoveCol);
 
             return vResult;
@@ -1503,7 +1503,7 @@ namespace HC.View
                 }
             }
             else
-            if (FDraging || OwnerData.Style.UpdateInfo.Draging)
+            if (FDraging || OwnerData.Style.UpdateInfo.DragingSelected)
             {
                 FDraging = false;
                 vResizeInfo = GetCellAt(e.X, e.Y, ref vUpRow, ref vUpCol);
@@ -1688,7 +1688,7 @@ namespace HC.View
         {
             int vRow = -1, vCol = -1;
 
-            if (OwnerData.Style.UpdateInfo.Draging)
+            if (OwnerData.Style.UpdateInfo.DragingSelected)
             {
                 vRow = FMouseMoveRow;
                 vCol = FMouseMoveCol;
@@ -1745,7 +1745,7 @@ namespace HC.View
             else
                 vCaretCell = this[vRow, vCol];
 
-            if (OwnerData.Style.UpdateInfo.Draging)
+            if (OwnerData.Style.UpdateInfo.DragingSelected)
             {
                 if ((vCaretCell.CellData.MouseMoveItemNo < 0)
                     || (vCaretCell.CellData.MouseMoveItemOffset < 0))

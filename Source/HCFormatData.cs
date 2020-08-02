@@ -673,7 +673,7 @@ namespace HC.View
 
                 FindLineBreak(vText, aParaStyle.BreakRough, aCharOffset, ref viPlaceOffset);  // 判断从viPlaceOffset后打断是否合适
 
-                if ((viPlaceOffset == 0) && (aPos.X > aFmtLeft))  // 能放下的都不合适放到当前行且不是行首格式化，整体下移
+                if ((viPlaceOffset == 0) && (!vLineFirst) && (aPos.X > aFmtLeft))  // 能放下的都不合适放到当前行且不是行首格式化，整体下移
                 {
                     vRemainderWidth = aPlaceWidth;
                     FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);

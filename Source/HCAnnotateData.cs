@@ -623,10 +623,20 @@ namespace HC.View
         {
             base.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
 
+            if (!this.Style.UpdateInfo.DragingSelected && this.SelectExists())
+            {
+                if (this.SelectInSameDrawItem() && (this.Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null))
+                {
+
+                }
+                else
+                    aCaretInfo.Visible = false;
+            }
+
             int vCaretDrawItemNo = -1;
             if (this.CaretDrawItemNo < 0)
             {
-                if (Style.UpdateInfo.Draging)
+                if (Style.UpdateInfo.DragingSelected)
                     vCaretDrawItemNo = GetDrawItemNoByOffset(this.MouseMoveItemNo, this.MouseMoveItemOffset);
                 else
                     vCaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
@@ -635,7 +645,7 @@ namespace HC.View
                 vCaretDrawItemNo = CaretDrawItemNo;
 
             HCDataAnnotate vDataAnnotate = null;
-            if (Style.UpdateInfo.Draging)
+            if (Style.UpdateInfo.DragingSelected)
             {
                 vDataAnnotate = GetDrawItemFirstDataAnnotateAt(vCaretDrawItemNo,
                     GetDrawItemOffsetWidth(vCaretDrawItemNo,

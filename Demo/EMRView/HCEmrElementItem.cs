@@ -18,7 +18,7 @@ using System.Xml;
 
 namespace EMRView
 {
-    public enum StyleExtra : byte  // 痕迹样式
+    public enum DeTraceStyle : byte  // 痕迹样式
     {
         cseNone, cseDel, cseAdd
     }
@@ -152,7 +152,7 @@ namespace EMRView
             FDeleteAllow,  // 是否允许删除
             FAllocValue;  // 是否分配过值
 
-        private StyleExtra FStyleEx;
+        private DeTraceStyle FTraceStyle;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -266,7 +266,7 @@ namespace EMRView
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            FStyleEx = (source as DeItem).StyleEx;
+            FTraceStyle = (source as DeItem).TraceStyle;
             FEditProtect = (source as DeItem).EditProtect;
             FDeleteAllow = (source as DeItem).DeleteAllow;
             FCopyProtect = (source as DeItem).CopyProtect;
@@ -283,7 +283,7 @@ namespace EMRView
             {
                 DeItem vDeItem = aItem as DeItem;
                 Result = ((this[DeProp.Index] == vDeItem[DeProp.Index])
-                    && (this.FStyleEx == vDeItem.StyleEx)
+                    && (this.FTraceStyle == vDeItem.TraceStyle)
                     && (FEditProtect == vDeItem.FEditProtect)
                     && (FDeleteAllow == vDeItem.DeleteAllow)
                     && (FCopyProtect == vDeItem.CopyProtect)
@@ -296,7 +296,7 @@ namespace EMRView
 
         public override string GetHint()
         {
-            if (FStyleEx == StyleExtra.cseNone)
+            if (FTraceStyle == DeTraceStyle.cseNone)
                 return this[DeProp.Name];
             else
                 return this[DeProp.Trace];
@@ -369,7 +369,7 @@ namespace EMRView
 
             aStream.WriteByte(vByte);
 
-            vByte = (byte)FStyleEx;
+            vByte = (byte)FTraceStyle;
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
@@ -390,7 +390,7 @@ namespace EMRView
                 FDeleteAllow = true;
 
             vByte = (byte)aStream.ReadByte();
-            FStyleEx = (StyleExtra)vByte;
+            FTraceStyle = (DeTraceStyle)vByte;
 
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
@@ -415,7 +415,7 @@ namespace EMRView
             if (FDeleteAllow)
                 aNode.SetAttribute("deleteallow", "1");
 
-            aNode.SetAttribute("styleex", ((byte)FStyleEx).ToString());
+            aNode.SetAttribute("tracestyle", ((byte)FTraceStyle).ToString());
             string vS = HC.View.HC.GetPropertyString(FPropertys);
             if (vS != "")
                 aNode.SetAttribute("property", vS);
@@ -435,8 +435,14 @@ namespace EMRView
                 FDeleteAllow = true;
 
             byte vByte = 0;
-            bool vHasValue = byte.TryParse(aNode.GetAttribute("styleex"), out vByte);
-            FStyleEx = (StyleExtra)vByte;
+            
+            if (aNode.HasAttribute("styleex"))
+                byte.TryParse(aNode.GetAttribute("styleex"), out vByte);
+            else
+            if (aNode.HasAttribute("tracestyle"))
+                byte.TryParse(aNode.GetAttribute("tracestyle"), out vByte);
+
+            FTraceStyle = (DeTraceStyle)vByte;
             if (aNode.HasAttribute("property"))
             {
                 string vProp = HC.View.HC.GetXmlRN(aNode.GetAttribute("property"));
@@ -464,10 +470,10 @@ namespace EMRView
             get { return FMouseIn; }
         }
 
-        public StyleExtra StyleEx
+        public DeTraceStyle TraceStyle
         {
-            get { return FStyleEx; }
-            set { FStyleEx = value; }
+            get { return FTraceStyle; }
+            set { FTraceStyle = value; }
         }
 
         public bool EditProtect

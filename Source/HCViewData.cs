@@ -54,7 +54,11 @@ namespace HC.View
                     if ((Items[aItemNo] as HCDomainItem).MarkType == MarkType.cmtEnd)
                     {
                         int vItemNo = GetDomainAnother(aItemNo);  // 找起始
-                        Result = (vItemNo >= SelectInfo.StartItemNo) && (vItemNo <= SelectInfo.EndItemNo);
+                        if (vItemNo == SelectInfo.StartItemNo)
+                            Result = SelectInfo.StartItemOffset == HC.OffsetBefor;
+                        else
+                            Result = (vItemNo >= SelectInfo.StartItemNo) && (vItemNo <= SelectInfo.EndItemNo);
+
                         if (Result)
                             FDomainStartDeletes.Add(vItemNo);  // 记录下来
                     }
@@ -148,10 +152,10 @@ namespace HC.View
         }
 
         protected override void DoDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, 
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
+            RECT aDrawRect, RECT aClearRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+            base.DoDrawItemPaintBefor(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
 
             if (!APaintInfo.Print)  // 拼接域范围
@@ -186,7 +190,25 @@ namespace HC.View
         }
 
         #region DoDrawItemPaintAfter 子方法
-        private void DrawLineLastMrak(HCCanvas aCanvas, RECT aDrawRect, PaintInfo aPaintInfo)
+        private bool SelectOffsetAfter_(int itemNo, int drawItemNo)
+        {
+            bool vResult = Items[itemNo].IsSelectComplate;
+            if (!vResult && SelectInfo.EndItemNo >= 0)
+            {
+                if (itemNo == SelectInfo.EndItemNo)
+                {
+                    if (SelectInfo.EndItemOffset == DrawItems[drawItemNo].CharOffsetEnd())
+                        vResult = true;
+                }
+                else
+                    if (itemNo == SelectInfo.StartItemNo)
+                    vResult = true;
+            }
+
+            return vResult;
+        }
+
+        private void DrawLineLastMrak(HCCanvas aCanvas, RECT aDrawRect, RECT clearRect, int itemNo, int drawItemNo, PaintInfo aPaintInfo)
         {
             aCanvas.Pen.BeginUpdate();
             try
@@ -206,18 +228,25 @@ namespace HC.View
                 GDI.SetViewportExtEx(aCanvas.Handle, aPaintInfo.WindowWidth, aPaintInfo.WindowHeight, ref vPt);
                 try
                 {
-                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 4, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
-                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 8);
-                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
+                    if (SelectOffsetAfter_(itemNo, drawItemNo))
+                    {
+                        aCanvas.Brush.Color = Style.SelColor;
+                        aCanvas.FillRect(new RECT(aPaintInfo.GetScaleX(aDrawRect.Right), aPaintInfo.GetScaleY(aDrawRect.Top),
+                            aPaintInfo.GetScaleX(aDrawRect.Right + 10), aPaintInfo.GetScaleY(aDrawRect.Bottom)));
+                    }
 
-                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right), aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
-                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 6, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 3);
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(clearRect.Right) + 4, aPaintInfo.GetScaleY(clearRect.Bottom) - 8);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(clearRect.Right) + 6, aPaintInfo.GetScaleY(clearRect.Bottom) - 8);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(clearRect.Right) + 6, aPaintInfo.GetScaleY(clearRect.Bottom) - 3);
 
-                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 4);
-                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 1, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 1);
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(clearRect.Right), aPaintInfo.GetScaleY(clearRect.Bottom) - 3);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(clearRect.Right) + 6, aPaintInfo.GetScaleY(clearRect.Bottom) - 3);
 
-                    aCanvas.MoveTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom) - 5);
-                    aCanvas.LineTo(aPaintInfo.GetScaleX(aDrawRect.Right) + 2, aPaintInfo.GetScaleY(aDrawRect.Bottom));
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(clearRect.Right) + 1, aPaintInfo.GetScaleY(clearRect.Bottom) - 4);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(clearRect.Right) + 1, aPaintInfo.GetScaleY(clearRect.Bottom) - 1);
+
+                    aCanvas.MoveTo(aPaintInfo.GetScaleX(clearRect.Right) + 2, aPaintInfo.GetScaleY(clearRect.Bottom) - 5);
+                    aCanvas.LineTo(aPaintInfo.GetScaleX(clearRect.Right) + 2, aPaintInfo.GetScaleY(clearRect.Bottom));
                 }
                 finally
                 {
@@ -227,27 +256,33 @@ namespace HC.View
             }
             else
             {
-                aCanvas.MoveTo(aDrawRect.Right + 4, aDrawRect.Bottom - 8);
-                aCanvas.LineTo(aDrawRect.Right + 6, aDrawRect.Bottom - 8);
-                aCanvas.LineTo(aDrawRect.Right + 6, aDrawRect.Bottom - 3);
+                if (SelectOffsetAfter_(itemNo, drawItemNo))
+                {
+                    aCanvas.Brush.Color = Style.SelColor;
+                    aCanvas.FillRect(new RECT(aDrawRect.Right, aDrawRect.Top, aDrawRect.Right + 10, aDrawRect.Bottom));
+                }
 
-                aCanvas.MoveTo(aDrawRect.Right, aDrawRect.Bottom - 3);
-                aCanvas.LineTo(aDrawRect.Right + 6, aDrawRect.Bottom - 3);
+                aCanvas.MoveTo(clearRect.Right + 4, clearRect.Bottom - 8);
+                aCanvas.LineTo(clearRect.Right + 6, clearRect.Bottom - 8);
+                aCanvas.LineTo(clearRect.Right + 6, clearRect.Bottom - 3);
 
-                aCanvas.MoveTo(aDrawRect.Right + 1, aDrawRect.Bottom - 4);
-                aCanvas.LineTo(aDrawRect.Right + 1, aDrawRect.Bottom - 1);
+                aCanvas.MoveTo(clearRect.Right, clearRect.Bottom - 3);
+                aCanvas.LineTo(clearRect.Right + 6, clearRect.Bottom - 3);
 
-                aCanvas.MoveTo(aDrawRect.Right + 2, aDrawRect.Bottom - 5);
-                aCanvas.LineTo(aDrawRect.Right + 2, aDrawRect.Bottom);
+                aCanvas.MoveTo(clearRect.Right + 1, clearRect.Bottom - 4);
+                aCanvas.LineTo(clearRect.Right + 1, clearRect.Bottom - 1);
+
+                aCanvas.MoveTo(clearRect.Right + 2, clearRect.Bottom - 5);
+                aCanvas.LineTo(clearRect.Right + 2, clearRect.Bottom);
             }
         }
         #endregion
 
         protected override void DoDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, 
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
+            RECT aDrawRect, RECT aClearRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop,
             int ADataScreenBottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
-            base.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+            base.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                 aDataDrawBottom, aDataScreenTop, ADataScreenBottom, ACanvas, APaintInfo);
             
             if (!APaintInfo.Print)
@@ -255,10 +290,10 @@ namespace HC.View
                 if (aData.Style.ShowParaLastMark)
                 {
                     if ((aDrawItemNo < DrawItems.Count - 1) && DrawItems[aDrawItemNo + 1].ParaFirst)
-                        DrawLineLastMrak(ACanvas, aDrawRect, APaintInfo);  // 段尾的换行符
+                        DrawLineLastMrak(ACanvas, aDrawRect, aClearRect, aItemNo, aDrawItemNo, APaintInfo);  // 段尾的换行符
                     else
                         if (aDrawItemNo == DrawItems.Count - 1)
-                            DrawLineLastMrak(ACanvas, aDrawRect, APaintInfo);  // 段尾的换行符
+                            DrawLineLastMrak(ACanvas, aDrawRect, aClearRect, aItemNo, aDrawItemNo, APaintInfo);  // 段尾的换行符
                 }
             }
         }
@@ -1230,7 +1265,7 @@ namespace HC.View
 
         public void GetCaretInfoCur(ref HCCaretInfo aCaretInfo)
         {
-            if (Style.UpdateInfo.Draging)
+            if (Style.UpdateInfo.DragingSelected)
                 this.GetCaretInfo(this.MouseMoveItemNo, this.MouseMoveItemOffset, ref aCaretInfo);
             else
                 this.GetCaretInfo(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, ref aCaretInfo);

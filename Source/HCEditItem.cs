@@ -296,7 +296,7 @@ namespace HC.View
                 FSelEnd = vSel;
             }
 
-            if (OwnerData.Style.UpdateInfo.Draging)
+            if (OwnerData.Style.UpdateInfo.DragingSelected)
                 this.DisSelect();
 
             return base.MouseUp(e);

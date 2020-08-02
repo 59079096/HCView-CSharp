@@ -19,6 +19,7 @@ namespace HC.View
         private HCImageToolBar FImageToolBar;
         private POINT FMouseViewPt;
         private bool FUseTableTool, FUseImageTool;
+        private HCToolState FState;
         private EventHandler FOnTableToolPropertyClick;
 
         private void DoTableToolPropertyClick(object sender, EventArgs e)
@@ -122,6 +123,9 @@ namespace HC.View
         {
             if (this.IsHandleCreated && (FTableToolBar != null))
             {
+                if (FState == HCToolState.hcsRemoveItem)
+                    return;
+
                 RECT vRect = aRect;
                 vRect.Offset(FTableToolBar.Left, FTableToolBar.Top);
                 UpdateView(vRect);
@@ -143,6 +147,9 @@ namespace HC.View
         {
             if (this.IsHandleCreated && (FImageToolBar != null))
             {
+                if (FState == HCToolState.hcsRemoveItem)
+                    return;
+
                 RECT vRect = aRect;
                 vRect.Offset(FImageToolBar.Left, FImageToolBar.Top);
                 UpdateView(vRect);
@@ -501,24 +508,32 @@ namespace HC.View
             base.DoSectionRemoveItem(sender, aData, aItem);
             if (aItem == FActiveItem)
             {
-                if (FActiveItem is HCImageItem)
+                FState = HCToolState.hcsRemoveItem;
+                try
                 {
-                    (FActiveItem as HCImageItem).ShapeManager.DisActive();
-                    FImageToolBar.Visible = false;
-                }
-                else
-                if (FActiveItem is HCTableItem)  // 是表格
-                    FTableToolBar.Visible = false;
+                    if (FActiveItem is HCImageItem)
+                    {
+                        (FActiveItem as HCImageItem).ShapeManager.DisActive();
+                        FImageToolBar.Visible = false;
+                    }
+                    else
+                    if (FActiveItem is HCTableItem)  // 是表格
+                        FTableToolBar.Visible = false;
 
-                FActiveItem = null;
+                    FActiveItem = null;
+                }
+                finally
+                {
+                    FState = HCToolState.hcsNone;
+                }
             }
         }
 
         protected override void DoSectionDrawItemPaintAfter(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, 
-            RECT aDrawRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, 
+            RECT aDrawRect, RECT aClearRect, int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, 
             int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            base.DoSectionDrawItemPaintAfter(sender, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight, 
+            base.DoSectionDrawItemPaintAfter(sender, aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight, 
                 aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
 
             if ((aData == FTopData) && (aData.Items[aItemNo] == FActiveItem))
@@ -633,5 +648,11 @@ namespace HC.View
             get { return FOnTableToolPropertyClick; }
             set { FOnTableToolPropertyClick = value; }
         }
+    }
+
+    public enum HCToolState : byte
+    {
+        hcsNone = 0,
+        hcsRemoveItem = 1
     }
 }

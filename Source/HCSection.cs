@@ -59,7 +59,7 @@ namespace HC.View
     public delegate void SectionPaintEventHandler(object sender, int aPageIndex,
         RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo);
 
-    public delegate void SectionDrawItemPaintEventHandler(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+    public delegate void SectionDrawItemPaintEventHandler(object sender, HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
         int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo);
 
     public delegate void SectionDataItemEventHandler(object sender, HCCustomData aData, HCCustomItem aItem);
@@ -180,12 +180,12 @@ namespace HC.View
                 return new POINT(0, 0);
         }
 
-        private void DoDataDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        private void DoDataDrawItemPaintBefor(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FOnDrawItemPaintBefor != null)
-                FOnDrawItemPaintBefor(this, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintBefor(this, aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
@@ -197,12 +197,12 @@ namespace HC.View
                     aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
-        private void DoDataDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect,
+        private void DoDataDrawItemPaintAfter(HCCustomData aData, int aItemNo, int aDrawItemNo, RECT aDrawRect, RECT aClearRect,
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             if (FOnDrawItemPaintAfter != null)
-                FOnDrawItemPaintAfter(this, aData, aItemNo, aDrawItemNo, aDrawRect, aDataDrawLeft, aDataDrawRight,
+                FOnDrawItemPaintAfter(this, aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
@@ -1442,7 +1442,7 @@ namespace HC.View
         public virtual void GetPageCaretInfo(ref HCCaretInfo aCaretInfo)
         {
             int vMarginLeft = -1, vPageIndex = -1;
-            if (FStyle.UpdateInfo.Draging)
+            if (FStyle.UpdateInfo.DragingSelected)
                 vPageIndex = FMousePageIndex;
             else
                 vPageIndex = FActivePageIndex;
