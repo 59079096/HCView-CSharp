@@ -145,23 +145,26 @@ namespace EMRView
 
             if (TTravTag.Contains(aTags, TTravTag.WriteTraceInfo))
             {
-                switch (vDeItem.TraceStyle)
+                if (vDeItem.TraceStyles.Value == 0)
                 {
-                    case DeTraceStyle.cseNone:
-                        vDeItem[DeProp.Trace] = "";
-                         break;
-
-                    case DeTraceStyle.cseDel:
-                        if (vDeItem[DeProp.Trace] == "")
-                            vDeItem[DeProp.Trace] = UserInfo.Name + "(" + UserInfo.ID + ") 删除 "
+                    vDeItem[DeProp.TraceAdd] = "";
+                    vDeItem[DeProp.TraceDel] = "";
+                }
+                else
+                {
+                    if (vDeItem.TraceStyles.Contains((byte)DeTraceStyle.cseDel) && vDeItem[DeProp.TraceDel] == "")  // 是删除痕迹但没有删除信息，说明是本次的删除痕迹
+                    {
+                        //vDeItem[DeProp.TraceDelLevel] = DeTraceLevel.Two;  // 删除痕迹级别，请根据需要赋值实际业务中的痕迹级别
+                        vDeItem[DeProp.TraceDel] = UserInfo.Name + "(" + UserInfo.ID + ") 删除 "
                             + string.Format("{0:yyyy-MM-dd}", FServerInfo.DateTime);
-                        break;
+                    }
 
-                    case DeTraceStyle.cseAdd:
-                        if (vDeItem[DeProp.Trace] == "")
-                            vDeItem[DeProp.Trace] = UserInfo.Name + "(" + UserInfo.ID + ") 添加 "
+                    if (vDeItem.TraceStyles.Contains((byte)DeTraceStyle.cseAdd) && vDeItem[DeProp.TraceAdd] == "")  // 是新增痕迹但没有痕迹信息，说明是本次新增的痕迹
+                    {
+                        //vDeItem[DeProp.TraceAddLevel] = DeTraceLevel.Two;  // 添加痕迹级别，请根据需要赋值实际业务中的痕迹级别
+                        vDeItem[DeProp.TraceAdd] = UserInfo.Name + "(" + UserInfo.ID + ") 添加 "
                             + string.Format("{0:yyyy-MM-dd}", FServerInfo.DateTime);
-                        break;
+                    }
                 }
             }
         }

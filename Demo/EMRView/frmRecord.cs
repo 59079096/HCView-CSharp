@@ -358,7 +358,7 @@ namespace EMRView
                 return;
 
             DeItem vDeItem = aData.Items[aItemNo] as DeItem;
-            if (vDeItem.TraceStyle == DeTraceStyle.cseDel)
+            if (vDeItem.TraceStyles.Contains((Byte)DeTraceStyle.cseDel))
                 vDeItem.Visible = !(aTags == TTravTag.HideTrace);  // 隐藏/显示痕迹
         }
 
@@ -759,7 +759,7 @@ namespace EMRView
                 if (FEmrView.ActiveSection.ActiveData.ReadOnly || vDeItem.EditProtect)
                     return;
 
-                if (vDeItem.TraceStyle != DeTraceStyle.cseNone)
+                if (vDeItem.TraceStyles.Value != 0)
                 { 
                     
                 }
