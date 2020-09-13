@@ -38,7 +38,7 @@ namespace EMRView
 
     public class DeGroup : HCDomainItem
     {
-        private bool FReadOnly;
+        private bool FChanged, FReadOnly;
         #if PROCSERIES
         private bool FIsProc;
         #endif
@@ -174,6 +174,17 @@ namespace EMRView
         {
             get { return FReadOnly; }
             set { FReadOnly = value; }
+        }
+
+        public bool Changed
+        {
+            get { return FChanged; }
+            set { FChanged = value; }
+        }
+
+        public string Index
+        {
+            get { return this.GetValue(GroupProp.Index); }
         }
 
         #if PROCSERIES

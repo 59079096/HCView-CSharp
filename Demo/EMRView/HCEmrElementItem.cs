@@ -20,7 +20,12 @@ namespace EMRView
 {
     public enum DeTraceStyle : byte  // 痕迹样式
     {
-        cseNone, cseDel, cseAdd
+        /// <summary> 删除痕迹 </summary>
+        cseDel = 1,
+        /// <summary> 新增痕迹 </summary>
+        cseAdd = 2,
+        /// <summary> 修改痕迹 </summary>
+        cesMod = 4
     }
 
     /// <summary> 数据元属性 </summary>
@@ -47,8 +52,18 @@ namespace EMRView
         /// <summary> 受控词汇编码(值编码) </summary>
         public const string CMVVCode = "CMVVCode";
 
-        /// <summary> 痕迹信息 </summary>
+        /// <summary> 痕迹信息(为兼容历史) </summary>
         public const string Trace = "Trace";
+
+        /// <summary> 删除痕迹信息 </summary>
+        public const string TraceDel = "TcDel";
+        /// <summary> 添加痕迹信息 </summary>
+        public const string TraceAdd = "TcAdd";
+
+        /// <summary> 删除痕迹的级别 </summary>
+        public const string TraceDelLevel = "TcDelL";
+        /// <summary> 添加痕迹的级别 </summary>
+        public const string TraceAddLevel = "TcAddL";
 
         /// <summary> 隐私信息 </summary>
         public const string Secret = "Secret";
@@ -58,6 +73,18 @@ namespace EMRView
 
         /// <summary> 元素未填写时背景色 </summary>
         public static Color DE_NOCHECKCOLOR = Color.FromArgb(0xFF, 0xDD, 0x80);
+    }
+
+    public static class DeTraceLevel : Object
+    {
+        /// <summary> 无医师级别 </summary>
+        public const string None = "";
+        /// <summary> 住院医师 </summary>
+        public const string One = "1";
+        /// <summary> 主治医师 </summary>
+        public const string Two = "2";
+        /// <summary> 主任医师 </summary>
+        public const string Three = "3";
     }
 
     /// <summary> 数据元类型 </summary>
@@ -141,6 +168,8 @@ namespace EMRView
         }
     }
 
+    public class DeTraceStyles : HCSet { }
+
     /// <summary> 电子病历数据元对象 </summary>
     public sealed class DeItem : EmrTextItem  // 不可继承
     {
@@ -152,7 +181,7 @@ namespace EMRView
             FDeleteAllow,  // 是否允许删除
             FAllocValue;  // 是否分配过值
 
-        private DeTraceStyle FTraceStyle;
+        private DeTraceStyles FTraceStyles;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -165,10 +194,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            if (value.IndexOf("=") >= 0)
-                throw new Exception("属性值中不允许有=号");
-
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         private bool GetIsElement()
@@ -199,6 +225,7 @@ namespace EMRView
             FAllocValue = false;
             FOutOfRang = false;
             FMouseIn = false;
+            FTraceStyles = new DeTraceStyles();
         }
 
         public DeItem(string aText) : base(aText)
@@ -207,6 +234,7 @@ namespace EMRView
             FEditProtect = false;
             FDeleteAllow = true;
             FMouseIn = false;
+            FTraceStyles = new DeTraceStyles();
         }
 
         ~DeItem()
@@ -266,7 +294,7 @@ namespace EMRView
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            FTraceStyle = (source as DeItem).TraceStyle;
+            FTraceStyles.Value = (source as DeItem).TraceStyles.Value;
             FEditProtect = (source as DeItem).EditProtect;
             FDeleteAllow = (source as DeItem).DeleteAllow;
             FCopyProtect = (source as DeItem).CopyProtect;
@@ -283,12 +311,15 @@ namespace EMRView
             {
                 DeItem vDeItem = aItem as DeItem;
                 Result = ((this[DeProp.Index] == vDeItem[DeProp.Index])
-                    && (this.FTraceStyle == vDeItem.TraceStyle)
+                    && (this.FTraceStyles.Value == vDeItem.TraceStyles.Value)
                     && (FEditProtect == vDeItem.FEditProtect)
                     && (FDeleteAllow == vDeItem.DeleteAllow)
                     && (FCopyProtect == vDeItem.CopyProtect)
-                    && (FAllocValue == vDeItem.AllocValue)
-                    && (this[DeProp.Trace] == vDeItem[DeProp.Trace])); ;
+                    //&& (FAllocValue == vDeItem.AllocValue)
+                    && (this[DeProp.TraceDel] == vDeItem[DeProp.TraceDel])
+                    && (this[DeProp.TraceAdd] == vDeItem[DeProp.TraceAdd])
+                    && (this[DeProp.TraceDelLevel] == vDeItem[DeProp.TraceDelLevel])
+                    && (this[DeProp.TraceAddLevel] == vDeItem[DeProp.TraceAddLevel]));
             }
 
             return Result;
@@ -296,10 +327,22 @@ namespace EMRView
 
         public override string GetHint()
         {
-            if (FTraceStyle == DeTraceStyle.cseNone)
+            if (FTraceStyles.Value == 0)
                 return this[DeProp.Name];
             else
-                return this[DeProp.Trace];
+            {
+                string vsAdd = this[DeProp.TraceAdd];
+                string vsDel = this[DeProp.TraceDel];
+                if (vsAdd != "")
+                {
+                    if (vsDel != "")
+                        return vsAdd + "\r\n" + vsDel;
+                    else
+                        return vsAdd;
+                }
+                else
+                    return vsDel;
+            }
         }
 
         public void DeleteProperty(string propName)
@@ -369,7 +412,7 @@ namespace EMRView
 
             aStream.WriteByte(vByte);
 
-            vByte = (byte)FTraceStyle;
+            vByte = FTraceStyles.Value;
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
@@ -390,11 +433,40 @@ namespace EMRView
                 FDeleteAllow = true;
 
             vByte = (byte)aStream.ReadByte();
-            FTraceStyle = (DeTraceStyle)vByte;
+            if (aFileVersion > 46)
+                FTraceStyles.Value = vByte;
+            else
+            {
+                if (vByte == 0)
+                    FTraceStyles.Value = 0;
+                else
+                if (vByte == 1)
+                    FTraceStyles.Value = (byte)DeTraceStyle.cseDel;
+                else
+                    FTraceStyles.Value = (byte)DeTraceStyle.cseAdd;
+            }
 
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+
+            if (aFileVersion <= 46)
+            {
+                if (this[DeProp.Trace] != "")
+                {
+                    if (vByte == 0)
+                    {
+
+                    }
+                    else
+                    if (vByte == 1)
+                        this[DeProp.TraceDel] = this[DeProp.Trace];
+                    else
+                        this[DeProp.TraceAdd] = this[DeProp.Trace];
+
+                    this[DeProp.Trace] = "";
+                }
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -415,7 +487,7 @@ namespace EMRView
             if (FDeleteAllow)
                 aNode.SetAttribute("deleteallow", "1");
 
-            aNode.SetAttribute("tracestyle", ((byte)FTraceStyle).ToString());
+            aNode.SetAttribute("tracestyles", FTraceStyles.Value.ToString());
             string vS = HC.View.HC.GetPropertyString(FPropertys);
             if (vS != "")
                 aNode.SetAttribute("property", vS);
@@ -435,14 +507,28 @@ namespace EMRView
                 FDeleteAllow = true;
 
             byte vByte = 0;
-            
+
             if (aNode.HasAttribute("styleex"))
                 byte.TryParse(aNode.GetAttribute("styleex"), out vByte);
             else
             if (aNode.HasAttribute("tracestyle"))
+            {
                 byte.TryParse(aNode.GetAttribute("tracestyle"), out vByte);
+                if (vByte == 0)
+                    FTraceStyles.Value = 0;
+                else
+                if (vByte == 1)
+                    FTraceStyles.Value = (byte)DeTraceStyle.cseDel;
+                else
+                    FTraceStyles.Value = (byte)DeTraceStyle.cseAdd;
+            }
+            else
+            if (aNode.HasAttribute("tracestyles"))
+            {
+                byte.TryParse(aNode.GetAttribute("tracestyle"), out vByte);
+                FTraceStyles.Value = vByte;
+            }
 
-            FTraceStyle = (DeTraceStyle)vByte;
             if (aNode.HasAttribute("property"))
             {
                 string vProp = HC.View.HC.GetXmlRN(aNode.GetAttribute("property"));
@@ -470,10 +556,10 @@ namespace EMRView
             get { return FMouseIn; }
         }
 
-        public DeTraceStyle TraceStyle
+        public DeTraceStyles TraceStyles
         {
-            get { return FTraceStyle; }
-            set { FTraceStyle = value; }
+            get { return FTraceStyles; }
+            set { FTraceStyles = value; }
         }
 
         public bool EditProtect
@@ -533,7 +619,7 @@ namespace EMRView
 
         private void SetValue(string key, string  value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         public DeTable(HCCustomData aOwnerData, int aRowCount, int aColCount, int aWidth) 
@@ -667,7 +753,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         public DeCheckBox(HCCustomData aOwnerData, string aText, bool aChecked) : base(aOwnerData, aText, aChecked)
@@ -783,6 +869,137 @@ namespace EMRView
         }
     }
 
+    public class DeButton : HCButtonItem
+    {
+        private bool FEditProtect, FDeleteAllow;
+        private Dictionary<string, string> FPropertys;
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
+        }
+
+        public DeButton(HCCustomData aOwnerData, string aText) : base(aOwnerData, aText)
+        {
+            FDeleteAllow = true;
+            FPropertys = new Dictionary<string, string>();
+        }
+
+        ~DeButton()
+        {
+
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FEditProtect = (source as DeEdit).EditProtect;
+            FDeleteAllow = (source as DeEdit).DeleteAllow;
+            string vS = HC.View.HC.GetPropertyString((source as DeEdit).Propertys);
+            HC.View.HC.SetPropertyString(vS, FPropertys);
+        }
+
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStreamRange(aStream, aStart, aEnd);
+
+            byte vByte = 0;
+            if (FEditProtect)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FDeleteAllow)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
+
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+
+            byte vByte = (byte)aStream.ReadByte();
+            FEditProtect = (vByte >> 7) == 1;
+
+            if (aFileVersion > 34)
+                FDeleteAllow = (vByte >> 6) == 1;
+            else
+                FDeleteAllow = true;
+
+            string vS = "";
+            HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+            HC.View.HC.SetPropertyString(vS, FPropertys);
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
+            if (FDeleteAllow)
+                aNode.SetAttribute("deleteallow", "1");
+
+            aNode.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+
+            if (aNode.HasAttribute("deleteallow"))
+                FDeleteAllow = aNode.GetAttribute("deleteallow") == "1";
+            else
+                FDeleteAllow = true;
+
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            HC.View.HC.SetPropertyString(vProp, FPropertys);
+        }
+
+        public void ToJson(string aJsonObj)
+        {
+
+        }
+
+        public void ParseJson(string aJsonObj)
+        {
+
+        }
+
+        public bool EditProtect
+        {
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
+        }
+
+        public bool DeleteAllow
+        {
+            get { return FDeleteAllow; }
+            set { FDeleteAllow = value; }
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
+        }
+    }
+
     public class DeEdit : HCEditItem
     {
         private bool FEditProtect, FDeleteAllow;
@@ -798,7 +1015,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         public DeEdit(HCCustomData aOwnerData, string aText) : base(aOwnerData, aText)
@@ -929,7 +1146,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         public DeCombobox(HCCustomData aOwnerData, string aText) : base(aOwnerData, aText)
@@ -1061,7 +1278,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         public DeDateTimePicker(HCCustomData aOwnerData, DateTime aDateTime) : base(aOwnerData, aDateTime)
@@ -1192,7 +1409,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         public DeRadioGroup(HCCustomData aOwnerData) : base(aOwnerData)
@@ -1323,7 +1540,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         public DeFloatBarCodeItem(HCCustomData aOwnerData) : base(aOwnerData)
@@ -1454,7 +1671,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)

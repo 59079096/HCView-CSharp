@@ -1,6 +1,7 @@
 ﻿using HC.View;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -10,6 +11,7 @@ namespace EMRView
 
     public class HCEmrViewLite : HCViewLite
     {
+        private Dictionary<string, string> FPropertys = new Dictionary<string, string>();
 
         protected override void Create()
         {
@@ -20,6 +22,33 @@ namespace EMRView
         protected override HCCustomItem DoSectionCreateStyleItem(HCCustomData aData, int aStyleNo)
         {
             return CreateEmrStyleItem(aData, aStyleNo);
+        }
+
+        protected override void DoLoadStreamBefor(Stream stream, ushort fileVersion)
+        {
+            byte vVersion = 0;
+            if (fileVersion > 43)
+                vVersion = (byte)stream.ReadByte();
+
+            if (vVersion > 0)
+            {
+                string vS = "";
+                HC.View.HC.HCLoadTextFromStream(stream, ref vS, fileVersion);
+                if (this.Style.States.Contain(HCState.hosLoading))
+                    HC.View.HC.SetPropertyString(vS, FPropertys);
+            }
+            else
+            if (this.Style.States.Contain(HCState.hosLoading))
+                FPropertys.Clear();
+
+            base.DoLoadStreamBefor(stream, fileVersion);
+        }
+
+        protected override void DoSaveStreamBefor(Stream stream)
+        {
+            stream.WriteByte(EMR.EmrViewVersion);
+            HC.View.HC.HCSaveTextToStream(stream, HC.View.HC.GetPropertyString(FPropertys));
+            base.DoSaveStreamBefor(stream);
         }
 
         /// <summary> 创建指定样式的Item </summary>
@@ -44,6 +73,9 @@ namespace EMRView
 
                 case HCStyle.DateTimePicker:
                     return new DeDateTimePicker(aData, DateTime.Now);
+
+                case HCStyle.Button:
+                    return new DeButton(aData, "");
 
                 case HCStyle.RadioGroup:
                     return new DeRadioGroup(aData);

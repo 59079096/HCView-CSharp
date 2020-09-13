@@ -357,6 +357,8 @@ namespace EMRView
                     FCaretOffset = FRightBottomText.Length;
                     vResult = true;
                 }
+                else
+                    vResult = true;
             }
             else
             if (e.KeyValue == User.VK_RIGHT)
@@ -370,6 +372,8 @@ namespace EMRView
                     FCaretOffset = 0;
                     vResult = true;
                 }
+                else
+                    vResult = true;
             }
             else
                 vResult = true;
@@ -382,7 +386,7 @@ namespace EMRView
         {
             if (FCaretOffset > 0)
             {
-                s.Remove(FCaretOffset - 1, 1);
+                s = s.Remove(FCaretOffset - 1, 1);
                 FCaretOffset--;
             }
         }
@@ -404,7 +408,7 @@ namespace EMRView
                     break;
 
                 case ToothArea.ctaRightBottom:
-                    BackDeleteChar(ref FRightTopText);
+                    BackDeleteChar(ref FRightBottomText);
                     break;
             }
 
@@ -465,7 +469,7 @@ namespace EMRView
                     break;
 
                 case ToothArea.ctaRightBottom:
-                    vS = FRightTopText;
+                    vS = FRightBottomText;
                     break;
             }
 
@@ -521,7 +525,7 @@ namespace EMRView
         private void DeleteChar(ref string s)
         {
             if (FCaretOffset < s.Length)
-                s.Remove(FCaretOffset + 1 - 1, 1);
+                s = s.Remove(FCaretOffset + 1 - 1, 1);
         }
 
         private void DeleteKeyDown()
@@ -541,7 +545,7 @@ namespace EMRView
                     break;
 
                 case ToothArea.ctaRightBottom:
-                    DeleteChar(ref FRightTopText);
+                    DeleteChar(ref FRightBottomText);
                     break;
             }
 
@@ -572,7 +576,7 @@ namespace EMRView
                     break;
 
                 case ToothArea.ctaRightBottom:
-                    vS = FRightTopText;
+                    vS = FRightBottomText;
                     break;
             }
 
@@ -722,7 +726,6 @@ namespace EMRView
         public override void LoadFromStream(System.IO.Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            HC.View.HC.HCLoadTextFromStream(aStream, ref FLeftTopText, aFileVersion);
             HC.View.HC.HCLoadTextFromStream(aStream, ref FLeftTopText, aFileVersion);
             HC.View.HC.HCLoadTextFromStream(aStream, ref FLeftBottomText, aFileVersion);
             HC.View.HC.HCLoadTextFromStream(aStream, ref FRightTopText, aFileVersion);
