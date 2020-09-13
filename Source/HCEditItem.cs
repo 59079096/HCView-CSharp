@@ -587,9 +587,9 @@ namespace HC.View
             this.Text = "";
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FText);  // 存Text
 
             byte vByte = 0;

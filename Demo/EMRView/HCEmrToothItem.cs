@@ -710,9 +710,9 @@ namespace EMRView
                 aCaretInfo.Visible = false;
         }
 
-        public override void SaveToStream(System.IO.Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(System.IO.Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             HC.View.HC.HCSaveTextToStream(aStream, FLeftTopText);
             HC.View.HC.HCSaveTextToStream(aStream, FLeftBottomText);
             HC.View.HC.HCSaveTextToStream(aStream, FRightTopText);

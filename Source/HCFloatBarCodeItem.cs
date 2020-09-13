@@ -89,9 +89,9 @@ namespace HC.View
                 aCanvas, aPaintInfo);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FCode128.Text);
             byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
             aStream.Write(vBuffer, 0, vBuffer.Length);

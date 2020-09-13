@@ -386,9 +386,9 @@ namespace HC.View
             FBottomText = (source as HCFractionItem).BottomText;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FTopText);
             HC.HCSaveTextToStream(aStream, FBottomText);
         }

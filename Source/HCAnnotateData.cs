@@ -275,21 +275,22 @@ namespace HC.View
                     Result = true;
                 }
                 else
-                    if (aDrawItemNo == vDataAnnotate.EndDrawItemNo)  // 当前DrawItem是批注结束
-                    {
-                        FDrawItemAnnotates.NewDrawAnnotate(
-                            new RECT(aDrawRect.Left, aDrawRect.Top,
-                                aDrawRect.Left + GetDrawItemOffsetWidth(aDrawItemNo, vDataAnnotate.EndItemOffset - this.DrawItems[aDrawItemNo].CharOffs + 1, aCanvas),
-                                aDrawRect.Bottom),
-                        HCAnnotateMark.amLast, vDataAnnotate);
+                if (aDrawItemNo == vDataAnnotate.EndDrawItemNo)  // 当前DrawItem是批注结束
+                {
+                    FDrawItemAnnotates.NewDrawAnnotate(
+                        new RECT(aDrawRect.Left, aDrawRect.Top,
+                            aDrawRect.Left + GetDrawItemOffsetWidth(aDrawItemNo, vDataAnnotate.EndItemOffset - this.DrawItems[aDrawItemNo].CharOffs + 1, aCanvas),
+                            aDrawRect.Bottom),
+                    HCAnnotateMark.amLast, vDataAnnotate);
 
-                        Result = true;
-                    }
-                    else
-                    {
-                        FDrawItemAnnotates.NewDrawAnnotate(aDrawRect, HCAnnotateMark.amNormal, vDataAnnotate);
-                        Result = true;
-                    }
+                    Result = true;
+                }
+                else
+                if (aDrawItemNo > vDataAnnotate.StartDrawItemNo && aDrawItemNo < vDataAnnotate.EndDrawItemNo)  // 当前DrawItem是批注范围内
+                {
+                    FDrawItemAnnotates.NewDrawAnnotate(aDrawRect, HCAnnotateMark.amNormal, vDataAnnotate);
+                    Result = true;
+                }
             }
 
             return Result;
@@ -424,11 +425,15 @@ namespace HC.View
                         {
                             vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
                         }
-                        else  // 在批注所在的Item批注位置前面删除
+                        else
+                        if (aOffset <= vDataAnn.StartItemOffset)  // 在批注所在的Item批注位置前面删除
                         {
                             vDataAnn.StartItemOffset = vDataAnn.StartItemOffset - 1;
                             vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
                         }
+
+                        if (vDataAnn.StartItemOffset == vDataAnn.EndItemOffset)
+                            FDataAnnotates.Delete(i);
                     }
                     else
                     {
@@ -505,6 +510,7 @@ namespace HC.View
                 ushort vAnnCount = 0;
                 byte[] vBuffer = BitConverter.GetBytes(vAnnCount);
                 aStream.Read(vBuffer, 0, vBuffer.Length);
+                vAnnCount = BitConverter.ToUInt16(vBuffer, 0);
                 if (vAnnCount > 0)
                 {
                     for (int i = 0; i <= vAnnCount - 1; i++)
@@ -561,11 +567,23 @@ namespace HC.View
                             aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
                         else
                             aCanvas.Brush.Color = HC.AnnotateBKColor;
+
+                        aCanvas.FillRect(vDrawAnnotate.DrawRect);
                     }
 
                     if (vDrawAnnotate.First())  // 是批注头
                     {
-                        aCanvas.Pen.Color = Color.Red;
+                        aCanvas.Pen.BeginUpdate();
+                        try
+                        {
+                            aCanvas.Pen.Color = Color.Red;
+                            aCanvas.Pen.Width = 1;
+                        }
+                        finally
+                        {
+                            aCanvas.Pen.EndUpdate();
+                        }
+
                         aCanvas.MoveTo(vDrawAnnotate.DrawRect.Left + 2, vDrawAnnotate.DrawRect.Top - 2);
                         aCanvas.LineTo(vDrawAnnotate.DrawRect.Left, vDrawAnnotate.DrawRect.Top);
                         aCanvas.LineTo(vDrawAnnotate.DrawRect.Left, vDrawAnnotate.DrawRect.Bottom);
@@ -574,7 +592,17 @@ namespace HC.View
 
                     if (vDrawAnnotate.Last())  // 是批注尾
                     {
-                        aCanvas.Pen.Color = Color.Red;
+                        aCanvas.Pen.BeginUpdate();
+                        try
+                        {
+                            aCanvas.Pen.Color = Color.Red;
+                            aCanvas.Pen.Width = 1;
+                        }
+                        finally
+                        {
+                            aCanvas.Pen.EndUpdate();
+                        }
+
                         aCanvas.MoveTo(vDrawAnnotate.DrawRect.Right - 2, vDrawAnnotate.DrawRect.Top - 2);
                         aCanvas.LineTo(vDrawAnnotate.DrawRect.Right, vDrawAnnotate.DrawRect.Top);
                         aCanvas.LineTo(vDrawAnnotate.DrawRect.Right, vDrawAnnotate.DrawRect.Bottom);
@@ -703,9 +731,9 @@ namespace HC.View
             base.Clear();
         }
 
-        public override void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset, int aEndItemNo, int aEndOffset)
+        public override void SaveToStream(Stream aStream)
         {
- 	        base.SaveToStream(aStream, aStartItemNo, aStartOffset, aEndItemNo, aEndOffset);
+ 	        base.SaveToStream(aStream);
             ushort vAnnCount = (ushort)FDataAnnotates.Count;
             byte[] vBuffer = BitConverter.GetBytes(vAnnCount);
             aStream.Write(vBuffer, 0, vBuffer.Length);

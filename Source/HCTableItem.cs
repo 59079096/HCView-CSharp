@@ -1031,10 +1031,11 @@ namespace HC.View
             
             FResizeInfo = GetCellAt(e.X, e.Y, ref vMouseDownRow, ref vMouseDownCol);
 
-            Resizing = (e.Button == MouseButtons.Left) 
-              && ((FResizeInfo.TableSite == TableSite.tsBorderRight) 
-                    ||(FResizeInfo.TableSite == TableSite.tsBorderBottom)
-                  );
+            Resizing = (e.Button == MouseButtons.Left)
+              && ((FResizeInfo.TableSite == TableSite.tsBorderRight)
+                    || (FResizeInfo.TableSite == TableSite.tsBorderBottom)
+                  )
+              && this.AllowResize;
 
             if (Resizing)
             {
@@ -1365,11 +1366,14 @@ namespace HC.View
                 FMouseMoveRow = -1;
                 FMouseMoveCol = -1;
 
-                if (vResizeInfo.TableSite == TableSite.tsBorderRight)
-                    HC.GCursor = Cursors.VSplit;
-                else
+                if (this.AllowResize)
+                {
+                    if (vResizeInfo.TableSite == TableSite.tsBorderRight)
+                        HC.GCursor = Cursors.VSplit;
+                    else
                     if (vResizeInfo.TableSite == TableSite.tsBorderBottom)
                         HC.GCursor = Cursors.HSplit;
+                }
             }
 
             if (OwnerData.Style.UpdateInfo.DragingSelected)
@@ -1704,41 +1708,41 @@ namespace HC.View
             if (vRow < 0)
             {
                 if (FOutsideInfo.Row >= 0)
-                {
-                    if (FOutsideInfo.Leftside)
-                        aCaretInfo.X = aCaretInfo.X - 2;  // 为使光标更明显，向左偏移2
-
-                    vTop = 0;
-                    for (int i = FPageBreaks.Count - 1; i >= 0; i--)  // 找光标顶部位
-                    {
-                        if (FPageBreaks[i].Row <= FOutsideInfo.Row)
-                        {
-                            if (FPageBreaks[i].PageIndex == aCaretInfo.PageIndex - 1)
-                            {
-                                vTop = FPageBreaks[i].BreakBottom;  // 分页底部位置
-                                break;
-                            }
-                        }
-                    }
-
-                    vBottom = this.Height;
-                    for (int i = 0; i <= FPageBreaks.Count - 1; i++)  // 找光标底部位
-                    {
-                        if (FPageBreaks[i].Row >= FOutsideInfo.Row)
-                        {
-                            if (FPageBreaks[i].PageIndex == aCaretInfo.PageIndex)
-                            {
-                                vBottom = FPageBreaks[i].BreakSeat;  // 分页顶部位置
-                                break;
-                            }
-                        }
-                    }
-
-                    aCaretInfo.Y = aCaretInfo.Y + vTop;
-                    aCaretInfo.Height = vBottom - vTop;
-                }
+                    vRow = FOutsideInfo.Row;
                 else
-                    aCaretInfo.Visible = false;
+                    vRow = FRows.Count - 1;
+
+                if (FOutsideInfo.Leftside)
+                    aCaretInfo.X = aCaretInfo.X - 2;  // 为使光标更明显，向左偏移2
+
+                vTop = 0;
+                for (int i = FPageBreaks.Count - 1; i >= 0; i--)  // 找光标顶部位
+                {
+                    if (FPageBreaks[i].Row <= vRow)
+                    {
+                        if (FPageBreaks[i].PageIndex == aCaretInfo.PageIndex - 1)
+                        {
+                            vTop = FPageBreaks[i].BreakBottom;  // 分页底部位置
+                            break;
+                        }
+                    }
+                }
+
+                vBottom = this.Height;
+                for (int i = 0; i <= FPageBreaks.Count - 1; i++)  // 找光标底部位
+                {
+                    if (FPageBreaks[i].Row >= vRow)
+                    {
+                        if (FPageBreaks[i].PageIndex == aCaretInfo.PageIndex)
+                        {
+                            vBottom = FPageBreaks[i].BreakSeat;  // 分页顶部位置
+                            break;
+                        }
+                    }
+                }
+
+                aCaretInfo.Y = aCaretInfo.Y + vTop;
+                aCaretInfo.Height = vBottom - vTop;
 
                 return;
             }
@@ -3013,6 +3017,26 @@ namespace HC.View
             }
         }
 
+        protected override string GetText()
+        {
+            string vResult = base.GetText();
+            for (int vR = 0; vR < FRows.Count; vR++)
+            {
+                for (int vC = 0; vC < FRows[vR].ColCount; vC++)
+                {
+                    if (FRows[vR][vC].CellData != null)
+                    {
+                        if (vResult != "")
+                            vResult += "，" + FRows[vR][vC].CellData.SaveToText();
+                        else
+                            vResult += FRows[vR][vC].CellData.SaveToText();
+                    }
+                }
+            }
+
+            return vResult;
+        }
+
         public override bool IsSelectComplateTheory()
         {
             return IsSelectComplate;
@@ -3033,6 +3057,17 @@ namespace HC.View
                 }
 
             return Result;
+        }
+
+        public override int GetOffsetAt(int x)
+        {
+            if (x <= 0)
+                return HC.OffsetBefor;
+            else
+            if (x >= Width)
+                return HC.OffsetAfter;
+            else
+                return HC.OffsetInner;
         }
 
         public override void TraverseItem(HCItemTraverse aTraverse)
@@ -3647,9 +3682,9 @@ namespace HC.View
         }
 
         // 保存和读取
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
             aStream.Write(vBuffer, 0, vBuffer.Length);

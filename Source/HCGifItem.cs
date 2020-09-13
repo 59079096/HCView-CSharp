@@ -120,9 +120,9 @@ namespace HC.View
             BeginAnimate();  // 调用开始动画方法
         }
 
-        public override void SaveToStream(System.IO.Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(System.IO.Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             // 图像不能直接写流，会导致流前面部分数据错误
             using (MemoryStream vImgStream = new MemoryStream())

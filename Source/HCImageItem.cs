@@ -231,9 +231,9 @@ namespace HC.View
             this.FEmpty = false;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             // 图像不能直接写流，会导致流前面部分数据错误
             using (MemoryStream vImgStream = new MemoryStream())

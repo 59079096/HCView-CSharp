@@ -13,7 +13,6 @@ namespace HC.View
 {
     public class HCViewLite : Object
     {
-        private string FPageNoFormat;
         private HCStyle FStyle;
         private List<HCSection> FSections;
         private int FActiveSectionIndex;
@@ -72,7 +71,7 @@ namespace HC.View
                     vAllPageCount = vAllPageCount + FSections[i].PageCount;
                 }
 
-                string vS = string.Format(FPageNoFormat, vSectionStartPageIndex + vSection.PageNoFrom + pageIndex, vAllPageCount);
+                string vS = string.Format(vSection.PageNoFormat, vSectionStartPageIndex + vSection.PageNoFrom + pageIndex, vAllPageCount);
                 canvas.Brush.Style = HCBrushStyle.bsClear;
 
                 canvas.Font.BeginUpdate();
@@ -113,6 +112,19 @@ namespace HC.View
         protected virtual void DoLoadStreamAfter(Stream stream, ushort fileVersion)
         {
 
+        }
+
+        protected void DataLoadLiteStream(Stream stream, HCLoadProc proc)
+        {
+            string vFileFormat = "";
+            ushort vFileVersion = 0;
+            byte vLang = 0;
+            HC._LoadFileFormatAndVersion(stream, ref vFileFormat, ref vFileVersion, ref vLang);
+            using (HCStyle vStyle = new HCStyle())
+            {
+                vStyle.LoadFromStream(stream, vFileVersion);
+                proc(vFileVersion, vStyle);
+            }
         }
 
         public HCViewLite() : base()
@@ -422,6 +434,17 @@ namespace HC.View
             }
 
             return true;
+        }
+
+        public bool InsertLiteStream(Stream stream)
+        {
+            bool vResult = false;
+            DataLoadLiteStream(stream, delegate (ushort fileVersion, HCStyle style)
+            {
+                vResult = ActiveSection.InsertStream(stream, style, fileVersion);
+            });
+
+            return vResult;
         }
 
         public void SaveToXml(string fileName, System.Text.Encoding encoding)

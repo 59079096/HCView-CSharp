@@ -64,7 +64,42 @@ namespace HC.View
         }
     }
 
-    public delegate void TraverseItemEventHandle(HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop);
+    public class HCDomainNode : HCDomainInfo
+    {
+        public HCDomainNode Parent;
+        public List<HCDomainNode> Childs;
+
+        public HCDomainNode() : base()
+        {
+            Childs = new List<HCDomainNode>();
+        }
+
+        public HCDomainNode AppendChild()
+        {
+            HCDomainNode vResult = new HCDomainNode();
+            vResult.Parent = this;
+            Childs.Add(vResult);
+            return vResult;
+        }
+
+        public override void Clear()
+        {
+            base.Clear();
+            if (Childs != null)
+            {
+                for (int i = 0; i < Childs.Count; i++)
+                {
+                    Childs[i].Clear();
+                    Childs[i] = null;
+                }
+
+                Childs.Clear();
+            }
+        }
+    }
+
+    public delegate void TraverseItemEventHandle(HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainNode> aDomainStack, ref bool aStop);
+    public delegate void HCLoadProc(ushort fileVersion, HCStyle style);
 
     public class HCItemTraverse : Object
     {
@@ -73,14 +108,17 @@ namespace HC.View
         public int Tag;
         public bool Stop;
         public TraverseItemEventHandle Process;
-        public Stack<HCDomainInfo> DomainStack;
+        public HCDomainNode DomainNode;
+        public Stack<HCDomainNode> DomainStack;
 
         public HCItemTraverse()
         {
             Tag = 0;
             Stop = false;
             Areas = new HashSet<SectionArea>();
-            DomainStack = new Stack<HCDomainInfo>();
+            DomainNode = new HCDomainNode();
+            DomainStack = new Stack<HCDomainNode>();
+            DomainStack.Push(DomainNode);
         }
     }
 
@@ -145,7 +183,7 @@ namespace HC.View
         }
     }
 
-    public delegate void DataDomainItemNoEventHandler(HCCustomData aData, Stack<HCDomainInfo> aDomainStack, int aItemNo);
+    public delegate void DataDomainItemNoEventHandler(HCCustomData aData, Stack<HCDomainNode> aDomainStack, int aItemNo);
     public delegate void DataItemEventHandler(HCCustomData aData, HCCustomItem aItem);
     public delegate void DataItemNoEventHandler(HCCustomData aData, int aItemNo);
     public delegate bool DataItemNoFunEventHandler(HCCustomData aData, int aItemNo);
@@ -1615,6 +1653,15 @@ namespace HC.View
                 return FItems[vItemNo];
         }
 
+        public HCCustomRectItem GetActiveRectItem()
+        {
+            HCCustomItem vItem = GetActiveItem();
+            if (vItem.StyleNo < HCStyle.Null)
+                return vItem as HCCustomRectItem;
+            else
+                return null;
+        }
+
         public HCCustomItem GetTopLevelItem()
         {
             HCCustomItem Result = GetActiveItem();
@@ -2343,11 +2390,11 @@ namespace HC.View
                                 vTextHeight = vTextHeight + vTextHeight;
                             }
 
-                            if (vItem.HyperLink != "")
+                            /*if (vItem.HyperLink != "")
                             {
                                 aCanvas.Font.Color = HC.HyperTextColor;
                                 aCanvas.Font.FontStyles.InClude((byte)HCFontStyle.tsUnderline);
-                            }
+                            }*/
                         }
 
                         int vTextDrawTop;
@@ -2539,6 +2586,13 @@ namespace HC.View
             return Result;
         }
 
+        public bool SelectStartItemBoundary()
+        {
+            return (FSelectInfo.StartItemNo >= 0)
+                && ((FSelectInfo.StartItemOffset == 0)
+                    || (FSelectInfo.StartItemOffset == GetItemOffsetAfter(FSelectInfo.StartItemNo)));
+        }
+
         /// <summary> 是否有选中 </summary>
         public bool SelectExists(bool aIfRectItem = true)
         {
@@ -2606,7 +2660,7 @@ namespace HC.View
                 {
                     if (DoSaveItem(aStartItemNo))
                     {
-                        FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, FItems[aStartItemNo].Length);
+                        FItems[aStartItemNo].SaveToStreamRange(aStream, aStartOffset, FItems[aStartItemNo].Length);
                         vCountAct++;
                     }
 
@@ -2621,14 +2675,14 @@ namespace HC.View
 
                     if (DoSaveItem(aEndItemNo))
                     {
-                        FItems[aEndItemNo].SaveToStream(aStream, 0, aEndOffset);
+                        FItems[aEndItemNo].SaveToStreamRange(aStream, 0, aEndOffset);
                         vCountAct++;
                     }
                 }
                 else
                 if (DoSaveItem(aStartItemNo))
                 {
-                    FItems[aStartItemNo].SaveToStream(aStream, aStartOffset, aEndOffset);
+                    FItems[aStartItemNo].SaveToStreamRange(aStream, aStartOffset, aEndOffset);
                     vCountAct++;
                 }
             }
@@ -2652,7 +2706,7 @@ namespace HC.View
             SaveToStream(aStream, 0, 0, FItems.Count - 1, Items.Last.Length);
         }
 
-        public virtual void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset,
+        public void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset,
             int aEndItemNo, int aEndOffset)
         {
             SaveItemToStream(aStream, aStartItemNo, aStartOffset, aEndItemNo, aEndOffset);
@@ -2706,7 +2760,10 @@ namespace HC.View
                             if (FItems[aEndItemNo].ParaFirst)
                                 Result = Result + HC.sLineBreak;
 
-                            Result = (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
+                            if (aEndOffset == HC.OffsetAfter)
+                                Result = Result + FItems[aEndItemNo].Text;
+                            else
+                                Result = (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
                         }
                     }
                 }

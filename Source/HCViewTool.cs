@@ -107,6 +107,20 @@ namespace HC.View
             }
         }
 
+        private void CancelActiveToolItem()
+        {
+            if (FActiveItem is HCImageItem)
+            {
+                (FActiveItem as HCImageItem).ShapeManager.DisActive();
+                FImageToolBar.Visible = false;
+            }
+            else
+            if (FActiveItem is HCTableItem)  // 是表格
+                FTableToolBar.Visible = false;
+
+            FActiveItem = null;
+        }
+
         private bool PtInTableToolBar(int x, int y)
         {
             POINT vPt = new POINT(x, y);
@@ -511,16 +525,7 @@ namespace HC.View
                 FState = HCToolState.hcsRemoveItem;
                 try
                 {
-                    if (FActiveItem is HCImageItem)
-                    {
-                        (FActiveItem as HCImageItem).ShapeManager.DisActive();
-                        FImageToolBar.Visible = false;
-                    }
-                    else
-                    if (FActiveItem is HCTableItem)  // 是表格
-                        FTableToolBar.Visible = false;
-
-                    FActiveItem = null;
+                    CancelActiveToolItem();
                 }
                 finally
                 {

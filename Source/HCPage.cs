@@ -65,7 +65,7 @@ namespace HC.View
         protected void SetMarginBottom(Single value)
         {
             FMarginBottom = value;
-            FMarginBottomPix = HCUnitConversion.MillimeterToPixY(FMarginBottom); ;
+            FMarginBottomPix = HCUnitConversion.MillimeterToPixY(FMarginBottom);
         }
 
         public HCPaper()

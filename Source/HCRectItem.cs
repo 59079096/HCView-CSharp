@@ -90,7 +90,10 @@ namespace HC.View
 
             HCUndoList Result = FOnGetMainUndoList();
 
-            if ((Result != null) && Result.Enable && (Result.Last.Actions.Last is HCItemSelfUndoAction))
+            if ((Result != null) && Result.Enable
+                && Result.Count > 0
+                && Result.Last.Actions.Count > 0
+                && (Result.Last.Actions.Last is HCItemSelfUndoAction))
             {
                 HCItemSelfUndoAction vItemAction = Result.Last.Actions.Last as HCItemSelfUndoAction;
                 if (vItemAction.Object == null)
@@ -234,10 +237,10 @@ namespace HC.View
             if (x <= 0)
                 return HC.OffsetBefor;
             else
-                if (x >= Width)
-                    return HC.OffsetAfter;
-                else
-                    return HC.OffsetInner;
+            if (x >= Width)
+                return HC.OffsetAfter;
+            else
+                return HC.OffsetInner;
         }
 
         /// <summary> 获取坐标X、Y是否在选中区域中 </summary>
@@ -458,9 +461,9 @@ namespace HC.View
                 base.Redo(aRedoAction);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             byte[] vBuffer = BitConverter.GetBytes(FWidth);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
@@ -714,9 +717,9 @@ namespace HC.View
             return false;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             aStream.WriteByte((byte)FMarkType);
             aStream.WriteByte(FLevel);
         }
@@ -814,9 +817,9 @@ namespace HC.View
             return GetSelectComplate();
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
             aStream.Write(vBuffer, 0, vBuffer.Length);
         }
@@ -854,8 +857,23 @@ namespace HC.View
     public class HCControlItem : HCTextRectItem
     {
         private bool FAutoSize;
+        private EventHandler FOnClick;
         protected byte FPaddingLeft, FPaddingTop, FPaddingRight, FPaddingBottom;
         protected int FMinWidth, FMinHeight;
+        
+        protected virtual void DoClick()
+        {
+            if (FOnClick != null && OwnerData.CanEdit())
+                FOnClick(this, null);
+        }
+
+        public override bool MouseUp(MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && HC.PtInRect(this.ClientRect(), e.X, e.Y))
+                this.DoClick();
+
+            return base.MouseUp(e);
+        }
 
         public HCControlItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
@@ -874,9 +892,9 @@ namespace HC.View
             FAutoSize = (source as HCControlItem).AutoSize;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int  aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int  aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
             aStream.Write(vBuffer, 0, vBuffer.Length);
         }
@@ -901,10 +919,21 @@ namespace HC.View
             FAutoSize = bool.Parse(aNode.Attributes["autosize"].Value);
         }
 
+        public virtual RECT ClientRect()
+        {
+            return new RECT(0, 0, this.Width, this.Height);
+        }
+
         public bool AutoSize
         {
             get { return FAutoSize; }
             set { FAutoSize = value; }
+        }
+
+        public EventHandler OnClick
+        {
+            get { return FOnClick; }
+            set { FOnClick = value; }
         }
     }
 
@@ -979,12 +1008,14 @@ namespace HC.View
                     aPaintInfo.TopItems.Add(this);
                 }
 
-                // 绘制缩放拖动提示锚点
-                aCanvas.Brush.Color = Color.Gray;
-                aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Top, GripSize, GripSize));
-                aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Top, GripSize, GripSize));
-                aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Bottom - GripSize, GripSize, GripSize));
-                aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Bottom - GripSize, GripSize, GripSize));
+                if (AllowResize)  // 绘制缩放拖动提示锚点
+                {
+                    aCanvas.Brush.Color = Color.Gray;
+                    aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Top, GripSize, GripSize));
+                    aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Top, GripSize, GripSize));
+                    aCanvas.FillRect(HC.Bounds(aDrawRect.Left, aDrawRect.Bottom - GripSize, GripSize, GripSize));
+                    aCanvas.FillRect(HC.Bounds(aDrawRect.Right - GripSize, aDrawRect.Bottom - GripSize, GripSize, GripSize));
+                }
             }
         }
 
@@ -992,7 +1023,7 @@ namespace HC.View
         {
             FResizeGrip = GripType.gtNone;
             bool vResult = base.MouseDown(e);
-            if (Active)
+            if (Active && AllowResize)
             {
                 FResizeGrip = GetGripType(e.X, e.Y);
                 FResizing = FResizeGrip != GripType.gtNone;
@@ -1076,6 +1107,11 @@ namespace HC.View
                 FResizing = value;
         }
 
+        protected bool GetAllowResize()
+        {
+            return FCanResize && OwnerData.CanEdit();
+        }
+
         protected GripType ResizeGrip
         {
             get { return FResizeGrip; }
@@ -1101,6 +1137,12 @@ namespace HC.View
         {
             FCanResize = true;
             FGripSize = 8;
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FCanResize = (source as HCResizeRectItem).CanResize;
         }
 
         /// <summary> 获取坐标X、Y是否在选中区域中 </summary>
@@ -1138,7 +1180,7 @@ namespace HC.View
         {
             bool vResult = base.MouseMove(e);
             HC.GCursor = Cursors.Default;
-            if (Active)
+            if (Active && AllowResize)
             {
                 int vW = 0, vH = 0, vTempW = 0, vTempH = 0;
                 Single vBL = 0;
@@ -1290,6 +1332,57 @@ namespace HC.View
             return IsSelectComplateTheory();
         }
 
+        public override bool IsSelectComplateTheory()
+        {
+            if (!AllowResize)
+                return false;
+            else
+                return base.IsSelectComplateTheory();
+        }
+
+        public override int GetOffsetAt(int x)
+        {
+            if (AllowResize)
+                return base.GetOffsetAt(x);
+            {
+                if (x < Width / 2)
+                    return HC.OffsetBefor;
+                else
+                    return HC.OffsetAfter;
+            }
+        }
+
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStreamRange(aStream, aStart, aEnd);
+            byte[] vBuffer = BitConverter.GetBytes(FCanResize);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            if (aFileVersion > 44)
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FCanResize);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FCanResize = BitConverter.ToBoolean(vBuffer, 0);
+            }
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.SetAttribute("canresize", FCanResize.ToString());
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            if (aNode.HasAttribute("canresize"))
+                FCanResize = bool.Parse(aNode.Attributes["canresize"].Value);
+        }
+
         /// <summary> 约束到指定大小范围内 </summary>
         public virtual void RestrainSize(int aWidth, int aHeight) { }
 
@@ -1319,6 +1412,11 @@ namespace HC.View
         {
             get { return FCanResize; }
             set { FCanResize = value; }
+        }
+
+        public bool AllowResize
+        {
+            get { return GetAllowResize(); }
         }
     }
 

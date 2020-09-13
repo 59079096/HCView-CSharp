@@ -577,7 +577,7 @@ namespace HC.View
                     {
                         if (vCharWidths[i] - aBasePos > aPlaceWidth)
                         {
-                            if (HC.PosCharHC(vText[i], HC.LineSqueezeChar) > 0)
+                            if (!vSqueeze && HC.PosCharHC(vText[i], HC.LineSqueezeChar) > 0)
                             {
                                 if (vCharWidths[i] - aBasePos - aPlaceWidth > 3)  // (vCharWidths[i] - vCharWidths[i - 1]) / 2
                                 {
@@ -985,7 +985,7 @@ namespace HC.View
                 FFormatEndBottom = DrawItems[vLastDrawItemNo].Rect.Bottom - vFmtTopOffset;
         }
 
-        protected void ReFormatData(int AFirstDrawItemNo, int ALastItemNo = -1, int AExtraItemCount = 0, bool AForceClearExtra = false)
+        protected virtual void ReFormatData(int AFirstDrawItemNo, int ALastItemNo = -1, int AExtraItemCount = 0, bool AForceClearExtra = false)
         {
             if (FFormatCount != 0)
                 return;
@@ -1081,7 +1081,11 @@ namespace HC.View
                 FFormatHeightChange = true;
             }
 
-            if ((SelectInfo.StartItemNo >= 0) && (SelectInfo.StartItemNo < Items.Count))
+            if (SelectInfo.StartItemNo >= 0
+                && SelectInfo.StartItemNo < Items.Count
+                && SelectInfo.StartItemOffset >= 0
+                && SelectInfo.StartItemOffset <= GetItemOffsetAfter(SelectInfo.StartItemNo)
+            )
                 ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);  // 防止清空后格式化完成后没有选中起始访问出错
             else
                 ReSetSelectAndCaret(0, 0);
@@ -1110,12 +1114,13 @@ namespace HC.View
 
             if (SelectInfo.StartItemNo >= 0)
             {
-                if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)  // 当表格里是RadioItem修改引起大小变化时需要重新格式化
-                    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ReFormatActiveItem();
-
                 int vFirstDrawItemNo = -1, vLastItemNo = -1;
                 GetFormatRange(ref vFirstDrawItemNo, ref vLastItemNo);
                 FormatPrepare(vFirstDrawItemNo, vLastItemNo);
+
+                if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)  // 当表格里是RadioItem修改引起大小变化时需要重新格式化
+                    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ReFormatActiveItem();
+
                 ReFormatData(vFirstDrawItemNo, vLastItemNo);
 
                 Style.UpdateInfoRePaint();

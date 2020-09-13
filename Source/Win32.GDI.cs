@@ -804,7 +804,7 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int CreatePolyPolygonRgn(ref POINT lpPoint, ref int lpPolyCounts, int nCount, int nPolyFillMode);
 		[DllImport("gdi32")] public static extern IntPtr CreatePolygonRgn(POINT[] lpPoint, int nCount, int nPolyFillMode);
 		[DllImport("gdi32")] public static extern IntPtr CreateRectRgn(int X1, int Y1, int X2, int Y2);
-		[DllImport("gdi32")] public static extern int CreateRectRgnIndirect(ref RECT lpRect);
+		[DllImport("gdi32")] public static extern IntPtr CreateRectRgnIndirect(ref RECT lpRect);
 		[DllImport("gdi32")] public static extern int CreateRoundRectRgn(int X1, int Y1, int X2, int Y2, int X3, int Y3);
 		[DllImport("gdi32")] public static extern int CreateScalableFontResource(int fHidden, string lpszResourceFile, string lpszFontFile, string lpszCurrentPath);
 		[DllImport("gdi32")] public static extern int CreateSolidBrush(int crColor);

@@ -347,9 +347,9 @@ namespace EMRView
             return vResult;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -557,9 +557,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -690,9 +690,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -821,9 +821,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -953,9 +953,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -1084,9 +1084,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -1215,9 +1215,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -1346,9 +1346,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)
@@ -1488,9 +1488,9 @@ namespace EMRView
             HC.View.HC.SetPropertyString(vS, FPropertys);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FEditProtect)

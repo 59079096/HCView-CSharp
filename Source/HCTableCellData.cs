@@ -78,6 +78,14 @@ namespace HC.View
             }
         }
 
+        protected override void ReFormatData(int AFirstDrawItemNo, int ALastItemNo = -1, int AExtraItemCount = 0, bool AForceClearExtra = false)
+        {
+            base.ReFormatData(AFirstDrawItemNo, ALastItemNo, AExtraItemCount, AForceClearExtra);
+            this.FormatChange = false;
+            if (this.FormatHeightChange)
+                this.SilenceChange();
+        }
+
         /// <summary> 取消选中 </summary>
         /// <returns>取消时当前是否有选中，True：有选中；False：无选中</returns>
         public override bool DisSelect()

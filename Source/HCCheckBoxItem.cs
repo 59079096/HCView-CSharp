@@ -162,9 +162,9 @@ namespace HC.View
             FText = (source as HCCheckBoxItem).Text;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte[] vBuffer = BitConverter.GetBytes(FChecked);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 存勾选状态

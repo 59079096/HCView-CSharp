@@ -352,7 +352,7 @@ namespace EMRView
         }
 
         /// <summary> 遍历处理痕迹隐藏或显示 </summary>
-        private void DoHideTraceTraverse(HCCustomData aData, int aItemNo, int aTags, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
+        private void DoHideTraceTraverse(HCCustomData aData, int aItemNo, int aTags, Stack<HCDomainNode> aDomainStack, ref bool aStop)
         {
             if (!(aData.Items[aItemNo] is DeItem))  // 只对元素生效
                 return;

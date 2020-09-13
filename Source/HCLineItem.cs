@@ -95,9 +95,9 @@ namespace HC.View
             FLineStyle = (source as HCLineItem).FLineStyle;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             aStream.WriteByte(FLineHeight);
             aStream.WriteByte((byte)FLineStyle);
         }
@@ -112,15 +112,15 @@ namespace HC.View
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
-            aNode.SetAttribute("height", FLineHeight.ToString());
-            aNode.SetAttribute("style", ((byte)FLineStyle).ToString());
+            aNode.SetAttribute("lineheight", FLineHeight.ToString());
+            aNode.SetAttribute("linestyle", ((byte)FLineStyle).ToString());
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            FLineHeight = byte.Parse(aNode.Attributes["height"].Value);
-            FLineStyle = (HCPenStyle)byte.Parse(aNode.Attributes["style"].Value);
+            FLineHeight = byte.Parse(aNode.Attributes["lineheight"].Value);
+            FLineStyle = (HCPenStyle)byte.Parse(aNode.Attributes["linestyle"].Value);
         }
 
         public HCPenStyle LineStyle

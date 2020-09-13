@@ -80,7 +80,7 @@ namespace HC.View
     {
         private HCStyle FStyle;
         private HCPages FPages;  // 所有页面
-        private HCPaper FPaper;
+        protected HCPaper FPaper;
         private PaperOrientation FPaperOrientation;
         private HCHeaderData FHeader;
         private HCFooterData FFooter;
@@ -90,17 +90,18 @@ namespace HC.View
         private HCSectionData FMoveData;
 
         /// <summary> 是否对称边距 </summary>
-        bool FSymmetryMargin;
-        bool FPageNoVisible;  // 是否显示页码
+        private bool FSymmetryMargin;
+        private bool FPageNoVisible;  // 是否显示页码
+        private byte FPagePadding;
 
-        byte FPagePadding;
-
-        int FPageNoFrom,  // 页码从几开始
+        private int
             FActivePageIndex,  // 当前激活的页
             FMousePageIndex,  // 当前鼠标所在页
             FDisplayFirstPageIndex,  // 屏显第一页
-            FDisplayLastPageIndex,   // 屏显最后一页
-            FHeaderOffset;  // 页眉顶部偏移
+            FDisplayLastPageIndex;   // 屏显最后一页
+        protected int FHeaderOffset;  // 页眉顶部偏移
+        protected string FPageNoFormat;
+        protected int FPageNoFrom;  // 页码从几开始
 
         EventHandler
             FOnDataChange,  // 页眉、页脚、页面某一个修改时触发
@@ -134,6 +135,15 @@ namespace HC.View
         OnCanEditEventHandler FOnCanEdit;
         TextEventHandler FOnInsertTextBefor;
         GetUndoListEventHandler FOnGetUndoList;
+
+        private void SetPageNoFormat(string value)
+        {
+            if (FPageNoFormat != value)
+            {
+                FPageNoFormat = value;
+                DoActiveDataCheckUpdateInfo();
+            }
+        }
 
         private int GetPageIndexByFilm(int aVOffset)
         {
@@ -743,6 +753,7 @@ namespace HC.View
             FMoveData = null;
             FPageNoVisible = true;
             FPageNoFrom = 1;
+            FPageNoFormat = "{0}/{1}";
             FHeaderOffset = 20;
             FViewModel = HCViewModel.hvmFilm;
             FPagePadding = 20;
@@ -844,6 +855,11 @@ namespace HC.View
         public HCCustomItem GetActiveItem()
         {
             return FActiveData.GetActiveItem();
+        }
+
+        public HCCustomRectItem GetActiveRectItem()
+        {
+            return FActiveData.GetActiveRectItem();
         }
 
         public HCCustomItem GetTopLevelItem()
@@ -2356,7 +2372,7 @@ namespace HC.View
                     RECT vDrawRect = FPage.DrawItems[ADrawItemNo].Rect;
 
                     //if vSuplus = 0 then  // 第一次计算分页
-                    HC.InflateRect(ref vDrawRect, 0, -FPage.GetLineBlankSpace(ADrawItemNo) / 2);  // 减掉行间距，为了达到去年行间距能放下不换页的效果
+                    //HC.InflateRect(ref vDrawRect, 0, -FPage.GetLineBlankSpace(ADrawItemNo) / 2);  // 减掉行间距，为了达到去年行间距能放下不换页的效果
 
                     vRectItem.CheckFormatPageBreak(  // 去除行间距后，判断表格跨页位置
                         FPages.Count - 1,
@@ -2673,6 +2689,11 @@ namespace HC.View
                 vBuffer = BitConverter.GetBytes(FPageNoVisible);
                 aStream.Write(vBuffer, 0, vBuffer.Length);  // 是否显示页码
 
+                vBuffer = BitConverter.GetBytes(FPageNoFrom);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+
+                HC.HCSaveTextToStream(aStream, FPageNoFormat);
+
                 FPaper.SaveToStream(aStream);  // 页面参数
 
                 bool vArea = aSaveParts.Contains(SectionArea.saHeader);  // 存页眉
@@ -2746,6 +2767,23 @@ namespace HC.View
                 FPageNoVisible = BitConverter.ToBoolean(vBuffer, 0);
             }
 
+            if (aFileVersion > 45)
+            {
+                vBuffer = BitConverter.GetBytes(FPageNoFrom);
+                aStream.Read(vBuffer, 0, vBuffer.Length);  // 是否显示页码
+                FPageNoFrom = BitConverter.ToInt32(vBuffer, 0);
+
+                HC.HCLoadTextFromStream(aStream, ref FPageNoFormat, aFileVersion);
+                // 兼容Pascal
+                int vIndex = FPageNoFormat.IndexOf("%d");
+                if (vIndex >= 0)
+                    FPageNoFormat = FPageNoFormat.Remove(vIndex, 2).Insert(vIndex, "{0}");
+
+                vIndex = FPageNoFormat.IndexOf("%d");
+                if (vIndex >= 0)
+                    FPageNoFormat = FPageNoFormat.Remove(vIndex, 2).Insert(vIndex, "{1}");
+            }
+
             FPaper.LoadToStream(aStream, aFileVersion);  // 页面参数
             FPage.Width = GetPageWidth();
 
@@ -2803,7 +2841,7 @@ namespace HC.View
 
         public void FormatData()
         {
-            FActiveData.DisSelect();  // 先清选中，防止格式化后选中位置不存在
+            //FActiveData.DisSelect();  // 先清选中，防止格式化后选中位置不存在
             FHeader.ReFormat();
             Footer.ReFormat();
             FPage.ReFormat();
@@ -3030,6 +3068,12 @@ namespace HC.View
         {
             get { return FPageNoFrom; }
             set { FPageNoFrom = value; }
+        }
+
+        public string PageNoFormat
+        {
+            get { return FPageNoFormat; }
+            set { SetPageNoFormat(value); }
         }
 
         public byte PagePadding
@@ -3296,6 +3340,7 @@ namespace HC.View
             this.PaperMarginBottom = source.PaperMarginBottom;
             this.PaperOrientation = source.PaperOrientation;
             this.HeaderOffset = source.HeaderOffset;
+            this.ResetMargin();
         }
 
         /// <summary> 当前位置开始查找指定的内容 </summary>
@@ -3343,6 +3388,101 @@ namespace HC.View
             return Result;
         }
 
+        public void SeekStreamToArea(Stream stream, HCStyle style, ushort fileVersion, SectionArea part, bool usePaper)
+        {
+            Int64 vDataSize = 0;
+            bool vArea = false;
+            HashSet<SectionArea> vLoadParts = new HashSet<SectionArea>();
+            string vS = "";
+
+            byte[] vBuffer = BitConverter.GetBytes(vDataSize);
+            stream.Read(vBuffer, 0, vBuffer.Length);
+
+            if (fileVersion > 41)
+                HC.HCLoadTextFromStream(stream, ref vS, fileVersion);
+
+            vBuffer = BitConverter.GetBytes(SymmetryMargin);  // 是否对称页边距
+            stream.Read(vBuffer, 0, vBuffer.Length);
+
+            if (fileVersion > 11)
+            {
+                vBuffer = new byte[1];
+                stream.Read(vBuffer, 0, 1);  // 纸张方向
+
+                vBuffer = BitConverter.GetBytes(PageNoVisible);
+                stream.Read(vBuffer, 0, vBuffer.Length);  // 是否显示页码
+            }
+
+            if (fileVersion > 45)
+            {
+                vBuffer = BitConverter.GetBytes(PageNoFrom);
+                stream.Read(vBuffer, 0, vBuffer.Length);
+                HC.HCLoadTextFromStream(stream, ref vS, fileVersion);
+            }
+
+            if (usePaper)
+                FPaper.LoadToStream(stream, fileVersion);  // 页面参数
+            else
+            {
+                HCPaper vPaper = new HCPaper();
+                vPaper.LoadToStream(stream, fileVersion);
+            }
+
+            // 文档都有哪些部件的数据
+            vLoadParts.Clear();
+
+            vBuffer = BitConverter.GetBytes(vArea);
+            stream.Read(vBuffer, 0, vBuffer.Length);
+            vArea = BitConverter.ToBoolean(vBuffer, 0);
+            if (vArea)
+                vLoadParts.Add(SectionArea.saHeader);
+
+            stream.Read(vBuffer, 0, vBuffer.Length);
+            vArea = BitConverter.ToBoolean(vBuffer, 0);
+            if (vArea)
+                vLoadParts.Add(SectionArea.saFooter);
+
+            stream.Read(vBuffer, 0, vBuffer.Length);
+            vArea = BitConverter.ToBoolean(vBuffer, 0);
+            if (vArea)
+                vLoadParts.Add(SectionArea.saPage);
+
+            if (vLoadParts.Contains(SectionArea.saHeader))
+            {
+                vBuffer = BitConverter.GetBytes(FHeaderOffset);
+                stream.Read(vBuffer, 0, vBuffer.Length);
+                if (part == SectionArea.saHeader)
+                    return;
+
+                vBuffer = BitConverter.GetBytes(vDataSize);
+                stream.Read(vBuffer, 0, vBuffer.Length);
+                vDataSize = BitConverter.ToInt64(vBuffer, 0);
+                stream.Position += vDataSize;
+            }
+
+            if (part == SectionArea.saHeader)
+                return;
+
+            if (part == SectionArea.saFooter)
+                return;
+
+            if (vLoadParts.Contains(SectionArea.saFooter))
+            {
+                vBuffer = BitConverter.GetBytes(vDataSize);
+                stream.Read(vBuffer, 0, vBuffer.Length);
+                vDataSize = BitConverter.ToInt64(vBuffer, 0);
+                stream.Position += vDataSize;
+            }
+
+            vBuffer = BitConverter.GetBytes(Page.ShowUnderLine);
+            stream.Read(vBuffer, 0, vBuffer.Length);
+
+            vBuffer = BitConverter.GetBytes(vDataSize);
+            stream.Read(vBuffer, 0, vBuffer.Length);
+            if (part == SectionArea.saPage)
+                return;
+        }
+
         public string ToHtml(string aPath)
         {
             return Header.ToHtml(aPath) + HC.sLineBreak + Page.ToHtml(aPath) + HC.sLineBreak + Footer.ToHtml(aPath);
@@ -3353,6 +3493,8 @@ namespace HC.View
             aNode.SetAttribute("symmargin", SymmetryMargin.ToString()); // 是否对称页边距
             aNode.SetAttribute("ori", ((byte)PaperOrientation).ToString());  // 纸张方向
             aNode.SetAttribute("pagenovisible", PageNoVisible.ToString());  // 是否显示页码
+            aNode.SetAttribute("pagenofrom", FPageNoFrom.ToString());
+            aNode.SetAttribute("pagenoformat", FPageNoFormat);
 
             aNode.SetAttribute("pagesize",  // 纸张大小
                 ((int)this.PaperSize).ToString()
@@ -3390,6 +3532,11 @@ namespace HC.View
             this.PaperOrientation = (PaperOrientation)(byte.Parse(aNode.Attributes["ori"].Value));  // 纸张方向
 
             PageNoVisible = bool.Parse(aNode.Attributes["pagenovisible"].Value);  // 是否显示页码
+            if (aNode.HasAttribute("pagenofrom"))
+                FPageNoFrom = int.Parse(aNode.GetAttribute("pagenofrom"));
+
+            if (aNode.HasAttribute("pagenoformat"))
+                FPageNoFormat = aNode.GetAttribute("pagenoformat");
 
             // GetXmlPaper_
             string[] vStrings = aNode.Attributes["pagesize"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);

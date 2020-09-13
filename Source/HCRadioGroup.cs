@@ -130,7 +130,7 @@ namespace HC.View
                         {
                             vCol = 1;
                             vLeft = FPaddingLeft;
-                            vTop += vTop + vSize.cy + FPaddingBottom;
+                            vTop += vSize.cy + FPaddingBottom;
                         }
                     }
                     else
@@ -338,11 +338,24 @@ namespace HC.View
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
             if (!AutoSize)
             {
+                RECT vRect = new RECT();
+                GDI.GetClipBox(aCanvas.Handle, ref vRect);
+
                 IntPtr vPaintRegion = GDI.CreateRectRgn(aDrawRect.Left, aDrawRect.Top, aDrawRect.Right, aDrawRect.Bottom);
                 try
                 {
                     GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
                     DoPaintItems(aCanvas, aDrawRect, aPaintInfo);
+                }
+                finally
+                {
+                    GDI.DeleteObject(vPaintRegion);
+                }
+
+                vPaintRegion = GDI.CreateRectRgnIndirect(ref vRect);
+                try
+                {
+                    GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
                 }
                 finally
                 {
@@ -389,10 +402,27 @@ namespace HC.View
             if (x <= FPaddingLeft)
                 return HC.OffsetBefor;
             else
-                if (x >= Width - FPaddingRight)
-                    return HC.OffsetAfter;
-                else
-                    return HC.OffsetInner;
+            if (x >= Width - FPaddingRight)
+                return HC.OffsetAfter;
+            else
+                return HC.OffsetInner;
+        }
+
+        protected override string GetText()
+        {
+            string vResult = base.GetText();
+            for (int i = 0; i < FItems.Count; i++)
+            {
+                if (FItems[i].Checked)
+                {
+                    if (vResult != "")
+                        vResult = vResult + "，" + FItems[i].Text;
+                    else
+                        vResult = vResult + FItems[i].Text;
+                }
+            }
+
+            return vResult;
         }
 
         public HCRadioGroup(HCCustomData aOwnerData)
@@ -447,11 +477,13 @@ namespace HC.View
             FItems.Add(vRadioButton);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
-            string vTexts = "", vTextValues = "";
-            Byte vByte = 0;
+            base.SaveToStreamRange(aStream, aStart, aEnd);
+
+            Byte vByte = FColumns;
+            aStream.WriteByte(vByte);
+
             if (FMultSelect)
                 vByte = (byte)(vByte | (1 << 7));
 
@@ -463,6 +495,7 @@ namespace HC.View
 
             aStream.WriteByte(vByte);
 
+            string vTexts = "", vTextValues = "";
             if (FItems.Count > 0)
             {
                 vTexts = FItems[0].Text;

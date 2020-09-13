@@ -73,9 +73,9 @@ namespace HC.View
             FCode128.Text = (source as HCBarCodeItem).Text;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FCode128.Text);
         }
 

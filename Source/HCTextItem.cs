@@ -96,9 +96,9 @@ namespace HC.View
         }
 
         // 保存和读取
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             string vS = SubString(aStart + 1, aEnd - aStart);
             
             byte[] vBuffer = System.Text.Encoding.Unicode.GetBytes(vS);

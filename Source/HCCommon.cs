@@ -45,7 +45,7 @@ namespace HC.View
         public static Color clHighlight = Color.FromArgb(0x33, 0x99, 0xFF);
         public static Color clInfoBk = Color.FromArgb(0xFF, 0xFF, 0xE1);
         public static Color AnnotateBKColor = Color.FromArgb(0xFF, 0xD5, 0xD5);
-        public static Color AnnotateBKActiveColor = Color.FromArgb(0xA8, 0xA8, 0xFF);
+        public static Color AnnotateBKActiveColor = Color.FromArgb(0xFF, 0xA8, 0xA8);
         public static Color HyperTextColor = Color.FromArgb(0x05, 0x63, 0xC1);
         public static Color HCTransparentColor = Color.Transparent;  // 透明色
         //public static char[] HCBoolText = { '0', '1' };
@@ -129,11 +129,15 @@ namespace HC.View
             // 4.0 RadioGroup存储更多的属性，HCView存页码格式
             // 4.1 Combobox增加Static属性控制只选不可编辑
             // 4.2 Section存属性信息
+            // 4.3 Data存Script属性，SectionData存数据大小占位
+            // 4.4 供EmrView存自己的信息
+            // 4.5 ResizeItem存CanResize属性
+            // 4.6 节存储页码格式
 
-            HC_FileVersion = "4.2";
+            HC_FileVersion = "4.7";
 
         public const ushort
-            HC_FileVersionInt = 42;
+            HC_FileVersionInt = 47;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -710,6 +714,17 @@ namespace HC.View
             color = Color.FromArgb(A, R, G, B);
         }
 
+        public static void HCSetProperty(Dictionary<string, string> propertys, string key, string value)
+        {
+            if (value.IndexOf("=") >= 0)
+                throw new Exception("属性值中不允许有=号");
+
+            if (value != "")
+                propertys[key] = value;
+            else
+                propertys.Remove(key);
+        }
+
         public static Color GetXmlRGBColor(string aColorStr)
         {
             string[] vsRGB = aColorStr.Split(new string[] { "," }, StringSplitOptions.None);
@@ -1028,6 +1043,7 @@ namespace HC.View
         hosDomainWholeReplace,  // 域整体替换
         hosUndoing,
         hosRedoing,
+        hosInsertBreakItem,
         hosBatchInsert,  // 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确
         hosDestroying  // 编辑器在销毁中
     }

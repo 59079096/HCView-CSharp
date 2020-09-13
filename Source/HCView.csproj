@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="HCAnnotateData.cs" />
     <Compile Include="HCBarCodeItem.cs" />
+    <Compile Include="HCButtonItem.cs" />
     <Compile Include="HCCanvas.cs" />
     <Compile Include="HCCheckBoxItem.cs" />
     <Compile Include="HCCode128.cs" />

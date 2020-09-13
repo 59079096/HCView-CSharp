@@ -424,9 +424,9 @@ namespace HC.View
                 FItemValues.Add(vCombobox.ItemValues[i]);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
 
             byte vByte = 0;
             if (FStatic)

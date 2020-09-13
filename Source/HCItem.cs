@@ -416,10 +416,10 @@ namespace HC.View
 
         public void SaveToStream(Stream aStream)
         {
-            SaveToStream(aStream, 0, this.Length);
+            SaveToStreamRange(aStream, 0, this.Length);
         }
 
-        public virtual void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public virtual void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
             byte[] buffer = System.BitConverter.GetBytes(FStyleNo);
             aStream.Write(buffer, 0, buffer.Length);

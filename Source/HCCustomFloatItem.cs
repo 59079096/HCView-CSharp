@@ -115,7 +115,7 @@ namespace HC.View
                 aCanvas.DrawFocuseRect(FDrawRect);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
             byte[] vBuffer = BitConverter.GetBytes(this.StyleNo);
             aStream.Write(vBuffer, 0, vBuffer.Length);

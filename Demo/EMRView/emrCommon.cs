@@ -22,7 +22,8 @@ namespace EMRView
         public const int EMRSTYLE_TOOTH = -1001;  // 简单牙齿公式
         public const int EMRSTYLE_FANGJIAO = -1002;  // 房角公式
         public const int EMRSTYLE_YUEJING = -1003;  // 月经公式
-        
+        public const byte EmrViewVersion = 1;
+
         public static bool IsPY(Char aChar)
         {
             return ((aChar >= 'a') && (aChar <= 'z'))

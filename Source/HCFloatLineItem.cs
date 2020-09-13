@@ -150,9 +150,9 @@ namespace HC.View
             FShapeLine.PaintTo(aCanvas, aDrawRect, aPaintInfo);
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             FShapeLine.SaveToStream(aStream);
         }
 

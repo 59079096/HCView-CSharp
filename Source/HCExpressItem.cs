@@ -366,9 +366,9 @@ namespace HC.View
             FRightText = (source as HCExpressItem).RightText;
         }
 
-        public override void SaveToStream(Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
-            base.SaveToStream(aStream, aStart, aEnd);
+            base.SaveToStreamRange(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FLeftText);
             HC.HCSaveTextToStream(aStream, FRightText);
         }

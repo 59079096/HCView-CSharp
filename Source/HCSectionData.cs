@@ -17,6 +17,7 @@ using System.Drawing;
 using System.IO;
 using HC.Win32;
 using System.Xml;
+using System.Runtime.InteropServices;
 
 namespace HC.View
 {
@@ -67,6 +68,14 @@ namespace HC.View
 
         protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
+            if (aFileVersion > 42)
+            {
+                Int64 vDataSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vDataSize);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vDataSize = BitConverter.ToInt64(vBuffer, 0);
+            }
+
             base.DoLoadFromStream(aStream, aStyle, aFileVersion);
 
             if (aFileVersion > 12)
@@ -364,15 +373,25 @@ namespace HC.View
             return true;
         }
 
-        public override void SaveToStream(Stream aStream, int aStartItemNo, int aStartOffset,
-            int aEndItemNo, int aEndOffset)
+        public override void SaveToStream(Stream aStream)
         {
-            base.SaveToStream(aStream, aStartItemNo, aStartOffset, aEndItemNo, aEndOffset);
+            Int64 vBegPos = aStream.Position;
+            byte[] vBuffer = System.BitConverter.GetBytes(vBegPos);
+            aStream.Write(vBuffer, 0, vBuffer.Length);  // 数据大小占位，便于越过
 
-            byte[] vBuffer = BitConverter.GetBytes(FFloatItems.Count);
+            base.SaveToStream(aStream);
+
+            vBuffer = BitConverter.GetBytes(FFloatItems.Count);
             aStream.Write(vBuffer, 0, vBuffer.Length);
             for (int i = 0; i <= FFloatItems.Count - 1; i++)
-                FFloatItems[i].SaveToStream(aStream, 0, HC.OffsetAfter);
+                FFloatItems[i].SaveToStreamRange(aStream, 0, HC.OffsetAfter);
+
+            Int64 vEndPos = aStream.Position;
+            aStream.Position = vBegPos;
+            vBegPos = vEndPos - vBegPos - Marshal.SizeOf(vBegPos);
+            vBuffer = System.BitConverter.GetBytes(vBegPos);
+            aStream.Write(vBuffer, 0, vBuffer.Length);  // 当前页数据大小
+            aStream.Position = vEndPos;
         }
 
         public override void ToXml(XmlElement aNode)

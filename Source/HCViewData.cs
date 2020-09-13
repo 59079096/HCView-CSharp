@@ -27,6 +27,7 @@ namespace HC.View
 
     public class HCViewData : HCViewDevData  // 富文本数据类，可做为其他显示富文本类的基类
     {
+        private string FScript;
         private List<int> FDomainStartDeletes;  // 仅用于选中删除时，当域起始结束都选中时，删除了结束后标明起始的可删除
         private bool FCaretItemChanged = false;
         private HCDomainInfo FHotDomain,  // 当前高亮域
@@ -88,6 +89,13 @@ namespace HC.View
             return vResult;
         }
 
+        protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.DoLoadFromStream(aStream, aStyle, aFileVersion);
+            if (aFileVersion > 42)
+                HC.HCLoadTextFromStream(aStream, ref FScript, aFileVersion);
+        }
+
         /// <summary> 用于从流加载完Items后，检查不合格的Item并删除 </summary>
         protected override int CheckInsertItemCount(int aStartNo, int aEndNo)
         {
@@ -128,6 +136,18 @@ namespace HC.View
             return vResult;
         }
 
+        protected override void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
+        {
+            base.ReSetSelectAndCaret(aItemNo, aOffset, aNextWhenMid);
+            if (!this.Style.States.Contain(HCState.hosBatchInsert))
+            {
+                if (FDomainCount > 0)
+                    GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
+                else
+                    FActiveDomain.Clear();
+            }
+        }
+
         protected override void DoCaretItemChanged()
         {
             FCaretItemChanged = true;
@@ -147,7 +167,9 @@ namespace HC.View
             if (HCDomainItem.IsBeginMark(aItem))
                 FDomainCount--;
 
-            FHotDomain.Clear();
+            if (FHotDomain != null)
+                FHotDomain.Clear();
+
             base.DoRemoveItem(aItem);
         }
 
@@ -201,7 +223,7 @@ namespace HC.View
                         vResult = true;
                 }
                 else
-                    if (itemNo == SelectInfo.StartItemNo)
+                if (itemNo == SelectInfo.StartItemNo)
                     vResult = true;
             }
 
@@ -292,8 +314,8 @@ namespace HC.View
                     if ((aDrawItemNo < DrawItems.Count - 1) && DrawItems[aDrawItemNo + 1].ParaFirst)
                         DrawLineLastMrak(ACanvas, aDrawRect, aClearRect, aItemNo, aDrawItemNo, APaintInfo);  // 段尾的换行符
                     else
-                        if (aDrawItemNo == DrawItems.Count - 1)
-                            DrawLineLastMrak(ACanvas, aDrawRect, aClearRect, aItemNo, aDrawItemNo, APaintInfo);  // 段尾的换行符
+                    if (aDrawItemNo == DrawItems.Count - 1)
+                        DrawLineLastMrak(ACanvas, aDrawRect, aClearRect, aItemNo, aDrawItemNo, APaintInfo);  // 段尾的换行符
                 }
             }
         }
@@ -312,6 +334,7 @@ namespace HC.View
         protected override void CreateBefor()
         {
             base.CreateBefor();
+            FScript = "";
             FDomainCount = 0;
             FCaretItemChanged = false;
             FDomainStartDeletes = new List<int>();
@@ -627,6 +650,12 @@ namespace HC.View
             return vResult;
         }
 
+        public override void SaveToStream(Stream aStream)
+        {
+            base.SaveToStream(aStream);
+            HC.HCSaveTextToStream(aStream, FScript);
+        }
+
         public bool InsertDomain(HCDomainItem aMouldDomain)
         {
             if (!CanEdit())
@@ -674,30 +703,20 @@ namespace HC.View
                 Undo_GroupEnd(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
             }
 
+            ReSetSelectAndCaret(SelectInfo.StartItemNo);
             return Result;
         }
 
-        public void GetDomainStackFrom(int aItemNo, int aOffset, Stack<HCDomainInfo> aDomainStack)
+        private bool AskIsWantDomain(int itemNo, RectItemActionEventHandler isWantDomain)
         {
-            HCDomainInfo vDomainInfo;
-            for (int i = 0; i < aItemNo; i++)
-            {
-                if (Items[i] is HCDomainItem)
-                {
-                    if (HCDomainItem.IsBeginMark(Items[i]))
-                    {
-                        vDomainInfo = new HCDomainInfo();
-                        vDomainInfo.Data = this;
-                        vDomainInfo.BeginNo = i;
-                        aDomainStack.Push(vDomainInfo);
-                    }
-                    else
-                        aDomainStack.Pop();
-                }
-            }
+            if (isWantDomain != null)
+                return isWantDomain(Items[itemNo] as HCCustomRectItem);
+            else
+                return true;
         }
 
-        public void GetDomainFrom(int aItemNo, int aOffset, HCDomainInfo aDomainInfo)
+        public void GetDomainFrom(int aItemNo, int aOffset, HCDomainInfo aDomainInfo,
+            RectItemActionEventHandler isWantDomain = null)
         {
             aDomainInfo.Clear();
 
@@ -710,15 +729,17 @@ namespace HC.View
             // 确定往前找的起始位置
             int vStartNo = aItemNo;
             int vEndNo = aItemNo;
-            if (Items[aItemNo] is HCDomainItem)
+            HCDomainItem vDomainItem = null;
+            if ((Items[aItemNo] is HCDomainItem) && AskIsWantDomain(aItemNo, isWantDomain))
             {
-                if ((Items[aItemNo] as HCDomainItem).MarkType == MarkType.cmtBeg)
+                vDomainItem = Items[aItemNo] as HCDomainItem;
+                if (vDomainItem.MarkType == MarkType.cmtBeg)
                 {
                     if (aOffset == HC.OffsetAfter)
                     {
                         aDomainInfo.Data = this;
                         aDomainInfo.BeginNo = aItemNo;  // 当前即为起始标识
-                        vLevel = (Items[aItemNo] as HCDomainItem).Level;
+                        vLevel = vDomainItem.Level;
                         vEndNo = aItemNo + 1;
                     }
                     else  // 光标在前面
@@ -754,9 +775,10 @@ namespace HC.View
                 {
                     for (int i = vStartNo; i >= 0; i--)  // 先往前找起始
                     {
-                        if (Items[i] is HCDomainItem)
+                        if ((Items[i] is HCDomainItem) && AskIsWantDomain(i, isWantDomain))
                         {
-                            if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)  // 起始标记
+                            vDomainItem = Items[i] as HCDomainItem;
+                            if (vDomainItem.MarkType == MarkType.cmtBeg)  // 起始标记
                             {
                                 if (vCount != 0)
                                     vCount--;
@@ -764,7 +786,7 @@ namespace HC.View
                                 {
                                     aDomainInfo.Data = this;
                                     aDomainInfo.BeginNo = i;
-                                    vLevel = (Items[i] as HCDomainItem).Level;
+                                    vLevel = vDomainItem.Level;
                                     break;
                                 }
                             }
@@ -777,11 +799,12 @@ namespace HC.View
                     {
                         for (int i = vEndNo; i <= Items.Count - 1; i++)
                         {
-                            if (Items[i] is HCDomainItem)
+                            if ((Items[i] is HCDomainItem) && AskIsWantDomain(i, isWantDomain))
                             {
-                                if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结尾
+                                vDomainItem = Items[i] as HCDomainItem;
+                                if (vDomainItem.MarkType == MarkType.cmtEnd)  // 是结尾
                                 {
-                                    if ((Items[i] as HCDomainItem).Level == vLevel)
+                                    if (vDomainItem.Level == vLevel)
                                     {
                                         aDomainInfo.EndNo = i;
                                         break;
@@ -798,16 +821,17 @@ namespace HC.View
                 {
                     for (int i = vEndNo; i <= this.Items.Count - 1; i++)  // 先往后找结
                     {
-                        if (Items[i] is HCDomainItem)
+                        if ((Items[i] is HCDomainItem) && AskIsWantDomain(i, isWantDomain))
                         {
-                            if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)
+                            vDomainItem = Items[i] as HCDomainItem;
+                            if (vDomainItem.MarkType == MarkType.cmtEnd)
                             {
                                 if (vCount > 0)
                                     vCount--;
                                 else
                                 {
                                     aDomainInfo.EndNo = i;
-                                    vLevel = (Items[i] as HCDomainItem).Level;
+                                    vLevel = vDomainItem.Level;
                                     break;
                                 }
                             }
@@ -820,11 +844,12 @@ namespace HC.View
                     {
                         for (int i = vStartNo; i >= 0; i--)
                         {
-                            if (Items[i] is HCDomainItem)
+                            if ((Items[i] is HCDomainItem) && AskIsWantDomain(i, isWantDomain))
                             {
-                                if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtBeg)
+                                vDomainItem = Items[i] as HCDomainItem;
+                                if (vDomainItem.MarkType == MarkType.cmtBeg)
                                 {
-                                    if ((Items[i] as HCDomainItem).Level == vLevel)
+                                    if (vDomainItem.Level == vLevel)
                                     {
                                         aDomainInfo.Data = this;
                                         aDomainInfo.BeginNo = i;
@@ -844,11 +869,12 @@ namespace HC.View
             {
                 for (int i = vEndNo; i <= this.Items.Count - 1; i++)
                 {
-                    if (Items[i] is HCDomainItem)
+                    if ((Items[i] is HCDomainItem) && AskIsWantDomain(i, isWantDomain))
                     {
-                        if ((Items[i] as HCDomainItem).MarkType == MarkType.cmtEnd)  // 是结尾
+                        vDomainItem = Items[i] as HCDomainItem;
+                        if (vDomainItem.MarkType == MarkType.cmtEnd)  // 是结尾
                         {
-                            if ((Items[i] as HCDomainItem).Level == vLevel)
+                            if (vDomainItem.Level == vLevel)
                             {
                                 aDomainInfo.EndNo = i;
                                 break;
@@ -1275,7 +1301,7 @@ namespace HC.View
         {
             if (aTraverse != null)
             {
-                HCDomainInfo vDomainInfo;
+                HCDomainNode vDomainInfo;
                 for (int i = 0; i <= Items.Count - 1; i++)
                 {
                     if (aTraverse.Stop)
@@ -1285,12 +1311,18 @@ namespace HC.View
                     {
                         if (HCDomainItem.IsBeginMark(Items[i]))
                         {
-                            vDomainInfo = new HCDomainInfo();
-                            GetDomainFrom(i, HC.OffsetAfter, vDomainInfo);
+                            vDomainInfo = aTraverse.DomainStack.Peek();
+                            vDomainInfo = vDomainInfo.AppendChild();
+                            vDomainInfo.Data = this;
+                            vDomainInfo.BeginNo = i;
+                            //GetDomainFrom(i, HC.OffsetAfter, vDomainInfo);
                             aTraverse.DomainStack.Push(vDomainInfo);
                         }
                         else
-                            aTraverse.DomainStack.Pop();
+                        {
+                            vDomainInfo = aTraverse.DomainStack.Pop();
+                            vDomainInfo.EndNo = i;
+                        }
                     }
 
                     aTraverse.Process(this, i, aTraverse.Tag, aTraverse.DomainStack, ref aTraverse.Stop);
@@ -1298,23 +1330,6 @@ namespace HC.View
                         (Items[i] as HCCustomRectItem).TraverseItem(aTraverse);
                 }
             }
-        }
-
-        public void SaveDomainToStream(Stream aStream, int aDomainItemNo)
-        {
-            int vGroupBeg = -1;
-            int vGroupEnd = GetDomainAnother(aDomainItemNo);
-            if (vGroupEnd > aDomainItemNo)
-                vGroupBeg = aDomainItemNo;
-            else
-            {
-                vGroupBeg = vGroupEnd;
-                vGroupEnd = aDomainItemNo;
-            }
-
-            HC._SaveFileFormatAndVersion(aStream);
-            this.Style.SaveToStream(aStream);
-            SaveItemToStream(aStream, vGroupBeg + 1, 0, vGroupEnd - 1, GetItemOffsetAfter(vGroupEnd - 1));
         }
 
         public DataItemEventHandler OnCaretItemChanged

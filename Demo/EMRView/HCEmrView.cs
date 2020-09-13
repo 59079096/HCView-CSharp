@@ -20,6 +20,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Controls;
 using System.Configuration;
 using System.Windows.Documents;
+using System.Xml;
 
 namespace EMRView
 {
@@ -52,7 +53,7 @@ namespace EMRView
             FEditProcInfo;  // 当前正在编辑的病程信息
         private string FEditProcIndex;  // 当前允许编辑的病程
 #endif
-
+        private Dictionary<string, string> FPropertys;
         private EventHandler FOnCanNotEdit;
         private SyncDeItemEventHandle FOnSyncDeItem;
         private HCCopyPasteEventHandler FOnCopyRequest, FOnPasteRequest;
@@ -69,7 +70,7 @@ namespace EMRView
                 DeItem vDeItem;
                 HCItemTraverse vItemTraverse = new HCItemTraverse();
                 vItemTraverse.Areas.Add(SectionArea.saPage);
-                vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainInfo> domainStack, ref bool stop)
+                vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainNode> domainStack, ref bool stop)
                 {
                     if (data.Items[itemNo] is DeItem)
                     {
@@ -98,7 +99,7 @@ namespace EMRView
             }
         }
 
-        private void DoSyntaxCheck(HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
+        private void DoSyntaxCheck(HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainNode> aDomainStack, ref bool aStop)
         {
             //if (FOnSyntaxCheck != null) 调用前已经判断了
             if (aData.Items[aItemNo].StyleNo > HCStyle.Null)
@@ -134,6 +135,19 @@ namespace EMRView
                 FOnCanNotEdit(this, null);
 
             return Result;
+        }
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         /// <summary> 当有新Item创建完成后触发的事件 </summary>
@@ -771,6 +785,47 @@ namespace EMRView
                 return base.DoPasteFormatStream(aStream);
         }
 
+        protected override void DoSaveStreamBefor(Stream aStream)
+        {
+            aStream.WriteByte(EMR.EmrViewVersion);
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            base.DoSaveStreamBefor(aStream);
+        }
+
+        protected override void DoLoadStreamBefor(Stream aStream, ushort aFileVersion)
+        {
+            byte vVersion = 0;
+            if (aFileVersion > 43)
+                vVersion = (byte)aStream.ReadByte();
+
+            if (vVersion > 0)
+            {
+                string vS = "";
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                if (this.Style.States.Contain(HCState.hosLoading))
+                    HC.View.HC.SetPropertyString(vS, FPropertys);
+            }
+            else
+            if (this.Style.States.Contain(HCState.hosLoading))
+                FPropertys.Clear();
+
+            base.DoLoadStreamBefor(aStream, aFileVersion);
+        }
+
+        protected override void DoSaveXmlDocument(XmlDocument aXmlDoc)
+        {
+            base.DoSaveXmlDocument(aXmlDoc);
+            if (FPropertys.Count > 0)
+                aXmlDoc.DocumentElement.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        protected override void DoLoadXmlDocument(XmlDocument aXmlDoc)
+        {
+            base.DoLoadXmlDocument(aXmlDoc);
+            if (aXmlDoc.DocumentElement.HasAttribute("property"))
+                HC.View.HC.SetPropertyString(aXmlDoc.DocumentElement.GetAttribute("property"), FPropertys);
+        }
+
         protected override void DoSectionPaintPageBefor(object sender, int aPageIndex, RECT aRect, HCCanvas aCanvas, SectionPaintInfo aPaintInfo)
         {
             base.DoSectionPaintPageBefor(sender, aPageIndex, aRect, aCanvas, aPaintInfo);
@@ -1322,6 +1377,7 @@ namespace EMRView
             this.Style.DefaultTextStyle.Size = HC.View.HC.GetFontSize("小四");
             this.Style.DefaultTextStyle.Family = "宋体";
             this.HScrollBar.AddStatus(200);
+            FPropertys = new Dictionary<string, string>();
 #if PROCSERIES
             FUnEditProcBKColor = HC.View.HC.clBtnFace;
             FShowProcSplit = true;
@@ -1346,6 +1402,7 @@ namespace EMRView
             FEditProcInfo.Clear();
             FEditProcIndex = "";
 #endif
+            FPropertys.Clear();
             base.Clear();
         }
 
@@ -1467,7 +1524,7 @@ namespace EMRView
 
             HCCustomItem vItem;
             string vText = "";
-            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
+            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainNode> aDomainStack, ref bool aStop)
             {
                 vItem = aData.Items[aItemNo];
                 if ((vItem is DeItem) && (vItem as DeItem)[DeProp.Index] == aDeIndex)
@@ -1518,7 +1575,7 @@ namespace EMRView
             HCItemTraverse vItemTraverse = new HCItemTraverse();
             vItemTraverse.Tag = 0;
             vItemTraverse.Areas.Add(SectionArea.saPage);
-            vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainInfo> domainStack, ref bool stop)
+            vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainNode> domainStack, ref bool stop)
             {
                 if (data is HCPageData)
                 {
@@ -1559,7 +1616,7 @@ namespace EMRView
             HCItemTraverse vItemTraverse = new HCItemTraverse();
             vItemTraverse.Tag = 0;
             vItemTraverse.Areas.Add(SectionArea.saPage);
-            vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainInfo> domainStack, ref bool stop)
+            vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainNode> domainStack, ref bool stop)
             {
                 vItem = data.Items[itemNo];
                 if (vStart)
@@ -1592,7 +1649,7 @@ namespace EMRView
             HCItemTraverse vItemTraverse = new HCItemTraverse();
             vItemTraverse.Tag = 0;
             vItemTraverse.Areas.Add(SectionArea.saPage);
-            vItemTraverse.Process = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
+            vItemTraverse.Process = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainNode> aDomainStack, ref bool aStop)
             {
                 if (aData.Items[aItemNo].StyleNo > HCStyle.Null)
                 {
@@ -1641,7 +1698,7 @@ namespace EMRView
             vItemTraverse.Areas.Add(SectionArea.saFooter);
 
             HCCustomItem vItem;
-            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainInfo> aDomainStack, ref bool aStop)
+            TraverseItemEventHandle vTraveEvent = delegate (HCCustomData aData, int aItemNo, int aTag, Stack<HCDomainNode> aDomainStack, ref bool aStop)
             {
                 if (!aData.CanEdit())
                 {

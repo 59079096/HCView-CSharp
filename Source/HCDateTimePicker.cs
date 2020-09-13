@@ -548,9 +548,9 @@ namespace HC.View
             FDateTime = (source as HCDateTimePicker).DateTime;
         }
 
-        public override void SaveToStream(System.IO.Stream aStream, int aStart, int aEnd)
+        public override void SaveToStreamRange(System.IO.Stream aStream, int aStart, int aEnd)
         {
- 	        base.SaveToStream(aStream, aStart, aEnd);
+ 	        base.SaveToStreamRange(aStream, aStart, aEnd);
             HC.HCSaveTextToStream(aStream, FFormat);  // 存Format
 
             byte[] vBuffer = BitConverter.GetBytes(FDateTime.ToOADate());

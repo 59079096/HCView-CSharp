@@ -401,8 +401,11 @@ namespace HC.View
                     if (SelectInfo.EndItemNo >= 0)
                         Items[SelectInfo.EndItemNo].DisSelect();
 
-                    if ((aStartItemOffset == 0) || (aStartItemOffset == GetItemOffsetAfter(SelectInfo.StartItemNo)))  // 回到两头
-                        Items[SelectInfo.StartItemNo].DisSelect();
+                    if (SelectInfo.StartItemNo >= 0)
+                    {
+                        if ((aStartItemOffset == 0) || (aStartItemOffset == GetItemOffsetAfter(SelectInfo.StartItemNo)))  // 回到两头
+                            Items[SelectInfo.StartItemNo].DisSelect();
+                    }
 
                     SelectInfo.StartItemNo = aStartItemNo;
                     SelectInfo.StartItemOffset = aStartItemOffset;
@@ -612,6 +615,10 @@ namespace HC.View
                         Result = new HCDateTimePicker(this, DateTime.Now);
                         break;
 
+                    case HCStyle.Button:
+                        Result = new HCButtonItem(this.ParentData, "");
+                        break;
+
                     case HCStyle.RadioGroup:
                         Result = new HCRadioGroup(this);
                         break;
@@ -720,7 +727,16 @@ namespace HC.View
                     {
                         UndoAction_DeleteText(aItemNo, SelectInfo.EndItemOffset + 1, vAfterItem.Text);
 
-                        Items.Insert(aItemNo + 1, vAfterItem);
+                        Style.States.Include(HCState.hosInsertBreakItem);
+                        try
+                        {
+                            Items.Insert(aItemNo + 1, vAfterItem);
+                        }
+                        finally
+                        {
+                            Style.States.Exclude(HCState.hosInsertBreakItem);
+                        }
+
                         UndoAction_InsertItem(aItemNo + 1, 0);
                         vExtraCount++;
                     }
@@ -823,7 +839,16 @@ namespace HC.View
                         HCCustomItem vAfterItem = Items[aItemNo].BreakByOffset(SelectInfo.StartItemOffset);  // 后半部分对应的Item
                         UndoAction_DeleteText(aItemNo, SelectInfo.StartItemOffset + 1, vAfterItem.Text);
 
-                        Items.Insert(aItemNo + 1, vAfterItem);
+                        Style.States.Include(HCState.hosInsertBreakItem);
+                        try
+                        {
+                            Items.Insert(aItemNo + 1, vAfterItem);
+                        }
+                        finally
+                        {
+                            Style.States.Exclude(HCState.hosInsertBreakItem);
+                        }
+
                         UndoAction_InsertItem(aItemNo + 1, 0);
 
                         UndoAction_ItemStyle(aItemNo + 1, 0, vStyleNo);
@@ -1795,7 +1820,7 @@ namespace HC.View
                             vItem.ParaFirst = false;
                     }
                     else  // 插入非第一个Item
-                    if (!vItem.ParaFirst && MergeItemText(Items[vInsPos + i - 1 - vIgnoreCount], vItem))  // 和插入位置前一个能合并，有些不允许复制的粘贴时会造成前后可合并
+                    if (!this.Loading && !vItem.ParaFirst && MergeItemText(Items[vInsPos + i - 1 - vIgnoreCount], vItem))  // 和插入位置前一个能合并，有些不允许复制的粘贴时会造成前后可合并
                     {
                         vIgnoreCount++;
                         vItem.Dispose();
@@ -1821,7 +1846,16 @@ namespace HC.View
                     }
                     else  // 插入最后一个和后半部分不能合并
                     {
-                        Items.Insert(vInsetLastNo + 1, vAfterItem);
+                        Style.States.Include(HCState.hosInsertBreakItem);
+                        try
+                        {
+                            Items.Insert(vInsetLastNo + 1, vAfterItem);
+                        }
+                        finally
+                        {
+                            Style.States.Exclude(HCState.hosInsertBreakItem);
+                        }
+
                         UndoAction_InsertItem(vInsetLastNo + 1, 0);
 
                         vItemCount++;
@@ -1864,6 +1898,15 @@ namespace HC.View
 
                             if (vItemCount == 1)
                                 vCaretOffse = vOffsetStart + vCaretOffse;
+
+                            vItemCount--;
+                            vInsetLastNo--;
+                        }
+                        else
+                        if (Items[vInsPos].StyleNo > HCStyle.Null && Items[vInsPos].Length == 0)
+                        {
+                            UndoAction_DeleteItem(vInsPos, 0);
+                            Items.Delete(vInsPos);
 
                             vItemCount--;
                             vInsetLastNo--;
@@ -2033,7 +2076,16 @@ namespace HC.View
 
                             // 插入后半部分对应的Item
                             vCurItemNo = vCurItemNo + 1;
-                            Items.Insert(vCurItemNo, vAfterItem);
+                            Style.States.Include(HCState.hosInsertBreakItem);
+                            try
+                            {
+                                Items.Insert(vCurItemNo, vAfterItem);
+                            }
+                            finally
+                            {
+                                Style.States.Exclude(HCState.hosInsertBreakItem);
+                            }
+
                             UndoAction_InsertItem(vCurItemNo, 0);
 
                             // 插入新Item
@@ -2548,6 +2600,7 @@ namespace HC.View
 
                     FSelectSeekNo = FMouseMoveItemNo;
                     FSelectSeekOffset = FMouseMoveItemOffset;
+                    FMouseMoveDrawItemNo = GetDrawItemNoByOffset(FMouseMoveItemNo, FMouseMoveItemOffset);
 
                     if (SelectExists())
                         MatchItemSelectState();  // 设置选中范围内的Item选中状态
@@ -2729,20 +2782,8 @@ namespace HC.View
                     // 与201805172309相似
                     if (SelectInfo.StartItemNo >= 0)
                     {
-                        if (SelectInfo.StartItemNo != vUpItemNo)
-                        {
-                            Items[SelectInfo.StartItemNo].DisSelect();
-                            //Items[SelectInfo.StartItemNo].Active := False;
-                        }
-                        // 选中范围内其他Item取消选中
-                        for (int i = SelectInfo.StartItemNo + 1; i <= SelectInfo.EndItemNo; i++)  // 遍历弹起位置之外的其他Item
-                        {
-                            if (i != vUpItemNo)
-                            {
-                                Items[i].DisSelect();
-                                //Items[i].Active := False;
-                            }
-                        }
+                        for (int i = SelectInfo.StartItemNo; i <= SelectInfo.EndItemNo; i++)  // 遍历弹起位置之外的其他Item
+                            Items[i].DisSelect();
                     }
 
                     // 为拖拽光标准备
@@ -3021,6 +3062,7 @@ namespace HC.View
 
                             if (!DrawItems[Items[SelectInfo.StartItemNo + 1].FirstDItemNo].LineFirst)
                             {
+                                Style.UpdateInfoRePaint();
                                 KeyDown(e);
                                 return; ;
                             }
@@ -3199,6 +3241,7 @@ namespace HC.View
                             SelectInfo.StartItemOffset = 0;  // 下一个最前面
                             if (!DrawItems[Items[SelectInfo.StartItemNo].FirstDItemNo].LineFirst)
                             {
+                                Style.UpdateInfoRePaint();
                                 KeyDown(e);
                                 return;
                             }
@@ -3862,7 +3905,7 @@ namespace HC.View
                                 SelectInfo.StartItemOffset = HC.OffsetInner;
                             else
                             if (vRectItem is HCDomainItem)
-                                SelectInfo.StartItemOffset = vRectItem.GetOffsetAt(0);
+                                SelectInfo.StartItemOffset = vRectItem.GetOffsetAt(vRectItem.Width + 1);
                             else
                                 SelectInfo.StartItemOffset = HC.OffsetAfter;
 
@@ -4173,7 +4216,7 @@ namespace HC.View
                                 SelectInfo.StartItemOffset = HC.OffsetInner;
                             else
                             if (vRectItem is HCDomainItem)
-                                SelectInfo.StartItemOffset = vRectItem.GetOffsetAt(0);
+                                SelectInfo.StartItemOffset = vRectItem.GetOffsetAt(-1);
                             else
                                 SelectInfo.StartItemOffset = HC.OffsetBefor;
 
@@ -5484,7 +5527,16 @@ namespace HC.View
                         vAfterItem.Text = AText + vAfterItem.Text;
                         vAfterItem.ParaFirst = true;
                         // 插入原TextItem后半部分增加Text后的
-                        Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
+                        Style.States.Include(HCState.hosInsertBreakItem);
+                        try
+                        {
+                            Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
+                        }
+                        finally
+                        {
+                            Style.States.Exclude(HCState.hosInsertBreakItem);
+                        }
+
                         UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
                         vAddCount++;
 
@@ -5560,7 +5612,16 @@ namespace HC.View
                     SelectInfo.StartItemNo = SelectInfo.StartItemNo + 1;
                     SelectInfo.StartItemOffset = vNewItem.Length;
                     // 再插入原TextItem后半部分
-                    Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
+                    Style.States.Include(HCState.hosInsertBreakItem);
+                    try
+                    {
+                        Items.Insert(SelectInfo.StartItemNo + 1, vAfterItem);
+                    }
+                    finally
+                    {
+                        Style.States.Exclude(HCState.hosInsertBreakItem);
+                    }
+
                     UndoAction_InsertItem(SelectInfo.StartItemNo + 1, 0);
                     vAddCount++;
                 }

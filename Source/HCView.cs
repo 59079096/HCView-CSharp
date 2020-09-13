@@ -28,13 +28,11 @@ namespace HC.View
 
     public delegate void PaintEventHandler(HCCanvas aCanvas, PaintInfo aPaintInfo);
     public delegate bool HCCopyPasteEventHandler(int aFormat);
-    public delegate void HCLoadProc(ushort fileVersion, HCStyle style);
 
     // HCView必需是第一个类
     public class HCView : UserControl
     {
         private string FFileName;
-        private string FPageNoFormat;
         private HCStyle FStyle;
         private List<HCSection> FSections;
         private HCUndoList FUndoList;
@@ -50,6 +48,7 @@ namespace HC.View
         private Single FZoom;
         private bool FAutoZoom;  // 自动缩放
         private bool FIsChanged;  // 是否发生了改变
+        private bool FCanEditChecked, FCanEditSnapShot;
 
         private HCAnnotatePre FAnnotatePre;  // 批注管理
 
@@ -460,6 +459,8 @@ namespace HC.View
             int vPageIndex = GetPagePreviewFirst();
             if (vPageIndex > 0)
                 FVScrollBar.Position = GetPageIndexFilmTop(vPageIndex - 1);
+            else
+                FVScrollBar.Position = 0;
         }
 
         private void DoPageDown(object sender, EventArgs e)
@@ -473,6 +474,12 @@ namespace HC.View
         {
             if (FCaret == null)
                 return;
+
+            if (!FStyle.UpdateInfo.DragingSelected && ActiveSection.SelectExists())
+            {
+                FCaret.Hide();
+                return;
+            }
 
             // 初始化光标信息，为处理表格内往外迭代，只能放在这里
             HCCaretInfo vCaretInfo = new HCCaretInfo();
@@ -678,13 +685,14 @@ namespace HC.View
             UpdateView();
         }
 
+        private string GetPageNoFormat()
+        {
+            return this.ActiveSection.PageNoFormat;
+        }
+
         private void SetPageNoFormat(string value)
         {
-            if (FPageNoFormat != value)
-            {
-                FPageNoFormat = value;
-                UpdateView();
-            }
+            this.ActiveSection.PageNoFormat = value;
         }
 
         private void SetViewModel(HCViewModel value)
@@ -868,6 +876,8 @@ namespace HC.View
 
         protected virtual void DoChange()
         {
+            FCanEditChecked = false;
+
             SetIsChanged(true);
             DoMapChanged();
             if (FOnChange != null)
@@ -962,10 +972,16 @@ namespace HC.View
 
         protected virtual bool DoSectionCanEdit(object sender)
         {
+            if (FCanEditChecked)
+                return FCanEditSnapShot;
+
+            bool vResult = true;
             if ((!Style.States.Contain(HCState.hosLoading)) && (FOnSectionCanEdit != null))
-                return FOnSectionCanEdit(sender);
-            else
-                return true;
+                vResult = FOnSectionCanEdit(sender);
+
+            FCanEditChecked = true;
+            FCanEditSnapShot = vResult;
+            return vResult;
         }
 
         protected virtual bool DoSectionInsertTextBefor(HCCustomData aData, int aItemNo, int aOffset, string aText)
@@ -1010,7 +1026,7 @@ namespace HC.View
                     vAllPageCount = vAllPageCount + FSections[i].PageCount;
                 }
 
-                string vS = string.Format(FPageNoFormat, vSectionStartPageIndex + vSection.PageNoFrom + aPageIndex, vAllPageCount);
+                string vS = string.Format(vSection.PageNoFormat, vSectionStartPageIndex + vSection.PageNoFrom + aPageIndex, vAllPageCount);
                 aCanvas.Brush.Style = HCBrushStyle.bsClear;
 
                 aCanvas.Font.BeginUpdate();
@@ -1077,7 +1093,7 @@ namespace HC.View
                 aCanvas.TextOut(aRect.Left, aRect.Bottom + 4, "编辑器由 HCView 提供，技术交流QQ群：649023932");
             }
 
-            if (FAnnotatePre.Visible)  // 当前页有批注，绘制批注
+            if (FAnnotatePre.Visible && !aPaintInfo.Print)  // 当前页有批注，绘制批注
                 FAnnotatePre.PaintDrawAnnotate(sender, aRect, aCanvas, aPaintInfo);
 
             if (FOnSectionPaintPaperAfter != null)
@@ -1115,7 +1131,7 @@ namespace HC.View
                     aCanvas.Pen.EndUpdate();
                 }
 
-                aCanvas.DrawLine(aDrawRect.Left, aDrawRect.Bottom, aDrawRect.Right, aDrawRect.Bottom);
+                aCanvas.DrawLine(aClearRect.Left, aClearRect.Bottom, aClearRect.Right, aClearRect.Bottom);
             }
 
             if (FOnSectionDrawItemPaintAfter != null)
@@ -1189,6 +1205,11 @@ namespace HC.View
 
         /// <summary> 读取文档后触发事件，便于确认订制特征数据 </summary>
         protected virtual void DoLoadStreamAfter(Stream aStream, ushort aFileVersion) { }
+
+        protected virtual void DoSaveXmlDocument(XmlDocument aXmlDoc) { }
+
+        /// <summary> 读取文档后触发事件，便于确认订制特征数据 </summary>
+        protected virtual void DoLoadXmlDocument(XmlDocument aXmlDoc) { }
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
@@ -1320,6 +1341,8 @@ namespace HC.View
                 this.Redo();
             else
                 ActiveSection.KeyDown(e);
+
+            base.OnKeyDown(e);
         }
 
         protected override void OnKeyUp(KeyEventArgs e)
@@ -1581,8 +1604,10 @@ namespace HC.View
             FAnnotatePre.OnUpdateView = DoAnnotatePreUpdateView;
 
             FFileName = "";
-            FPageNoFormat = "{0}/{1}";
             FIsChanged = false;
+            FCanEditChecked = false;
+            FCanEditSnapShot = false;
+
             FZoom = 1;
             FAutoZoom = false;
             FViewModel = HCViewModel.hvmFilm;
@@ -1822,6 +1847,13 @@ namespace HC.View
                         aStream.Read(vBuffer, 0, vBuffer.Length);
                         byte vByte = vBuffer[0];  // 节数量
 
+                        if (aFileVersion > 42)
+                        {
+                            ActiveSection.SeekStreamToArea(aStream, vStyle, aFileVersion, SectionArea.saPage, false);
+                            vResult = ActiveSection.InsertStream(aStream, vStyle, aFileVersion);
+                            return;
+                        }
+
                         using (MemoryStream vDataStream = new MemoryStream())
                         {
                             using (HCSection vSection = new HCSection(vStyle))
@@ -1838,7 +1870,7 @@ namespace HC.View
                                 vBuffer = BitConverter.GetBytes(vShowUnderLine);
                                 vDataStream.Read(vBuffer, 0, vBuffer.Length);
                                 vShowUnderLine = BitConverter.ToBoolean(vBuffer, 0);
-
+                                vDataStream.Position += 8;  // DataSize
                                 vResult = ActiveSection.InsertStream(vDataStream, vStyle, HC.HC_FileVersionInt);  // 只插入第一节的数据
                             }
                         }
@@ -1880,6 +1912,82 @@ namespace HC.View
             InsertBreak();
             ApplyParaAlignHorz(ParaAlignHorz.pahLeft);
             return InsertStream(stream);
+        }
+
+        public bool LoadHeaderFromStream(Stream stream, bool paperInfo)
+        {
+            bool vResult = false;
+            this.BeginUpdate();
+            try
+            {
+                HCStyle vStyle = new HCStyle();
+                DoLoadFromStream(stream, vStyle, delegate (ushort fileVersion)
+                {
+                    byte vByte = 0;
+                    vByte = (byte)stream.ReadByte();  // 节数量
+                    
+                    if (fileVersion > 42)
+                    {
+                        this.ActiveSection.Header.BeginFormat();
+                        try
+                        {
+                            this.ActiveSection.SeekStreamToArea(stream, vStyle, fileVersion, SectionArea.saHeader, paperInfo);
+                            this.ActiveSection.Header.LoadFromStream(stream, vStyle, fileVersion);
+                        }
+                        finally
+                        {
+                            this.ActiveSection.Header.EndFormat(false);
+                        }
+
+                        this.ResetActiveSectionMargin();
+                        vResult = true;
+                    }
+                });
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
+
+            return vResult;
+        }
+
+        public bool LoadFooterFromStream(Stream stream, bool paperInfo)
+        {
+            bool vResult = false;
+            this.BeginUpdate();
+            try
+            {
+                HCStyle vStyle = new HCStyle();
+                DoLoadFromStream(stream, vStyle, delegate (ushort fileVersion)
+                {
+                    byte vByte = 0;
+                    vByte = (byte)stream.ReadByte();  // 节数量
+
+                    if (fileVersion > 42)
+                    {
+                        this.ActiveSection.Footer.BeginFormat();
+                        try
+                        {
+                            this.ActiveSection.SeekStreamToArea(stream, vStyle, fileVersion, SectionArea.saFooter, paperInfo);
+                            this.ActiveSection.Footer.LoadFromStream(stream, vStyle, fileVersion);
+                        }
+                        finally
+                        {
+                            this.ActiveSection.Footer.EndFormat(false);
+                        }
+
+                        this.ResetActiveSectionMargin();
+                        vResult = true;
+                    }
+                });
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
+
+            return vResult;
         }
 
         /// <summary> 插入文本(可包括\r\n) </summary>
@@ -1994,6 +2102,7 @@ namespace HC.View
             try
             {
                 HCSection vSection = NewDefaultSection();
+                vSection.PageNoFormat = FSections[FActiveSectionIndex].PageNoFormat;
                 vSection.AssignPaper(FSections[FActiveSectionIndex]);
                 FSections.Insert(FActiveSectionIndex + 1, vSection);
                 FActiveSectionIndex = FActiveSectionIndex + 1;
@@ -3151,6 +3260,7 @@ namespace HC.View
             vElement.SetAttribute("ver", HC.HC_FileVersion);
             vElement.SetAttribute("lang", HC.HC_PROGRAMLANGUAGE.ToString());
             vXml.AppendChild(vElement);
+            DoSaveXmlDocument(vXml);
 
             XmlElement vNode = vXml.CreateElement("style");
             FStyle.ToXml(vNode);  // 样式表
@@ -3216,6 +3326,8 @@ namespace HC.View
 
                         string vVersion = vXml.DocumentElement.Attributes["ver"].Value;
                         byte vLang = byte.Parse(vXml.DocumentElement.Attributes["lang"].Value);
+
+                        DoLoadXmlDocument(vXml);
 
                         FStyle.States.Include(HCState.hosLoading);
                         try
@@ -4239,7 +4351,7 @@ namespace HC.View
         /// <summary> 页码的格式 </summary>
         public string PageNoFormat
         {
-            get { return FPageNoFormat; }
+            get { return GetPageNoFormat(); }
             set { SetPageNoFormat(value); }
         }
 
@@ -4501,7 +4613,7 @@ namespace HC.View
 
                         vDrawAnnotate.Rect = new RECT(0, 0, HC.AnnotationWidth - 30, 0);
 
-                        User.DrawTextEx(aCanvas.Handle, vText, -1, ref vDrawAnnotate.Rect,
+                        User.DrawTextEx(aCanvas.Handle, i.ToString() + vText, -1, ref vDrawAnnotate.Rect,
                             User.DT_TOP | User.DT_LEFT | User.DT_WORDBREAK | User.DT_CALCRECT, IntPtr.Zero);  // 计算区域
                         if (vDrawAnnotate.Rect.Right < HC.AnnotationWidth - 30)
                             vDrawAnnotate.Rect.Right = HC.AnnotationWidth - 30;
