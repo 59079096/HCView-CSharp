@@ -166,7 +166,7 @@ namespace HC.View
             aCellData.OnCreateItemByStyle = (OwnerData as HCViewData).OnCreateItemByStyle;      
             aCellData.OnDrawItemPaintBefor = (OwnerData as HCRichData).OnDrawItemPaintBefor;
             aCellData.OnDrawItemPaintContent = (OwnerData as HCRichData).OnDrawItemPaintContent;
-            aCellData.OnDrawItemPaintAfter = (OwnerData as HCViewData).OnDrawItemPaintAfter;
+            aCellData.OnDrawItemPaintAfter = DoCellDataDrawItemPaintAfter;
 
             aCellData.OnInsertAnnotate = (OwnerData as HCViewData).OnInsertAnnotate;
             aCellData.OnRemoveAnnotate = (OwnerData as HCViewData).OnRemoveAnnotate;
@@ -679,9 +679,12 @@ namespace HC.View
                         //Assert(vCellScreenBottom - vMergeCellDataDrawTop >= FRows[vR].Height, "计划使用Continue但待确认会符合情况的");
                         vCellData = FRows[vDestRow][vDestCol].CellData;  // 目标CellData，20170208003 如果移到if vDrawData外面则20170208002不需要了
                         vCellScreenTop = Math.Max(aDataScreenTop, vCellDataDrawTop - FCellVPaddingPix);  // 屏显最上端
-                        if (vCellScreenTop - vDestCellDataDrawTop < vCellData.Height)
+                        if (vCellScreenTop - vDestCellDataDrawTop < FRows[vDestRow][vDestCol].Height)
                         {
-                            vCellRect = new RECT(vCellDrawLeft, vCellScreenTop, vCellDrawLeft + FRows[vR][vC].Width, vCellScreenBottom);
+                            vCellRect = new RECT(vCellDrawLeft,
+                                vDestCellDataDrawTop - FCellVPaddingPix,
+                                vCellDrawLeft + FRows[vDestRow][vDestCol].CellData.Width + FCellHPaddingPix + FCellHPaddingPix,
+                                vDestCellDataDrawTop + FRows[vDestRow][vDestCol].CellData.Height);
 
                             // 背景色
                             if ((this.IsSelectComplate || vCellData.CellSelectedAll) && (!aPaintInfo.Print))
@@ -715,6 +718,8 @@ namespace HC.View
                             //if vFristDItemNo >= 0 then
                             if (vCellScreenBottom - vCellScreenTop > FCellVPaddingPix)
                             {
+                                DoCellPaintDataBefor(vDestRow, vDestCol, vCellRect, aCanvas, aPaintInfo);
+
                                 FRows[vDestRow][vDestCol].PaintTo(
                                     vCellDrawLeft, vDestCellDataDrawTop - FCellVPaddingPix,
                                     vCellDrawLeft + FColWidths[vC] + GetColSpanWidth(vDestRow, vDestCol),
@@ -1013,6 +1018,21 @@ namespace HC.View
             #endregion
 
         }
+
+        protected void DoCellPaintDataBefor(int row, int col, RECT cellDrawRect, HCCanvas canvas, PaintInfo paintInfo)
+        {
+
+        }
+
+        protected void DoCellDataDrawItemPaintAfter(HCCustomData data, int itemNo, int drawItemNo,
+            RECT drawRect, RECT clearRect, int dataDrawLeft, int dataDrawRight, int dataDrawBottom, int dataScreenTop,
+            int dataScreenBottom, HCCanvas canvas, PaintInfo paintInfo)
+        {
+            (OwnerData as HCViewData).OnDrawItemPaintAfter(data, itemNo, drawItemNo,
+                drawRect, clearRect, dataDrawLeft, dataDrawRight, dataDrawBottom,
+                dataScreenTop, dataScreenBottom, canvas, paintInfo);
+        }
+
 
         // 继承THCCustomItem抽象方法
         public override bool MouseDown(MouseEventArgs e)
@@ -3127,7 +3147,7 @@ namespace HC.View
 
                     if (!Result)
                     {
-                        for (int j = vCol; j >= 0; j--)  // 在同行后面的单元格
+                        for (int j = vCol - 1; j >= 0; j--)  // 在同行后面的单元格
                         {
                             if ((this[vRow, j].ColSpan < 0) || (this[vRow, j].RowSpan < 0))
                                 continue;
@@ -3150,9 +3170,9 @@ namespace HC.View
 
                     if (!Result)
                     {
-                        for (int i = FSelectCellRang.StartRow; i >= 0; i--)
+                        for (int i = FSelectCellRang.StartRow - 1; i >= 0; i--)
                         {
-                            for (int j = FColWidths.Count; j >= 0; j--)
+                            for (int j = FColWidths.Count - 1; j >= 0; j--)
                             {
                                 if ((FRows[i][j].ColSpan < 0) || (FRows[i][j].RowSpan < 0))
                                     continue;
@@ -3200,7 +3220,7 @@ namespace HC.View
                     Result = FRows[vRow][vCol].CellData.Search(aKeyword, aForward, aMatchCase);
                     if (!Result)
                     {
-                        for (int j = vCol; j <= FColWidths.Count - 1; j++)  // 在同行后面的单元格
+                        for (int j = vCol + 1; j <= FColWidths.Count - 1; j++)  // 在同行后面的单元格
                         {
                             if ((FRows[vRow][j].ColSpan < 0) || (FRows[vRow][j].RowSpan < 0))
                                 continue;
@@ -3221,7 +3241,7 @@ namespace HC.View
 
                     if (!Result)  // 同行后面的单元格没找到
                     {
-                        for (int i = FSelectCellRang.StartRow; i <= FRows.Count - 1; i++)
+                        for (int i = FSelectCellRang.StartRow + 1; i <= FRows.Count - 1; i++)
                         {
                             for (int j = 0; j <= FColWidths.Count - 1; j++)
                             {

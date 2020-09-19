@@ -1274,6 +1274,12 @@ namespace HC.View
                     this.SelectInfo.StartItemNo = vItemNo;
                     this.SelectInfo.StartItemOffset = vOffset;
                 }
+                else
+                if (this.SelectInfo.StartItemNo < 0)
+                {
+                    this.SelectInfo.StartItemNo = vItemNo;
+                    this.SelectInfo.StartItemOffset = vOffset;
+                }
             }
             else
                 this.MatchItemSelectState();

@@ -2372,7 +2372,8 @@ namespace HC.View
                     RECT vDrawRect = FPage.DrawItems[ADrawItemNo].Rect;
 
                     //if vSuplus = 0 then  // 第一次计算分页
-                    //HC.InflateRect(ref vDrawRect, 0, -FPage.GetLineBlankSpace(ADrawItemNo) / 2);  // 减掉行间距，为了达到去年行间距能放下不换页的效果
+                    if ((ADrawItemNo == FPage.DrawItems.Count - 1) || (FPage.DrawItems[ADrawItemNo + 1].LineFirst))
+                        HC.InflateRect(ref vDrawRect, 0, -FPage.GetLineBlankSpace(ADrawItemNo) / 2);
 
                     vRectItem.CheckFormatPageBreak(  // 去除行间距后，判断表格跨页位置
                         FPages.Count - 1,
@@ -2639,6 +2640,11 @@ namespace HC.View
         public int GetPageWidth()
         {
             return FPaper.WidthPix - FPaper.MarginLeftPix - FPaper.MarginRightPix;
+        }
+
+        public HCPage GetPageInfo(int pageIndex)
+        {
+            return FPages[pageIndex];
         }
 
         public int GetFilmHeight()
