@@ -2440,9 +2440,9 @@ namespace HC.View
                     Image vImage = (Image)vIData.GetData(typeof(Bitmap));
 
                     HCRichData vTopData = this.ActiveSectionTopLevelData() as HCRichData;
-                    HCImageItem vImageItem = new HCImageItem(vTopData);
+                    HCImageItem vImageItem = vTopData.CreateItemByStyle(HCStyle.Image) as HCImageItem;
 
-                    vImageItem.Image = new Bitmap(vImage);
+                    vImageItem.ImageAssign(vImage);
 
                     vImageItem.Width = vImageItem.Image.Width;
                     vImageItem.Height = vImageItem.Image.Height;

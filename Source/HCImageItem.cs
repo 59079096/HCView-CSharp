@@ -231,6 +231,12 @@ namespace HC.View
             this.FEmpty = false;
         }
 
+        public void ImageAssign(Image image)
+        {
+            FImage = new Bitmap(image);
+            FEmpty = false;
+        }
+
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);

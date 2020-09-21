@@ -1804,6 +1804,13 @@ namespace HC.View
                         vItem.ParaNo = vCaretParaNo;
                     }
 
+                    if (vItem.StyleNo > 0 && vItem.Text == "" && !vItem.ParaFirst)
+                    {
+                        vIgnoreCount++;
+                        vItem.Dispose();
+                        continue;
+                    }
+
                     if (i == 0)  // 插入的第一个Item
                     {
                         if (vInsertBefor)  // 第一个在某Item最前面插入(粘贴)
