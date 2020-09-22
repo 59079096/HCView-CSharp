@@ -1150,14 +1150,14 @@ namespace HC.View
             else  // 没有选中内容
             {
                 if ((GetItemStyle(SelectInfo.StartItemNo) < HCStyle.Null)
-                && (SelectInfo.StartItemOffset == HC.OffsetInner))
+                    && (SelectInfo.StartItemOffset == HC.OffsetInner))
                 {
                     if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
                         UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
                     else
                         UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
-                    vFormatFirstDrawItemNo = Items[SelectInfo.StartItemNo].FirstDItemNo;
+                    vFormatFirstDrawItemNo = GetFormatFirstDrawItem(Items[SelectInfo.StartItemNo].FirstDItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
                     (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ApplySelectParaStyle(this.Style, aMatchStyle);
                     ReFormatData(vFormatFirstDrawItemNo, SelectInfo.StartItemNo);
