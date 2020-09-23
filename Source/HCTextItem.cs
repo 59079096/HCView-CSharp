@@ -95,6 +95,14 @@ namespace HC.View
             return vResult;
         }
 
+        public override bool AcceptAction(int aOffset, bool aRestrain, HCAction aAction)
+        {
+            bool vR = base.AcceptAction(aOffset, aRestrain, aAction);
+            if (vR && FHyperLink != "" && aAction == HCAction.actConcatText)
+                vR = false;
+
+            return vR;
+        }
         // 保存和读取
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
