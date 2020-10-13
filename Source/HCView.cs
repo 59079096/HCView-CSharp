@@ -2733,7 +2733,7 @@ namespace HC.View
         public int GetActivePageIndex()
         {
             int Result = 0;
-            for (int i = 0; i <= ActiveSectionIndex - 1; i++)
+            for (int i = 0; i < FActiveSectionIndex; i++)
                 Result = Result + FSections[i].PageCount;
 
             return Result + ActiveSection.ActivePageIndex;
@@ -2743,7 +2743,7 @@ namespace HC.View
         public int GetPagePreviewFirst()
         {
             int Result = 0;
-            for (int i = 0; i <= ActiveSectionIndex - 1; i++)
+            for (int i = 0; i < FActiveSectionIndex; i++)
                 Result = Result + FSections[i].PageCount;
 
             return Result + FSections[FActiveSectionIndex].DisplayFirstPageIndex;
@@ -2753,7 +2753,7 @@ namespace HC.View
         public int GetPageCount()
         {
             int Result = 0;
-            for (int i = 0; i <= FSections.Count - 1; i++)
+            for (int i = 0; i < FSections.Count; i++)
                 Result = Result + FSections[i].PageCount;
 
             return Result;
@@ -3417,7 +3417,7 @@ namespace HC.View
         {
             int Result = -1, vPageCount = 0;
 
-            for (int i = 0; i <= FSections.Count - 1; i++)
+            for (int i = 0; i < FSections.Count; i++)
             {
                 if (vPageCount + FSections[i].PageCount > aPageIndex)
                 {

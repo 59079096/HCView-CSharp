@@ -616,7 +616,7 @@ namespace HC.View
                         break;
 
                     case HCStyle.Button:
-                        Result = new HCButtonItem(this.ParentData, "");
+                        Result = new HCButtonItem(this, "");
                         break;
 
                     case HCStyle.RadioGroup:

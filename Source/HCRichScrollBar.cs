@@ -205,7 +205,7 @@ namespace HC.View
         }
 
         //
-        public void SetAreaPos(int aTag, int aPosition, int  aHeight)
+        public void SetAreaPos(int aTag, int aPosition, int aHeight)
         {
             if (FAreaMarks == null)
                 FAreaMarks = new List<AreaMark>();

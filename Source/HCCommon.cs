@@ -1184,7 +1184,7 @@ namespace HC.View
             User.CreateCaret(FOwnHandle, IntPtr.Zero, FWidth, FHeight);
         }
 
-        public void Show(int aX, int  aY)
+        public void Show(int aX, int aY)
         {
             FDisFocus = false;
 

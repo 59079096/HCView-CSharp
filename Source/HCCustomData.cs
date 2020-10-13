@@ -340,21 +340,21 @@ namespace HC.View
         /// <summary> Item成功合并到同段前一个Item </summary>
         protected bool MergeItemToPrio(int aItemNo)
         {
-            return (aItemNo > 0) && (!Items[aItemNo].ParaFirst)
-                && MergeItemText(Items[aItemNo - 1], Items[aItemNo]);
+            return (aItemNo > 0) && (!FItems[aItemNo].ParaFirst)
+                && MergeItemText(FItems[aItemNo - 1], FItems[aItemNo]);
         }
 
         /// <summary> Item成功合并到同段后一个Item </summary>
         protected bool MergeItemToNext(int aItemNo)
         {
-            return (aItemNo < Items.Count - 1) && (!Items[aItemNo + 1].ParaFirst)
-                && MergeItemText(Items[aItemNo], Items[aItemNo + 1]);
+            return (aItemNo < FItems.Count - 1) && (!FItems[aItemNo + 1].ParaFirst)
+                && MergeItemText(FItems[aItemNo], FItems[aItemNo + 1]);
         }
 
         protected int CalcContentHeight()
         {
             if (FDrawItems.Count > 0)
-                return FDrawItems[DrawItems.Count - 1].Rect.Bottom - FDrawItems[0].Rect.Top;
+                return FDrawItems[FDrawItems.Count - 1].Rect.Bottom - FDrawItems[0].Rect.Top;
             else
                 return 0;
         }
@@ -362,57 +362,57 @@ namespace HC.View
         #region
         private void CheckItemSelectedState(int aItemNo)
         {
-            if ((aItemNo > SelectInfo.StartItemNo) && (aItemNo < SelectInfo.EndItemNo))
-                Items[aItemNo].SelectComplate();
+            if ((aItemNo > FSelectInfo.StartItemNo) && (aItemNo < FSelectInfo.EndItemNo))
+                FItems[aItemNo].SelectComplate();
             else
-            if (aItemNo == SelectInfo.StartItemNo)
+            if (aItemNo == FSelectInfo.StartItemNo)
             {
-                if (aItemNo == SelectInfo.EndItemNo)
+                if (aItemNo == FSelectInfo.EndItemNo)
                 {
-                    if (Items[aItemNo].StyleNo < HCStyle.Null)
+                    if (FItems[aItemNo].StyleNo < HCStyle.Null)
                     {
-                        if ((SelectInfo.StartItemOffset == HC.OffsetInner)
-                          || (SelectInfo.EndItemOffset == HC.OffsetInner))
-                            Items[aItemNo].SelectPart();
+                        if ((FSelectInfo.StartItemOffset == HC.OffsetInner)
+                          || (FSelectInfo.EndItemOffset == HC.OffsetInner))
+                            FItems[aItemNo].SelectPart();
                         else
-                            Items[aItemNo].SelectComplate();
+                            FItems[aItemNo].SelectComplate();
                     
                     }
                     else  // TextItem
                     {
-                        if ((SelectInfo.StartItemOffset == 0)
-                          && (SelectInfo.EndItemOffset == Items[aItemNo].Length)) 
-                            Items[aItemNo].SelectComplate();
+                        if ((FSelectInfo.StartItemOffset == 0)
+                          && (FSelectInfo.EndItemOffset == FItems[aItemNo].Length)) 
+                            FItems[aItemNo].SelectComplate();
                         else
-                            Items[aItemNo].SelectPart();
+                            FItems[aItemNo].SelectPart();
                     }
                 }
                 else  // 选中在不同的Item，当前是起始
                 {
-                    if (SelectInfo.StartItemOffset == 0)
-                        Items[aItemNo].SelectComplate();
+                    if (FSelectInfo.StartItemOffset == 0)
+                        FItems[aItemNo].SelectComplate();
                     else
-                    if (SelectInfo.StartItemOffset < this.GetItemOffsetAfter(aItemNo))
-                        Items[aItemNo].SelectPart();
+                    if (FSelectInfo.StartItemOffset < this.GetItemOffsetAfter(aItemNo))
+                        FItems[aItemNo].SelectPart();
                 }
             }
             else  // 选中在不同的Item，当前是结尾 if AItemNo = SelectInfo.EndItemNo) then
             {
-                if (Items[aItemNo].StyleNo < HCStyle.Null)
+                if (FItems[aItemNo].StyleNo < HCStyle.Null)
                 {
-                    if (SelectInfo.EndItemOffset == HC.OffsetAfter)
-                        Items[aItemNo].SelectComplate();
+                    if (FSelectInfo.EndItemOffset == HC.OffsetAfter)
+                        FItems[aItemNo].SelectComplate();
                     else
-                    if (SelectInfo.EndItemOffset > HC.OffsetBefor)
-                        Items[aItemNo].SelectPart();
+                    if (FSelectInfo.EndItemOffset > HC.OffsetBefor)
+                        FItems[aItemNo].SelectPart();
                 
                 }
                 else  // TextItem
                 {
-                    if (SelectInfo.EndItemOffset == Items[aItemNo].Length)
-                        Items[aItemNo].SelectComplate();
+                    if (FSelectInfo.EndItemOffset == FItems[aItemNo].Length)
+                        FItems[aItemNo].SelectComplate();
                     else
-                        Items[aItemNo].SelectPart();
+                        FItems[aItemNo].SelectPart();
                 }
             }
         }
@@ -423,7 +423,7 @@ namespace HC.View
         {
             if (SelectExists())
             {
-                for (int i = SelectInfo.StartItemNo; i <= SelectInfo.EndItemNo; i++)  // 起始结束之间的按全选中处
+                for (int i = FSelectInfo.StartItemNo; i <= FSelectInfo.EndItemNo; i++)  // 起始结束之间的按全选中处
                     CheckItemSelectedState(i);
             }
         }
@@ -490,7 +490,7 @@ namespace HC.View
 
             while (Result > 0)
             {
-                if (DrawItems[Result].LineFirst)
+                if (FDrawItems[Result].LineFirst)
                     break;
                 else
                     Result--;
@@ -513,7 +513,7 @@ namespace HC.View
             }
 
             vLastDItemNo--;
-            Result = DrawItems[vLastDItemNo].ItemNo;
+            Result = FDrawItems[vLastDItemNo].ItemNo;
 
             return Result;
         }
@@ -818,8 +818,8 @@ namespace HC.View
 
         public virtual bool CanEdit()
         {
-            if (this.ParentData != null)
-                return this.ParentData.CanEdit();
+            if (FParentData != null)
+                return FParentData.CanEdit();
             else
                 return true;
         }
@@ -945,16 +945,16 @@ namespace HC.View
                 {
                     if ((!FItems[aItemNo].ParaFirst)
                     && (aItemNo > 0)
-                    && (Items[aItemNo - 1].StyleNo > HCStyle.Null))
+                    && (FItems[aItemNo - 1].StyleNo > HCStyle.Null))
                         vStyleItemNo = aItemNo - 1;
                 }
 
-                if ((Items[vStyleItemNo] is HCTextRectItem) && (FSelectInfo.StartItemOffset == HC.OffsetInner))
-                    this.CurStyleNo = (Items[vStyleItemNo] as HCTextRectItem).TextStyleNo;
+                if ((FItems[vStyleItemNo] is HCTextRectItem) && (FSelectInfo.StartItemOffset == HC.OffsetInner))
+                    this.CurStyleNo = (FItems[vStyleItemNo] as HCTextRectItem).TextStyleNo;
                 else
-                    this.CurStyleNo = Items[vStyleItemNo].StyleNo;
+                    this.CurStyleNo = FItems[vStyleItemNo].StyleNo;
 
-                this.CurParaNo = Items[vStyleItemNo].ParaNo;
+                this.CurParaNo = FItems[vStyleItemNo].ParaNo;
             }
 
             if (FItems[aItemNo].StyleNo < HCStyle.Null)
@@ -1142,7 +1142,7 @@ namespace HC.View
 
             // 判断坐标是否在AItemNo对应的AOffset上
             int vDrawItemNo = GetDrawItemNoByOffset(aItemNo, aOffset);
-            RECT vDrawRect = DrawItems[vDrawItemNo].Rect;
+            RECT vDrawRect = FDrawItems[vDrawItemNo].Rect;
             Result = HC.PtInRect(vDrawRect, x, y);
             if (Result)
             {
@@ -1502,9 +1502,10 @@ namespace HC.View
             {
                 if (FItems[aItemNo].Length > 0)
                 {
+                    HCCustomDrawItem vDrawItem;
                     for (int i = FItems[aItemNo].FirstDItemNo; i <= FDrawItems.Count - 1; i++)
                     {
-                        HCCustomDrawItem vDrawItem = FDrawItems[i];
+                        vDrawItem = FDrawItems[i];
                         if (vDrawItem.ItemNo != aItemNo)
                             break;
 
@@ -1550,11 +1551,11 @@ namespace HC.View
         public HCCustomData GetTopLevelData()
         {
             HCCustomData Result = null;
-            if ((SelectInfo.StartItemNo >= 0) && (SelectInfo.EndItemNo < 0))
+            if ((FSelectInfo.StartItemNo >= 0) && (FSelectInfo.EndItemNo < 0))
             {
-                if ((Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
-                    && (SelectInfo.StartItemOffset == HC.OffsetInner))
-                    Result = (Items[SelectInfo.StartItemNo] as HCCustomRectItem).GetActiveData() as HCRichData;
+                if ((FItems[FSelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+                    && (FSelectInfo.StartItemOffset == HC.OffsetInner))
+                    Result = (FItems[FSelectInfo.StartItemNo] as HCCustomRectItem).GetActiveData() as HCRichData;
             }
 
             if (Result == null)
@@ -1615,9 +1616,10 @@ namespace HC.View
                     Result = FItems[vItemNo].FirstDItemNo;
                 else  // 文本
                 {
-                    for (int i = FItems[vItemNo].FirstDItemNo; i <= FDrawItems.Count - 1; i++)
+                    HCCustomDrawItem vDrawItem;
+                    for (int i = FItems[vItemNo].FirstDItemNo; i < FDrawItems.Count; i++)
                     {
-                        HCCustomDrawItem vDrawItem = FDrawItems[i];
+                        vDrawItem = FDrawItems[i];
                         if (FSelectInfo.StartItemOffset - vDrawItem.CharOffs + 1 <= vDrawItem.CharLen)
                         {
                             Result = i;
@@ -1968,29 +1970,29 @@ namespace HC.View
             if (Result)
             {
                 // 如果选中是在RectItem中进，下面循环SelectInfo.EndItemNo<0，不能取消选中，所以单独处理StartItemNo
-                HCCustomItem vItem = FItems[SelectInfo.StartItemNo];
+                HCCustomItem vItem = FItems[FSelectInfo.StartItemNo];
                 vItem.DisSelect();
                 vItem.Active = false;
 
-                for (int i = SelectInfo.StartItemNo + 1; i <= SelectInfo.EndItemNo; i++)  // 遍历选中的其他Item
+                for (int i = FSelectInfo.StartItemNo + 1; i <= FSelectInfo.EndItemNo; i++)  // 遍历选中的其他Item
                 {
                     vItem = FItems[i];
                     vItem.DisSelect();
                     vItem.Active = false;
                 }
-                SelectInfo.EndItemNo = -1;
-                SelectInfo.EndItemOffset = -1;
+                FSelectInfo.EndItemNo = -1;
+                FSelectInfo.EndItemOffset = -1;
             }
             else  // 没有选中
-            if (SelectInfo.StartItemNo >= 0)
+            if (FSelectInfo.StartItemNo >= 0)
             {
-                HCCustomItem vItem = FItems[SelectInfo.StartItemNo];
+                HCCustomItem vItem = FItems[FSelectInfo.StartItemNo];
                 vItem.DisSelect();
                 //vItem.Active = false;
             }
 
-            SelectInfo.StartItemNo = -1;
-            SelectInfo.StartItemOffset = -1;
+            FSelectInfo.StartItemNo = -1;
+            FSelectInfo.StartItemOffset = -1;
 
             return Result;
         }
@@ -2053,7 +2055,7 @@ namespace HC.View
 
         public bool IsEmptyLine(int aItemNo)
         {
-            return (FItems[aItemNo].StyleNo > HCStyle.Null) && (Items[aItemNo].Text == "");
+            return (FItems[aItemNo].StyleNo > HCStyle.Null) && (FItems[aItemNo].Text == "");
         }
 
         /// <summary> 为段应用对齐方式 </summary>
@@ -2177,7 +2179,7 @@ namespace HC.View
                 ||
                 (
                     (vSelStartDItemNo == aFristDItemNo)
-                    && (SelectInfo.StartItemOffset == FDrawItems[vSelStartDItemNo].CharOffsetStart())
+                    && (FSelectInfo.StartItemOffset == FDrawItems[vSelStartDItemNo].CharOffsetStart())
                 )
             )
             &&
@@ -2186,7 +2188,7 @@ namespace HC.View
                 ||
                 (
                     (vSelEndDItemNo == aLastDItemNo)
-                    && (SelectInfo.EndItemOffset == FDrawItems[vSelEndDItemNo].CharOffsetEnd())
+                    && (FSelectInfo.EndItemOffset == FDrawItems[vSelEndDItemNo].CharOffsetEnd())
                 )
             );
     }
@@ -2218,11 +2220,11 @@ namespace HC.View
 
                 vX = 0;
                 int vExtra = 0;
-
+                string vS = "";
                 for (int i = 0; i <= vSplitList.Count - 2; i++)  // vSplitList最后一个是字符串长度所以多减1
                 {
                     vLen = vSplitList[i + 1] - vSplitList[i];
-                    string vS = aText.Substring(vSplitList[i] - 1, vLen);
+                    vS = aText.Substring(vSplitList[i] - 1, vLen);
 
                     if (i > 0)
                         vX = vCharWArr[vSplitList[i] - 2] + vExtra;
@@ -2621,9 +2623,10 @@ namespace HC.View
 
         public void MarkStyleUsed(bool aMark)
         {
+            HCCustomItem vItem;
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
-                HCCustomItem vItem = FItems[i];
+                vItem = FItems[i];
                 if (aMark)
                 {
                     FStyle.ParaStyles[vItem.ParaNo].CheckSaveUsed = true;

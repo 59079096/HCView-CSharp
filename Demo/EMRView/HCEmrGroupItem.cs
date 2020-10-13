@@ -54,10 +54,7 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            if (value.IndexOf("=") >= 0)
-                throw new Exception("属性值中不允许有=号");
-
-            FPropertys[key] = value;
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
         #if PROCSERIES

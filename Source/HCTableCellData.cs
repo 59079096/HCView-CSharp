@@ -210,9 +210,9 @@ namespace HC.View
         /// <summary> 清除并返回为处理分页比净高增加的高度(为重新格式化时后面计算偏移用) </summary>
         public int ClearFormatExtraHeight()
         {
-            int Result = 0;
+            int Result = 0, vFormatIncHight = 0;
             int vFmtOffset = 0;
-            for (int i = 1; i <= DrawItems.Count - 1; i++)
+            for (int i = 1; i < DrawItems.Count; i++)
             {
                 if (DrawItems[i].LineFirst)
                 {
@@ -228,7 +228,7 @@ namespace HC.View
 
                 if (Items[DrawItems[i].ItemNo].StyleNo < HCStyle.Null)
                 {
-                    int vFormatIncHight = (Items[DrawItems[i].ItemNo] as HCCustomRectItem).ClearFormatExtraHeight();
+                    vFormatIncHight = (Items[DrawItems[i].ItemNo] as HCCustomRectItem).ClearFormatExtraHeight();
                     DrawItems[i].Rect.Bottom = DrawItems[i].Rect.Bottom - vFormatIncHight;
                 }
             }

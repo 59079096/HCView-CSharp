@@ -237,7 +237,7 @@ namespace HC.View
             if (x <= 0)
                 return HC.OffsetBefor;
             else
-            if (x >= Width)
+            if (x >= FWidth)
                 return HC.OffsetAfter;
             else
                 return HC.OffsetInner;
@@ -288,7 +288,7 @@ namespace HC.View
 
             if (FCanPageBreak)
             {
-                aBreakSeat = Height - aStartSeat - (aPageDataFmtBottom - aDrawItemRectTop);
+                aBreakSeat = FHeight - aStartSeat - (aPageDataFmtBottom - aDrawItemRectTop);
                 if (aDrawItemRectBottom > aPageDataFmtBottom)
                     aFmtHeightInc = aPageDataFmtBottom - aDrawItemRectBottom;
             }
@@ -831,6 +831,14 @@ namespace HC.View
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FTextStyleNo = BitConverter.ToInt32(vBuffer, 0);
 
+            if (!OwnerData.Style.States.Contain(HCState.hosLoading))
+            {
+                if (aStyle != null)
+                    FTextStyleNo = OwnerData.Style.GetStyleNo(aStyle.TextStyles[FTextStyleNo], true);
+                else
+                    FTextStyleNo = 0;
+            }
+            else
             if ((aStyle != null) && (FTextStyleNo > aStyle.TextStyles.Count - 1))  // 兼容历史错误(删除多余样式时没有)
                 FTextStyleNo = 0;
         }

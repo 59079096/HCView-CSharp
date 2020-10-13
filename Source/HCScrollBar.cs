@@ -449,7 +449,7 @@ namespace HC.View
                     if (FMouseDownControl == BarControl.cbcThum)
                     {
                         vOffs = e.X - FMouseDownPt.X;
-                        Position = FPosition + (int)Math.Round(vOffs / FPercent); ;
+                        Position = FPosition + (int)Math.Round(vOffs / FPercent);
                         FMouseDownPt.X = e.X;  // 对水平坐标赋值
                     }
                 }

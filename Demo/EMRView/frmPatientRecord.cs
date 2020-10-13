@@ -365,7 +365,10 @@ namespace EMRView
                     {
                         vsResult = GetDeItemValueTry(vDeIndex);
                         if (vsResult != "")
+                        {
                             vDeItem.Text = vsResult;
+                            vDeItem.AllocValue = true;
+                        }
                     }
                 }
             }
@@ -1317,6 +1320,7 @@ namespace EMRView
 
                         vXmlNode.InnerText = vDeItem.Text;
                         vXmlNode.SetAttribute("Index", vDeItem[DeProp.Index]);
+                        vXmlNode.SetAttribute("CMVVCode", vDeItem[DeProp.CMVVCode]);
 
                         DataRow[] vRows = FDETable.Select("DeID=" + vDeItem[DeProp.Index]);
                         if (vRows.Length == 1)

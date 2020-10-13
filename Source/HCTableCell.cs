@@ -167,11 +167,11 @@ namespace HC.View
         protected void SetHeight(int value)
         {
              if (FHeight != value)
-            {
+             {
                 FHeight = value;
                 if (FCellData != null)
                     FCellData.CellHeight = value;
-            }
+             }
         }
 
         public HCTableCell()

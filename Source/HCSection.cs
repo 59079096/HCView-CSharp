@@ -1625,8 +1625,8 @@ namespace HC.View
                 vPageDataScreenTop,     // 界面呈现当前页数据的Top位置
                 vPageDataScreenBottom,  // 界面呈现当前页数据Bottom位置
                 aPaintInfo.PageDataFmtTop,  // 指定从哪个位置开始的数据绘制到页数据起始位置
-                FPages[aPageIndex].StartDrawItemNo,
-                FPages[aPageIndex].EndDrawItemNo,
+                //FPages[aPageIndex].StartDrawItemNo,
+                //FPages[aPageIndex].EndDrawItemNo,
                 aCanvas,
                 aPaintInfo);
 
@@ -1740,6 +1740,7 @@ namespace HC.View
                             aCanvas.Pen.BeginUpdate();
                             try
                             {
+                                aCanvas.Pen.Width = 1;
                                 aCanvas.Pen.Style = HCPenStyle.psDot;
                                 aCanvas.Pen.Color = Color.Gray;
                             }
@@ -2006,9 +2007,9 @@ namespace HC.View
             // 恢复区域，准备给外部绘制用
             vPaintRegion = (IntPtr)GDI.CreateRectRgn(
                 aPaintInfo.GetScaleX(vClipBoxRect.Left),
-                aPaintInfo.GetScaleX(vClipBoxRect.Top),
+                aPaintInfo.GetScaleY(vClipBoxRect.Top),
                 aPaintInfo.GetScaleX(vClipBoxRect.Right),
-                aPaintInfo.GetScaleX(vClipBoxRect.Bottom));
+                aPaintInfo.GetScaleY(vClipBoxRect.Bottom));
             try
             {
                 GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
@@ -2448,7 +2449,7 @@ namespace HC.View
             if (FPage.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
             {
                 int vH = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Top;
-                for (int i = ADrawItemNo; i <= FPage.DrawItems.Count - 1; i++)
+                for (int i = ADrawItemNo; i < FPage.DrawItems.Count; i++)
                     HC.OffsetRect(ref FPage.DrawItems[i].Rect, 0, vH);
 
                 vPageDataFmtTop = vPageDataFmtBottom;
@@ -2508,7 +2509,7 @@ namespace HC.View
             int vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
             int vFmtPageOffset = 0;
             HCCustomItem vItem = null;
-            for (int i = vPrioDrawItemNo + 1; i <= FPage.DrawItems.Count - 1; i++)
+            for (int i = vPrioDrawItemNo + 1; i < FPage.DrawItems.Count; i++)
             {
                 if (FPage.DrawItems[i].LineFirst)
                 {
@@ -2849,7 +2850,7 @@ namespace HC.View
         {
             //FActiveData.DisSelect();  // 先清选中，防止格式化后选中位置不存在
             FHeader.ReFormat();
-            Footer.ReFormat();
+            FFooter.ReFormat();
             FPage.ReFormat();
         }
 
