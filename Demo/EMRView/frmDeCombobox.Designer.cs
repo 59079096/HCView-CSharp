@@ -29,6 +29,14 @@
         private void InitializeComponent()
         {
             this.pnlSize = new System.Windows.Forms.Panel();
+            this.label3 = new System.Windows.Forms.Label();
+            this.cbxPrintOnlyText = new System.Windows.Forms.CheckBox();
+            this.cbxDeleteAllow = new System.Windows.Forms.CheckBox();
+            this.cbxBorderRight = new System.Windows.Forms.CheckBox();
+            this.cbxBorderLeft = new System.Windows.Forms.CheckBox();
+            this.cbxBorderBottom = new System.Windows.Forms.CheckBox();
+            this.cbxBorderTop = new System.Windows.Forms.CheckBox();
+            this.label4 = new System.Windows.Forms.Label();
             this.tbxText = new System.Windows.Forms.TextBox();
             this.label9 = new System.Windows.Forms.Label();
             this.tbxHeight = new System.Windows.Forms.TextBox();
@@ -36,14 +44,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.cbxAutoSize = new System.Windows.Forms.CheckBox();
-            this.cbxBorderRight = new System.Windows.Forms.CheckBox();
-            this.cbxBorderLeft = new System.Windows.Forms.CheckBox();
-            this.cbxBorderBottom = new System.Windows.Forms.CheckBox();
-            this.cbxBorderTop = new System.Windows.Forms.CheckBox();
-            this.label4 = new System.Windows.Forms.Label();
-            this.cbxDeleteAllow = new System.Windows.Forms.CheckBox();
-            this.cbxPrintOnlyText = new System.Windows.Forms.CheckBox();
-            this.label3 = new System.Windows.Forms.Label();
             this.dgvCombobox = new System.Windows.Forms.DataGridView();
             this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dataGridViewTextBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -81,6 +81,84 @@
             this.pnlSize.Name = "pnlSize";
             this.pnlSize.Size = new System.Drawing.Size(324, 149);
             this.pnlSize.TabIndex = 1;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(12, 132);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(209, 12);
+            this.label3.TabIndex = 15;
+            this.label3.Text = "（属性保存时丢弃第一列为空的属性）";
+            // 
+            // cbxPrintOnlyText
+            // 
+            this.cbxPrintOnlyText.AutoSize = true;
+            this.cbxPrintOnlyText.Location = new System.Drawing.Point(92, 97);
+            this.cbxPrintOnlyText.Name = "cbxPrintOnlyText";
+            this.cbxPrintOnlyText.Size = new System.Drawing.Size(180, 16);
+            this.cbxPrintOnlyText.TabIndex = 13;
+            this.cbxPrintOnlyText.Text = "打印时仅打印文本不打印边框";
+            this.cbxPrintOnlyText.UseVisualStyleBackColor = true;
+            // 
+            // cbxDeleteAllow
+            // 
+            this.cbxDeleteAllow.AutoSize = true;
+            this.cbxDeleteAllow.Location = new System.Drawing.Point(14, 97);
+            this.cbxDeleteAllow.Name = "cbxDeleteAllow";
+            this.cbxDeleteAllow.Size = new System.Drawing.Size(72, 16);
+            this.cbxDeleteAllow.TabIndex = 12;
+            this.cbxDeleteAllow.Text = "允许删除";
+            this.cbxDeleteAllow.UseVisualStyleBackColor = true;
+            // 
+            // cbxBorderRight
+            // 
+            this.cbxBorderRight.AutoSize = true;
+            this.cbxBorderRight.Location = new System.Drawing.Point(231, 38);
+            this.cbxBorderRight.Name = "cbxBorderRight";
+            this.cbxBorderRight.Size = new System.Drawing.Size(36, 16);
+            this.cbxBorderRight.TabIndex = 11;
+            this.cbxBorderRight.Text = "右";
+            this.cbxBorderRight.UseVisualStyleBackColor = true;
+            // 
+            // cbxBorderLeft
+            // 
+            this.cbxBorderLeft.AutoSize = true;
+            this.cbxBorderLeft.Location = new System.Drawing.Point(174, 38);
+            this.cbxBorderLeft.Name = "cbxBorderLeft";
+            this.cbxBorderLeft.Size = new System.Drawing.Size(36, 16);
+            this.cbxBorderLeft.TabIndex = 10;
+            this.cbxBorderLeft.Text = "左";
+            this.cbxBorderLeft.UseVisualStyleBackColor = true;
+            // 
+            // cbxBorderBottom
+            // 
+            this.cbxBorderBottom.AutoSize = true;
+            this.cbxBorderBottom.Location = new System.Drawing.Point(117, 38);
+            this.cbxBorderBottom.Name = "cbxBorderBottom";
+            this.cbxBorderBottom.Size = new System.Drawing.Size(36, 16);
+            this.cbxBorderBottom.TabIndex = 9;
+            this.cbxBorderBottom.Text = "下";
+            this.cbxBorderBottom.UseVisualStyleBackColor = true;
+            // 
+            // cbxBorderTop
+            // 
+            this.cbxBorderTop.AutoSize = true;
+            this.cbxBorderTop.Location = new System.Drawing.Point(56, 38);
+            this.cbxBorderTop.Name = "cbxBorderTop";
+            this.cbxBorderTop.Size = new System.Drawing.Size(36, 16);
+            this.cbxBorderTop.TabIndex = 8;
+            this.cbxBorderTop.Text = "上";
+            this.cbxBorderTop.UseVisualStyleBackColor = true;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(12, 40);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(29, 12);
+            this.label4.TabIndex = 7;
+            this.label4.Text = "边框";
             // 
             // tbxText
             // 
@@ -140,84 +218,6 @@
             this.cbxAutoSize.Text = "自动计算宽高";
             this.cbxAutoSize.UseVisualStyleBackColor = true;
             // 
-            // cbxBorderRight
-            // 
-            this.cbxBorderRight.AutoSize = true;
-            this.cbxBorderRight.Location = new System.Drawing.Point(231, 38);
-            this.cbxBorderRight.Name = "cbxBorderRight";
-            this.cbxBorderRight.Size = new System.Drawing.Size(36, 16);
-            this.cbxBorderRight.TabIndex = 11;
-            this.cbxBorderRight.Text = "右";
-            this.cbxBorderRight.UseVisualStyleBackColor = true;
-            // 
-            // cbxBorderLeft
-            // 
-            this.cbxBorderLeft.AutoSize = true;
-            this.cbxBorderLeft.Location = new System.Drawing.Point(174, 38);
-            this.cbxBorderLeft.Name = "cbxBorderLeft";
-            this.cbxBorderLeft.Size = new System.Drawing.Size(36, 16);
-            this.cbxBorderLeft.TabIndex = 10;
-            this.cbxBorderLeft.Text = "左";
-            this.cbxBorderLeft.UseVisualStyleBackColor = true;
-            // 
-            // cbxBorderBottom
-            // 
-            this.cbxBorderBottom.AutoSize = true;
-            this.cbxBorderBottom.Location = new System.Drawing.Point(117, 38);
-            this.cbxBorderBottom.Name = "cbxBorderBottom";
-            this.cbxBorderBottom.Size = new System.Drawing.Size(36, 16);
-            this.cbxBorderBottom.TabIndex = 9;
-            this.cbxBorderBottom.Text = "下";
-            this.cbxBorderBottom.UseVisualStyleBackColor = true;
-            // 
-            // cbxBorderTop
-            // 
-            this.cbxBorderTop.AutoSize = true;
-            this.cbxBorderTop.Location = new System.Drawing.Point(56, 38);
-            this.cbxBorderTop.Name = "cbxBorderTop";
-            this.cbxBorderTop.Size = new System.Drawing.Size(36, 16);
-            this.cbxBorderTop.TabIndex = 8;
-            this.cbxBorderTop.Text = "上";
-            this.cbxBorderTop.UseVisualStyleBackColor = true;
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(12, 40);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(29, 12);
-            this.label4.TabIndex = 7;
-            this.label4.Text = "边框";
-            // 
-            // cbxDeleteAllow
-            // 
-            this.cbxDeleteAllow.AutoSize = true;
-            this.cbxDeleteAllow.Location = new System.Drawing.Point(14, 97);
-            this.cbxDeleteAllow.Name = "cbxDeleteAllow";
-            this.cbxDeleteAllow.Size = new System.Drawing.Size(72, 16);
-            this.cbxDeleteAllow.TabIndex = 12;
-            this.cbxDeleteAllow.Text = "允许删除";
-            this.cbxDeleteAllow.UseVisualStyleBackColor = true;
-            // 
-            // cbxPrintOnlyText
-            // 
-            this.cbxPrintOnlyText.AutoSize = true;
-            this.cbxPrintOnlyText.Location = new System.Drawing.Point(92, 97);
-            this.cbxPrintOnlyText.Name = "cbxPrintOnlyText";
-            this.cbxPrintOnlyText.Size = new System.Drawing.Size(180, 16);
-            this.cbxPrintOnlyText.TabIndex = 13;
-            this.cbxPrintOnlyText.Text = "打印时仅打印文本不打印边框";
-            this.cbxPrintOnlyText.UseVisualStyleBackColor = true;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 132);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(209, 12);
-            this.label3.TabIndex = 15;
-            this.label3.Text = "（属性保存时丢弃第一列为空的属性）";
-            // 
             // dgvCombobox
             // 
             this.dgvCombobox.AllowUserToResizeRows = false;
@@ -262,6 +262,7 @@
             this.cbxSaveItem.TabIndex = 0;
             this.cbxSaveItem.Text = "保存选项（保存时丢弃第一列为空的选项）";
             this.cbxSaveItem.UseVisualStyleBackColor = true;
+            this.cbxSaveItem.CheckedChanged += new System.EventHandler(this.cbxSaveItem_CheckedChanged);
             // 
             // dgvItem
             // 

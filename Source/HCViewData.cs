@@ -1100,6 +1100,13 @@ namespace HC.View
                             && (!this.Items[vItemNo].ParaFirst)
                             && (this.Items[vItemNo - 1].StyleNo > HCStyle.Null))
                         {
+
+                            if (this.Items[vItemNo - 1].Length < vKeyword.Length)
+                            {
+                                vItemNo--;
+                                continue;
+                            }
+
                             vText = this.Items[vItemNo - 1].Text.Substring(vKeyword.Length - 1);  // 取后面比关键字少一个字符长度的，以便和当前末尾最后一个拼接
                             vOverText = vOverText + vText;  // 记录拼接了多少个字符
                             vConcatText = vText + vConcatText;  // 拼接后的字符
@@ -1143,6 +1150,12 @@ namespace HC.View
                             && (!this.Items[vItemNo + 1].ParaFirst)
                             && (this.Items[vItemNo + 1].StyleNo > HCStyle.Null))  // 同段后面的TextItem
                         {
+                            if (this.Items[vItemNo + 1].Length < vKeyword.Length)
+                            {
+                                vItemNo++;
+                                continue;
+                            }
+
                             vText = this.Items[vItemNo + 1].Text.Substring(0, vKeyword.Length - 1);  // 取后面比关键字少一个字符长度的，以便和当前末尾最后一个拼接
                             vOverText = vOverText + vText;  // 记录拼接了多少个字符
                             vConcatText = vConcatText + vText;  // 拼接后的字符

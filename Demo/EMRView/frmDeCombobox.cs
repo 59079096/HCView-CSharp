@@ -153,5 +153,10 @@ namespace EMRView
         {
             this.DialogResult = DialogResult.OK;
         }
+
+        private void cbxSaveItem_CheckedChanged(object sender, EventArgs e)
+        {
+            dgvItem.Enabled = cbxSaveItem.Checked;
+        }
     }
 }

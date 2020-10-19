@@ -132,7 +132,10 @@ namespace HC.View
                 }
 
                 if (FChecked)
+                {
+                    aCanvas.Brush.Style = HCBrushStyle.bsSolid;
                     User.DrawFrameControl(aCanvas.Handle, ref vBoxRect, Kernel.DFC_MENU, Kernel.DFCS_CHECKED | Kernel.DFCS_MENUCHECK);
+                }
 
                 HC.HCDrawFrameControl(aCanvas, vBoxRect, HCControlState.hcsCustom, HCControlStyle.hcyCheck);
             }

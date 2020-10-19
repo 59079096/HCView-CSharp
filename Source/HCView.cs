@@ -571,7 +571,7 @@ namespace HC.View
         {
             aSectionIndex = -1;
             int vY = 0;
-            for (int i = 0; i <= FSections.Count - 1; i++)
+            for (int i = 0; i < FSections.Count; i++)
             {
                 vY = vY + FSections[i].GetFilmHeight();
                 if (vY > Y)

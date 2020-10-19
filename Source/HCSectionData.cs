@@ -363,8 +363,8 @@ namespace HC.View
                 + this.GetDrawItemOffsetWidth(vDrawNo, this.SelectInfo.StartItemOffset - this.DrawItems[vDrawNo].CharOffs + 1);
             aFloatItem.Top = this.DrawItems[vDrawNo].Rect.Top;
             
-            this.FloatItems.Add(aFloatItem);
-            FFloatItemIndex = this.FloatItems.Count - 1;
+            FFloatItems.Add(aFloatItem);
+            FFloatItemIndex = FFloatItems.Count - 1;
             aFloatItem.Active = true;
             
             if (!this.DisSelect())

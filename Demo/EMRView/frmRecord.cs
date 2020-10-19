@@ -592,8 +592,11 @@ namespace EMRView
         private void DoDeComboboxPopupItem(object sender, EventArgs e)
         {
             DeCombobox vCombobox = sender as DeCombobox;
-            //if (DoDeItemPopup(vCombobox))
-            PopupForm().PopupDeCombobox(vCombobox);
+            if (!vCombobox.SaveItem)
+            {
+                //if (DoDeItemPopup(vCombobox))
+                PopupForm().PopupDeCombobox(vCombobox);
+            }
         }
 
         /// <summary> 当前位置文本样式和上一位置不一样时事件 </summary>

@@ -3767,6 +3767,7 @@ namespace HC.View
             {
                 HCTableCellData vData = new HCTableCellData(OwnerData.Style);
                 vData.BeginFormat();
+                vData.Items.Clear();
                 vData.OnSaveItem = OwnerData.OnSaveItem;
 
                 HCCustomData vCellData = null;
