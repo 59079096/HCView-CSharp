@@ -182,6 +182,7 @@ namespace HC.View
             aCellData.OnCreateItem = (OwnerData as HCRichData).OnCreateItem;
             aCellData.OnGetUndoList = this.GetSelfUndoList;
             aCellData.OnGetRootData = DoCellDataGetRootData;
+            aCellData.OnGetFormatTop = DoCellDataGetFormatTop;
             aCellData.OnSilenceChange = DoCellDataSilenceChange;
         }
 
@@ -195,9 +196,38 @@ namespace HC.View
             this.SilenceChange();
         }
 
-        private void DoCellDataItemRequestFormat(HCCustomData data, HCCustomItem item)
+        private void DoCellDataItemReFormatRequest(HCCustomData data, HCCustomItem item)
         {
-            (OwnerData as HCRichData).ItemRequestFormat(this);
+            (OwnerData as HCRichData).ItemReFormatRequest(this);
+        }
+
+        private int DoCellDataGetFormatTop(HCCustomData cellData)
+        {
+            int vTop = 0;
+            bool vStop = false;
+            HCTableCellData vCellData = null;
+
+            for (int vR = 0; vR < FRows.Count; vR++)
+            {
+                if (vStop)
+                    break;
+
+                for (int vC = 0; vC < FColWidths.Count; vC++)
+                {
+                    vCellData = FRows[vR][vC].CellData;
+                    if (vCellData == cellData)
+                    {
+                        vTop += FCellVPaddingPix;
+                        vStop = true;
+                        break;
+                    }
+                }
+
+                if (!vStop)
+                    vTop += FRows[vR].FmtOffset + FRows[vR].Height + FBorderWidthPix;
+            }
+
+            return vTop + (OwnerData as HCRichData).GetDrawItemFormatTop(this.FirstDItemNo);
         }
 
         /// <summary> 表格行有添加时 </summary>
@@ -205,7 +235,7 @@ namespace HC.View
         {
             HCTableCellData vCellData = null;
 
-            for (int i = 0; i <= aRow.ColCount - 1; i++)
+            for (int i = 0; i < aRow.ColCount; i++)
             {
                 vCellData = aRow[i].CellData;
                 if (vCellData != null)
@@ -228,7 +258,7 @@ namespace HC.View
         private int GetFormatHeight()
         {
             FFormatHeight = FBorderWidthPix;
-            for (int i = 0; i <= RowCount - 1; i++)
+            for (int i = 0; i < RowCount; i++)
                 FFormatHeight = FFormatHeight + FRows[i].Height + FBorderWidthPix;
 
             return FFormatHeight;
@@ -238,7 +268,7 @@ namespace HC.View
         private void CalcRowCellHeight(int aRow)
         {
             int vNorHeightMax = 0;  // 行中未发生合并的最高单元格
-            for (int vC = 0; vC <= FRows[aRow].ColCount - 1; vC++)  // 得到行中未发生合并Data内容最高的单元格高
+            for (int vC = 0; vC < FRows[aRow].ColCount; vC++)  // 得到行中未发生合并Data内容最高的单元格高
             {
                 if ((FRows[aRow][vC].CellData != null)  // 不是被合并的单元格)
                     && (FRows[aRow][vC].RowSpan == 0))  // 不是行合并的行单元格
@@ -265,9 +295,9 @@ namespace HC.View
             int vDestRow = -1, vDestCol = -1, vExtraHeight = 0, vH = 0, vDestRow2 = -1, vDestCol2 = -1;
 
             // 为兼容分页时重新格式化调用此方法，所以有对FmtOffset的处理，否则不需要管FmtOffset
-            for (int vR = aRow; vR <= RowCount - 1; vR++)  // 计算有行合并情况下各行的高
+            for (int vR = aRow; vR < RowCount; vR++)  // 计算有行合并情况下各行的高
             {
-                for (int vC = 0; vC <= FRows[vR].ColCount - 1; vC++)
+                for (int vC = 0; vC < FRows[vR].ColCount; vC++)
                 {
                     if (FRows[vR][vC].CellData == null)
                     {
@@ -2804,6 +2834,12 @@ namespace HC.View
             this.FormatDirty();
         }
 
+        public override void ReFormatRequest()
+        {
+            FormatDirty();
+            (OwnerData as HCRichData).ItemReFormatRequest(this);
+        }
+
         public override void ActiveItemReAdaptEnvironment()
         {
             if (FSelectCellRang.EditCell())
@@ -4026,6 +4062,42 @@ namespace HC.View
                 Result = Result + FColWidths[i] + FBorderWidthPix;
 
             return Result;
+        }
+
+        public void AdjustWidth(Boolean reformat)
+        {
+            int vWidth = (OwnerData as HCRichData).Width - this.GetFormatWidth();
+            if (vWidth != 0)
+            {
+                int vZ = vWidth / this.FColWidths.Count;
+                int vY = vWidth % this.FColWidths.Count;
+
+                for (int i = 0; i < this.FColWidths.Count; i++)
+                {
+                    this.FColWidths[i] += vZ;
+                    if (vY != 0)
+                    {
+                        if (i == this.FColWidths.Count - 1) // 余下的都给最后一列
+                            FColWidths[i] += vY;
+                        else
+                        {
+                            if (vY > 0)
+                            {
+                                FColWidths[i] += 1;
+                                vY--;
+                            }
+                            else
+                            {
+                                FColWidths[i] -= 1;
+                                vY++;
+                            }
+                        }
+                    }
+                }
+
+                if (reformat)
+                    this.ReFormatRequest();
+            }
         }
 
         #region GetCellAt子方法

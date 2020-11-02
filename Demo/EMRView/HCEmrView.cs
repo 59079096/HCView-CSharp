@@ -43,6 +43,7 @@ namespace EMRView
         private bool FIgnoreAcceptAction = false;
         private bool FInsertTraceStream = false;
         private bool FPrintUnAlloc = false;
+        private bool FUnAllocWarning;
         private int FTraceCount;  // 当前文档痕迹数量
         private Color FDeDoneColor, FDeUnDoneColor, FDeHotColor;
         private string FPageBlankTip;
@@ -956,6 +957,26 @@ namespace EMRView
             }
 #endif
 
+            if (FUnAllocWarning && (aData.Items[aItemNo].StyleNo == HCStyle.Domain))
+            {
+                if ((aData.Items[aItemNo] as DeGroup).Empty)
+                {
+                    aCanvas.Pen.BeginUpdate();
+                    try
+                    {
+                        aCanvas.Pen.Width = 1;
+                        aCanvas.Pen.Color = Color.Red;
+                        aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    }
+                    finally
+                    {
+                        aCanvas.Pen.EndUpdate();
+                    }
+
+                    HC.View.HC.HCDrawWave(aCanvas, aClearRect);
+                }
+            }
+
             if (!(aData.Items[aItemNo] is DeItem))
                 return;
 
@@ -1145,7 +1166,6 @@ namespace EMRView
 
                 int vSyOffset = 0, vSyOffsetEnd = 0, vStart = 0, vLen;
                 RECT vRect = new RECT();
-                bool vDT = false;
                 bool vDrawSyntax = false;
                 for (int i = 0; i < vDeItem.Syntaxs.Count; i++)
                 {
@@ -1213,22 +1233,7 @@ namespace EMRView
                                     break;
                             }
 
-                            vDT = false;
-                            vStart = vRect.Left;
-                            aCanvas.MoveTo(vStart, vRect.Bottom);
-                            while (vStart < vRect.Right)
-                            {
-                                vStart = vStart + 2;
-                                if (vStart > vRect.Right)
-                                    vStart = vRect.Right;
-
-                                if (!vDT)
-                                    aCanvas.LineTo(vStart, vRect.Bottom + 2);
-                                else
-                                    aCanvas.LineTo(vStart, vRect.Bottom);
-
-                                vDT = !vDT;
-                            }
+                            HC.View.HC.HCDrawWave(aCanvas, vRect);
                         }
                     }
                 }
@@ -1453,6 +1458,7 @@ namespace EMRView
             this.Style.DefaultTextStyle.Size = HC.View.HC.GetFontSize("小四");
             this.Style.DefaultTextStyle.Family = "宋体";
             this.HScrollBar.AddStatus(200);
+            FUnAllocWarning = true;
             FPropertys = new Dictionary<string, string>();
 #if PROCSERIES
             FUnEditProcBKColor = HC.View.HC.clBtnFace;
@@ -2296,6 +2302,35 @@ namespace EMRView
             }
 
             return vResult;
+        }
+
+        public bool ScrollToItem(HCCustomItem item)
+        {
+            int vTop = -1, vSecIndex = -1; ;
+
+            HCItemTraverse vItemTraverse = new HCItemTraverse();
+            vItemTraverse.Areas.Add(SectionArea.saPage);
+            vItemTraverse.Process = delegate (HCCustomData data, int itemNo, int tag, Stack<HCDomainNode> domainStack, ref bool stop)
+            {
+                if (data.Items[itemNo] == item)
+                {
+                    vTop = (data as HCRichData).GetDrawItemFormatTop(data.Items[itemNo].FirstDItemNo);
+                    vSecIndex = vItemTraverse.SectionIndex;
+                    stop = true;
+                }
+            };
+
+            this.TraverseItem(vItemTraverse);
+
+            if (vTop >= 0)
+            {
+                vTop = this.Sections[vSecIndex].PageDataFormtToFilmCoord(vTop);
+                vTop = vTop + this.GetSectionTopFilm(vSecIndex);
+                this.VScrollBar.Position = vTop;
+                return true;
+            }
+
+            return false;
         }
 
         public string GetCaretProcProperty(string propName)
@@ -3346,6 +3381,17 @@ namespace EMRView
         {
             get { return FIgnoreAcceptAction; }
             set { FIgnoreAcceptAction = value; }
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
         }
 
         public bool Secret

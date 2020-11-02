@@ -989,6 +989,27 @@ namespace HC.View
                     break;
             }
         }
+
+        public static void HCDrawWave(HCCanvas canvas, RECT rect)
+        {
+            bool vDT = false;
+            int vStart = rect.Left;
+            canvas.MoveTo(vStart, rect.Bottom);
+            while (vStart < rect.Right)
+            {
+                vStart = vStart + 2;
+                if (vStart > rect.Right)
+                    vStart = rect.Right;
+
+                if (!vDT)
+                    canvas.LineTo(vStart, rect.Bottom + 2);
+                else
+                    canvas.LineTo(vStart, rect.Bottom);
+
+                vDT = !vDT;
+            }
+        }
+
     }
 
     public delegate void HCProcedure();

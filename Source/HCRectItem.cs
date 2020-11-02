@@ -173,6 +173,8 @@ namespace HC.View
         /// <summary> ActiveItem重新适应其环境(供外部直接修改Item属性后重新和其前后Item连接组合) </summary>
         public virtual void ReFormatActiveItem() { }
 
+        public virtual void ReFormatRequest() { }
+
         public virtual void ActiveItemReAdaptEnvironment() { }
 
         public virtual bool DeleteSelected()
@@ -578,6 +580,7 @@ namespace HC.View
         private RECT FDrawRect;
         private MarkType FMarkType;
 
+        public bool Empty;
         public static Type HCDefaultDomainItemClass = typeof(HCDomainItem);
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
@@ -601,6 +604,7 @@ namespace HC.View
             FLevel = 0;
             Width = 0;
             Height = aOwnerData.Style.TextStyles[0].FontHeight;
+            Empty = true;
         }
 
         public static bool IsBeginMark(HCCustomItem aItem)
@@ -636,6 +640,8 @@ namespace HC.View
         {
             this.Width = 0;
             this.Height = aRichData.Style.TextStyles[0].FontHeight;  // 默认大小
+            Empty = false;
+
             if (this.MarkType == MarkType.cmtBeg)
             {
                 if (aItemNo < aRichData.Items.Count - 1)
@@ -643,7 +649,10 @@ namespace HC.View
                     HCCustomItem vItem = aRichData.Items[aItemNo + 1];
                     if ((vItem.StyleNo == this.StyleNo)  // 下一个是组标识
                         && ((vItem as HCDomainItem).MarkType == MarkType.cmtEnd)) // 下一个是结束标识
+                    {
                         this.Width = 10;  // 增加宽度以便输入时光标可方便点击
+                        Empty = true;
+                    }
                     else
                     if (vItem.ParaFirst)  // 下一个是段首，我是段尾
                         this.Width = 10;  // 增加宽度以便输入时光标可方便点击
@@ -658,7 +667,10 @@ namespace HC.View
             {
                 HCCustomItem vItem = aRichData.Items[aItemNo - 1];
                 if ((vItem.StyleNo == this.StyleNo) && ((vItem as HCDomainItem).MarkType == MarkType.cmtBeg))
+                {
                     this.Width = 10;
+                    Empty = true;
+                }
                 else
                 if (this.ParaFirst)  // 结束标识是段首，增加宽度
                     this.Width = 10;
