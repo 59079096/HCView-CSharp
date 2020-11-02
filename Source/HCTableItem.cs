@@ -161,7 +161,7 @@ namespace HC.View
             aCellData.OnItemMouseDown = (OwnerData as HCViewData).OnItemMouseDown;
             aCellData.OnItemMouseUp = (OwnerData as HCViewData).OnItemMouseUp;
             aCellData.OnDrawItemMouseMove = (OwnerData as HCRichData).OnDrawItemMouseMove;
-            aCellData.OnItemRequestFormat = DoCellDataItemRequestFormat;
+            aCellData.OnItemRequestFormat = DoCellDataItemReFormatRequest;
 
             aCellData.OnCreateItemByStyle = (OwnerData as HCViewData).OnCreateItemByStyle;      
             aCellData.OnDrawItemPaintBefor = (OwnerData as HCRichData).OnDrawItemPaintBefor;
