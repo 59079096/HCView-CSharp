@@ -1742,7 +1742,7 @@ namespace HC.View
                             {
                                 aCanvas.Pen.Width = 1;
                                 aCanvas.Pen.Style = HCPenStyle.psDot;
-                                aCanvas.Pen.Color = Color.Gray;
+                                aCanvas.Pen.Color = Color.LightGray;
                             }
                             finally
                             {
@@ -1767,6 +1767,11 @@ namespace HC.View
                             }
 
                             aCanvas.DrawLine(vPageDrawLeft, vPageDrawTop, vPageDrawRight, vPageDrawTop);
+                            // 绘制页眉数据范围区域边框
+                            aCanvas.MoveTo(vPageDrawLeft, vPageDrawTop);
+                            aCanvas.LineTo(vPageDrawLeft, vPaperDrawTop + FHeaderOffset);
+                            aCanvas.LineTo(vPageDrawRight, vPaperDrawTop + FHeaderOffset);
+                            aCanvas.LineTo(vPageDrawRight, vPageDrawTop);
 
                             // 正在编辑页眉提示
                             aCanvas.Brush.Color = Color.FromArgb(216, 232, 245);
@@ -1802,11 +1807,18 @@ namespace HC.View
                         }
 
                         // 左上， 左-原-上
-                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vPageDrawLeft - HC.PMSLineHeight, vPageDrawTop),
-                            new Point(vPageDrawLeft, vPageDrawTop), new Point(vPageDrawLeft, vPageDrawTop - HC.PMSLineHeight) });
+                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] {
+                            new Point(vPageDrawLeft - HC.PMSLineHeight, aTop + FHeaderOffset + FPaper.MarginTopPix),
+                            new Point(vPageDrawLeft, aTop + FHeaderOffset + FPaper.MarginTopPix),
+                            new Point(vPageDrawLeft, aTop + FHeaderOffset + FPaper.MarginTopPix - HC.PMSLineHeight)
+                        });
+
                         // 右上，右-原-上
-                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] { new Point(vPageDrawRight + HC.PMSLineHeight, vPageDrawTop),
-                            new Point(vPageDrawRight, vPageDrawTop), new Point(vPageDrawRight, vPageDrawTop - HC.PMSLineHeight) });
+                        aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] {
+                            new Point(vPageDrawRight + HC.PMSLineHeight, aTop + FHeaderOffset + FPaper.MarginTopPix),
+                            new Point(vPageDrawRight, aTop + FHeaderOffset + FPaper.MarginTopPix),
+                            new Point(vPageDrawRight, aTop + FHeaderOffset + FPaper.MarginTopPix - HC.PMSLineHeight)
+                        });
                     }
                     #endregion
 
@@ -3565,7 +3577,7 @@ namespace HC.View
 
             Page.Width = this.GetPageWidth();
 
-            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
+            for (int i = 0; i < aNode.ChildNodes.Count; i++)
             {
                 if (aNode.ChildNodes[i].Name == "header")
                 {

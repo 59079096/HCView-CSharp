@@ -98,6 +98,35 @@ namespace HC.View
             DrawItems.DeleteFormatMark();
         }
 
+        private void FormatItem(HCCustomItem item)
+        {
+            for (int i = 0; i < this.Items.Count; i++)
+            {
+                if (this.Items[i] == item)
+                {
+                    FormatItemNo(i);
+                    break;
+                }
+            }
+        }
+
+        private void FormatItemNo(int itemNo)
+        {
+            if (itemNo >= 0)
+            {
+                int vFirstDrawItemNo = -1, vLastItemNo = -1;
+                GetFormatRange(itemNo, 0, ref vFirstDrawItemNo, ref vLastItemNo);
+                FormatPrepare(vFirstDrawItemNo, vLastItemNo);
+                ReFormatData(vFirstDrawItemNo, vLastItemNo);
+
+                Style.UpdateInfoRePaint();
+                Style.UpdateInfoReCaret();
+
+                if (SelectInfo.StartItemNo == itemNo && SelectInfo.StartItemOffset > Items[itemNo].Length)
+                    ReSetSelectAndCaret(itemNo);
+            }
+        }
+
         private void CalcItemFormatHeigh(HCCustomItem AItem)
         {
             if (Style.TempStyleNo != AItem.StyleNo)
@@ -1131,10 +1160,21 @@ namespace HC.View
             }
         }
 
-        public virtual void ItemRequestFormat(HCCustomItem aItem)
+        public virtual void ItemReFormatRequest(HCCustomItem aItem)
         {
             if (FOnItemRequestFormat != null)
                 FOnItemRequestFormat(this, aItem);
+        }
+
+        public virtual void ItemReFormatResponse(HCCustomItem item)
+        {
+            FormatItem(item);
+        }
+
+
+        public virtual int GetDrawItemFormatTop(int drawItemNo)
+        {
+            return DrawItems[drawItemNo].Rect.Top;
         }
 
         public void BeginFormat()

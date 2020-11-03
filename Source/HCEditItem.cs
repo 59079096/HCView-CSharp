@@ -499,7 +499,7 @@ namespace HC.View
                     FCaretOffset = 0;
 
                 if (this.AutoSize)
-                    (OwnerData as HCFormatData).ItemRequestFormat(this);
+                    (OwnerData as HCFormatData).ItemReFormatRequest(this);
                 else
                     OwnerData.Style.UpdateInfoRePaint();
             }

@@ -464,21 +464,22 @@ namespace HC.View
             if (aNode.HasAttribute("fmtver"))
                 FFormatVersion = byte.Parse(aNode.GetAttribute("fmtver"));
 
-            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
+            XmlElement vNode = null;
+            for (int i = 0; i < aNode.ChildNodes.Count; i++)
             {
                 if (aNode.ChildNodes[i].Name == "textstyles")
                 {
                     FTextStyles.Clear();
-                    XmlElement vNode = aNode.ChildNodes[i] as XmlElement;
-                    for (int j = 0; j <= vNode.ChildNodes.Count - 1; j++)
+                    vNode = aNode.ChildNodes[i] as XmlElement;
+                    for (int j = 0; j < vNode.ChildNodes.Count; j++)
                         FTextStyles[NewDefaultTextStyle()].ParseXml(vNode.ChildNodes[j] as XmlElement);
                 }
                 else
                 if (aNode.ChildNodes[i].Name == "parastyles")
                 {
                     FParaStyles.Clear();
-                    XmlElement vNode = aNode.ChildNodes[i] as XmlElement;
-                    for (int j = 0; j <= vNode.ChildNodes.Count - 1; j++)
+                    vNode = aNode.ChildNodes[i] as XmlElement;
+                    for (int j = 0; j < vNode.ChildNodes.Count; j++)
                         FParaStyles[NewDefaultParaStyle()].ParseXml(vNode.ChildNodes[j] as XmlElement);
                 }
             }

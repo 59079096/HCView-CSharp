@@ -244,15 +244,15 @@ namespace HC.View
             // 图像不能直接写流，会导致流前面部分数据错误
             using (MemoryStream vImgStream = new MemoryStream())
             {
-                using (Bitmap bitmap = new Bitmap(FImage.Width, FImage.Height))  // 解决GDI+ 中发生一般性错误，因为该文件仍保留锁定对于对象的生存期
+                using (Bitmap vBitmap = new Bitmap(FImage.Width, FImage.Height))  // 解决GDI+ 中发生一般性错误，因为该文件仍保留锁定对于对象的生存期
                 {
-                    using (Graphics g = Graphics.FromImage(bitmap))
+                    using (Graphics vGraphic = Graphics.FromImage(vBitmap))
                     {
-                        g.Clear(Color.White);
-                        g.DrawImage(FImage, 0, 0);
+                        vGraphic.Clear(Color.White);
+                        vGraphic.DrawImage(FImage, 0, 0);
                     }
 
-                    bitmap.Save(vImgStream, ImageFormat.Bmp);
+                    vBitmap.Save(vImgStream, ImageFormat.Bmp);
                 }
 
                 // write bitmap data size

@@ -418,11 +418,12 @@ namespace HC.View
             base.ParseXml(vItemsNode);
 
             XmlElement vNode = null;
+            HCCustomFloatItem vFloatItem = null;
             vItemsNode = aNode.SelectSingleNode("floatitems") as XmlElement;
-            for (int i = 0; i <= vItemsNode.ChildNodes.Count - 1; i++)
+            for (int i = 0; i < vItemsNode.ChildNodes.Count; i++)
             {
                 vNode = vItemsNode.ChildNodes[i] as XmlElement;
-                HCCustomFloatItem vFloatItem = CreateItemByStyle(int.Parse(vNode.Attributes["sno"].Value)) as HCCustomFloatItem;
+                vFloatItem = CreateItemByStyle(int.Parse(vNode.Attributes["sno"].Value)) as HCCustomFloatItem;
                 vFloatItem.ParseXml(vNode);
                 FFloatItems.Add(vFloatItem);
             }

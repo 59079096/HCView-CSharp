@@ -775,6 +775,12 @@ namespace HC.View
                 + "/" + PageCount.ToString() + "页";
         }
 
+        private void ResetCanEditShot()
+        {
+            FCanEditChecked = false;
+            FCanEditSnapShot = false;
+        }
+
         protected override void CreateHandle()
         {
             base.CreateHandle();
@@ -1201,7 +1207,10 @@ namespace HC.View
         }
 
         /// <summary> 读取文档前触发事件，便于确认订制特征数据 </summary>
-        protected virtual void DoLoadStreamBefor(Stream aStream, ushort aFileVersion) { }
+        protected virtual void DoLoadStreamBefor(Stream aStream, ushort aFileVersion)
+        {
+            ResetCanEditShot();
+        }
 
         /// <summary> 读取文档后触发事件，便于确认订制特征数据 </summary>
         protected virtual void DoLoadStreamAfter(Stream aStream, ushort aFileVersion) { }
@@ -1209,7 +1218,10 @@ namespace HC.View
         protected virtual void DoSaveXmlDocument(XmlDocument aXmlDoc) { }
 
         /// <summary> 读取文档后触发事件，便于确认订制特征数据 </summary>
-        protected virtual void DoLoadXmlDocument(XmlDocument aXmlDoc) { }
+        protected virtual void DoLoadXmlDocument(XmlDocument aXmlDoc)
+        {
+            ResetCanEditShot();
+        }
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
@@ -1605,8 +1617,7 @@ namespace HC.View
 
             FFileName = "";
             FIsChanged = false;
-            FCanEditChecked = false;
-            FCanEditSnapShot = false;
+            ResetCanEditShot();
 
             FZoom = 1;
             FAutoZoom = false;
@@ -3332,16 +3343,17 @@ namespace HC.View
                         FStyle.States.Include(HCState.hosLoading);
                         try
                         {
-                            for (int i = 0; i <= vXml.DocumentElement.ChildNodes.Count - 1; i++)
+                            XmlElement vNode = null;
+                            for (int i = 0; i < vXml.DocumentElement.ChildNodes.Count; i++)
                             {
-                                XmlElement vNode = vXml.DocumentElement.ChildNodes[i] as XmlElement;
+                                vNode = vXml.DocumentElement.ChildNodes[i] as XmlElement;
                                 if (vNode.Name == "style")
                                     FStyle.ParseXml(vNode);
                                 else
                                 if (vNode.Name == "sections")
                                 {
                                     FSections[0].ParseXml(vNode.ChildNodes[0] as XmlElement);
-                                    for (int j = 1; j < vNode.ChildNodes.Count - 1; j++)
+                                    for (int j = 1; j < vNode.ChildNodes.Count; j++)
                                     {
                                         HCSection vSection = NewDefaultSection();
                                         vSection.ParseXml(vNode.ChildNodes[j] as XmlElement);

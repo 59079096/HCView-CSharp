@@ -2886,10 +2886,12 @@ namespace HC.View
         {
             Clear();
 
-            for (int i = 0; i <= aNode.ChildNodes.Count - 1; i++)
+            XmlElement vItemNode = null;
+            HCCustomItem vItem = null;
+            for (int i = 0; i < aNode.ChildNodes.Count; i++)
             {
-                XmlElement vItemNode = aNode.ChildNodes[i] as XmlElement;
-                HCCustomItem vItem = CreateItemByStyle(int.Parse(vItemNode.Attributes["sno"].Value));
+                vItemNode = aNode.ChildNodes[i] as XmlElement;
+                vItem = CreateItemByStyle(int.Parse(vItemNode.Attributes["sno"].Value));
                 vItem.ParseXml(vItemNode);
                 FItems.Add(vItem);
             }

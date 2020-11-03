@@ -18,6 +18,7 @@ using HC.Win32;
 namespace HC.View
 {
     public delegate HCCustomData GetRootDataEventHandler();
+    public delegate int GetFormatTopFun(HCCustomData cellData);
 
     public class HCTableCellData : HCViewData
     {
@@ -32,6 +33,7 @@ namespace HC.View
         private int FCellHeight;  // 所属单元格高度(因合并或手动拖高，单元格高度会大于等于其内数据高度)
         private EventHandler FOnSilenceChange;
         private GetRootDataEventHandler FOnGetRootData;
+        private GetFormatTopFun FOnGetFormatTop;
 
         private bool PointInCellRect(POINT aPt)
         {
@@ -116,6 +118,14 @@ namespace HC.View
             }
         }
 
+        protected int GetFormatTop()
+        {
+            if (FOnGetFormatTop != null)
+                return FOnGetFormatTop(this);
+            else
+                return 0;
+        }
+
         public HCTableCellData(HCStyle aStyle)
             : base(aStyle)
         {
@@ -136,6 +146,11 @@ namespace HC.View
                 CurParaNo = Items[0].ParaNo;
 
             base.ApplySelectParaStyle(aMatchStyle);
+        }
+
+        public override int GetDrawItemFormatTop(int drawItemNo)
+        {
+            return base.GetDrawItemFormatTop(drawItemNo) + GetFormatTop();
         }
 
         //constructor Create; override;
@@ -261,6 +276,12 @@ namespace HC.View
         {
             get { return FOnGetRootData; }
             set { FOnGetRootData = value; }
+        }
+
+        public GetFormatTopFun OnGetFormatTop
+        {
+            get { return FOnGetFormatTop; }
+            set { FOnGetFormatTop = value; }
         }
 
         public EventHandler OnSilenceChange

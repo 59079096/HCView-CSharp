@@ -320,7 +320,7 @@ namespace HC.View
                                 vH = vExtraHeight - FRows[vR].FmtOffset - FRows[vR].Height;  // 高多少
                                 FRows[vR].Height = vExtraHeight - FRows[vR].FmtOffset;  // 当前行高赋值新值(内部各单元格高度会处理)
 
-                                for (int i = 0; i <= FRows[vR].ColCount - 1; i++)  // 当前行中源列要影响目标单元
+                                for (int i = 0; i < FRows[vR].ColCount; i++)  // 当前行中源列要影响目标单元
                                 {
                                     if (FRows[vR][i].CellData == null)
                                     {
