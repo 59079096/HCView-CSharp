@@ -3478,7 +3478,7 @@ namespace HC.View
                 {
                     for (int vR = FSelectCellRang.StartRow; vR <= FSelectCellRang.EndRow; vR++)
                     {
-                        for (int vC = FSelectCellRang.StartCol; vR <= FSelectCellRang.EndCol; vC++)
+                        for (int vC = FSelectCellRang.StartCol; vC <= FSelectCellRang.EndCol; vC++)
                             ApplyCellAlign_(FRows[vR][vC], aAlign);
                     }
                 }
