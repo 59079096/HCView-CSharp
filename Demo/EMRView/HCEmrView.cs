@@ -67,6 +67,7 @@ namespace EMRView
         private DataDomainItemNoEventHandler FOnSyntaxCheck;
         private SyntaxPaintEventHandler FOnSyntaxPaint;
         private DrawTraceEventHandler FOnDrawTrace;
+        private SectionDataItemEventHandler FOnSaveItem;
 
         private void SetHideTrace(bool value)
         {
@@ -350,6 +351,10 @@ namespace EMRView
                     vResult = !(aData.Items[aItemNo] as DeItem).CopyProtect;  // 是否禁止复制
             }
 
+#if USESAVEITEMEVENT
+            if (Style.States.Contain(HCState.hosSaving) && vResult && FOnSaveItem != null)
+                FOnSaveItem(sender, aData, aData.Items[aItemNo]);
+#endif
             return vResult;
         }
 
@@ -3488,6 +3493,12 @@ namespace EMRView
         {
             get { return FOnDrawTrace; }
             set { FOnDrawTrace = value; }
+        }
+
+        public SectionDataItemEventHandler OnSaveItem
+        {
+            get { return FOnSaveItem; }
+            set { FOnSaveItem = value; }
         }
     }
 }

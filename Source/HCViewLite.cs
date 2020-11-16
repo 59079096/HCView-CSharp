@@ -320,11 +320,19 @@ namespace HC.View
 
         public string SaveToText()
         {
-            string vResult = FSections[0].SaveToText();
-            for (int i = 1; i <= FSections.Count - 1; i++)
-                vResult = vResult + HC.sLineBreak + FSections[i].SaveToText();
+            FStyle.States.Include(HCState.hosSaving);
+            try
+            {
+                string vResult = FSections[0].SaveToText();
+                for (int i = 1; i <= FSections.Count - 1; i++)
+                    vResult = vResult + HC.sLineBreak + FSections[i].SaveToText();
 
-            return vResult;
+                return vResult;
+            }
+            finally
+            {
+                FStyle.States.Exclude(HCState.hosSaving);
+            }
         }
 
         public bool LoadFromText(string text)
@@ -333,7 +341,17 @@ namespace HC.View
             FStyle.Initialize();
 
             if (text != "")
-                return ActiveSection.InsertText(text);
+            {
+                FStyle.States.Include(HCState.hosLoading);
+                try
+                {
+                    return ActiveSection.InsertText(text);
+                }
+                finally
+                {
+                    FStyle.States.Exclude(HCState.hosLoading);
+                }
+            }
             else
                 return false;
         }
@@ -380,30 +398,38 @@ namespace HC.View
 
         public virtual void SaveToStream(Stream aStream, bool aQuick = false, HashSet<SectionArea> aAreas = null)
         {
-            HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
-            DoSaveStreamBefor(aStream);
-
-            HashSet<SectionArea> vArea = aAreas;
-            if (vArea == null)
+            FStyle.States.Include(HCState.hosSaving);
+            try
             {
-                vArea = new HashSet<SectionArea>();
-                vArea.Add(SectionArea.saHeader);
-                vArea.Add(SectionArea.saFooter);
-                vArea.Add(SectionArea.saPage);
+                HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
+                DoSaveStreamBefor(aStream);
+
+                HashSet<SectionArea> vArea = aAreas;
+                if (vArea == null)
+                {
+                    vArea = new HashSet<SectionArea>();
+                    vArea.Add(SectionArea.saHeader);
+                    vArea.Add(SectionArea.saFooter);
+                    vArea.Add(SectionArea.saPage);
+                }
+
+                if (!aQuick)
+                    DeleteUnUsedStyle(FStyle, FSections, vArea);
+
+                FStyle.SaveToStream(aStream);
+                // 节数量
+                byte vByte = (byte)FSections.Count;
+                aStream.WriteByte(vByte);
+                // 各节数据
+                for (int i = 0; i <= FSections.Count - 1; i++)
+                    FSections[i].SaveToStream(aStream, vArea);
+
+                DoSaveStreamAfter(aStream);
             }
-
-            if (!aQuick)
-                DeleteUnUsedStyle(FStyle, FSections, vArea);
-
-            FStyle.SaveToStream(aStream);
-            // 节数量
-            byte vByte = (byte)FSections.Count;
-            aStream.WriteByte(vByte);
-            // 各节数据
-            for (int i = 0; i <= FSections.Count - 1; i++)
-                FSections[i].SaveToStream(aStream, vArea);
-
-            DoSaveStreamAfter(aStream);
+            finally
+            {
+                FStyle.States.Exclude(HCState.hosSaving);
+            }
         }
 
         public virtual bool LoadFromStream(Stream stream)
@@ -463,35 +489,43 @@ namespace HC.View
 
         public void SaveToXmlStream(Stream stream, System.Text.Encoding encoding)
         {
-            HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
-            DeleteUnUsedStyle(FStyle, FSections, vParts);
-
-            XmlDocument vXml = new XmlDocument();
-            vXml.PreserveWhitespace = true;
-            //vXml. = "1.0";
-            //vXml.DocumentElement
-            XmlElement vElement = vXml.CreateElement("HCView");
-            vElement.SetAttribute("EXT", HC.HC_EXT);
-            vElement.SetAttribute("ver", HC.HC_FileVersion);
-            vElement.SetAttribute("lang", HC.HC_PROGRAMLANGUAGE.ToString());
-            vXml.AppendChild(vElement);
-
-            XmlElement vNode = vXml.CreateElement("style");
-            FStyle.ToXml(vNode);  // 样式表
-            vElement.AppendChild(vNode);
-
-            vNode = vXml.CreateElement("sections");
-            vNode.SetAttribute("count", FSections.Count.ToString());  // 节数量
-            vElement.AppendChild(vNode);
-
-            for (int i = 0; i <= FSections.Count - 1; i++)  // 各节数据
+            FStyle.States.Include(HCState.hosSaving);
+            try
             {
-                XmlElement vSectionNode = vXml.CreateElement("sc");
-                FSections[i].ToXml(vSectionNode);
-                vNode.AppendChild(vSectionNode);
-            }
+                HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
+                DeleteUnUsedStyle(FStyle, FSections, vParts);
 
-            vXml.Save(stream);
+                XmlDocument vXml = new XmlDocument();
+                vXml.PreserveWhitespace = true;
+                //vXml. = "1.0";
+                //vXml.DocumentElement
+                XmlElement vElement = vXml.CreateElement("HCView");
+                vElement.SetAttribute("EXT", HC.HC_EXT);
+                vElement.SetAttribute("ver", HC.HC_FileVersion);
+                vElement.SetAttribute("lang", HC.HC_PROGRAMLANGUAGE.ToString());
+                vXml.AppendChild(vElement);
+
+                XmlElement vNode = vXml.CreateElement("style");
+                FStyle.ToXml(vNode);  // 样式表
+                vElement.AppendChild(vNode);
+
+                vNode = vXml.CreateElement("sections");
+                vNode.SetAttribute("count", FSections.Count.ToString());  // 节数量
+                vElement.AppendChild(vNode);
+
+                for (int i = 0; i <= FSections.Count - 1; i++)  // 各节数据
+                {
+                    XmlElement vSectionNode = vXml.CreateElement("sc");
+                    FSections[i].ToXml(vSectionNode);
+                    vNode.AppendChild(vSectionNode);
+                }
+
+                vXml.Save(stream);
+            }
+            finally
+            {
+                FStyle.States.Exclude(HCState.hosSaving);
+            }
         }
 
         public bool LoadFromXml(string aFileName)

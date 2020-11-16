@@ -1808,16 +1808,16 @@ namespace HC.View
 
                         // 左上， 左-原-上
                         aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] {
-                            new Point(vPageDrawLeft - HC.PMSLineHeight, aTop + FHeaderOffset + FPaper.MarginTopPix),
-                            new Point(vPageDrawLeft, aTop + FHeaderOffset + FPaper.MarginTopPix),
-                            new Point(vPageDrawLeft, aTop + FHeaderOffset + FPaper.MarginTopPix - HC.PMSLineHeight)
+                            new Point(vPageDrawLeft - HC.PMSLineHeight, aTop + FPaper.MarginTopPix),
+                            new Point(vPageDrawLeft, aTop + FPaper.MarginTopPix),
+                            new Point(vPageDrawLeft, aTop + FPaper.MarginTopPix - HC.PMSLineHeight)
                         });
 
                         // 右上，右-原-上
                         aPaintInfo.DrawNoScaleLine(aCanvas, new Point[3] {
-                            new Point(vPageDrawRight + HC.PMSLineHeight, aTop + FHeaderOffset + FPaper.MarginTopPix),
-                            new Point(vPageDrawRight, aTop + FHeaderOffset + FPaper.MarginTopPix),
-                            new Point(vPageDrawRight, aTop + FHeaderOffset + FPaper.MarginTopPix - HC.PMSLineHeight)
+                            new Point(vPageDrawRight + HC.PMSLineHeight, aTop + FPaper.MarginTopPix),
+                            new Point(vPageDrawRight, aTop + FPaper.MarginTopPix),
+                            new Point(vPageDrawRight, aTop + FPaper.MarginTopPix - HC.PMSLineHeight)
                         });
                     }
                     #endregion
