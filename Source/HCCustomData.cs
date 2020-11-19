@@ -2661,24 +2661,60 @@ namespace HC.View
             {
                 if (aStartItemNo != aEndItemNo)
                 {
+                    bool vParaFirstTemp = false;
+
                     if (DoSaveItem(aStartItemNo))
                     {
                         FItems[aStartItemNo].SaveToStreamRange(aStream, aStartOffset, FItems[aStartItemNo].Length);
                         vCountAct++;
                     }
+                    else
+                        vParaFirstTemp = FItems[aStartItemNo].ParaFirst;
 
                     for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
                     {
                         if (DoSaveItem(i))
                         {
-                            FItems[i].SaveToStream(aStream);
+                            if (vParaFirstTemp && !FItems[i].ParaFirst)
+                            {
+                                FItems[i].ParaFirst = true;
+                                try
+                                {
+                                    FItems[i].SaveToStream(aStream);
+                                }
+                                finally
+                                {
+                                    FItems[i].ParaFirst = false;
+                                }
+
+                                vParaFirstTemp = false;
+                            }
+                            else
+                                FItems[i].SaveToStream(aStream);
+
                             vCountAct++;
                         }
+                        else
+                            vParaFirstTemp = vParaFirstTemp || FItems[i].ParaFirst;
                     }
 
                     if (DoSaveItem(aEndItemNo))
                     {
-                        FItems[aEndItemNo].SaveToStreamRange(aStream, 0, aEndOffset);
+                        if (vParaFirstTemp && !FItems[aEndItemNo].ParaFirst)
+                        {
+                            FItems[aEndItemNo].ParaFirst = true;
+                            try
+                            {
+                                FItems[aEndItemNo].SaveToStreamRange(aStream, 0, aEndOffset);
+                            }
+                            finally
+                            {
+                                FItems[aEndItemNo].ParaFirst = false;
+                            }
+                        }
+                        else
+                            FItems[aEndItemNo].SaveToStreamRange(aStream, 0, aEndOffset);
+                        
                         vCountAct++;
                     }
                 }
@@ -2730,6 +2766,8 @@ namespace HC.View
             {
                 if (aStartItemNo != aEndItemNo)
                 {
+                    bool vParaFirstTemp = false;
+
                     if (DoSaveItem(aStartItemNo))
                     {
                         if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
@@ -2737,30 +2775,37 @@ namespace HC.View
                         else
                             Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();
                     }
+                    else
+                        vParaFirstTemp = FItems[aStartItemNo].ParaFirst;
 
                     for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
                     {
                         if (DoSaveItem(i))
                         {
-                            if (FItems[i].ParaFirst)
+                            if (vParaFirstTemp || FItems[i].ParaFirst)
                                 Result = Result + HC.sLineBreak + FItems[i].Text;
                             else
                                 Result = Result + FItems[i].Text;
+
+                            if (vParaFirstTemp && !FItems[i].ParaFirst)
+                                vParaFirstTemp = false;
                         }
+                        else
+                            vParaFirstTemp = vParaFirstTemp || FItems[i].ParaFirst;
                     }
 
                     if (DoSaveItem(aEndItemNo))
                     {
                         if (FItems[aEndItemNo].StyleNo > HCStyle.Null)
                         {
-                            if (FItems[aEndItemNo].ParaFirst)
+                            if (vParaFirstTemp || FItems[aEndItemNo].ParaFirst)
                                 Result = Result + HC.sLineBreak;
 
                             Result = Result + (FItems[aEndItemNo] as HCTextItem).SubString(1, aEndOffset);
                         }
                         else
                         {
-                            if (FItems[aEndItemNo].ParaFirst)
+                            if (vParaFirstTemp || FItems[aEndItemNo].ParaFirst)
                                 Result = Result + HC.sLineBreak;
 
                             if (aEndOffset == HC.OffsetAfter)
