@@ -727,8 +727,14 @@ namespace EMRView
                                 }
                                 else  // 不能合并
                                 {
-                                    vDeItem.ParaFirst = vCurItem.ParaFirst;
-                                    vCurItem.ParaFirst = false;
+                                    if (vData.SelectInfo.StartItemNo == 0 && vCurItem.Length == 0)
+                                        vDeItem.ParaFirst = false;
+                                    else
+                                    {
+                                        vDeItem.ParaFirst = vCurItem.ParaFirst;
+                                        vCurItem.ParaFirst = false;
+                                    }
+
                                     this.InsertItem(vDeItem);
                                     if (e.KeyCode == Keys.Back)  // 回删
                                         vData.SelectInfo.StartItemOffset = vData.SelectInfo.StartItemOffset - 1;

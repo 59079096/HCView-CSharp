@@ -358,7 +358,7 @@ namespace EMRView
                 return;
 
             DeItem vDeItem = aData.Items[aItemNo] as DeItem;
-            if (vDeItem.TraceStyles.Contains((Byte)DeTraceStyle.cseDel))
+            if (vDeItem.TraceStyles.Contains((byte)DeTraceStyle.cseDel))
                 vDeItem.Visible = !(aTags == TTravTag.HideTrace);  // 隐藏/显示痕迹
         }
 
@@ -368,23 +368,23 @@ namespace EMRView
             if (FEmrView.HideTrace != value)
             {
                 FEmrView.HideTrace = value;
-                HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
-                vAreas.Add(SectionArea.saPage);
+                //HashSet<SectionArea> vAreas = new HashSet<SectionArea>();
+                //vAreas.Add(SectionArea.saPage);
 
-                if (value)
-                {
-                    //FEmrView.AnnotatePre.Visible = false;
-                    TraverseElement(DoHideTraceTraverse, vAreas, TTravTag.HideTrace);
-                }
-                else
-                {
-                    //if ((FEmrView.TraceCount > 0) && (!FEmrView.AnnotatePre.Visible))
-                    //    FEmrView.AnnotatePre.Visible = true;
-                    TraverseElement(DoHideTraceTraverse, vAreas, 0);
-                }
+                //if (value)
+                //{
+                //    //FEmrView.AnnotatePre.Visible = false;
+                //    TraverseElement(DoHideTraceTraverse, vAreas, TTravTag.HideTrace);
+                //}
+                //else
+                //{
+                //    //if ((FEmrView.TraceCount > 0) && (!FEmrView.AnnotatePre.Visible))
+                //    //    FEmrView.AnnotatePre.Visible = true;
+                //    TraverseElement(DoHideTraceTraverse, vAreas, 0);
+                //}
 
-                if (value && (!FEmrView.ReadOnly))
-                    FEmrView.ReadOnly = true;
+                //if (value && (!FEmrView.ReadOnly))
+                //    FEmrView.ReadOnly = true;
             }
         }
 
