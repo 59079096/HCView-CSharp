@@ -30,6 +30,8 @@
         {
             this.tabTableInfo = new System.Windows.Forms.TabControl();
             this.tabTable = new System.Windows.Forms.TabPage();
+            this.label7 = new System.Windows.Forms.Label();
+            this.label17 = new System.Windows.Forms.Label();
             this.tbxFixColLast = new System.Windows.Forms.TextBox();
             this.tbxFixColFirst = new System.Windows.Forms.TextBox();
             this.tbxFixRowLast = new System.Windows.Forms.TextBox();
@@ -62,8 +64,6 @@
             this.cbbCellAlignVert = new System.Windows.Forms.ComboBox();
             this.label16 = new System.Windows.Forms.Label();
             this.btnOK = new System.Windows.Forms.Button();
-            this.label17 = new System.Windows.Forms.Label();
-            this.label7 = new System.Windows.Forms.Label();
             this.tabTableInfo.SuspendLayout();
             this.tabTable.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvTable)).BeginInit();
@@ -118,6 +118,24 @@
             this.tabTable.TabIndex = 0;
             this.tabTable.Text = "表格";
             this.tabTable.UseVisualStyleBackColor = true;
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(303, 32);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(29, 12);
+            this.label7.TabIndex = 27;
+            this.label7.Text = "毫米";
+            // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.Location = new System.Drawing.Point(151, 32);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(29, 12);
+            this.label17.TabIndex = 26;
+            this.label17.Text = "毫米";
             // 
             // tbxFixColLast
             // 
@@ -230,6 +248,7 @@
             this.dgvTable.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Key,
             this.value});
+            this.dgvTable.ImeMode = System.Windows.Forms.ImeMode.Off;
             this.dgvTable.Location = new System.Drawing.Point(30, 182);
             this.dgvTable.Name = "dgvTable";
             this.dgvTable.RowHeadersVisible = false;
@@ -407,24 +426,6 @@
             this.btnOK.Text = "确定";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
-            // 
-            // label17
-            // 
-            this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(151, 32);
-            this.label17.Name = "label17";
-            this.label17.Size = new System.Drawing.Size(29, 12);
-            this.label17.TabIndex = 26;
-            this.label17.Text = "毫米";
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(303, 32);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(29, 12);
-            this.label7.TabIndex = 27;
-            this.label7.Text = "毫米";
             // 
             // frmDeTableProperty
             // 

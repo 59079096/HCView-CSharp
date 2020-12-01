@@ -44,17 +44,25 @@ namespace EMRView
             cbxBorderVisible.Checked = vTable.BorderVisible;
             tbxBorderWidth.Text = String.Format("{0:0.##}", vTable.BorderWidthPt);
 
-            tbxFixRowFirst.Text = (vTable.FixRow + 1).ToString();
-            tbxFixRowLast.Text = (vTable.FixRow + 1 + vTable.FixRowCount).ToString();
-            tbxFixColFirst.Text = (vTable.FixCol + 1).ToString();
-            tbxFixColLast.Text = (vTable.FixCol + 1 + vTable.FixColCount).ToString();
+            tbxFixRowFirst.Text = (vTable.FixRow).ToString();
+            if (vTable.FixRowCount > 0)
+                tbxFixRowLast.Text = (vTable.FixRow + vTable.FixRowCount - 1).ToString();
+            else
+                tbxFixRowLast.Text = tbxFixRowFirst.Text;
+
+
+            tbxFixColFirst.Text = (vTable.FixCol).ToString();
+            if (vTable.FixColCount > 0)
+                tbxFixColLast.Text = (vTable.FixCol + vTable.FixColCount - 1).ToString();
+            else
+                tbxFixColLast.Text = tbxFixColFirst.Text;
 
             // 行
             if (vTable.SelectCellRang.StartRow >= 0)
             {
-                tabRow.Text = "行(" + (vTable.SelectCellRang.StartRow + 1).ToString() + ")";
+                tabRow.Text = "行(" + (vTable.SelectCellRang.StartRow).ToString() + ")";
                 if (vTable.SelectCellRang.EndRow > 0)
-                    tabRow.Text += " - (" + (vTable.SelectCellRang.EndRow + 1).ToString() + ")";
+                    tabRow.Text += " - (" + (vTable.SelectCellRang.EndRow).ToString() + ")";
 
                 tbxRowHeight.Text = vTable.Rows[vTable.SelectCellRang.StartRow].Height.ToString();  // 行高
             }
@@ -69,16 +77,16 @@ namespace EMRView
                 if (vTable.SelectCellRang.EndRow >= 0)  // 多选
                 {
                     vAlignVer = vTable[vTable.SelectCellRang.StartRow, vTable.SelectCellRang.StartCol].AlignVert;
-                    tabCell.Text = "单元格(" + (vTable.SelectCellRang.StartRow + 1).ToString() + ","
-                        + (vTable.SelectCellRang.StartCol + 1).ToString() + ") - ("
-                        + (vTable.SelectCellRang.EndRow + 1).ToString() + ","
-                        + (vTable.SelectCellRang.EndCol + 1).ToString() + ")";
+                    tabCell.Text = "单元格(" + (vTable.SelectCellRang.StartRow).ToString() + ","
+                        + (vTable.SelectCellRang.StartCol).ToString() + ") - ("
+                        + (vTable.SelectCellRang.EndRow).ToString() + ","
+                        + (vTable.SelectCellRang.EndCol).ToString() + ")";
                 }
                 else
                 {
                     vAlignVer = vTable.GetEditCell().AlignVert;
-                    tabCell.Text = "单元格(" + (vTable.SelectCellRang.StartRow + 1).ToString() + ","
-                        + (vTable.SelectCellRang.StartCol + 1).ToString() + ")";
+                    tabCell.Text = "单元格(" + (vTable.SelectCellRang.StartRow).ToString() + ","
+                        + (vTable.SelectCellRang.StartCol).ToString() + ")";
                 }
 
                 cbbCellAlignVert.SelectedIndex = (int)vAlignVer;
@@ -110,10 +118,11 @@ namespace EMRView
                     vTable.BorderWidthPt = float.Parse(tbxBorderWidth.Text);
                     vTable.BorderVisible = cbxBorderVisible.Checked;
 
-                    vTable.FixRow = (sbyte)(int.Parse(tbxFixRowFirst.Text, 0) - 1);
-                    vTable.FixRowCount = (byte)(int.Parse(tbxFixRowLast.Text, 0) - vTable.FixRow);
-                    vTable.FixCol = (sbyte)(int.Parse(tbxFixColFirst.Text, 0) - 1);
-                    vTable.FixColCount = (byte)(int.Parse(tbxFixColLast.Text, 0) - vTable.FixCol);
+                    vTable.SetFixRowAndCount(sbyte.Parse(tbxFixRowFirst.Text),
+                        (byte)(Math.Max(0, int.Parse(tbxFixRowLast.Text) - int.Parse(tbxFixRowFirst.Text) + 1)));
+
+                    vTable.SetFixColAndCount(sbyte.Parse(tbxFixColFirst.Text),
+                        (byte)(Math.Max(0, int.Parse(tbxFixColLast.Text) - vTable.FixCol)));
 
                     // 行
                     if (vTable.SelectCellRang.StartRow >= 0)

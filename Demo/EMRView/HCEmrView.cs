@@ -430,7 +430,7 @@ namespace EMRView
                     case HCAction.actBackDeleteText:
                     case HCAction.actDeleteText:
                         {
-                            if (!FDesignMode && (aData.Items[aItemNo] is DeItem))
+                            if (aData.Items[aItemNo] is DeItem)
                             {
                                 DeItem vDeItem = aData.Items[aItemNo] as DeItem;
 
@@ -472,7 +472,7 @@ namespace EMRView
 
                     case HCAction.actDeleteItem:
                         {
-                            if (!FDesignMode)
+                            //if (!FDesignMode)
                             {
                                 HCCustomItem vItem = aData.Items[aItemNo];
                                 if (vItem is DeGroup)  // 非设计模式不允许删除数据组
@@ -1897,7 +1897,7 @@ namespace EMRView
                         {
                             vItem.Text = aPropValue;
                             (vItem as DeItem).AllocValue = true;
-                            aData.SilenceChange();
+                            aData.Change();
                         }
 
                         vReFormat = true;
@@ -1915,7 +1915,7 @@ namespace EMRView
                                 {
                                     vItem.Text = obj.Value;
                                     (vItem as DeItem).AllocValue = true;
-                                    aData.SilenceChange();
+                                    aData.Change();
                                 }
 
                                 vReFormat = true;
@@ -2626,6 +2626,7 @@ namespace EMRView
                 vPos = this.Sections[vSecIndex].PageDataFormtToFilmCoord(vPos);
                 vPos = vPos + this.GetSectionTopFilm(vSecIndex);
                 this.VScrollBar.Position = vPos;
+                vPage.ItemSetCaretRequest(vItemNo, HC.View.HC.OffsetAfter);
                 return true;
             }
 

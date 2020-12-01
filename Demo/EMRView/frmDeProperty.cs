@@ -36,7 +36,7 @@ namespace EMRView
             }
 
             cbxCanEdit.Checked = !vDeItem.EditProtect;
-            cbxCanEdit.Checked = !vDeItem.CopyProtect;
+            cbxCanCopy.Checked = !vDeItem.CopyProtect;
 
             this.ShowDialog();
             if (this.DialogResult == System.Windows.Forms.DialogResult.OK)
@@ -61,7 +61,7 @@ namespace EMRView
                 }
 
                 vDeItem.EditProtect = !cbxCanEdit.Checked;
-                vDeItem.CopyProtect = !cbxCanEdit.Checked;
+                vDeItem.CopyProtect = !cbxCanCopy.Checked;
             }
 
             //Close();

@@ -412,7 +412,7 @@ namespace EMRView
                     break;
             }
 
-            this.SizeChanged = true;
+            this.FormatDirty();
         }
 
         private void LeftKeyDown()
@@ -549,7 +549,7 @@ namespace EMRView
                     break;
             }
 
-            this.SizeChanged = true;
+            this.FormatDirty();
         }
 
         private void HomeKeyDown()
@@ -655,7 +655,7 @@ namespace EMRView
 
                 FCaretOffset += aText.Length;
 
-                this.SizeChanged = true;
+                this.FormatDirty();
                 return true;
             }
             else
