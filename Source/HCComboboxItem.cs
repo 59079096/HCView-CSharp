@@ -374,6 +374,8 @@ namespace HC.View
                     FItemIndex = -1;
                     Text = "";
                 }
+
+                this.DoChange();
             }
         }
 

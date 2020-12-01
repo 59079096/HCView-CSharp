@@ -209,7 +209,7 @@ namespace HC.View
                             }
                         }
 
-                        this.SizeChanged = true;
+                        this.FormatDirty();
                         break;
 
                     case User.VK_LEFT:
@@ -238,7 +238,7 @@ namespace HC.View
                                 FRightText = FRightText.Remove(FCaretOffset, 1);
                         }
 
-                        this.SizeChanged = true;
+                        this.FormatDirty();
                         break;
 
                     case User.VK_HOME:
@@ -285,13 +285,13 @@ namespace HC.View
                     case ExpressArea.ceaLeft:
                         FLeftText = FLeftText.Insert(FCaretOffset, aText);
                         FCaretOffset += (short)aText.Length;
-                        this.SizeChanged = true;
+                        this.FormatDirty();
                         return true;
 
                     case ExpressArea.ceaRight:
                         FRightText = FRightText.Insert(FCaretOffset, aText);
                         FCaretOffset += (short)aText.Length;
-                        this.SizeChanged = true;
+                        this.FormatDirty();
                         return true;
 
                     default:

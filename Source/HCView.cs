@@ -173,6 +173,14 @@ namespace HC.View
             DoChange();
         }
 
+        private void DoSetChange(Object Sender, EventArgs e)
+        {
+            FCanEditChecked = false;
+            SetIsChanged(true);
+            if (FOnChange != null)
+                FOnChange(this, null);
+        }
+
         private void DoSectionChangeTopLevelData(Object Sender, EventArgs e)
         {
             DoViewResize();
@@ -393,6 +401,7 @@ namespace HC.View
             HCSection Result = new HCSection(FStyle);
             // 创建节后马上赋值事件（保证后续插入表格等需要这些事件的操作可获取到事件）
             Result.OnDataChange = DoSectionDataChange;
+            Result.OnDataSetChange = DoSetChange;
             Result.OnChangeTopLevelData = DoSectionChangeTopLevelData;
             Result.OnCheckUpdateInfo = DoSectionDataCheckUpdateInfo;
             Result.OnCreateItem = DoSectionCreateItem;
@@ -882,12 +891,8 @@ namespace HC.View
 
         protected virtual void DoChange()
         {
-            FCanEditChecked = false;
-
-            SetIsChanged(true);
             DoMapChanged();
-            if (FOnChange != null)
-                FOnChange(this, null);
+            DoSetChange(this, null);
         }
 
         protected virtual void DoCaretChange()
@@ -2943,12 +2948,13 @@ namespace HC.View
         }
 
         [DllImport("HCExpPDF.dll", EntryPoint = "SetServiceCode")]
-        public static extern object SetServiceCode(object obj);
+        public static extern void SetServiceCode(int obj);
 
         [DllImport("HCExpPDF.dll", EntryPoint = "SaveToPDFStream", CallingConvention = CallingConvention.StdCall)]
         public static extern void SaveToPDFStream_DLL(ref object inObj, out object outObj);
         public virtual void SaveToPDFStream(Stream stream)
         {
+            SetServiceCode(0);  // 使用时需要将0替换为获取的授权码
             using (MemoryStream vFileStream = new MemoryStream())
             {
                 HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };

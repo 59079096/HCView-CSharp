@@ -258,7 +258,7 @@ namespace HC.View
                             }
                         }
 
-                    this.SizeChanged = true;
+                    this.FormatDirty();
                     break;
 
                 case User.VK_LEFT:
@@ -291,7 +291,7 @@ namespace HC.View
                                 FSubText = FSubText.Remove(FCaretOffset, 1);
                         }
 
-                    this.SizeChanged = true;
+                    this.FormatDirty();
                     break;
 
                 case User.VK_HOME:
@@ -327,7 +327,7 @@ namespace HC.View
                         FSubText = FSubText.Insert(FCaretOffset, aText);
 
                 FCaretOffset += (short)aText.Length;
-                this.SizeChanged = true;
+                this.FormatDirty();
                 return true;
             }
             else

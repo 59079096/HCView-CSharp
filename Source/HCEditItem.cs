@@ -362,7 +362,7 @@ namespace HC.View
                         }
 
                         ScrollAdjust(FCaretOffset);
-                        this.SizeChanged = true;
+                        this.FormatDirty();
                         break;
 
                     case User.VK_LEFT:
@@ -394,7 +394,7 @@ namespace HC.View
                         }
 
                         ScrollAdjust(FCaretOffset);
-                        this.SizeChanged = true;
+                        this.FormatDirty();
                         break;
 
                     case User.VK_HOME:
@@ -426,7 +426,7 @@ namespace HC.View
                 FText = FText.Insert(FCaretOffset, key.ToString());
                 FCaretOffset++;
                 ScrollAdjust(FCaretOffset);
-                this.SizeChanged = true;
+                this.FormatDirty();
             }
             else
                 base.KeyPress(ref key);
@@ -438,7 +438,7 @@ namespace HC.View
             FCaretOffset += (short)aText.Length;
             CalcTextSize();
             ScrollAdjust(FCaretOffset);
-            this.SizeChanged = true;
+            this.FormatDirty();
             return true;
         }
 

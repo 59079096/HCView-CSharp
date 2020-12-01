@@ -28,7 +28,7 @@ namespace HC.View
         // 标识内部高度是否发生了变化，用于此Item内部格式化时给其所属的Data标识需要重新格式化此Item
         // 如表格的一个单元格内容变化在没有引起表格整体变化时，不需要重新格式化表格，也不需要重新计算页数
         // 由拥有此Item的Data使用完后应该立即赋值为False，可参考TableItem.KeyPress的使用
-        bool FSizeChanged,
+        bool FIsFormatDirty,
             FCanPageBreak;  // 在当前页显示不下时是否可以分页截断显示
         GetUndoListEventHandler FOnGetMainUndoList;
 
@@ -54,19 +54,11 @@ namespace HC.View
             FHeight = value;
         }
 
-        protected virtual void DoSizeChanged()
+        protected virtual void DoChange()
         {
-            FormatDirty();
+            OwnerData.Change();
         }
 
-        protected void SetSizeChanged(bool value)
-        {
-            if (FSizeChanged != value)
-            {
-                FSizeChanged = value;
-                DoSizeChanged();
-            }
-        }
 
         protected void SelfUndoListInitializate(HCUndoList aUndoList)
         {
@@ -142,7 +134,7 @@ namespace HC.View
             FWidth = 100;
             FHeight = 50;
             FTextWrapping = false;
-            FSizeChanged = false;
+            FIsFormatDirty = false;
             FCanPageBreak = false;
             FMangerUndo = false;
         }
@@ -360,8 +352,6 @@ namespace HC.View
 
         public virtual void Clear() { }
 
-        public virtual void SilenceChange() { }
-
         /// <summary> 当前RectItem是否有需要处理的Data(为松耦合请返回TCustomRichData类型) </summary>
         public virtual HCCustomData GetActiveData()
         {
@@ -379,7 +369,10 @@ namespace HC.View
             return null;
         }
 
-        public virtual void FormatDirty() { }
+        public virtual void FormatDirty()
+        {
+            FIsFormatDirty = true;
+        }
 
         public virtual void TraverseItem(HCItemTraverse ATraverse) { }
 
@@ -555,10 +548,10 @@ namespace HC.View
             set { FTextWrapping = value; }  
         }
 
-        public bool SizeChanged
+        public bool IsFormatDirty
         {
-            get { return FSizeChanged; }
-            set { SetSizeChanged(value); }
+            get { return FIsFormatDirty; }
+            set { FIsFormatDirty = value; }
         }
 
         /// <summary> 在当前页显示不下时是否可以分页截断显示 </summary>
@@ -1479,10 +1472,10 @@ namespace HC.View
 
         }
 
-        public override void SilenceChange()
+        protected override void DoChange()
         {
             this.FormatDirty();
-            this.OwnerData.SilenceChange();
+            base.DoChange();
         }
     }
 }

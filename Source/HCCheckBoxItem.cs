@@ -34,7 +34,10 @@ namespace HC.View
         protected void SetChecked(bool value)
         {
             if (FChecked != value)
+            {
                 FChecked = value;
+                this.DoChange();
+            }
         }
 
         protected override string GetText()

@@ -35,7 +35,8 @@ namespace HC.View
         /// <summary> 多次格式化是否有变动，外部由此决定是否重新计算分页起始结束DrawItemNo </summary>
         private bool FFormatChange;
 
-        private DataItemEventHandler FOnItemRequestFormat;
+        private DataItemEventHandler FOnItemReFormatRequest;
+        private DataItemNoOffsetEventHandler FOnItemSetCaretRequest;
 
         private void FormatRange(int aStartDrawItemNo, int aLastItemNo)
         {
@@ -100,14 +101,9 @@ namespace HC.View
 
         private void FormatItem(HCCustomItem item)
         {
-            for (int i = 0; i < this.Items.Count; i++)
-            {
-                if (this.Items[i] == item)
-                {
-                    FormatItemNo(i);
-                    break;
-                }
-            }
+            int vItemNo = GetItemNo(item);
+            if (vItemNo >= 0)
+                FormatItemNo(vItemNo);
         }
 
         private void FormatItemNo(int itemNo)
@@ -1032,7 +1028,7 @@ namespace HC.View
             bool vFmtHeightChange = false;
             // 计算格式化后段的底部位置变化
             int vLastDrawItemNo = GetItemLastDrawItemNo(vLastItemNo);
-            if ((Items[vLastItemNo] is HCCustomRectItem) && (Items[vLastItemNo] as HCCustomRectItem).SizeChanged)
+            if ((Items[vLastItemNo] is HCCustomRectItem) && (Items[vLastItemNo] as HCCustomRectItem).IsFormatDirty)
                 vFmtHeightChange = true;
             else
                 vFmtHeightChange = AForceClearExtra
@@ -1162,8 +1158,8 @@ namespace HC.View
 
         public virtual void ItemReFormatRequest(HCCustomItem aItem)
         {
-            if (FOnItemRequestFormat != null)
-                FOnItemRequestFormat(this, aItem);
+            if (FOnItemReFormatRequest != null)
+                FOnItemReFormatRequest(this, aItem);
         }
 
         public virtual void ItemReFormatResponse(HCCustomItem item)
@@ -1171,10 +1167,31 @@ namespace HC.View
             FormatItem(item);
         }
 
+        public virtual void ItemSetCaretRequest(int itemNo, int offset)
+        {
+            if (itemNo >= 0)
+            {
+                ReSetSelectAndCaret(itemNo, offset);
+                Style.UpdateInfoReCaret(true);
+                if (FOnItemSetCaretRequest != null)
+                    FOnItemSetCaretRequest(this, itemNo, offset);
+            }
+        }
 
         public virtual int GetDrawItemFormatTop(int drawItemNo)
         {
             return DrawItems[drawItemNo].Rect.Top;
+        }
+
+        public int GetItemNo(HCCustomItem item)
+        {
+            for (int i = 0; i < this.Items.Count; i++)
+            {
+                if (this.Items[i] == item)
+                    return i;
+            }
+
+            return -1;
         }
 
         public void BeginFormat()
@@ -1223,10 +1240,16 @@ namespace HC.View
             get { return FFormatCount; }
         }
 
-        public DataItemEventHandler OnItemRequestFormat
+        public DataItemEventHandler OnItemReFormatRequest
         {
-            get { return FOnItemRequestFormat; }
-            set { FOnItemRequestFormat = value; }
+            get { return FOnItemReFormatRequest; }
+            set { FOnItemReFormatRequest = value; }
+        }
+
+        public DataItemNoOffsetEventHandler OnItemSetCaretRequest
+        {
+            get { return FOnItemSetCaretRequest; }
+            set { FOnItemSetCaretRequest = value; }
         }
     }
 }

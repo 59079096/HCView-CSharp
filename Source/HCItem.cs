@@ -217,6 +217,7 @@ namespace HC.View
         private bool FActive, FVisible, FPrintInvisible;
         private HCSet FOptions;
         private ItemSelectState FSelectState;
+        private EventHandler FOnDblClick;
 
         protected bool GetParaFirst()
         {
@@ -355,7 +356,11 @@ namespace HC.View
 
         public virtual void KillFocus() { }
 
-        public virtual void DblClick(int X, int Y) { }
+        public virtual void DblClick(int X, int Y)
+        {
+            if (FOnDblClick != null)
+                FOnDblClick(this, null);
+        }
 
         public virtual bool MouseDown(MouseEventArgs e)
         {
@@ -564,6 +569,12 @@ namespace HC.View
         {
             get { return FPrintInvisible; }
             set { FPrintInvisible = value; }
+        }
+
+        public EventHandler OnDblClick
+        {
+            get { return FOnDblClick; }
+            set { FOnDblClick = value; }
         }
     }
 

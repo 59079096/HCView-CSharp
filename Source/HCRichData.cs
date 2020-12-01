@@ -52,7 +52,6 @@ namespace HC.View
         private DrawItemMouseEventHandle FOnDrawItemMouseMove;
         private EventHandler FOnCreateItem;  // 新建了Item(目前主要是为了打字和用中文输入法输入英文时痕迹的处理)
         private DataActionEventHandler FOnAcceptAction;
-        private EventHandler FOnChange;
 
         private bool SelectByMouseDownShift(ref int AMouseDownItemNo, ref int AMouseDownItemOffset)
         {
@@ -527,14 +526,9 @@ namespace HC.View
             Items[aItemNo].MouseEnter();
         }
 
-        protected virtual void DoChange()
-        {
-            if (FOnChange != null)
-                FOnChange(this, null);
-        }
-
         protected virtual void DoItemResized(int aItemNo)
         {
+            this.Change();
             if (FOnItemResized != null)
                 FOnItemResized(this, aItemNo);
         }
@@ -998,13 +992,13 @@ namespace HC.View
                         UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                     (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ApplySelectTextStyle(Style, aMatchStyle);
-                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).SizeChanged)
+                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsFormatDirty)
                     {
                         // 如果改变会引起RectItem宽度变化，则需要格式化到最后一个Item
                         GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                         FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                        (Items[SelectInfo.StartItemNo] as HCCustomRectItem).SizeChanged = false;
+                        (Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsFormatDirty = false;
                     }
                     else
                         this.FormatInit();
@@ -2396,13 +2390,13 @@ namespace HC.View
                     UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                 vRectItem.SetActiveItemText(aText);
-                if (vRectItem.SizeChanged)
+                if (vRectItem.IsFormatDirty)
                 {
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                    vRectItem.SizeChanged = false;
+                    vRectItem.IsFormatDirty = false;
                 }
                 else
                     this.FormatInit();
@@ -2547,6 +2541,8 @@ namespace HC.View
                     // 重新赋值新位置
                     FMouseDownItemNo = vMouseDownItemNo;
                     FMouseDownItemOffset = vMouseDownItemOffset;
+                    if (!SelectInfo.StartRestrain && vRestrain)
+                        Items[FMouseDownItemNo].Active = false;
 
                     SelectInfo.StartItemNo = FMouseDownItemNo;
                     SelectInfo.StartItemOffset = FMouseDownItemOffset;
@@ -2886,25 +2882,21 @@ namespace HC.View
                     UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                 vRectItem.KeyPress(ref key);
-                if (vRectItem.SizeChanged)
+                if (vRectItem.IsFormatDirty)
                 {
-                    vRectItem.SizeChanged = false;
-
                     int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     if (key != 0)
                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                    vRectItem.SizeChanged = false;
+                    vRectItem.IsFormatDirty = false;
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
                     Style.UpdateInfoReScroll();
                 }
                 else
                     this.FormatInit();
-
-                DoChange();
             }
             else
                 InsertText(key.ToString());
@@ -3896,12 +3888,12 @@ namespace HC.View
                         UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                     vRectItem.KeyDown(e);
-                    if (vRectItem.SizeChanged)
+                    if (vRectItem.IsFormatDirty)
                     {
                         GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                         FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                        vRectItem.SizeChanged = false;
+                        vRectItem.IsFormatDirty = false;
                     }
                     else
                         this.FormatInit();
@@ -5145,7 +5137,6 @@ namespace HC.View
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();  // 删除后以新位置光标为当前样式
                     Style.UpdateInfoReScroll();
-                    DoChange();
                     break;
 
                 case User.VK_LEFT:
@@ -5334,13 +5325,13 @@ namespace HC.View
                     UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                 vRectItem.DeleteActiveDataItems(aStartNo, aEndNo, aKeepPara);
-                if (vRectItem.SizeChanged)
+                if (vRectItem.IsFormatDirty)
                 {
                     int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                    vRectItem.SizeChanged = false;
+                    vRectItem.IsFormatDirty = false;
                 }
                 else
                     this.FormatInit();
@@ -5805,12 +5796,12 @@ namespace HC.View
                         UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                     Result = vRectItem.InsertText(aText);
-                    if (vRectItem.SizeChanged)
+                    if (vRectItem.IsFormatDirty)
                     {
                         GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                         FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                        vRectItem.SizeChanged = false;
+                        vRectItem.IsFormatDirty = false;
                     }
                     else
                         this.FormatInit();
@@ -5848,7 +5839,6 @@ namespace HC.View
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
             Style.UpdateInfoReScroll();
-            DoChange();
             return Result;
         }
 
@@ -6098,13 +6088,13 @@ namespace HC.View
                     UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
 
                 vRectItem.ActiveItemReAdaptEnvironment();
-                if (vRectItem.SizeChanged)
+                if (vRectItem.IsFormatDirty)
                 {
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                    vRectItem.SizeChanged = false;
+                    vRectItem.IsFormatDirty = false;
                 }
                 else
                     this.FormatInit();
@@ -6213,12 +6203,6 @@ namespace HC.View
         public bool Selecting
         {
             get { return FSelecting; }
-        }
-
-        public EventHandler OnChange
-        {
-            get { return FOnChange; }
-            set { FOnChange = value; }
         }
 
         public DataItemNoEventHandler OnItemResized

@@ -382,7 +382,10 @@ namespace HC.View
             {
                 int vIndex = GetItemAt(e.X, e.Y);
                 if (vIndex >= 0)
+                {
                     FItems[vIndex].Checked = !FItems[vIndex].Checked;
+                    this.DoChange();
+                }
             }
 
             return vResult;

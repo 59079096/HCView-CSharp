@@ -236,12 +236,13 @@ namespace HC.View
                         }
                     }
 
-                    this.SizeChanged = true;
+                    this.FormatDirty();
                     break;
 
                 case User.VK_LEFT:
                     if (FCaretOffset > 0)
                         FCaretOffset--;
+
                     break;
 
                 case User.VK_RIGHT:
@@ -249,11 +250,12 @@ namespace HC.View
                     if (FActiveArea == ExpressArea.ceaTop)
                         vS = FTopText;
                     else
-                        if (FActiveArea == ExpressArea.ceaBottom)
-                            vS = FBottomText;
+                    if (FActiveArea == ExpressArea.ceaBottom)
+                        vS = FBottomText;
 
                     if (FCaretOffset < vS.Length)
                         FCaretOffset++;
+
                     break;
 
                 case User.VK_DELETE:
@@ -268,8 +270,8 @@ namespace HC.View
                         if (FCaretOffset < FBottomText.Length)
                             FBottomText = FBottomText.Remove(FCaretOffset, 1);
                     }
-                    this.SizeChanged = true;
 
+                    this.FormatDirty();
                     break;
 
                 case User.VK_HOME:
@@ -280,8 +282,8 @@ namespace HC.View
                     if (FActiveArea == ExpressArea.ceaTop)
                         FCaretOffset = (short)FTopText.Length;
                     else
-                        if (FActiveArea == ExpressArea.ceaBottom)
-                            FCaretOffset = (short)FBottomText.Length;
+                    if (FActiveArea == ExpressArea.ceaBottom)
+                        FCaretOffset = (short)FBottomText.Length;
 
                     break;
             }
@@ -302,12 +304,11 @@ namespace HC.View
                 if (FActiveArea == ExpressArea.ceaTop)
                     FTopText = FTopText.Insert(FCaretOffset, aText);
                 else
-                    if (FActiveArea == ExpressArea.ceaBottom)
-                        FBottomText = FBottomText.Insert(FCaretOffset, aText);
+                if (FActiveArea == ExpressArea.ceaBottom)
+                    FBottomText = FBottomText.Insert(FCaretOffset, aText);
 
                 FCaretOffset += (short)aText.Length;
-
-                this.SizeChanged = true;
+                this.FormatDirty();
                 return true;
             }
             else

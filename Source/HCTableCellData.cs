@@ -31,7 +31,7 @@ namespace HC.View
         private bool FCellSelectedAll;
 
         private int FCellHeight;  // 所属单元格高度(因合并或手动拖高，单元格高度会大于等于其内数据高度)
-        private EventHandler FOnSilenceChange;
+        private EventHandler FOnFormatDirty;
         private GetRootDataEventHandler FOnGetRootData;
         private GetFormatTopFun FOnGetFormatTop;
 
@@ -47,12 +47,6 @@ namespace HC.View
                 Result += DrawItems[0].Rect.Top;
 
             return Result;
-        }
-
-        protected override void DoItemResized(int aItemNo)
-        {
-            this.SilenceChange();
-            base.DoItemResized(aItemNo);
         }
 
         protected override void DoLoadFromStream(System.IO.Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -85,7 +79,13 @@ namespace HC.View
             base.ReFormatData(AFirstDrawItemNo, ALastItemNo, AExtraItemCount, AForceClearExtra);
             this.FormatChange = false;
             if (this.FormatHeightChange)
-                this.SilenceChange();
+                this.DoFormatDirty();
+        }
+
+        protected void DoFormatDirty()
+        {
+            if (FOnFormatDirty != null)
+                FOnFormatDirty(this, null);
         }
 
         /// <summary> 取消选中 </summary>
@@ -159,12 +159,6 @@ namespace HC.View
         {
             base.SelectAll();
             FCellSelectedAll = true;
-        }
-
-        public override void SilenceChange()
-        {
-            if (this.FOnSilenceChange != null)
-                this.FOnSilenceChange(this, null);
         }
 
         /// <summary> 坐标是否在AItem的选中区域中 </summary>
@@ -284,10 +278,10 @@ namespace HC.View
             set { FOnGetFormatTop = value; }
         }
 
-        public EventHandler OnSilenceChange
+        public EventHandler OnFormatDirty
         {
-            get { return FOnSilenceChange; }
-            set { FOnSilenceChange = value; }
+            get { return FOnFormatDirty; }
+            set { FOnFormatDirty = value; }
         }
     }
 }

@@ -186,6 +186,7 @@ namespace HC.View
     public delegate void DataDomainItemNoEventHandler(HCCustomData aData, Stack<HCDomainNode> aDomainStack, int aItemNo);
     public delegate void DataItemEventHandler(HCCustomData aData, HCCustomItem aItem);
     public delegate void DataItemNoEventHandler(HCCustomData aData, int aItemNo);
+    public delegate void DataItemNoOffsetEventHandler(HCCustomData data, int itemNo, int offset);
     public delegate bool DataItemNoFunEventHandler(HCCustomData aData, int aItemNo);
     public delegate bool DataActionEventHandler(HCCustomData aData, int aItemNo, int aOffset, HCAction aAction);
 
@@ -213,7 +214,7 @@ namespace HC.View
         DataItemEventHandler FOnInsertItem, FOnRemoveItem;
         DataItemNoFunEventHandler FOnSaveItem;
         GetUndoListEventHandler FOnGetUndoList;
-        EventHandler FOnCurParaNoChange;
+        EventHandler FOnCurParaNoChange, FOnChange;
         DrawItemPaintEventHandler FOnDrawItemPaintBefor, FOnDrawItemPaintAfter;
         DrawItemPaintContentEventHandler FOnDrawItemPaintContent;
 
@@ -891,7 +892,11 @@ namespace HC.View
             FCaretDrawItemNo = -1;
         }
 
-        public virtual void SilenceChange() { }
+        public virtual void Change()
+        {
+            if (FOnChange != null)
+                FOnChange(this, null);
+        }
 
         /// <summary> 嵌套时获取根级Data </summary>
         public virtual HCCustomData GetRootData()
@@ -3055,6 +3060,12 @@ namespace HC.View
         {
             get { return FOnSaveItem; }
             set { FOnSaveItem = value; }
+        }
+
+        public EventHandler OnChange
+        {
+            get { return FOnChange; }
+            set { FOnChange = value; }
         }
     }
 }

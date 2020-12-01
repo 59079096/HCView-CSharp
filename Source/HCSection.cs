@@ -105,6 +105,7 @@ namespace HC.View
 
         EventHandler
             FOnDataChange,  // 页眉、页脚、页面某一个修改时触发
+            FOnDataSetChange,
             FOnCheckUpdateInfo,  // 当前Data需要UpdateInfo更新时触发
             FOnReadOnlySwitch,  // 页眉、页脚、页面只读状态发生变化时触发
             FOnChangeTopLevelData;  // 切换页眉、页脚、正文、表格单元格时触发
@@ -294,7 +295,13 @@ namespace HC.View
                 FOnDataChange(sender, null);
         }
 
-        private void DoDataItemRequestFormat(HCCustomData aSectionData, HCCustomItem aItem)
+        protected void DoDataSetChange(object sender, EventArgs e)
+        {
+            if (FOnDataSetChange != null)
+                FOnDataSetChange(sender, e);
+        }
+
+        private void DoDataItemReFormatRequest(HCCustomData aSectionData, HCCustomItem aItem)
         {
             HCFunction vEvent = delegate ()
             {
@@ -303,6 +310,11 @@ namespace HC.View
             };
 
             DoSectionDataAction(aSectionData as HCSectionData, vEvent);
+        }
+
+        private void DoDataItemSetCaretRequest(HCCustomData sectionData, int itemNo, int offset)
+        {
+
         }
 
         /// <summary> 缩放Item约束不要超过整页宽、高 </summary>
@@ -718,7 +730,8 @@ namespace HC.View
             aData.OnItemMouseDown = DoDataItemMouseDown;
             aData.OnItemMouseUp = DoDataItemMouseUp;
             aData.OnDrawItemMouseMove = DoDataDrawItemMouseMove;
-            aData.OnItemRequestFormat = DoDataItemRequestFormat;
+            aData.OnItemReFormatRequest = DoDataItemReFormatRequest;
+            aData.OnItemSetCaretRequest = DoDataItemSetCaretRequest;
             aData.OnCreateItemByStyle = DoDataCreateStyleItem;
             aData.OnPaintDomainRegion = DoDataPaintDomainRegion;
             aData.OnCanEdit = DoDataCanEdit;
@@ -735,6 +748,7 @@ namespace HC.View
             aData.OnGetUndoList = DoDataGetUndoList;
             aData.OnCurParaNoChange = DoDataCurParaNoChange;
             aData.OnCaretItemChanged = DoDataCaretItemChanged;
+            aData.OnChange = DoDataSetChange;
         }
 
         protected virtual void DoSaveToStream(Stream stream) { }
@@ -2367,72 +2381,72 @@ namespace HC.View
             //    _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
             //}
             //else
-                if (FPage.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
+            if (FPage.DrawItems[ADrawItemNo].Rect.Bottom > vPageDataFmtBottom)
+            {
+                if ((FPages[vPageIndex].StartDrawItemNo == ADrawItemNo)
+                    && (AStartSeat == 0)
+                    && (!vRectItem.CanPageBreak))
                 {
-                    if ((FPages[vPageIndex].StartDrawItemNo == ADrawItemNo)
-                        && (AStartSeat == 0)
-                        && (!vRectItem.CanPageBreak))
-                    {
-                        vFmtHeightInc = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Bottom;
-                        vSuplus = vSuplus + vFmtHeightInc;
-                        FPage.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
-                            FPage.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
-                        vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
+                    vFmtHeightInc = vPageDataFmtBottom - FPage.DrawItems[ADrawItemNo].Rect.Bottom;
+                    vSuplus = vSuplus + vFmtHeightInc;
+                    FPage.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
+                        FPage.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
+                    vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
 
-                        return;
-                    }
-
-                    RECT vDrawRect = FPage.DrawItems[ADrawItemNo].Rect;
-
-                    //if vSuplus = 0 then  // 第一次计算分页
-                    if ((ADrawItemNo == FPage.DrawItems.Count - 1) || (FPage.DrawItems[ADrawItemNo + 1].LineFirst))
-                        HC.InflateRect(ref vDrawRect, 0, -FPage.GetLineBlankSpace(ADrawItemNo) / 2);
-
-                    vRectItem.CheckFormatPageBreak(  // 去除行间距后，判断表格跨页位置
-                        FPages.Count - 1,
-                        vDrawRect.Top,  // 表格的顶部位置 FPageData.DrawItems[ADrawItemNo].Rect.Top,
-                        vDrawRect.Bottom,  // 表格的底部位置 FPageData.DrawItems[ADrawItemNo].Rect.Bottom,
-                        vPageDataFmtTop,
-                        vPageDataFmtBottom,  // 当前页的数据底部位置
-                        AStartSeat,  // 起始位置
-                        ref vBreakSeat,  // 当前页分页的行(位置)
-                        ref vFmtOffset,  // 当前RectItem为了避开分页位置整体向下偏移的高度
-                        ref vFmtHeightInc  // 当前行各列为了避开分页位置单元格内容额外偏移的最大高度
-                        );
-
-                    if (vBreakSeat < 0)
-                    {
-                        vSuplus = vSuplus + vPageDataFmtBottom - vDrawRect.Bottom;
-                    }
-                    else  // vBreakSeat >= 0 从vBreakSeat位置跨页
-                        if (vFmtOffset > 0)
-                        {
-                            vFmtOffset = vFmtOffset + FPage.GetLineBlankSpace(ADrawItemNo) / 2;  // 整体向下移动增加上面减掉的行间距
-                            vSuplus = vSuplus + vFmtOffset + vFmtHeightInc;
-
-                            HC.OffsetRect(ref FPage.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
-
-                            vPageDataFmtTop = vPageDataFmtBottom;
-                            vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
-                            _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
-                            _RectItemCheckPage(ADrawItemNo, AStartSeat, vPageHeight,
-                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop, ref vPageDataFmtBottom);
-                        }
-                        else  // 跨页，但未整体下移
-                        {
-                            vSuplus = vSuplus + vFmtHeightInc;
-                            FPage.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
-                                FPage.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
-                            vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
-
-                            vPageDataFmtTop = vPageDataFmtBottom;
-                            vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
-                            _FormatNewPage(ref vPageIndex, ADrawItemNo, ADrawItemNo);  // 新建页
-
-                            _RectItemCheckPage(ADrawItemNo, AStartSeat, vPageHeight,
-                                vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop, ref vPageDataFmtBottom);  // 从分页位置后面继续检查是否分页
-                        }
+                    return;
                 }
+
+                RECT vDrawRect = FPage.DrawItems[ADrawItemNo].Rect;
+
+                //if vSuplus = 0 then  // 第一次计算分页
+                if ((ADrawItemNo == FPage.DrawItems.Count - 1) || (FPage.DrawItems[ADrawItemNo + 1].LineFirst))
+                    HC.InflateRect(ref vDrawRect, 0, -FPage.GetLineBlankSpace(ADrawItemNo) / 2);
+
+                vRectItem.CheckFormatPageBreak(  // 去除行间距后，判断表格跨页位置
+                    FPages.Count - 1,
+                    vDrawRect.Top,  // 表格的顶部位置 FPageData.DrawItems[ADrawItemNo].Rect.Top,
+                    vDrawRect.Bottom,  // 表格的底部位置 FPageData.DrawItems[ADrawItemNo].Rect.Bottom,
+                    vPageDataFmtTop,
+                    vPageDataFmtBottom,  // 当前页的数据底部位置
+                    AStartSeat,  // 起始位置
+                    ref vBreakSeat,  // 当前页分页的行(位置)
+                    ref vFmtOffset,  // 当前RectItem为了避开分页位置整体向下偏移的高度
+                    ref vFmtHeightInc  // 当前行各列为了避开分页位置单元格内容额外偏移的最大高度
+                    );
+
+                if (vBreakSeat < 0)
+                {
+                    vSuplus = vSuplus + vPageDataFmtBottom - vDrawRect.Bottom;
+                }
+                else  // vBreakSeat >= 0 从vBreakSeat位置跨页
+                if (vFmtOffset > 0)
+                {
+                    vFmtOffset = vFmtOffset + FPage.GetLineBlankSpace(ADrawItemNo) / 2;  // 整体向下移动增加上面减掉的行间距
+                    vSuplus = vSuplus + vFmtOffset + vFmtHeightInc;
+
+                    HC.OffsetRect(ref FPage.DrawItems[ADrawItemNo].Rect, 0, vFmtOffset);
+
+                    vPageDataFmtTop = vPageDataFmtBottom;
+                    vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+                    _FormatNewPage(ref vPageIndex, ADrawItemNo - 1, ADrawItemNo);  // 新建页
+                    _RectItemCheckPage(ADrawItemNo, AStartSeat, vPageHeight,
+                        vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop, ref vPageDataFmtBottom);
+                }
+                else  // 跨页，但未整体下移
+                {
+                    vSuplus = vSuplus + vFmtHeightInc;
+                    FPage.DrawItems[ADrawItemNo].Rect.Bottom =  // 扩充格式化高度
+                        FPage.DrawItems[ADrawItemNo].Rect.Bottom + vFmtHeightInc;
+                    vRectItem.Height = vRectItem.Height + vFmtHeightInc;  // 是在这里处理呢还是在RectItem内部更合适？
+
+                    vPageDataFmtTop = vPageDataFmtBottom;
+                    vPageDataFmtBottom = vPageDataFmtTop + vPageHeight;
+                    _FormatNewPage(ref vPageIndex, ADrawItemNo, ADrawItemNo);  // 新建页
+
+                    _RectItemCheckPage(ADrawItemNo, AStartSeat, vPageHeight,
+                        vRectItem, ref vPageIndex, ref vBreakSeat, ref vSuplus, ref vPageDataFmtTop, ref vPageDataFmtBottom);  // 从分页位置后面继续检查是否分页
+                }
+            }
         }
 
         private void _FormatRectItemCheckPageBreak(int ADrawItemNo, int vPageHeight,
@@ -3112,6 +3126,12 @@ namespace HC.View
         {
             get { return FOnDataChange; }
             set { FOnDataChange = value; }
+        }
+
+        public EventHandler OnDataSetChange
+        {
+            get { return FOnDataSetChange; }
+            set { FOnDataSetChange = value; }
         }
 
         public EventHandler OnChangeTopLevelData
