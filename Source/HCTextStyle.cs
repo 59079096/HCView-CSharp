@@ -332,8 +332,8 @@ namespace HC.View
         public void ToXml(XmlElement aNode)
         {
             aNode.SetAttribute("size", string.Format("{0:0.#}", FSize));
-            aNode.SetAttribute("color", HC.GetColorXmlRGB(FColor));
-            aNode.SetAttribute("bkcolor", HC.GetColorXmlRGB(FBackColor));
+            aNode.SetAttribute("color", HC.HCColorToRGBString(FColor));
+            aNode.SetAttribute("bkcolor", HC.HCColorToRGBString(FBackColor));
             aNode.SetAttribute("style", GetFontStyleXML());
             aNode.InnerText = FFamily;
         }
@@ -342,8 +342,8 @@ namespace HC.View
         {
             FFamily = aNode.InnerText;
             FSize = float.Parse(aNode.Attributes["size"].Value);
-            FColor = HC.GetXmlRGBColor(aNode.Attributes["color"].Value);
-            FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
+            FColor = HC.HCRGBStringToColor(aNode.Attributes["color"].Value);
+            FBackColor = HC.HCRGBStringToColor(aNode.Attributes["bkcolor"].Value);
 
             string[] vsStyles = aNode.Attributes["style"].Value.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < vsStyles.Length; i++)

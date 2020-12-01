@@ -36,7 +36,7 @@ namespace HC.View
 
     public class HCTableRows : HCList<HCTableRow>
     {
-        private RowAddEventHandler FOnRowAdd;
+        private RowAddEventHandler FOnRowAdd, FOnRowRemove;
 
         private void OnInsertRow(object sender, NListEventArgs<HCTableRow> e)
         {
@@ -44,15 +44,28 @@ namespace HC.View
                 FOnRowAdd(e.Item);
         }
 
+        private void OnDeleteRow(object sender, NListEventArgs<HCTableRow> e)
+        {
+            if (FOnRowRemove != null)
+                FOnRowRemove(e.Item);
+        }
+
         public HCTableRows()
         {
             this.OnInsert += new EventHandler<NListEventArgs<HCTableRow>>(OnInsertRow);
+            this.OnDelete += new EventHandler<NListEventArgs<HCTableRow>>(OnDeleteRow);
         }
 
         public RowAddEventHandler OnRowAdd
         {
             get { return FOnRowAdd; }
             set { FOnRowAdd = value; }
+        }
+
+        public RowAddEventHandler OnRowRemove
+        {
+            get { return FOnRowRemove; }
+            set { FOnRowRemove = value; }
         }
     }
 
@@ -125,7 +138,7 @@ namespace HC.View
             FMouseDownRow, FMouseDownCol,
             FMouseMoveRow, FMouseMoveCol,
             FMouseDownX, FMouseDownY,
-            FFormatHeight;
+            FFormatHeight, FDefaultRowHeight;
 
         private ResizeInfo FResizeInfo;
         private HCMulCellUndo FMulCellUndo;
@@ -136,6 +149,7 @@ namespace HC.View
 
         private SelectCellRang FSelectCellRang;
         private Color FBorderColor;  // 边框颜色
+        private Color FFixColor;
         private HCTableRows FRows;  // 行
         private List<int> FColWidths;  // 记录各列宽度(除边框、含FCellHPadding * 2)，方便有合并的单元格获取自己水平开始处的位置
         private List<PageBreak> FPageBreaks;  // 记录各行分页时的信息
@@ -196,6 +210,11 @@ namespace HC.View
             this.SilenceChange();
         }
 
+        private void DoCheckCellScript(int row, int col)
+        {
+
+        }
+
         private void DoCellDataItemReFormatRequest(HCCustomData data, HCCustomItem item)
         {
             (OwnerData as HCRichData).ItemReFormatRequest(this);
@@ -241,6 +260,11 @@ namespace HC.View
                 if (vCellData != null)
                     InitializeCellData(vCellData);
             }
+        }
+
+        private void DoRowRemove(HCTableRow row)
+        {
+            InitializeMouseInfo();
         }
 
         private void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
@@ -400,6 +424,8 @@ namespace HC.View
                     {
                         vCellData.DisSelect();
                         vCellData.InitializeField();
+
+                        DoCheckCellScript(FSelectCellRang.StartRow, FSelectCellRang.StartCol);
                     }
                 }
                 
@@ -670,6 +696,16 @@ namespace HC.View
 
                     if (IsBreakRow(vR))
                         vFirstDrawRowIsBreak = (FFixRow >= 0) && (vR > FFixRow + FFixRowCount - 1);
+                    else
+                    if (!aPaintInfo.Print && vR >= FFixRow && vR < FFixRow + FFixRowCount)
+                    {
+                        vCellRect = new RECT(aDrawRect.Left,
+                            Math.Max(aDataScreenTop, vCellDataDrawTop - FCellVPaddingPix),
+                            aDrawRect.Right, aDrawRect.Top + GetFixRowHeight());
+
+                        aCanvas.Brush.Color = FFixColor;
+                        aCanvas.FillRect(vCellRect);
+                    }
                 }
 
                 vCellDrawLeft = aDrawRect.Left + FBorderWidthPix;
@@ -714,7 +750,7 @@ namespace HC.View
                             vCellRect = new RECT(vCellDrawLeft,
                                 vDestCellDataDrawTop - FCellVPaddingPix,
                                 vCellDrawLeft + FRows[vDestRow][vDestCol].CellData.Width + FCellHPaddingPix + FCellHPaddingPix,
-                                vDestCellDataDrawTop + FRows[vDestRow][vDestCol].CellData.Height);
+                                vDestCellDataDrawTop + FRows[vDestRow][vDestCol].CellData.Height + FCellVPaddingPix);
 
                             // 背景色
                             if ((this.IsSelectComplate || vCellData.CellSelectedAll) && (!aPaintInfo.Print))
@@ -728,10 +764,10 @@ namespace HC.View
                                 if (FOnCellPaintBK != null)
                                     FOnCellPaintBK(this, FRows[vDestRow][vDestCol], vCellRect, aCanvas, aPaintInfo, ref vDrawDefault);
 
-                                if (vDrawDefault)
+                                if (vDrawDefault && !aPaintInfo.Print)
                                 {
-                                    if (IsFixRow(vR) || IsFixCol(vC))
-                                        aCanvas.Brush.Color = HC.clBtnFace;
+                                    if (IsFixCol(vC))
+                                        aCanvas.Brush.Color = FFixColor;
                                     else
                                         if (FRows[vDestRow][vDestCol].BackgroundColor != HC.HCTransparentColor)
                                             aCanvas.Brush.Color = FRows[vDestRow][vDestCol].BackgroundColor;
@@ -1049,12 +1085,12 @@ namespace HC.View
 
         }
 
-        protected void DoCellPaintDataBefor(int row, int col, RECT cellDrawRect, HCCanvas canvas, PaintInfo paintInfo)
+        protected virtual void DoCellPaintDataBefor(int row, int col, RECT cellDrawRect, HCCanvas canvas, PaintInfo paintInfo)
         {
 
         }
 
-        protected void DoCellDataDrawItemPaintAfter(HCCustomData data, int itemNo, int drawItemNo,
+        protected virtual void DoCellDataDrawItemPaintAfter(HCCustomData data, int itemNo, int drawItemNo,
             RECT drawRect, RECT clearRect, int dataDrawLeft, int dataDrawRight, int dataDrawBottom, int dataScreenTop,
             int dataScreenBottom, HCCanvas canvas, PaintInfo paintInfo)
         {
@@ -2356,6 +2392,7 @@ namespace HC.View
                 {
                     vCell = new HCTableCell(OwnerData.Style);
                     vCell.Width = vWidth;
+                    vCell.Height = FRows[vRow].Height;
                     InitializeCellData(vCell.CellData);
 
                     if ((aCol < FColWidths.Count) && (FRows[vRow][aCol].ColSpan < 0))
@@ -2399,6 +2436,8 @@ namespace HC.View
             for (int i = 0; i <= aCount - 1; i++)
             {
                 vTableRow = new HCTableRow(OwnerData.Style, FColWidths.Count);
+                vTableRow.Height = FDefaultRowHeight;
+
                 for (int vCol = 0; vCol <= FColWidths.Count - 1; vCol++)
                 {
                     vTableRow[vCol].Width = FColWidths[vCol];
@@ -2458,6 +2497,7 @@ namespace HC.View
             }
 
             FColWidths.RemoveAt(aCol);
+            DeleteEmptyRows(0, RowCount - 1);
             CheckFixColSafe(aCol);
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
@@ -2493,6 +2533,7 @@ namespace HC.View
             }
 
             FRows.Delete(aRow);
+            DeleteEmptyCols(0, ColCount - 1);
             CheckFixRowSafe(aRow);
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
@@ -2512,11 +2553,13 @@ namespace HC.View
 
             GripSize = 2;
             FFormatHeight = 0;
+            FDefaultRowHeight = HC.MinRowHeight;
             FDraging = false;
             CellHPaddingMM = 0.5f;
             CellVPaddingMM = 0f;
             BorderWidthPt = 0.5f;
             FBorderColor = Color.Black;
+            FFixColor = HC.clBtnFace;
             FBorderVisible = true;
             FResizeKeepWidth = false;
 
@@ -2529,6 +2572,7 @@ namespace HC.View
             FColWidths = new List<int>();
             FRows = new HCTableRows();
             FRows.OnRowAdd = DoRowAdd;  // 添加行时触发的事件
+            FRows.OnRowRemove = DoRowRemove;
             this.ResetRowCol(aWidth, aRowCount, aColCount);
             FMangerUndo = true;  // 自己管理自己的撤销和恢复操作
         }
@@ -3760,9 +3804,9 @@ namespace HC.View
             vBuffer = BitConverter.GetBytes(FColWidths.Count);
             aStream.Write(vBuffer, 0, vBuffer.Length);  // 列数
 
-            aStream.WriteByte((byte)FFixCol);
-            aStream.WriteByte(FFixRowCount);
             aStream.WriteByte((byte)FFixRow);
+            aStream.WriteByte(FFixRowCount);
+            aStream.WriteByte((byte)FFixCol);
             aStream.WriteByte(FFixColCount);
             
             for (int i = 0; i <= FColWidths.Count - 1; i++)  // 各列标准宽
@@ -4029,12 +4073,19 @@ namespace HC.View
             FFixRowCount = 0;
             FFixCol = -1;
             FFixColCount = 0;
+            FDefaultRowHeight = HC.MinRowHeight;
 
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
 
             this.Width = aWidth;
-            Height = aRowCount * (HC.MinRowHeight + FBorderWidthPix) + FBorderWidthPix;
+            int vRowHeight = FDefaultRowHeight;
+#if RESETTABLEUSEFIRSTROWHEIGHT
+            if (FRows.Count > 0)
+                vRowHeight = FRows[0].Height;
+#endif
+
+            Height = aRowCount * (vRowHeight + FBorderWidthPix) + FBorderWidthPix;
             int vDataWidth = aWidth - (aColCount + 1) * FBorderWidthPix;
 
             FRows.Clear();
@@ -4043,6 +4094,15 @@ namespace HC.View
             {
                 vRow = new HCTableRow(OwnerData.Style, aColCount);
                 vRow.SetRowWidth(vDataWidth);
+                if (i == 0)
+                    FDefaultRowHeight = vRow[0].CellData.Height + FCellVPaddingPix + FCellVPaddingPix;
+
+#if RESETTABLEUSEFIRSTROWHEIGHT
+                vRow.Height = vRowHeight;
+                if (vRowHeight != FDefaultRowHeight)
+                    vRow.AutoHeight = false;
+#endif
+
                 FRows.Add(vRow);
             }
 
@@ -4448,8 +4508,11 @@ namespace HC.View
         public void PaintFixRows(int ALeft, int ATop, int ABottom, HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             RECT vRect = HC.Bounds(ALeft, ATop, Width, GetFixRowHeight());
-            ACanvas.Brush.Color = HC.clBtnFace;
-            ACanvas.FillRect(vRect);
+            if (!APaintInfo.Print)
+            {
+                ACanvas.Brush.Color = HC.clBtnFace;
+                ACanvas.FillRect(vRect);
+            }
 
             int vTop = ATop, vH = -1;
             for (int vR = FFixRow; vR <= FFixRow + FFixRowCount - 1; vR++)
@@ -4482,13 +4545,15 @@ namespace HC.View
                 vCellTop = vCellTop + FRows[vR].FmtOffset + FRows[vR].Height + FBorderWidthPix;
 
             RECT vRect = HC.Bounds(aLeft, vCellTop, GetFixColWidth(), aBottom - vCellTop);
-            aCanvas.Brush.Color = HC.clBtnFace;
-            aCanvas.FillRect(vRect);
+            if (!aPaintInfo.Print)
+            {
+                aCanvas.Brush.Color = HC.clBtnFace;
+                aCanvas.FillRect(vRect);
+            }
 
             int vCellBottom = 0, vCellLeft = 0, vBorderTop = 0, vBorderBottom = 0, vBorderLeft = 0, vBorderRight = 0;
 
             int vBorderOffs = FBorderWidthPix / 2;
-
             vCellTop = aTableDrawTop + FBorderWidthPix;
         
             for (int vR = 0; vR <= FRows.Count - 1; vR++)
@@ -4742,6 +4807,69 @@ namespace HC.View
 
         /// <summary> 获取指定单元格合并后单元格的Data </summary>
         //function GetMergeDestCellData(const ARow, ACol: Integer): THCTableCellData;
+
+        public void SetFixRowAndCount(sbyte row, byte count)
+        {
+            sbyte vRow = -1;
+            byte vCount = 0;
+
+            if (row < 0 || count == 0)
+            {
+                FFixRow = -1;
+                FFixRowCount = 0;
+            }
+            else  // > 0
+            {
+                if (row > FRows.Count - 1)
+                    vRow = (sbyte)(FRows.Count - 1);
+                else
+                    vRow = row;
+
+                if (row + count > FRows.Count)
+                    vCount = (byte)(FRows.Count - vRow);
+                else
+                    vCount = count;
+
+                if (FFixRow != vRow || FFixRowCount != vCount)
+                {
+                    FFixRow = vRow;
+                    FFixRowCount = vCount;
+                    FormatDirty();
+                }
+            }
+        }
+
+        public void SetFixColAndCount(sbyte col, byte count)
+        {
+            sbyte vCol = -1;
+            byte vCount = 0;
+
+            if (col < 0 || count == 0)
+            {
+                FFixCol = -1;
+                FFixColCount = 0;
+            }
+            else  // > 0
+            {
+                if (col > FColWidths.Count - 1)
+                    vCol = (sbyte)(FColWidths.Count - 1);
+                else
+                    vCol = col;
+
+                if (vCol + count > FColWidths.Count)
+                    vCount = (byte)(FColWidths.Count - vCol);
+                else
+                    vCount = count;
+
+                if (FFixCol != vCol || FFixColCount != vCount)
+                {
+                    FFixCol = vCol;
+                    FFixColCount = vCount;
+                    FormatDirty();
+                }
+            }
+        }
+    
         public bool MergeSelectCells()
         {
             bool Result = false;
@@ -4796,7 +4924,7 @@ namespace HC.View
                 return null;
         }
 
-        public void GetEditCell(ref int aRow, int aCol)
+        public void GetEditCell(ref int aRow, ref int aCol)
         {
             aRow = -1;
             aCol = -1;
@@ -5247,6 +5375,11 @@ namespace HC.View
             set { FBorderVisible = value; }
         }
 
+        public byte BorderWidthPix
+        {
+            get { return FBorderWidthPix; }
+        }
+
         public Single BorderWidthPt
         {
             get { return FBorderWidthPt; }
@@ -5278,25 +5411,26 @@ namespace HC.View
         public sbyte FixCol
         {
             get { return FFixCol; }
-            set { FFixCol = value; }
         }
 
         public byte FixColCount
         {
             get { return FFixColCount; }
-            set { FFixColCount = value; }
         }
 
         public sbyte FixRow
         {
             get { return FFixRow; }
-            set { FFixRow = value; }
         }
 
         public byte FixRowCount
         {
             get { return FFixRowCount; }
-            set { FFixRowCount = value; }
+        }
+
+        public int DefaultRowHeight
+        {
+            get { return FDefaultRowHeight; }
         }
 
         public HCCellPaintEventHandle OnCellPaintBK

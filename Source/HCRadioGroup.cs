@@ -338,10 +338,14 @@ namespace HC.View
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
             if (!AutoSize)
             {
-                RECT vRect = new RECT();
-                GDI.GetClipBox(aCanvas.Handle, ref vRect);
+                RECT vClipBoxRect = new RECT();
+                GDI.GetClipBox(aCanvas.Handle, ref vClipBoxRect);
 
-                IntPtr vPaintRegion = GDI.CreateRectRgn(aDrawRect.Left, aDrawRect.Top, aDrawRect.Right, aDrawRect.Bottom);
+                IntPtr vPaintRegion = GDI.CreateRectRgn(
+                    aPaintInfo.GetScaleX(aDrawRect.Left),
+                    aPaintInfo.GetScaleY(aDrawRect.Top),
+                    aPaintInfo.GetScaleX(aDrawRect.Right),
+                    aPaintInfo.GetScaleY(aDrawRect.Bottom));
                 try
                 {
                     GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);
@@ -352,7 +356,12 @@ namespace HC.View
                     GDI.DeleteObject(vPaintRegion);
                 }
 
-                vPaintRegion = GDI.CreateRectRgnIndirect(ref vRect);
+                //vPaintRegion = GDI.CreateRectRgnIndirect(ref vRect);
+                vPaintRegion = GDI.CreateRectRgn(
+                    aPaintInfo.GetScaleX(vClipBoxRect.Left),
+                    aPaintInfo.GetScaleY(vClipBoxRect.Top),
+                    aPaintInfo.GetScaleX(vClipBoxRect.Right),
+                    aPaintInfo.GetScaleY(vClipBoxRect.Bottom));
                 try
                 {
                     GDI.SelectClipRgn(aCanvas.Handle, vPaintRegion);

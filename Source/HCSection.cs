@@ -1991,9 +1991,9 @@ namespace HC.View
             // 恢复区域，准备给整页绘制用(各部分浮动Item)
             vPaintRegion = (IntPtr)GDI.CreateRectRgn(
                 aPaintInfo.GetScaleX(vPaperDrawLeft),
-                aPaintInfo.GetScaleX(vPaperDrawTop),
+                aPaintInfo.GetScaleY(vPaperDrawTop),
                 aPaintInfo.GetScaleX(vPaperDrawRight),
-                aPaintInfo.GetScaleX(vPaperDrawBottom));
+                aPaintInfo.GetScaleY(vPaperDrawBottom));
 
             try
             {

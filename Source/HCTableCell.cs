@@ -339,7 +339,7 @@ namespace HC.View
             aNode.SetAttribute("rowspan", FRowSpan.ToString());
             aNode.SetAttribute("colspan", FColSpan.ToString());
             aNode.SetAttribute("vert", ((byte)FAlignVert).ToString());
-            aNode.SetAttribute("bkcolor", HC.GetColorXmlRGB(FBackgroundColor));
+            aNode.SetAttribute("bkcolor", HC.HCColorToRGBString(FBackgroundColor));
             aNode.SetAttribute("border", HC.GetBorderSidePro(FBorderSides));
 
             if (FCellData != null)  // 存数据
@@ -357,7 +357,7 @@ namespace HC.View
             FRowSpan = int.Parse(aNode.Attributes["rowspan"].Value);
             FColSpan = int.Parse(aNode.Attributes["colspan"].Value);
             FAlignVert = (HCAlignVert)(byte.Parse(aNode.Attributes["vert"].Value));
-            FBackgroundColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
+            FBackgroundColor = HC.HCRGBStringToColor(aNode.Attributes["bkcolor"].Value);
             HC.SetBorderSideByPro(aNode.Attributes["border"].Value, FBorderSides);
 
             if ((FRowSpan < 0) || (FColSpan < 0))

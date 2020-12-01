@@ -1295,7 +1295,15 @@ namespace HC.View
                 }
             }
             else
+            {
+                vItemNo = SelectInfo.StartItemNo;
+                vOffset = SelectInfo.StartItemOffset;
+                ReSetSelectAndCaret(SelectInfo.EndItemNo, SelectInfo.EndItemOffset, !aForward);
+
+                SelectInfo.StartItemNo = vItemNo;
+                SelectInfo.StartItemOffset = vOffset;
                 this.MatchItemSelectState();
+            }
 
             this.Style.UpdateInfoRePaint();
             this.Style.UpdateInfoReCaret();
@@ -1349,6 +1357,11 @@ namespace HC.View
                         (Items[i] as HCCustomRectItem).TraverseItem(aTraverse);
                 }
             }
+        }
+
+        public virtual bool ExecuteScript(int itemNo)
+        {
+            return false;
         }
 
         public DataItemEventHandler OnCaretItemChanged

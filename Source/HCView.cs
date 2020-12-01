@@ -4051,47 +4051,50 @@ namespace HC.View
                 int vStartDrawItemNo = vTopData.GetDrawItemNoByOffset(vTopData.SelectInfo.StartItemNo, vTopData.SelectInfo.StartItemOffset);
                 int vEndDrawItemNo = vTopData.GetDrawItemNoByOffset(vTopData.SelectInfo.EndItemNo, vTopData.SelectInfo.EndItemOffset);
 
-                RECT vStartDrawRect = new RECT();
-                RECT vEndDrawRect = new RECT();
+                RECT vDrawRect = new RECT();
 
                 if (vStartDrawItemNo == vEndDrawItemNo)
                 {
-                    vStartDrawRect.Left = vPt.X + ZoomIn(vTopData.GetDrawItemOffsetWidth(vStartDrawItemNo,
+                    vDrawRect.Left = vPt.X + ZoomIn(vTopData.GetDrawItemOffsetWidth(vStartDrawItemNo,
                         vTopData.SelectInfo.StartItemOffset - vTopData.DrawItems[vStartDrawItemNo].CharOffs + 1));
-                    vStartDrawRect.Top = vPt.Y;
-                    vStartDrawRect.Right = vPt.X + ZoomIn(vTopData.GetDrawItemOffsetWidth(vEndDrawItemNo,
+                    vDrawRect.Top = vPt.Y;
+                    vDrawRect.Right = vPt.X + ZoomIn(vTopData.GetDrawItemOffsetWidth(vEndDrawItemNo,
                         vTopData.SelectInfo.EndItemOffset - vTopData.DrawItems[vEndDrawItemNo].CharOffs + 1));
-                    vStartDrawRect.Bottom = vPt.Y + ZoomIn(vTopData.DrawItems[vEndDrawItemNo].Rect.Height);
-
-                    vEndDrawRect = vStartDrawRect;
+                    vDrawRect.Bottom = vPt.Y + ZoomIn(vTopData.DrawItems[vEndDrawItemNo].Rect.Height);
                 }
                 else  // 选中不在同一个DrawItem
                 {
-                    vStartDrawRect.Left = vPt.X + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Left - vTopData.DrawItems[vEndDrawItemNo].Rect.Left
-                        + vTopData.GetDrawItemOffsetWidth(vStartDrawItemNo, vTopData.SelectInfo.StartItemOffset - vTopData.DrawItems[vStartDrawItemNo].CharOffs + 1));
-                    vStartDrawRect.Top = vPt.Y + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Top - vTopData.DrawItems[vEndDrawItemNo].Rect.Top);
-                    vStartDrawRect.Right = vPt.X + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Left - vTopData.DrawItems[vEndDrawItemNo].Rect.Left
-                        + vTopData.DrawItems[vStartDrawItemNo].Rect.Width);
-                    vStartDrawRect.Bottom = vStartDrawRect.Top + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Height);
 
-                    vEndDrawRect.Left = vPt.X;
-                    vEndDrawRect.Top = vPt.Y;
-                    vEndDrawRect.Right = vPt.X + ZoomIn(vTopData.GetDrawItemOffsetWidth(vEndDrawItemNo,
-                        vTopData.SelectInfo.EndItemOffset - vTopData.DrawItems[vEndDrawItemNo].CharOffs + 1));
-                    vEndDrawRect.Bottom = vPt.Y + ZoomIn(vTopData.DrawItems[vEndDrawItemNo].Rect.Height);
+                    if (!aForward)
+                    {
+                        vDrawRect.Left = vPt.X;
+                        vDrawRect.Top = vPt.Y;
+                        vDrawRect.Right = vPt.X + ZoomIn(vTopData.GetDrawItemOffsetWidth(vEndDrawItemNo,
+                            vTopData.SelectInfo.EndItemOffset - vTopData.DrawItems[vEndDrawItemNo].CharOffs + 1));
+                        vDrawRect.Bottom = vPt.Y + ZoomIn(vTopData.DrawItems[vEndDrawItemNo].Rect.Height);
+                    }
+                    else
+                    {
+                        vDrawRect.Left = vPt.X + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Left - vTopData.DrawItems[vEndDrawItemNo].Rect.Left
+                            + vTopData.GetDrawItemOffsetWidth(vStartDrawItemNo, vTopData.SelectInfo.StartItemOffset - vTopData.DrawItems[vStartDrawItemNo].CharOffs + 1));
+                        vDrawRect.Top = vPt.Y + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Top - vTopData.DrawItems[vEndDrawItemNo].Rect.Top);
+                        vDrawRect.Right = vPt.X + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Left - vTopData.DrawItems[vEndDrawItemNo].Rect.Left
+                            + vTopData.DrawItems[vStartDrawItemNo].Rect.Width);
+                        vDrawRect.Bottom = vDrawRect.Top + ZoomIn(vTopData.DrawItems[vStartDrawItemNo].Rect.Height);
+                    }
                 }
 
-                if (vStartDrawRect.Top < 0)
-                    this.FVScrollBar.Position = this.FVScrollBar.Position + vStartDrawRect.Top;
+                if (vDrawRect.Top < 0)
+                    this.FVScrollBar.Position = this.FVScrollBar.Position + vDrawRect.Top;
                 else
-                if (vStartDrawRect.Bottom > FViewHeight)
-                    this.FVScrollBar.Position = this.FVScrollBar.Position + vStartDrawRect.Bottom - FViewHeight;
+                if (vDrawRect.Bottom > FViewHeight)
+                    this.FVScrollBar.Position = this.FVScrollBar.Position + vDrawRect.Bottom - FViewHeight;
 
-                if (vStartDrawRect.Left < 0)
-                    this.FHScrollBar.Position = this.FHScrollBar.Position + vStartDrawRect.Left;
+                if (vDrawRect.Left < 0)
+                    this.FHScrollBar.Position = this.FHScrollBar.Position + vDrawRect.Left;
                 else
-                if (vStartDrawRect.Right > FViewWidth)
-                    this.FHScrollBar.Position = this.FHScrollBar.Position + vStartDrawRect.Right - FViewWidth;
+                if (vDrawRect.Right > FViewWidth)
+                    this.FHScrollBar.Position = this.FHScrollBar.Position + vDrawRect.Right - FViewWidth;
             }
 
             return Result;
@@ -4108,6 +4111,11 @@ namespace HC.View
         public int NumberOfWords()
         {
             return this.SaveToText().Length;
+        }
+
+        public bool CanEdit()
+        {
+            return this.DoSectionCanEdit(this);
         }
 
         // 属性部分

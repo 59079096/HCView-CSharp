@@ -575,6 +575,26 @@ namespace HC.View
             return Result;
         }
 
+        protected void DeleteEmptyItem()
+        {
+            for (int i = FItems.Count - 1; i >= 0; i--)
+            {
+                if (FItems[i].StyleNo > HCStyle.Null && FItems[i].Length == 0)
+                {
+                    if (!FItems[i].ParaFirst)
+                        FItems.RemoveAt(i);
+                    else
+                    {
+                        if (i < FItems.Count - 1 && !FItems[i + 1].ParaFirst)
+                        {
+                            FItems[i + 1].ParaFirst = true;
+                            FItems.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+        }
+
         protected void SetCaretDrawItemNo(int value)
         {
             if ((FCaretDrawItemNo >= 0) && (FCaretDrawItemNo < FDrawItems.Count))

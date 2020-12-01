@@ -596,7 +596,7 @@ namespace HC.View
             vFirstCharWidth = vCharWidths[aCharOffset - 1] - aBasePos;  // 第一个字符的宽度
 
             if (aPlaceWidth < 0)
-                viBreakOffset = 1;
+                viBreakOffset = aCharOffset;
             else
             {
                 if (Style.FormatVersion == 2)
@@ -633,7 +633,7 @@ namespace HC.View
                 }
             }
 
-            if (viBreakOffset < 1)  // 当前行剩余空间把vText全放置下了
+            if (viBreakOffset == 0)  // 当前行剩余空间把vText全放置下了
             {
                 vRect.Left = aPos.X;
                 vRect.Top = aPos.Y;
@@ -645,7 +645,7 @@ namespace HC.View
                 vRemainderWidth = aFmtRight - vRect.Right;  // 放入最多后的剩余量
             }
             else
-            if (viBreakOffset == 1)  // 当前行剩余空间连第一个字符也放不下
+            if (viBreakOffset == aCharOffset)  // 当前行剩余空间连第一个字符也放不下
             {
                 if (vFirstCharWidth > aFmtRight - aFmtLeft)  // Data的宽度不足一个字符
                 {

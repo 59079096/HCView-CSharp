@@ -302,6 +302,11 @@ namespace HC.View
             }
         }
 
+        public virtual int CheckPageSurplus(int surplus)
+        {
+            return 0;
+        }
+
         public virtual bool InsertItem(HCCustomItem aItem)
         {
             return false;

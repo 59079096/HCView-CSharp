@@ -361,7 +361,7 @@ namespace HC.View
             aNode.SetAttribute("firstindent", FFirstIndent.ToString());
             aNode.SetAttribute("leftindent", FLeftIndent.ToString());
             aNode.SetAttribute("rightindent", FRightIndent.ToString());
-            aNode.SetAttribute("bkcolor", HC.GetColorXmlRGB(FBackColor));
+            aNode.SetAttribute("bkcolor", HC.HCColorToRGBString(FBackColor));
             if (FBreakRough)
                 aNode.SetAttribute("breakrough", "1");
 
@@ -375,7 +375,7 @@ namespace HC.View
             FirstIndent = float.Parse(aNode.Attributes["firstindent"].Value);
             LeftIndent = float.Parse(aNode.Attributes["leftindent"].Value);
             RightIndent = float.Parse(aNode.Attributes["rightindent"].Value);
-            FBackColor = HC.GetXmlRGBColor(aNode.Attributes["bkcolor"].Value);
+            FBackColor = HC.HCRGBStringToColor(aNode.Attributes["bkcolor"].Value);
             FBreakRough = aNode.GetAttribute("breakrough") == "1";
             //GetXMLLineSpaceMode_;
             if (aNode.Attributes["spacemode"].Value == "100")

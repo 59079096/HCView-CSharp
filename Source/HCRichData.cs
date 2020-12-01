@@ -46,11 +46,13 @@ namespace HC.View
             FSelectSeekOffset;  // 选中操作时的游标
     
         private bool FReadOnly, FSelecting, FDraging;
+        private bool FCheckEmptyItem;
         private DataItemNoEventHandler FOnItemResized;
         private ItemMouseEventHandler FOnItemMouseDown, FOnItemMouseUp;
         private DrawItemMouseEventHandle FOnDrawItemMouseMove;
         private EventHandler FOnCreateItem;  // 新建了Item(目前主要是为了打字和用中文输入法输入英文时痕迹的处理)
         private DataActionEventHandler FOnAcceptAction;
+        private EventHandler FOnChange;
 
         private bool SelectByMouseDownShift(ref int AMouseDownItemNo, ref int AMouseDownItemOffset)
         {
@@ -265,8 +267,6 @@ namespace HC.View
             FMouseMoveItemOffset = -1;
             FMouseMoveDrawItemNo = -1;
             FMouseMoveRestrain = false;
-            FSelectSeekNo = -1;
-            FSelectSeekOffset = -1;
             FSelecting = false;
             FDraging = false;
         }
@@ -469,13 +469,17 @@ namespace HC.View
             this.BeginFormat();
             try
             {
+                FCheckEmptyItem = false;
                 InsertStream(aStream, aStyle, aFileVersion);
-                // 加载完成后，可以把不正确的Item排除一下，因为加载时不会产生Undo，所以直接删除不会有影响
-                //for (int i = Items.Count - 1; i >= 0; i--)
-                //{
-                //    if (!Items[i].ParaFirst && (Items[i].StyleNo > HCStyle.Null) && (Items[i].Length == 0))
-                //        Items.RemoveAt(i);
-                //}
+                if (aFileVersion > 47)
+                {
+                    byte[] vBuffer = BitConverter.GetBytes(false);
+                    aStream.Read(vBuffer, 0, vBuffer.Length);
+                    FReadOnly = BitConverter.ToBoolean(vBuffer, 0);
+                }
+
+                if (FCheckEmptyItem)
+                    this.DeleteEmptyItem();
 
                 ReSetSelectAndCaret(0, 0);
             }
@@ -521,6 +525,12 @@ namespace HC.View
         protected virtual void DoItemMouseEnter(int aItemNo)
         {
             Items[aItemNo].MouseEnter();
+        }
+
+        protected virtual void DoChange()
+        {
+            if (FOnChange != null)
+                FOnChange(this, null);
         }
 
         protected virtual void DoItemResized(int aItemNo)
@@ -1661,8 +1671,20 @@ namespace HC.View
         /// <summary> 初始化相关字段和变量 </summary>
         public override void InitializeField()
         {
+            FSelectSeekNo = -1;
+            FSelectSeekOffset = -1;
             InitializeMouseField();
             base.InitializeField();
+        }
+
+        public override void SaveToStream(Stream aStream)
+        {
+            base.SaveToStream(aStream);
+            if (HC.HC_FileVersionInt > 47)
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FReadOnly);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+            }
         }
 
         public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -1832,6 +1854,18 @@ namespace HC.View
                         vIgnoreCount++;
                         vItem.Dispose();
                         continue;
+                    }
+
+                    if (!FCheckEmptyItem && i > 0 && !vItem.ParaFirst)
+                    {
+                        if (vItem.StyleNo > HCStyle.Null && vItem.Length == 0)
+                            FCheckEmptyItem = true;
+
+                        if (Items[vInsPos + i - vIgnoreCount - 1].StyleNo > HCStyle.Null
+                            && Items[vInsPos + i - vIgnoreCount - 1].Length == 0)
+                        {
+                            FCheckEmptyItem = true;
+                        }
                     }
 
                     Items.Insert(vInsPos + i - vIgnoreCount, vItem);
@@ -2869,6 +2903,8 @@ namespace HC.View
                 }
                 else
                     this.FormatInit();
+
+                DoChange();
             }
             else
                 InsertText(key.ToString());
@@ -3084,7 +3120,7 @@ namespace HC.View
                     int vNewCaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
                     if (vNewCaretDrawItemNo != CaretDrawItemNo)
                     {
-                        if ((vNewCaretDrawItemNo == CaretDrawItemNo - 1)  // 移动到前一个了)
+                        if ((vNewCaretDrawItemNo == CaretDrawItemNo - 1)  // 移动到前一个了
                             && (DrawItems[vNewCaretDrawItemNo].ItemNo == DrawItems[CaretDrawItemNo].ItemNo)  // 是同一个Item
                             && (DrawItems[CaretDrawItemNo].LineFirst)  // 原是行首
                             && (SelectInfo.StartItemOffset == DrawItems[CaretDrawItemNo].CharOffs - 1)) // 光标位置也是原DrawItem的最前面
@@ -3437,36 +3473,22 @@ namespace HC.View
                             SetSelectSeekStart();
                         }
                         else
-                            if (DrawItems[vLastDItemNo].ItemNo == SelectInfo.EndItemNo)
+                        if (DrawItems[vLastDItemNo].ItemNo == SelectInfo.EndItemNo)
+                        {
+                            SelectInfo.StartItemNo = SelectInfo.EndItemNo;
+                            if (DrawItems[vLastDItemNo].CharOffsetEnd() < SelectInfo.EndItemOffset)
                             {
-                                SelectInfo.StartItemNo = SelectInfo.EndItemNo;
-                                if (DrawItems[vLastDItemNo].CharOffsetEnd() < SelectInfo.EndItemOffset)
-                                {
-                                    if (Items[SelectInfo.StartItemNo] is HCDomainItem)
-                                        SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
-                                    else
-                                        SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
-
-                                    CheckSelectEndEff();
-                                    SetSelectSeekStart();
-                                }
+                                if (Items[SelectInfo.StartItemNo] is HCDomainItem)
+                                    SelectInfo.StartItemOffset = (Items[SelectInfo.StartItemNo] as HCDomainItem).GetOffsetAt(0);
                                 else
-                                {
-                                    SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
-                                    if (Items[SelectInfo.EndItemNo] is HCDomainItem)
-                                        SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
-                                    else
-                                        SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+                                    SelectInfo.StartItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
 
-                                    CheckSelectEndEff();
-                                    SetSelectSeekEnd();
-                                }
+                                CheckSelectEndEff();
+                                SetSelectSeekStart();
                             }
                             else
                             {
-                                SelectInfo.StartItemNo = SelectInfo.EndItemNo;
                                 SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
-                                SelectInfo.EndItemNo = DrawItems[vLastDItemNo].ItemNo;
                                 if (Items[SelectInfo.EndItemNo] is HCDomainItem)
                                     SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
                                 else
@@ -3475,6 +3497,20 @@ namespace HC.View
                                 CheckSelectEndEff();
                                 SetSelectSeekEnd();
                             }
+                        }
+                        else
+                        {
+                            SelectInfo.StartItemNo = SelectInfo.EndItemNo;
+                            SelectInfo.StartItemOffset = SelectInfo.EndItemOffset;
+                            SelectInfo.EndItemNo = DrawItems[vLastDItemNo].ItemNo;
+                            if (Items[SelectInfo.EndItemNo] is HCDomainItem)
+                                SelectInfo.EndItemOffset = (Items[SelectInfo.EndItemNo] as HCDomainItem).GetOffsetAt(0);
+                            else
+                                SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
+
+                            CheckSelectEndEff();
+                            SetSelectSeekEnd();
+                        }
                     }
                     else  // 游标在选中结束
                     {
@@ -3497,7 +3533,11 @@ namespace HC.View
                         SelectInfo.EndItemOffset = DrawItems[vLastDItemNo].CharOffsetEnd();
 
                     CheckSelectEndEff();
-                    SetSelectSeekEnd();
+
+                    if (SelectInfo.EndItemNo < 0)
+                        SetSelectSeekStart();
+                    else
+                        SetSelectSeekEnd();
                 }
 
                 MatchItemSelectState();
@@ -5105,6 +5145,7 @@ namespace HC.View
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();  // 删除后以新位置光标为当前样式
                     Style.UpdateInfoReScroll();
+                    DoChange();
                     break;
 
                 case User.VK_LEFT:
@@ -5807,7 +5848,7 @@ namespace HC.View
             Style.UpdateInfoRePaint();
             Style.UpdateInfoReCaret();
             Style.UpdateInfoReScroll();
-
+            DoChange();
             return Result;
         }
 
@@ -6172,6 +6213,12 @@ namespace HC.View
         public bool Selecting
         {
             get { return FSelecting; }
+        }
+
+        public EventHandler OnChange
+        {
+            get { return FOnChange; }
+            set { FOnChange = value; }
         }
 
         public DataItemNoEventHandler OnItemResized

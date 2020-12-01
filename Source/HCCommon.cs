@@ -725,7 +725,7 @@ namespace HC.View
                 propertys.Remove(key);
         }
 
-        public static Color GetXmlRGBColor(string aColorStr)
+        public static Color HCRGBStringToColor(string aColorStr)
         {
             string[] vsRGB = aColorStr.Split(new string[] { "," }, StringSplitOptions.None);
             if (vsRGB.Length > 3)
@@ -739,7 +739,7 @@ namespace HC.View
                 return Color.FromArgb(byte.Parse(vsRGB[0]), byte.Parse(vsRGB[1]), byte.Parse(vsRGB[2]));
         }
 
-        public static string GetColorXmlRGB(Color aColor)
+        public static string HCColorToRGBString(Color aColor)
         {
             if ((aColor.A == HCTransparentColor.A) && (aColor.R == HCTransparentColor.R)
                 && (aColor.G == HCTransparentColor.G) && (aColor.B == HCTransparentColor.B))

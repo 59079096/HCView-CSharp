@@ -99,5 +99,10 @@ namespace HC.View
         {
             return aPix / aDpi * 72f;
         }
+
+        public static Single TwipToPt(Single value)
+        {
+            return value / 1440 * 72;
+        }
     }
 }

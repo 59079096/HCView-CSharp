@@ -166,14 +166,14 @@ namespace HC.View
         {
             aNode.SetAttribute("style", ((byte)FStyle).ToString());
             aNode.SetAttribute("ver", FVersion.ToString());
-            aNode.SetAttribute("color", HC.GetColorXmlRGB(FColor));
+            aNode.SetAttribute("color", HC.HCColorToRGBString(FColor));
         }
 
         public virtual void ParseXml(XmlElement aNode)
         {
             FStyle = (HCShapeStyle)byte.Parse(aNode.Attributes["style"].Value);
             FVersion = byte.Parse(aNode.Attributes["ver"].Value);
-            FColor = HC.GetXmlRGBColor(aNode.Attributes["color"].Value);
+            FColor = HC.HCRGBStringToColor(aNode.Attributes["color"].Value);
         }
 
         public virtual void StructStart()
