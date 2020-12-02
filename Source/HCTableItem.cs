@@ -192,7 +192,7 @@ namespace HC.View
             aCellData.OnInsertTextBefor = (OwnerData as HCViewData).OnInsertTextBefor;
             aCellData.OnPaintDomainRegion = (OwnerData as HCViewData).OnPaintDomainRegion;
             aCellData.OnItemResized = (OwnerData as HCRichData).OnItemResized;
-            aCellData.OnCurParaNoChange = (OwnerData as HCRichData).OnCurParaNoChange;
+            aCellData.OnCurParaNoChange = OwnerData.OnCurParaNoChange;
 
             aCellData.OnCreateItem = (OwnerData as HCRichData).OnCreateItem;
             aCellData.OnGetUndoList = this.GetSelfUndoList;
@@ -693,7 +693,7 @@ namespace HC.View
 
                 vCellDataDrawBottom = vCellDataDrawTop - FCellVPaddingPix + FRows[vR].Height - FCellVPaddingPix;
 
-                if (vCellDataDrawBottom <= aDataScreenTop)
+                if (vCellDataDrawBottom < aDataScreenTop)
                 {
                     vCellDataDrawTop = vCellDataDrawBottom + FCellVPaddingPix + FBorderWidthPix;  // 准备判断下一行是否是可显示第一行
                     continue;
@@ -1102,9 +1102,12 @@ namespace HC.View
             RECT drawRect, RECT clearRect, int dataDrawLeft, int dataDrawRight, int dataDrawBottom, int dataScreenTop,
             int dataScreenBottom, HCCanvas canvas, PaintInfo paintInfo)
         {
-            (OwnerData as HCViewData).OnDrawItemPaintAfter(data, itemNo, drawItemNo,
-                drawRect, clearRect, dataDrawLeft, dataDrawRight, dataDrawBottom,
-                dataScreenTop, dataScreenBottom, canvas, paintInfo);
+            if (OwnerData.OnDrawItemPaintAfter != null)
+            {
+                OwnerData.OnDrawItemPaintAfter(data, itemNo, drawItemNo,
+                    drawRect, clearRect, dataDrawLeft, dataDrawRight, dataDrawBottom,
+                    dataScreenTop, dataScreenBottom, canvas, paintInfo);
+            }
         }
 
 
