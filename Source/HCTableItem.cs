@@ -428,12 +428,7 @@ namespace HC.View
                     FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
                     vCellData = this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].CellData;
                     if (vCellData != null)
-                    {
-                        vCellData.DisSelect();
-                        vCellData.InitializeField();
-
                         DoCheckCellScript(FSelectCellRang.StartRow, FSelectCellRang.StartCol);
-                    }
                 }
                 
                 for (int vRow = FSelectCellRang.StartRow; vRow <= FSelectCellRang.EndRow; vRow++)
@@ -2643,8 +2638,8 @@ namespace HC.View
             if (FSelectCellRang.EditCell())
             {
                 POINT vPt = GetCellPostion(FSelectCellRang.StartRow, FSelectCellRang.StartCol);
-                this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].CellData.DblClick(
-                    x - vPt.X - FCellHPaddingPix, y - vPt.Y - FCellVPaddingPix);
+                HCTableCell vCell = this[FSelectCellRang.StartRow, FSelectCellRang.StartCol];
+                vCell.CellData.DblClick(x - vPt.X - FCellHPaddingPix, y - vPt.Y - vCell.GetCellDataTop(FCellVPaddingPix));
             }
             else
                 base.DblClick(x, y);
@@ -2671,17 +2666,17 @@ namespace HC.View
                         }
                         else  // 无选择结束行，判断是否在当前单元格的选中中
                         {
-                            HCTableCellData vCellData = this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].CellData;
-                            if (vCellData.SelectExists())
+                            HCTableCell vCell = FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol];
+                            if (vCell.CellData.SelectExists())
                             {
                                 POINT vCellPt = GetCellPostion(FSelectCellRang.StartRow, FSelectCellRang.StartCol);
                                 int vX = x - vCellPt.X - FCellHPaddingPix;
-                                int vY = y - vCellPt.Y - FCellVPaddingPix;
+                                int vY = y - vCellPt.Y - vCell.GetCellDataTop(FCellVPaddingPix);
 
                                 int vItemNo = -1, vOffset = -1, vDrawItemNo = -1;
                                 bool vRestrain = false;
-                                vCellData.GetItemAt(vX, vY, ref vItemNo, ref vOffset, ref vDrawItemNo, ref vRestrain);
-                                Result = vCellData.CoordInSelect(vX, vY, vItemNo, vOffset, vRestrain);
+                                vCell.CellData.GetItemAt(vX, vY, ref vItemNo, ref vOffset, ref vDrawItemNo, ref vRestrain);
+                                Result = vCell.CellData.CoordInSelect(vX, vY, vItemNo, vOffset, vRestrain);
                             }
                         }
                     }
@@ -3850,7 +3845,7 @@ namespace HC.View
                 vData.BeginFormat();
                 vData.Items.Clear();
                 vData.OnSaveItem = OwnerData.OnSaveItem;
-
+                vData.OnCreateItemByStyle = (OwnerData as HCViewData).OnCreateItemByStyle;
                 HCCustomData vCellData = null;
                 for (int vRow = FSelectCellRang.StartRow; vRow <= FSelectCellRang.EndRow; vRow++)
                 {
@@ -3862,7 +3857,7 @@ namespace HC.View
                     }
                 }
 
-                vData.SaveToStream(aStream);
+                vData.SaveItemToStream(aStream, 0, 0, vData.Items.Count - 1, vData.Items.Last.Length);
                 vData.Dispose();
             }
         }

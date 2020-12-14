@@ -1820,7 +1820,7 @@ namespace HC.View
                         vItem.ParaNo = vCaretParaNo;
                     }
 
-                    if (vItem.StyleNo > 0 && vItem.Text == "" && !vItem.ParaFirst)
+                    if (vItem.StyleNo > HCStyle.Null && vItem.Text == "" && !vItem.ParaFirst)
                     {
                         vIgnoreCount++;
                         vItem.Dispose();
