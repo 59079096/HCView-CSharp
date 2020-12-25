@@ -1976,8 +1976,9 @@ namespace HC.View
                     vStyleNo = BitConverter.ToInt32(vBuffer, 0);
                     this.LoadFromStream(vMirrorUndoData.Stream, OwnerData.Style, HC.HC_FileVersionInt);
 
-                    vMirrorUndoData.Stream.SetLength(0);
-                    vStream.CopyTo(vMirrorUndoData.Stream);  // 保存撤销前状态
+                    vMirrorUndoData.Stream.SetLength(vStream.Length);
+                    vMirrorUndoData.Stream.Position = 0;
+                    vStream.WriteTo(vMirrorUndoData.Stream);  // 保存撤销前状态
                     this.FormatDirty();
                 }
                 finally
@@ -2052,8 +2053,9 @@ namespace HC.View
                     vStyleNo = BitConverter.ToInt32(vBuffer, 0);
                     this.LoadFromStream(vMirrorUndoData.Stream, OwnerData.Style, HC.HC_FileVersionInt);
 
-                    vMirrorUndoData.Stream.SetLength(0);
-                    vStream.CopyTo(vMirrorUndoData.Stream);  // 保存恢复前状态
+                    vMirrorUndoData.Stream.SetLength(vStream.Length);
+                    vMirrorUndoData.Stream.Position = 0;
+                    vStream.WriteTo(vMirrorUndoData.Stream);  // 保存恢复前状态
                     this.FormatDirty();
                 }
                 finally
