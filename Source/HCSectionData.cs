@@ -154,10 +154,18 @@ namespace HC.View
                 if (this.ReadOnly)
                     return true;
 
-                MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
-                    e.X - FFloatItems[FFloatItemIndex].Left, e.Y - FFloatItems[FFloatItemIndex].Top,
-                    e.Delta);
-                vResult = FFloatItems[FFloatItemIndex].MouseDown(vMouseArgs);
+                if (e.Clicks == 2)
+                {
+                    FFloatItems[FFloatItemIndex].DblClick(e.X - FFloatItems[FFloatItemIndex].Left, e.Y - FFloatItems[FFloatItemIndex].Top);
+                    return true;
+                }
+                else
+                {
+                    MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks,
+                        e.X - FFloatItems[FFloatItemIndex].Left, e.Y - FFloatItems[FFloatItemIndex].Top,
+                        e.Delta);
+                    vResult = FFloatItems[FFloatItemIndex].MouseDown(vMouseArgs);
+                }
             }
 
             if ((FMouseDownIndex < 0) && (vOldIndex < 0))

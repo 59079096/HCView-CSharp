@@ -94,8 +94,6 @@ namespace HC.View
                     FPercent = (Width - FLeftBlank - FRightBlank - 2 * ButtonSize - vThumHeight) / (float)(FRange - FPageSize);  // 界面可滚动范围和实际代表范围的比率
                     if (FPercent < 0)
                         return;
-                    if (FPercent == 0)
-                        FPercent = 1;
                     
                     FThumRect.Left = FLeftBlank + ButtonSize + (int)Math.Round(FPosition * FPercent);
                     FThumRect.Right = FThumRect.Left + vThumHeight;
@@ -120,8 +118,6 @@ namespace HC.View
                     FPercent = (Height - FLeftBlank - FRightBlank - 2 * ButtonSize - vThumHeight) / (float)(FRange - FPageSize);  // 界面可滚动范围和实际代表范围的比率
                     if (FPercent < 0)
                         return;
-                    if (FPercent == 0)
-                        FPercent = 1;
 
                     FThumRect.Top = FLeftBlank + ButtonSize + (int)Math.Round(FPosition * FPercent);
                     FThumRect.Bottom = FThumRect.Top + vThumHeight;
@@ -133,6 +129,9 @@ namespace HC.View
                     FThumRect.Bottom = Height - FRightBlank - ButtonSize;
                 }
             }
+
+            if (FPercent == 0)
+                FPercent = 1;
         }
 
         /// <summary>

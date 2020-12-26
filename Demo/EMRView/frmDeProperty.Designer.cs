@@ -29,26 +29,40 @@
         private void InitializeComponent()
         {
             this.panel1 = new System.Windows.Forms.Panel();
+            this.cbxCanCopy = new System.Windows.Forms.CheckBox();
             this.cbxCanEdit = new System.Windows.Forms.CheckBox();
             this.dgvProperty = new System.Windows.Forms.DataGridView();
             this.Key = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.value = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.label1 = new System.Windows.Forms.Label();
             this.btnSave = new System.Windows.Forms.Button();
-            this.cbxCanCopy = new System.Windows.Forms.CheckBox();
+            this.cbxDeleteAllow = new System.Windows.Forms.CheckBox();
+            this.cbxAllocOnly = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProperty)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.cbxAllocOnly);
+            this.panel1.Controls.Add(this.cbxDeleteAllow);
             this.panel1.Controls.Add(this.cbxCanCopy);
             this.panel1.Controls.Add(this.cbxCanEdit);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(334, 27);
+            this.panel1.Size = new System.Drawing.Size(334, 48);
             this.panel1.TabIndex = 0;
+            // 
+            // cbxCanCopy
+            // 
+            this.cbxCanCopy.AutoSize = true;
+            this.cbxCanCopy.Location = new System.Drawing.Point(13, 26);
+            this.cbxCanCopy.Name = "cbxCanCopy";
+            this.cbxCanCopy.Size = new System.Drawing.Size(72, 16);
+            this.cbxCanCopy.TabIndex = 1;
+            this.cbxCanCopy.Text = "允许复制";
+            this.cbxCanCopy.UseVisualStyleBackColor = true;
             // 
             // cbxCanEdit
             // 
@@ -68,11 +82,11 @@
             this.Key,
             this.value});
             this.dgvProperty.Dock = System.Windows.Forms.DockStyle.Top;
-            this.dgvProperty.Location = new System.Drawing.Point(0, 27);
+            this.dgvProperty.Location = new System.Drawing.Point(0, 48);
             this.dgvProperty.Name = "dgvProperty";
             this.dgvProperty.RowHeadersVisible = false;
             this.dgvProperty.RowTemplate.Height = 23;
-            this.dgvProperty.Size = new System.Drawing.Size(334, 210);
+            this.dgvProperty.Size = new System.Drawing.Size(334, 193);
             this.dgvProperty.TabIndex = 1;
             // 
             // Key
@@ -89,7 +103,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.label1.Location = new System.Drawing.Point(13, 244);
+            this.label1.Location = new System.Drawing.Point(11, 250);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(149, 12);
             this.label1.TabIndex = 2;
@@ -105,15 +119,25 @@
             this.btnSave.UseVisualStyleBackColor = true;
             this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
-            // cbxCanCopy
+            // chkDeleteAllow
             // 
-            this.cbxCanCopy.AutoSize = true;
-            this.cbxCanCopy.Location = new System.Drawing.Point(124, 6);
-            this.cbxCanCopy.Name = "cbxCanCopy";
-            this.cbxCanCopy.Size = new System.Drawing.Size(72, 16);
-            this.cbxCanCopy.TabIndex = 1;
-            this.cbxCanCopy.Text = "允许复制";
-            this.cbxCanCopy.UseVisualStyleBackColor = true;
+            this.cbxDeleteAllow.AutoSize = true;
+            this.cbxDeleteAllow.Location = new System.Drawing.Point(115, 26);
+            this.cbxDeleteAllow.Name = "chkDeleteAllow";
+            this.cbxDeleteAllow.Size = new System.Drawing.Size(72, 16);
+            this.cbxDeleteAllow.TabIndex = 2;
+            this.cbxDeleteAllow.Text = "允许删除";
+            this.cbxDeleteAllow.UseVisualStyleBackColor = true;
+            // 
+            // chkAllocOnly
+            // 
+            this.cbxAllocOnly.AutoSize = true;
+            this.cbxAllocOnly.Location = new System.Drawing.Point(115, 6);
+            this.cbxAllocOnly.Name = "chkAllocOnly";
+            this.cbxAllocOnly.Size = new System.Drawing.Size(192, 16);
+            this.cbxAllocOnly.TabIndex = 3;
+            this.cbxAllocOnly.Text = "修改时整体赋值不允许部分修改";
+            this.cbxAllocOnly.UseVisualStyleBackColor = true;
             // 
             // frmDeProperty
             // 
@@ -146,5 +170,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.CheckBox cbxCanCopy;
+        private System.Windows.Forms.CheckBox cbxAllocOnly;
+        private System.Windows.Forms.CheckBox cbxDeleteAllow;
     }
 }

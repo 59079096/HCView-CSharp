@@ -179,6 +179,7 @@ namespace EMRView
             FEditProtect,  // 编辑保护，不允许删除、手动录入
             FCopyProtect,  // 复制保护，不允许复制
             FDeleteAllow,  // 是否允许删除
+            FAllocOnly,
             FAllocValue;  // 是否分配过值
 
         private DeTraceStyles FTraceStyles;
@@ -221,6 +222,7 @@ namespace EMRView
             FPropertys = new Dictionary<string,string>();
             FEditProtect = false;
             FDeleteAllow = true;
+            FAllocOnly = false;
             FCopyProtect = false;
             FAllocValue = false;
             FOutOfRang = false;
@@ -360,7 +362,7 @@ namespace EMRView
                 switch (aAction)
                 {
                     case HCAction.actInsertText:
-                        if (FEditProtect)  // 两头允许输入，触发actConcatText时返回供Data层处理新TextItem还是连接
+                        if (FEditProtect || FAllocOnly)  // 两头允许输入，触发actConcatText时返回供Data层处理新TextItem还是连接
                             vResult = (aOffset == 0) || (aOffset == this.Length);
 
                         break;
@@ -375,13 +377,13 @@ namespace EMRView
                         break;
 
                     case HCAction.actBackDeleteText:
-                        if (FEditProtect)
+                        if (FEditProtect || FAllocOnly)
                             vResult = aOffset == 0;
 
                         break;
 
                     case HCAction.actDeleteText:
-                        if (FEditProtect)
+                        if (FEditProtect || FAllocOnly)
                             vResult = aOffset == this.Length;
                         break;
                 }
@@ -410,6 +412,9 @@ namespace EMRView
             if (FDeleteAllow)
                 vByte = (byte)(vByte | (1 << 3));
 
+            if (FAllocOnly)
+                vByte = (byte)(vByte | (1 << 2));
+
             aStream.WriteByte(vByte);
 
             vByte = FTraceStyles.Value;
@@ -431,6 +436,8 @@ namespace EMRView
                 FDeleteAllow = HC.View.HC.IsOdd(vByte >> 3);
             else
                 FDeleteAllow = true;
+
+            FAllocOnly = HC.View.HC.IsOdd(vByte >> 2);
 
             vByte = (byte)aStream.ReadByte();
             if (aFileVersion > 46)
@@ -487,6 +494,9 @@ namespace EMRView
             if (FDeleteAllow)
                 aNode.SetAttribute("deleteallow", "1");
 
+            if (FAllocOnly)
+                aNode.SetAttribute("alloconly", "1");
+
             aNode.SetAttribute("tracestyles", FTraceStyles.Value.ToString());
             string vS = HC.View.HC.GetPropertyString(FPropertys);
             if (vS != "")
@@ -505,6 +515,11 @@ namespace EMRView
                 FDeleteAllow = aNode.GetAttribute("deleteallow") == "1";
             else
                 FDeleteAllow = true;
+
+            if (aNode.HasAttribute("alloconly"))
+                FAllocOnly = aNode.GetAttribute("alloconly") == "1";
+            else
+                FAllocOnly = false;
 
             byte vByte = 0;
 
@@ -578,6 +593,12 @@ namespace EMRView
         {
             get { return FCopyProtect; }
             set { FCopyProtect = value; }
+        }
+
+        public bool AllocOnly
+        {
+            get { return FAllocOnly; }
+            set { FAllocOnly = value; }
         }
 
         public bool AllocValue

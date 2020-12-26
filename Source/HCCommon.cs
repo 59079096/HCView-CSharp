@@ -634,11 +634,12 @@ namespace HC.View
         public static string GetPropertyString(Dictionary<string, string> aProperty)
         {
             string vS = "";
+            KeyValuePair<string, string> vElement;
             for (int i = 0; i < aProperty.Count; i++)
             {
-                var element = aProperty.ElementAt(i);
-                if (element.Key != "")
-                    vS = vS + element.Key + "=" + element.Value + HC.sLineBreak;
+                vElement = aProperty.ElementAt(i);
+                if (vElement.Key != "")
+                    vS = vS + vElement.Key + "=" + vElement.Value + HC.sLineBreak;
             }
 
             return vS;

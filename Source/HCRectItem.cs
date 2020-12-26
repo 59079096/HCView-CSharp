@@ -240,7 +240,10 @@ namespace HC.View
         /// <summary> 获取坐标X、Y是否在选中区域中 </summary>
         public virtual bool CoordInSelect(int x, int y)
         {
-            return false;
+            if (IsSelectComplate)
+                return HC.PtInRect(new RECT(0, 0, Width, Height), x, y);
+            else
+                return false;
         }
 
         /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>

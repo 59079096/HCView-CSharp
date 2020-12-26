@@ -125,7 +125,7 @@ namespace EMRView
                 FOnSyncDeItem(sender, aData, aItem);
         }
 
-        private void InsertEmrTraceItem(string aText)
+        private void InsertEmrTraceItem(string aText, bool add = true)
         {
             DeItem vEmrTraceItem = new DeItem(aText);
 
@@ -135,9 +135,31 @@ namespace EMRView
                 vEmrTraceItem.StyleNo = this.CurStyleNo;
 
             vEmrTraceItem.ParaNo = this.CurParaNo;
-            vEmrTraceItem.TraceStyles.Value = (byte)DeTraceStyle.cseAdd;
+            vEmrTraceItem.TraceStyles.Value = add ? (byte)DeTraceStyle.cseAdd : (byte)DeTraceStyle.cseDel;
 
             this.InsertItem(vEmrTraceItem);
+        }
+
+        private void MakeSelectTraceIf()
+        {
+            HCCustomData vData = this.ActiveSectionTopLevelData();
+            if (vData.SelectInfo.StartItemNo < 0)
+                return;
+
+            if (vData.SelectExists())
+            {
+                this.UndoGroupBegin();
+                try
+                {
+                    string vText = vData.GetSelectText();
+                    this.DeleteSelected();
+                    InsertEmrTraceItem(vText, false);
+                }
+                finally
+                {
+                    this.UndoGroupEnd();
+                }
+            }
         }
 
         private bool CanNotEdit()
@@ -790,14 +812,8 @@ namespace EMRView
 
                 if (FTrace)
                 {
-                    HCCustomData vData = this.ActiveSectionTopLevelData();
-                    if (vData.SelectInfo.StartItemNo < 0)
-                        return;
-
-                    if (vData.SelectExists())
-                        this.DisSelect();
-                    else
-                        InsertEmrTraceItem(e.KeyChar.ToString());
+                    MakeSelectTraceIf();
+                    InsertEmrTraceItem(e.KeyChar.ToString());
 
                     return;
                 }
@@ -816,6 +832,7 @@ namespace EMRView
 
             if (FTrace)
             {
+                MakeSelectTraceIf();
                 InsertEmrTraceItem(aText);
                 return true;
             }

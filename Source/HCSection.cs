@@ -146,6 +146,15 @@ namespace HC.View
             }
         }
 
+        private void SetViewModel(HCViewModel value)
+        {
+            if (FViewModel != value)
+            {
+                FViewModel = value;
+                SetActiveData(FPage);
+            }
+        }
+
         private int GetPageIndexByFilm(int aVOffset)
         {
             int Result = -1;
@@ -314,7 +323,7 @@ namespace HC.View
 
         private void DoDataItemSetCaretRequest(HCCustomData sectionData, int itemNo, int offset)
         {
-
+            this.DoActiveDataCheckUpdateInfo();
         }
 
         /// <summary> 缩放Item约束不要超过整页宽、高 </summary>
@@ -680,6 +689,9 @@ namespace HC.View
 
         protected void SetActiveData(HCSectionData value)
         {
+            if (FViewModel != HCViewModel.hvmFilm && value != FPage)
+                return;
+
             if (FActiveData != value)
             {
                 if (FActiveData != null)
@@ -2082,7 +2094,7 @@ namespace HC.View
             SectionCoordToPaper(FActivePageIndex, e.X, e.Y, ref vX, ref vY);  // X，Y转换到指定页的坐标vX,vY
             HCSectionData vNewActiveData = GetSectionDataAt(vX, vY);
 
-            if ((vNewActiveData != FActiveData) && (e.Clicks == 2))
+            if ((vNewActiveData != FActiveData) && (e.Clicks == 2) && FViewModel == HCViewModel.hvmFilm)
             {
                 SetActiveData(vNewActiveData);
                 vChangeActiveData = true;
@@ -3064,7 +3076,7 @@ namespace HC.View
         public HCViewModel ViewModel
         {
             get { return FViewModel; }
-            set { FViewModel = value; }
+            set { SetViewModel(value); }
         }
 
         /// <summary> 是否对称边距 </summary>

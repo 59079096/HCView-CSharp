@@ -84,9 +84,10 @@ namespace HC.View
             FCaret.Height = vCaretInfo.Height;
 
             int vViewHeight = GetViewHeight();
-            if (aScrollBar)
+            int vViewWidth = GetViewWidth();
+            if (!FStyle.UpdateInfo.ReScroll)
             {
-                if ((FCaret.X < 0) || (FCaret.X > GetViewWidth()))
+                if ((FCaret.X < 0) || (FCaret.X > vViewWidth))
                 {
                     FCaret.Hide();
                     return;
@@ -102,14 +103,44 @@ namespace HC.View
             {
                 if (FCaret.Height < vViewHeight)
                 {
-                    if (FCaret.Y < 0)
-                        FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - this.Padding.Top;
-                    else
-                        if (FCaret.Y + FCaret.Height + this.Padding.Top > vViewHeight)
-                            FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + this.Padding.Top - vViewHeight;
+                    if (!FCaret.VScroll)
+                    {
+                        FCaret.VScroll = true;
+                        try
+                        {
+                            if (FCaret.Y < 0)
+                                FVScrollBar.Position = FVScrollBar.Position + FCaret.Y - this.Padding.Top;
+                            else
+                            if (FCaret.Y + FCaret.Height + this.Padding.Top > vViewHeight)
+                                FVScrollBar.Position = FVScrollBar.Position + FCaret.Y + FCaret.Height + this.Padding.Top - vViewHeight;
+                        }
+                        finally
+                        {
+                            FCaret.VScroll = false;
+                        }
+                    }
+
+                    if (!FCaret.HScroll)
+                    {
+                        FCaret.HScroll = true;
+                        try
+                        {
+                            if (FCaret.X < 0)
+                                FHScrollBar.Position += FCaret.X - this.Padding.Left;
+                            else
+                            if (FCaret.X + this.Padding.Left > vViewWidth)
+                                FHScrollBar.Position += FCaret.X + this.Padding.Left - vViewWidth;
+                        }
+                        finally
+                        {
+                            FCaret.HScroll = false;
+                        }
+                    }
                 }
             }
 
+            if (FCaret.VScroll || FCaret.HScroll)
+                return;
 
             if (FCaret.Y + FCaret.Height > vViewHeight)
                 FCaret.Height = vViewHeight - FCaret.Y;
@@ -864,6 +895,16 @@ namespace HC.View
         {
             FData.ApplyTextBackColor(aColor);
             CheckUpdateInfo();
+        }
+
+        public bool InsertText(string text)
+        {
+            HCFunction vEvent = delegate ()
+            {
+                return FData.InsertText(text);
+            };
+
+            return DataChangeByAction(vEvent);
         }
 
         public bool InsertItem(HCCustomItem aItem)
