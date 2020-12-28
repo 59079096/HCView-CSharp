@@ -777,6 +777,12 @@ namespace EMRView
             HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
+        protected override void DoSetChecked(bool value)
+        {
+            if (!EditProtect)
+                base.DoSetChecked(value);
+        }
+
         public DeCheckBox(HCCustomData aOwnerData, string aText, bool aChecked) : base(aOwnerData, aText, aChecked)
         {
             FDeleteAllow = true;
@@ -1039,6 +1045,18 @@ namespace EMRView
             HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
+        public override void KeyDown(KeyEventArgs e)
+        {
+            if (!FEditProtect)
+                base.KeyDown(e);
+        }
+
+        public override void KeyPress(ref char key)
+        {
+            if (!FEditProtect)
+                base.KeyPress(ref key);
+        }
+
         public DeEdit(HCCustomData aOwnerData, string aText) : base(aOwnerData, aText)
         {
             FDeleteAllow = true;
@@ -1057,6 +1075,14 @@ namespace EMRView
             FDeleteAllow = (source as DeEdit).DeleteAllow;
             string vS = HC.View.HC.GetPropertyString((source as DeEdit).Propertys);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+        }
+
+        public override bool InsertText(string aText)
+        {
+            if (!FEditProtect)
+                return base.InsertText(aText);
+            else
+                return false;
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1170,6 +1196,24 @@ namespace EMRView
             HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
+        public override void KeyDown(KeyEventArgs e)
+        {
+            if (!FEditProtect)
+                base.KeyDown(e);
+        }
+
+        public override void KeyPress(ref char key)
+        {
+            if (!FEditProtect)
+                base.KeyPress(ref key);
+        }
+
+        protected override void DoPopup()
+        {
+            if (!FEditProtect)
+                base.DoPopup();
+        }
+
         public DeCombobox(HCCustomData aOwnerData, string aText) : base(aOwnerData, aText)
         {
             FDeleteAllow = true;
@@ -1189,6 +1233,14 @@ namespace EMRView
             FDeleteAllow = (source as DeCombobox).DeleteAllow;
             string vS = HC.View.HC.GetPropertyString((source as DeCombobox).Propertys);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+        }
+
+        public override bool InsertText(string aText)
+        {
+            if (!FEditProtect)
+                return base.InsertText(aText);
+            else
+                return false;
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1302,6 +1354,24 @@ namespace EMRView
             HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
+        protected override void DoPopup()
+        {
+            if (!FEditProtect)
+                base.DoPopup();
+        }
+
+        public override void KeyDown(KeyEventArgs e)
+        {
+            if (!FEditProtect)
+                base.KeyDown(e);
+        }
+
+        public override void KeyPress(ref char key)
+        {
+            if (!FEditProtect)
+                base.KeyPress(ref key);
+        }
+
         public DeDateTimePicker(HCCustomData aOwnerData, DateTime aDateTime) : base(aOwnerData, aDateTime)
         {
             FDeleteAllow = true;
@@ -1320,6 +1390,14 @@ namespace EMRView
             FDeleteAllow = (source as DeDateTimePicker).DeleteAllow;
             string vS = HC.View.HC.GetPropertyString((source as DeDateTimePicker).Propertys);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+        }
+
+        public override bool InsertText(string aText)
+        {
+            if (!FEditProtect)
+                return base.InsertText(aText);
+            else
+                return false;
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1431,6 +1509,12 @@ namespace EMRView
         private void SetValue(string key, string value)
         {
             HC.View.HC.HCSetProperty(FPropertys, key, value);
+        }
+
+        protected override void DoSetItemChecked(int index, bool value)
+        {
+            if (!FEditProtect)
+                base.DoSetItemChecked(index, value);
         }
 
         public DeRadioGroup(HCCustomData aOwnerData) : base(aOwnerData)

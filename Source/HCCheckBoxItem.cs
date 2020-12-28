@@ -31,13 +31,18 @@ namespace HC.View
             return HC.Bounds(FPaddingLeft, (Height - CheckBoxSize) / 2, CheckBoxSize, CheckBoxSize);
         }
 
-        protected void SetChecked(bool value)
+        private void SetChecked(bool value)
         {
             if (FChecked != value)
             {
                 FChecked = value;
                 this.DoChange();
             }
+        }
+
+        protected virtual void DoSetChecked(bool value)
+        {
+            SetChecked(value);
         }
 
         protected override string GetText()
@@ -77,11 +82,11 @@ namespace HC.View
                     OwnerData.Style.ApplyTempStyle(TextStyleNo);
                     SIZE vSize = OwnerData.Style.TempCanvas.TextExtent(FText);
                     if (HC.PtInRect(HC.Bounds(FPaddingLeft, 0, FPaddingLeft + CheckBoxSize + FPaddingLeft + vSize.cx, vSize.cy), e.X, e.Y))
-                        Checked = !FChecked;
+                        DoSetChecked(!FChecked);
                 }
                 else
                 if (HC.PtInRect(GetBoxRect(), e.X, e.Y))  // 点在了勾选框中
-                    Checked = !FChecked;
+                    DoSetChecked(!FChecked);
             }
 
             return base.MouseUp(e);            

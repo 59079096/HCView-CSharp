@@ -134,10 +134,10 @@ namespace HC.View
             // 4.5 ResizeItem存CanResize属性
             // 4.6 节存储页码格式
 
-            HC_FileVersion = "4.7";
+            HC_FileVersion = "4.8";
 
         public const ushort
-            HC_FileVersionInt = 47;
+            HC_FileVersionInt = 48;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat

@@ -228,6 +228,12 @@ namespace HC.View
             }
         }
 
+        protected virtual void DoSetItemChecked(int index, bool value)
+        {
+            FItems[index].Checked = value;
+            this.DoChange();
+        }
+
         protected void DoItemNotify(object sender, NListEventArgs<HCRadioButton> e)
         {
             e.Item.OnSetChecked = DoItemSetChecked;
@@ -382,10 +388,7 @@ namespace HC.View
             {
                 int vIndex = GetItemAt(e.X, e.Y);
                 if (vIndex >= 0)
-                {
-                    FItems[vIndex].Checked = !FItems[vIndex].Checked;
-                    this.DoChange();
-                }
+                    DoSetItemChecked(vIndex, !this.FItems[vIndex].Checked);
             }
 
             return vResult;

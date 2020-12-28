@@ -177,7 +177,7 @@ namespace HC.View
             if (FDateTime != value)
             {
                 FDateTime = value;
-                this.Text = string.Format("{0:" + FFormat + "}", FDateTime);
+                base.SetText(string.Format("{0:" + FFormat + "}", FDateTime));
                 FAreaRect = GetAreaRect(FActiveArea);
             }
         }
@@ -232,6 +232,8 @@ namespace HC.View
             }
         }
 
+        protected virtual void DoPopup() { }
+
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
             RECT vAreaRect = FAreaRect;
@@ -284,6 +286,7 @@ namespace HC.View
                 this.OwnerData.Style.UpdateInfoRePaint();
             }
 
+            DoPopup();
             return true;
         }
 
@@ -294,7 +297,10 @@ namespace HC.View
 
         public override void KeyDown(System.Windows.Forms.KeyEventArgs e)
         {
- 	        //base.KeyDown(e);
+            if (this.ReadOnly)
+                return;
+
+            //base.KeyDown(e);
             switch (e.KeyValue)
             {
                 case User.VK_ESCAPE:
@@ -529,6 +535,8 @@ namespace HC.View
         {
             return false;
         }
+
+        protected override void SetText(string value) { }
 
         public HCDateTimePicker(HCCustomData aOwnerData, DateTime aDateTime)
             : base(aOwnerData, string.Format("{0:yyyy-MM-dd HH:mm:ss}", aDateTime))

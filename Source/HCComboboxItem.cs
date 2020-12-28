@@ -178,22 +178,6 @@ namespace HC.View
             OwnerData.Style.UpdateInfoRePaint();
         }
 
-        private void DoPopup()
-        {
-            if (!OwnerData.CanEdit())
-                return;
-
-            if (FOnPopupItem != null)
-                FOnPopupItem(this, null);
-
-            POINT vPt = OwnerData.GetScreenCoord(FButtonDrawRect.Left - (this.Width - FButtonDrawRect.Width),
-                FButtonDrawRect.Bottom + 1);
-
-            //DoItemsChange(this);
-
-            FPopupForm.Popup(vPt.X, vPt.Y);
-        }
-
         private void DoPopupFormMouseDown(object sender, MouseEventArgs e)
         {
             RECT vRect = GetItemRect();
@@ -249,6 +233,19 @@ namespace HC.View
                 else
                     FScrollBar.Position = FScrollBar.Position + DROPDOWNITEMHEIGHT;
             }
+        }
+
+        protected virtual void DoPopup()
+        {
+            if (FOnPopupItem != null)
+                FOnPopupItem(this, null);
+
+            POINT vPt = OwnerData.GetScreenCoord(FButtonDrawRect.Left - (this.Width - FButtonDrawRect.Width),
+                FButtonDrawRect.Bottom + 1);
+
+            //DoItemsChange(this);
+
+            FPopupForm.Popup(vPt.X, vPt.Y);
         }
 
         public override void FormatToDrawItem(HCCustomData ARichData, int AItemNo)
