@@ -1171,15 +1171,15 @@ namespace HC.View
             Result = HC.PtInRect(vDrawRect, x, y);
             if (Result)
             {
-                if (FItems[aItemNo].StyleNo < HCStyle.Null)
-                {
-                    int vX = x - vDrawRect.Left;
-                    int vY = y - vDrawRect.Top - GetLineBlankSpace(vDrawItemNo) / 2;
+                //if (FItems[aItemNo].StyleNo < HCStyle.Null)
+                //{
+                //    int vX = x - vDrawRect.Left;
+                //    int vY = y - vDrawRect.Top - GetLineBlankSpace(vDrawItemNo) / 2;
 
-                    Result = (FItems[aItemNo] as HCCustomRectItem).CoordInSelect(vX, vY);
-                }
-                else
-                    Result = OffsetInSelect(aItemNo, aOffset);  // 对应的AOffset在选中内容中
+                //    Result = (FItems[aItemNo] as HCCustomRectItem).CoordInSelect(vX, vY);
+                //}
+                //else
+                Result = OffsetInSelect(aItemNo, aOffset);  // 对应的AOffset在选中内容中
             }
 
             return Result;
@@ -1990,15 +1990,17 @@ namespace HC.View
         /// <returns>取消时当前是否有选中，True：有选中；False：无选中</returns>
         public virtual bool DisSelect()
         {
-            bool Result = SelectExists();
-
-            if (Result)
+            HCCustomItem vItem = null;
+            if (FSelectInfo.StartItemNo >= 0)
             {
-                // 如果选中是在RectItem中进，下面循环SelectInfo.EndItemNo<0，不能取消选中，所以单独处理StartItemNo
-                HCCustomItem vItem = FItems[FSelectInfo.StartItemNo];
+                vItem = FItems[FSelectInfo.StartItemNo];
                 vItem.DisSelect();
                 vItem.Active = false;
+            }
 
+            bool Result = SelectExists();
+            if (Result)
+            {
                 for (int i = FSelectInfo.StartItemNo + 1; i <= FSelectInfo.EndItemNo; i++)  // 遍历选中的其他Item
                 {
                     vItem = FItems[i];
@@ -2007,13 +2009,6 @@ namespace HC.View
                 }
                 FSelectInfo.EndItemNo = -1;
                 FSelectInfo.EndItemOffset = -1;
-            }
-            else  // 没有选中
-            if (FSelectInfo.StartItemNo >= 0)
-            {
-                HCCustomItem vItem = FItems[FSelectInfo.StartItemNo];
-                vItem.DisSelect();
-                //vItem.Active = false;
             }
 
             FSelectInfo.StartItemNo = -1;

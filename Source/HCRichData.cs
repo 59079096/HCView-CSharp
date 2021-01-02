@@ -2521,14 +2521,6 @@ namespace HC.View
             }
             else  // 没点在选中区域中
             {
-                if (SelectInfo.StartItemNo >= 0)
-                {
-                    if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
-                        (Items[SelectInfo.StartItemNo] as HCCustomRectItem).DisSelect();
-
-                    Style.UpdateInfoRePaint();  // 旧的去焦点，新的入焦点
-                }
-
                 if ((vMouseDownItemNo != FMouseDownItemNo)
                     || (vMouseDownItemOffset != FMouseDownItemOffset)
                     || (CaretDrawItemNo != vDrawItemNo))  // 位置发生变化

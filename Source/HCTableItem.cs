@@ -343,7 +343,7 @@ namespace HC.View
                             FRows[vDestRow][vC].Height = vExtraHeight;  // 目标单元格除上下边框后的高度
                             vExtraHeight = vExtraHeight - FRows[vDestRow].Height - FBorderWidthPix;  // “消减”自己所在行
 
-                            for (int i = vDestRow + 1; i <= vR - 1; i++)  // 从目标下一行到此，经过各行后“消减”掉多
+                            for (int i = vDestRow + 1; i < vR; i++)  // 从目标下一行到此，经过各行后“消减”掉多
                                 vExtraHeight = vExtraHeight - FRows[i].FmtOffset - FRows[i].Height - FBorderWidthPix;
                             
                             if (vExtraHeight > FRows[vR].FmtOffset + FRows[vR].Height)
@@ -511,21 +511,7 @@ namespace HC.View
 
         public override void SelectComplate()
         {
-            base.SelectComplate();
-            
-            FSelectCellRang.StartRow = 0;
-            FSelectCellRang.StartCol = 0;
-            FSelectCellRang.EndRow = this.RowCount - 1;
-            FSelectCellRang.EndCol = FColWidths.Count - 1;
-            
-            for (int vRow = FSelectCellRang.StartRow; vRow <= FSelectCellRang.EndRow; vRow++)
-            {
-                for (int vCol = FSelectCellRang.StartCol; vCol <= FSelectCellRang.EndCol; vCol++)
-                {
-                    if (FRows[vRow][vCol].CellData != null)
-                        FRows[vRow][vCol].CellData.SelectAll();
-                }
-            }
+            this.SelectRange(0, 0, this.RowCount - 1, this.FColWidths.Count - 1);
         }
 
         protected override bool GetResizing()
@@ -4320,6 +4306,24 @@ namespace HC.View
                 throw new Exception(HC.HCS_EXCEPTION_VOIDSOURCECELL);
         }
 
+        public void SelectRange(int startRow, int startCol, int endRow, int endCol)
+        {
+            if (startRow == 0 && startCol == 0 && endRow == this.RowCount - 1 && endCol == this.FColWidths.Count - 1)
+                base.SelectComplate();
+
+            this.FSelectCellRang.SetStart(startRow, startCol);
+            this.FSelectCellRang.SetEnd(endRow, endCol);
+
+            for (int vRow = startRow; vRow <= endRow; vRow++)
+            {
+                for (int vCol = startCol; vCol <= endCol; vCol++)
+                {
+                    if (this.FRows[vRow][vCol].CellData != null)
+                        this.FRows[vRow][vCol].CellData.SelectAll();
+                }
+            }
+        }
+
         public void SelectAll()
         {
             SelectComplate();
@@ -4747,7 +4751,6 @@ namespace HC.View
         /// <returns></returns>
         public bool CellsCanMerge(int aStartRow, int aStartCol, int aEndRow, int aEndCol)
         {
-            bool Result = false;
             for (int vR = aStartRow; vR <= aEndRow; vR++)
             {
                 for (int vC = aStartCol; vC <= aEndCol; vC++)
@@ -4755,14 +4758,12 @@ namespace HC.View
                     if (FRows[vR][vC].CellData != null)
                     {
                         if (!FRows[vR][vC].CellData.CellSelectedAll)
-                            return Result;
+                            return false;
                     }
                 }
             }
             
-            Result = true;
-
-            return Result;
+            return true;
         }
 
         /// <summary> 指定行是否能删除 </summary>

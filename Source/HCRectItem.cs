@@ -241,7 +241,7 @@ namespace HC.View
         public virtual bool CoordInSelect(int x, int y)
         {
             if (IsSelectComplate)
-                return HC.PtInRect(new RECT(0, 0, Width, Height), x, y);
+                return HC.PtInRect(new RECT(0, 0, FWidth, FHeight), x, y);
             else
                 return false;
         }

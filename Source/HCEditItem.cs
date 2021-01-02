@@ -105,6 +105,17 @@ namespace HC.View
                 FSelEnd = -1;
         }
 
+        protected virtual bool GetReadOnly()
+        {
+            return FReadOnly;
+        }
+
+        protected virtual void SetReadOnly(value)
+        {
+            if (FReadOnly != value)
+                FReadOnly = value;
+        }
+
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             CalcTextSize();
@@ -658,8 +669,8 @@ namespace HC.View
 
         public bool ReadOnly
         {
-            get { return FReadOnly; }
-            set { FReadOnly = value; }
+            get { return GetReadOnly(); }
+            set { SetReadOnly(value); }
         }
 
         public bool PrintOnlyText
