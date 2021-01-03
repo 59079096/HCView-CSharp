@@ -587,7 +587,7 @@ namespace HC.View
             vFirstCharWidth;  // 第一个字符的宽度
             bool vSqueeze = false;
 
-            vLineFirst = vParaFirst || ((aPos.X == aFmtLeft) && (DrawItems[aLastDrawItemNo].Width != 0));
+            vLineFirst = vParaFirst || ((aPos.X == aFmtLeft) && (DrawItems[aLastDrawItemNo].Width != 0 || !DrawItems[aLastDrawItemNo].LineFirst));
             viBreakOffset = 0;  // 换行位置，第几个字符放不下
             vFirstCharWidth = vCharWidths[aCharOffset - 1] - aBasePos;  // 第一个字符的宽度
 
