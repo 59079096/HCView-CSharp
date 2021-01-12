@@ -2773,7 +2773,7 @@ namespace HC.View
 
         public string SaveToText()
         {
-            return SaveToText(0, 0, FItems.Count - 1, FItems.Last.Length);
+            return SaveToText(0, 0, FItems.Count - 1, GetItemOffsetAfter(FItems.Count - 1));
         }
 
         public string SaveToText(int aStartItemNo, int aStartOffset, int aEndItemNo, int aEndOffset)
@@ -2793,7 +2793,10 @@ namespace HC.View
                         if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
                             Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, FItems[aStartItemNo].Length - aStartOffset);
                         else
+                        if ((FItems[aStartItemNo] as HCCustomRectItem).SelectExists())
                             Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();
+                        else
+                            Result = FItems[aStartItemNo].Text;
                     }
                     else
                         vParaFirstTemp = FItems[aStartItemNo].ParaFirst;
@@ -2841,6 +2844,11 @@ namespace HC.View
                     {
                         if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
                             Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, aEndOffset - aStartOffset);
+                        else
+                        if ((FItems[aStartItemNo] as HCCustomRectItem).SelectExists())
+                            Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();
+                        else
+                            Result = FItems[aStartItemNo].Text;
                     }
                 }
             }

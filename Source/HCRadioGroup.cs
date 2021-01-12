@@ -60,7 +60,7 @@ namespace HC.View
 
     public class HCRadioGroup : HCControlItem
     {
-        private bool FMultSelect, FMouseIn, FItemHit;
+        private bool FMultSelect, FItemHit;
         private Byte FColumns, FBatchCount;
         private bool FColumnAlign;
         private HCList<HCRadioButton> FItems;
@@ -398,18 +398,6 @@ namespace HC.View
         {
             HC.GCursor = Cursors.Default;
             return base.MouseMove(e);
-        }
-
-        public override void MouseEnter()
-        {
-            base.MouseEnter();
-            FMouseIn = true;
-        }
-
-        public override void MouseLeave()
-        {
-            base.MouseLeave();
-            FMouseIn = false;
         }
 
         public override int GetOffsetAt(int x)

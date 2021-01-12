@@ -25,7 +25,7 @@ namespace HC.View
         private string FText;
         private byte FBorderWidth;
         private HCBorderSides FBorderSides;
-        private bool FMouseIn, FReadOnly, FPrintOnlyText;
+        private bool FReadOnly, FPrintOnlyText;
         private short FCaretOffset, FSelEnd = -1, FSelMove = -1;
         private int FLeftOffset = 0;
         private SIZE FTextSize;
@@ -230,18 +230,6 @@ namespace HC.View
                 FLeftOffset = 0;
                 FCaretOffset = -1;
             }
-        }
-
-        public override void MouseEnter()
-        {
-            base.MouseEnter();
-            FMouseIn = true;
-        }
-
-        public override void MouseLeave()
-        {
-            base.MouseLeave();
-            FMouseIn = false;
         }
 
         public override bool MouseDown(MouseEventArgs e)
@@ -521,7 +509,6 @@ namespace HC.View
         {
             this.StyleNo = HCStyle.Edit;
             FText = aText;
-            FMouseIn = false;
             FPaddingLeft = 4;
             FPaddingRight = 4;
             FPaddingTop = 4;

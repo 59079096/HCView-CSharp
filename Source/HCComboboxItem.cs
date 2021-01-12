@@ -261,6 +261,9 @@ namespace HC.View
             base.DoPaint(AStyle, ADrawRect, ADataDrawTop, ADataDrawBottom, ADataScreenTop,
                 ADataScreenBottom, ACanvas, APaintInfo);
 
+            FButtonDrawRect = FButtonRect;
+            FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
+
             if (!APaintInfo.Print)
             {
                 if (IsSelectComplate)
@@ -271,8 +274,6 @@ namespace HC.View
                 else
                     ACanvas.Brush.Color = HC.clWindow;
 
-                FButtonDrawRect = FButtonRect;
-                FButtonDrawRect.Offset(ADrawRect.Left, ADrawRect.Top);
                 ACanvas.FillRect(FButtonDrawRect);
             }
             else

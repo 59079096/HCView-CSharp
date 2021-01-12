@@ -24,7 +24,7 @@ namespace HC.View
     public class HCCheckBoxItem : HCControlItem
     {
         private string FText;
-        private bool FChecked, FMouseIn, FItemHit;
+        private bool FChecked, FItemHit;
 
         private RECT GetBoxRect()
         {
@@ -53,18 +53,6 @@ namespace HC.View
         protected override void SetText(string value)
         {
             FText = value;
-        }
-
-        public override void MouseEnter()
-        {
-            base.MouseEnter();
-            FMouseIn = true;
-        }
-
-        public override void MouseLeave()
-        {
-            base.MouseLeave();
-            FMouseIn = false;
         }
 
         public override bool MouseMove(MouseEventArgs e)
@@ -161,7 +149,6 @@ namespace HC.View
             this.StyleNo = HCStyle.CheckBox;
             FChecked = aChecked;
             FText = aText;
-            FMouseIn = false;
             FItemHit = false;
             FPaddingLeft = 2;
         }
