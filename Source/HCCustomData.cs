@@ -2834,7 +2834,7 @@ namespace HC.View
                             if (aEndOffset == HC.OffsetAfter)
                                 Result = Result + FItems[aEndItemNo].Text;
                             else
-                                Result = (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
+                                Result = Result + (FItems[aEndItemNo] as HCCustomRectItem).SaveSelectToText();
                         }
                     }
                 }
