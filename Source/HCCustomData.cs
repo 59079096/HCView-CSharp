@@ -1994,8 +1994,8 @@ namespace HC.View
             if (FSelectInfo.StartItemNo >= 0)
             {
                 vItem = FItems[FSelectInfo.StartItemNo];
-                vItem.DisSelect();
                 vItem.Active = false;
+                vItem.DisSelect();
             }
 
             bool Result = SelectExists();
@@ -2004,8 +2004,8 @@ namespace HC.View
                 for (int i = FSelectInfo.StartItemNo + 1; i <= FSelectInfo.EndItemNo; i++)  // 遍历选中的其他Item
                 {
                     vItem = FItems[i];
-                    vItem.DisSelect();
                     vItem.Active = false;
+                    vItem.DisSelect();
                 }
                 FSelectInfo.EndItemNo = -1;
                 FSelectInfo.EndItemOffset = -1;

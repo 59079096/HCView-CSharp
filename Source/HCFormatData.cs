@@ -965,6 +965,12 @@ namespace HC.View
                 }
             }
 
+            if (Result > 0 && GetDrawItemStyle(Result - 1) < HCStyle.Null)
+            {
+                if ((Items[DrawItems[Result - 1].ItemNo] as HCCustomRectItem).PageBreakCount > 0)
+                    Result--;
+            }
+
             return Result;
         }
 

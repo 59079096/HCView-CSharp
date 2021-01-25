@@ -118,6 +118,11 @@ namespace HC.View
 
         protected virtual void DoSelfRedo(HCUndo aRedo) { }
 
+        protected virtual int GetPageBreakCount()
+        {
+            return 0;
+        }
+
         public HCCustomRectItem()
             : base()
         {
@@ -562,6 +567,11 @@ namespace HC.View
         {
             get { return FCanPageBreak; }
             set { FCanPageBreak = value; }
+        }
+
+        public int PageBreakCount
+        {
+            get { return GetPageBreakCount(); }
         }
 
         public HCCustomData OwnerData

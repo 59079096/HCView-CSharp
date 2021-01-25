@@ -256,6 +256,12 @@ namespace HC.View
             return vTop + (OwnerData as HCRichData).GetDrawItemFormatTop(this.FirstDItemNo);
         }
 
+        private void DoSelectCellChange(int orgRow, int orgCol, int destRow, int destCol)
+        {
+            if (orgRow >= 0 && orgCol >= 0)
+                DoCheckCellScript(orgRow, orgCol);
+        }
+
         /// <summary> 表格行有添加时 </summary>
         private void DoRowAdd(HCTableRow aRow)
         {
@@ -426,9 +432,6 @@ namespace HC.View
                 else
                 {
                     FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
-                    vCellData = this[FSelectCellRang.StartRow, FSelectCellRang.StartCol].CellData;
-                    if (vCellData != null)
-                        DoCheckCellScript(FSelectCellRang.StartRow, FSelectCellRang.StartCol);
                 }
                 
                 for (int vRow = FSelectCellRang.StartRow; vRow <= FSelectCellRang.EndRow; vRow++)
@@ -532,16 +535,25 @@ namespace HC.View
                 int vRowDataDrawTop = aDrawRect.Top + FBorderWidthPix - 1;  // 因为边框在ADrawRect.Top也占1像素，所以要减掉
                 for (int i = 0; i < aRow; i++)
                     vRowDataDrawTop = vRowDataDrawTop + FRows[i].FmtOffset + FRows[i].Height + FBorderWidthPix;
-                
-                if ((FRows[aRow].FmtOffset > 0) && (aRow != vFirstDrawRow))
+
+                if (FRows[aRow].FmtOffset > 0)
                 {
-                    vShouLian = vRowDataDrawTop - FBorderWidthPix;  // 上一行底部边框位置
-                    return;
+                    if (aRow != vFirstDrawRow)
+                    {
+                        vShouLian = vRowDataDrawTop - FBorderWidthPix;  // 上一行底部边框位置
+                        return;
+                    }
+                    else
+                    if (vRowDataDrawTop + FRows[aRow].FmtOffset + FRows[aRow].Height <= aDataDrawBottom)
+                    {
+                        vShouLian = vRowDataDrawTop + FRows[aRow].FmtOffset + FRows[aRow].Height;
+                        return;
+                    }
                 }
 
-                vRowDataDrawTop += FRows[aRow].FmtOffset + FCellVPaddingPix;  // 分页行Data绘制起始位置
+                vRowDataDrawTop += FRows[aRow].FmtOffset;  // 分页行Data绘制起始位置
                 
-                int vBreakBottom = 0;
+                int vBreakBottom = 0, vCellDataVerTop;
                 int vDestCellDataDrawTop = 0, vDestRow2 = -1, vDestCol2 = -1, vDrawItemCount = 0, vRowColCount = FRows[aRow].ColCount;
                 HCTableCellData vCellData = null;
                 RECT vRect;
@@ -549,6 +561,7 @@ namespace HC.View
                 {
                     vDestCellDataDrawTop = vRowDataDrawTop;//vCellDataDrawTop;
                     GetDestCell(aRow, vC, ref vDestRow2, ref vDestCol2);  // 获取到目标单元格所在行号
+                    vCellDataVerTop = FRows[vDestRow2][vDestCol2].GetCellDataTop(FCellVPaddingPix);
 
                     if (vC != vDestCol2 + FRows[vDestRow2][vDestCol2].ColSpan)
                         continue;
@@ -565,22 +578,22 @@ namespace HC.View
                             vRect = new RECT(vCellData.DrawItems[i].Rect);
                             //if DrawiInLastLine(i) then  // 单元格内最后一行内容补充FCellVPadding
                             vRect.Bottom = vRect.Bottom + FCellVPaddingPix; // 每一行可能是要截断的，截断时下面要能放下FCellVPadding
-                            if (vDestCellDataDrawTop + vRect.Bottom > aDataDrawBottom)
+                            if (vDestCellDataDrawTop + vCellDataVerTop + vRect.Bottom > aDataDrawBottom)
                             {
                                 if (i > 0)
                                 {
-                                    if (aDataDrawBottom - vDestCellDataDrawTop - vCellData.DrawItems[i - 1].Rect.Bottom > FCellVPaddingPix)
-                                        vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop + vCellData.DrawItems[i - 1].Rect.Bottom + FCellVPaddingPix);
+                                    if (aDataDrawBottom - vDestCellDataDrawTop - vCellDataVerTop - vCellData.DrawItems[i - 1].Rect.Bottom > FCellVPaddingPix)
+                                        vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop + vCellDataVerTop + vCellData.DrawItems[i - 1].Rect.Bottom + FCellVPaddingPix);
                                     else
-                                        vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop + vCellData.DrawItems[i - 1].Rect.Bottom);  // 上一个最下面做为截断位置
+                                        vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop + vCellDataVerTop + vCellData.DrawItems[i - 1].Rect.Bottom);  // 上一个最下面做为截断位置
                                 }
                                 else  // 第一行就在当前页放不下
-                                    vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop - FCellVPaddingPix - FBorderWidthPix);
+                                    vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop - FBorderWidthPix);
                                 
                                 break;
                             }
                             else  // 没有超过当前页
-                                vBreakBottom = Math.Max(vBreakBottom, vDestCellDataDrawTop + vRect.Bottom);  // 记录为可放下的最后一个下面(有的单元格在当前页能全部显示，并不跨页)
+                                vBreakBottom = Math.Max(vBreakBottom, vDestCellDataDrawTop + vCellDataVerTop + vRect.Bottom);  // 记录为可放下的最后一个下面(有的单元格在当前页能全部显示，并不跨页)
                         }
                     }
                 }
@@ -1163,6 +1176,7 @@ namespace HC.View
                         if (vCell != null)
                             vCell.Active = false;
 
+                        DoSelectCellChange(FMouseDownRow, FMouseDownCol, vMouseDownRow, vMouseDownCol);
                         OwnerData.Style.UpdateInfoReCaret();
                     }
 
@@ -1170,9 +1184,6 @@ namespace HC.View
 
                     if ((FMouseDownRow != vMouseDownRow) || (FMouseDownCol != vMouseDownCol))
                     {
-                        if (FMouseDownRow >= 0)
-                            FRows[FMouseDownRow][FMouseDownCol].Active = false;
-
                         FMouseDownRow = vMouseDownRow;
                         FMouseDownCol = vMouseDownCol;
                     }
@@ -1860,7 +1871,10 @@ namespace HC.View
                     vCell.Active = value;
 
                 if (!value)
+                {
+                    DoSelectCellChange(FSelectCellRang.StartRow, FSelectCellRang.StartCol, -1, -1);
                     this.InitializeMouseInfo();
+                }
 
                 base.SetActive(value);
             }
@@ -3119,6 +3133,11 @@ namespace HC.View
             return vResult;
         }
 
+        protected override int GetPageBreakCount()
+        {
+            return FPageBreaks.Count;
+        }
+
         public override bool IsSelectComplateTheory()
         {
             return IsSelectComplate;
@@ -3601,7 +3620,7 @@ namespace HC.View
             bool vFirstLinePlace = true;
             int vPageBreakBottom = aPageDataFmtBottom;
             
-            int vDestRow = -1, vDestCol = -1, vDestCellDataFmtTop = 0;
+            int vDestRow = -1, vDestCol = -1, vDestCellDataFmtTop = 0, vCellDataVerTop;
             HCTableCellData vCellData = null;
             HCCustomDrawItem vDrawItem = null;
 
@@ -3620,6 +3639,8 @@ namespace HC.View
                 if (aBreakRow != vDestRow)
                     vDestCellDataFmtTop = vDestCellDataFmtTop - SrcCellDataTopDistanceToDest(aBreakRow, vDestRow);
                 
+                vCellDataVerTop = FRows[vDestRow][vDestCol].GetCellDataTop(FCellVPaddingPix);
+                
                 // 判断合并目标内容在当前分页行的分页位置
                 for (int i = 0; i <= vCellData.DrawItems.Count - 1; i++)
                 {
@@ -3627,7 +3648,7 @@ namespace HC.View
                     if (!vDrawItem.LineFirst)
                         continue;
 
-                    if (vDestCellDataFmtTop + vDrawItem.Rect.Bottom + FCellVPaddingPix + FBorderWidthPix > aPageDataFmtBottom)
+                    if (vDestCellDataFmtTop + vCellDataVerTop + vDrawItem.Rect.Bottom + FBorderWidthPix > aPageDataFmtBottom)
                     {                                               // |如果FBorderWidth比行高大就不合适
                         if (i == 0)
                         {
