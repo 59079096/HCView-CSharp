@@ -3166,6 +3166,9 @@ namespace HC.View
         /// <summary> 文档保存到流 </summary>
         public virtual void SaveToStream(Stream aStream, bool aQuick = false, HashSet<SectionArea> aAreas = null)
         {
+#if USESCRIPT
+            this.DisSelect();
+#endif
             FStyle.States.Include(HCState.hosSaving);
             try
             {
