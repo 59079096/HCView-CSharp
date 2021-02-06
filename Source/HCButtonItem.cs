@@ -12,7 +12,7 @@ namespace HC.View
     public class HCButtonItem : HCControlItem
     {
         private string FText;
-        private bool FMouseIn, FDown;
+        private bool FDown;
 
         protected override string GetText()
         {
@@ -24,15 +24,8 @@ namespace HC.View
             FText = value;
         }
 
-        public override void MouseEnter()
-        {
-            FMouseIn = true;
-            base.MouseEnter();
-        }
-
         public override void MouseLeave()
         {
-            FMouseIn = false;
             FDown = false;
             base.MouseLeave();
         }
@@ -103,7 +96,6 @@ namespace HC.View
         {
             this.StyleNo = HCStyle.Button;
             FText = aText;
-            FMouseIn = false;
             FDown = false;
         }
 

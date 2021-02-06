@@ -460,6 +460,7 @@ namespace HC.View
 
         protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
+            FReadOnly = false;
             if (!CanEdit())
                 return;
 
@@ -470,11 +471,18 @@ namespace HC.View
             {
                 FCheckEmptyItem = false;
                 InsertStream(aStream, aStyle, aFileVersion);
+                if (aFileVersion > 48)
+                {
+
+                }
+                else
                 if (aFileVersion > 47)
                 {
                     byte[] vBuffer = BitConverter.GetBytes(false);
                     aStream.Read(vBuffer, 0, vBuffer.Length);
                     FReadOnly = BitConverter.ToBoolean(vBuffer, 0);
+                    if (FReadOnly)
+                        FReadOnly = false;
                 }
 
                 if (FCheckEmptyItem)
@@ -1669,16 +1677,6 @@ namespace HC.View
             FSelectSeekOffset = -1;
             InitializeMouseField();
             base.InitializeField();
-        }
-
-        public override void SaveToStream(Stream aStream)
-        {
-            base.SaveToStream(aStream);
-            if (HC.HC_FileVersionInt > 47)
-            {
-                byte[] vBuffer = BitConverter.GetBytes(FReadOnly);
-                aStream.Write(vBuffer, 0, vBuffer.Length);
-            }
         }
 
         public override bool InsertStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)

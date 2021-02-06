@@ -2596,7 +2596,7 @@ namespace HC.View
 
         public void DisSelect()
         {
-            FActiveData.GetTopLevelData().DisSelect();
+            FActiveData.DisSelect();
         }
 
         public bool DeleteActiveDomain()

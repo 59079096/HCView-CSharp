@@ -3100,9 +3100,6 @@ namespace HC.View
         /// <summary> 读文本到第一节正文 </summary>
         public bool LoadFromText(string aText)
         {
-            if (ReadOnly)
-                return false;
-
             Clear();
             FStyle.Initialize();
 
@@ -3169,6 +3166,9 @@ namespace HC.View
         /// <summary> 文档保存到流 </summary>
         public virtual void SaveToStream(Stream aStream, bool aQuick = false, HashSet<SectionArea> aAreas = null)
         {
+#if USESCRIPT
+            this.DisSelect();
+#endif
             FStyle.States.Include(HCState.hosSaving);
             try
             {
@@ -3209,9 +3209,6 @@ namespace HC.View
         /// <summary> 读取文件流 </summary>
         public virtual bool LoadFromStream(Stream aStream)
         {
-            if (ReadOnly)
-                return false;
-
             bool vResult = false;
             this.BeginUpdate();
             try
@@ -3345,9 +3342,6 @@ namespace HC.View
 
         public bool LoadFromXmlStream(Stream stream)
         {
-            if (ReadOnly)
-                return false;
-
             bool vResult = false;
             this.BeginUpdate();
             try

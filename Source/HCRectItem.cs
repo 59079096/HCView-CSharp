@@ -118,6 +118,11 @@ namespace HC.View
 
         protected virtual void DoSelfRedo(HCUndo aRedo) { }
 
+        protected virtual int GetPageBreakCount()
+        {
+            return 0;
+        }
+
         public HCCustomRectItem()
             : base()
         {
@@ -564,6 +569,11 @@ namespace HC.View
             set { FCanPageBreak = value; }
         }
 
+        public int PageBreakCount
+        {
+            get { return GetPageBreakCount(); }
+        }
+
         public HCCustomData OwnerData
         {
             get { return FOwnerData; }
@@ -879,6 +889,7 @@ namespace HC.View
     {
         private bool FAutoSize;
         private EventHandler FOnClick;
+        protected bool FMouseIn;
         protected byte FPaddingLeft, FPaddingTop, FPaddingRight, FPaddingBottom;
         protected int FMinWidth, FMinHeight;
         
@@ -886,6 +897,18 @@ namespace HC.View
         {
             if (FOnClick != null && OwnerData.CanEdit())
                 FOnClick(this, null);
+        }
+
+        public override void MouseEnter()
+        {
+            FMouseIn = true;
+            base.MouseEnter();
+        }
+
+        public override void MouseLeave()
+        {
+            FMouseIn = false;
+            base.MouseLeave();
         }
 
         public override bool MouseUp(MouseEventArgs e)
@@ -898,6 +921,7 @@ namespace HC.View
 
         public HCControlItem(HCCustomData aOwnerData) : base(aOwnerData)
         {
+            FMouseIn = false;
             FAutoSize = true;
             FPaddingLeft = 5;
             FPaddingRight = 5;
