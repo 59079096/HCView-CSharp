@@ -2205,12 +2205,14 @@ namespace HC.View
 
                 if (vEmptyRow)
                 {
+                    HCTableCell vTableCell = null;
                     for (int i = 0; i <= vR - 1; i++)
                     {
                         for (int vC = 0; vC <= FRows[i].ColCount - 1; vC++)
                         {
-                            if (FRows[i][vC].RowSpan > 0)
-                                FRows[i][vC].RowSpan = FRows[i][vC].RowSpan - 1;
+                            vTableCell = FRows[i][vC];
+                            if (i + vTableCell.RowSpan >= vR)
+                                vTableCell.RowSpan = vTableCell.RowSpan - 1;
                         }
                     }
 
@@ -2218,8 +2220,9 @@ namespace HC.View
                     {
                         for (int vC = 0; vC <= FRows[i].ColCount - 1; vC++)
                         {
-                            if (FRows[i][vC].RowSpan < 0)
-                                FRows[i][vC].RowSpan = FRows[i][vC].RowSpan + 1;
+                            vTableCell = FRows[i][vC];
+                            if (i + vTableCell.RowSpan < vR)
+                                vTableCell.RowSpan = vTableCell.RowSpan + 1;
                         }
                     }
 
@@ -4740,6 +4743,7 @@ namespace HC.View
         {
             HCTableRow vRow = FRows[ARow];
             vRow.FmtOffset = 0;  // 恢复上次格式化可能的偏移
+            vRow.FormatInit();
             int vWidth;
             // 格式化各单元格中的Data
             for (int vC = 0; vC <= vRow.ColCount - 1; vC++)

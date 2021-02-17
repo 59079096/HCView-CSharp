@@ -550,7 +550,7 @@ namespace HC.View
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            if ((FOnDrawItemAnnotate != null) && DrawItemOfAnnotate(aDrawItemNo, aCanvas, aClearRect))  // 当前DrawItem是某批注中的一部分
+            if ((!aPaintInfo.Print) && (FOnDrawItemAnnotate != null) && DrawItemOfAnnotate(aDrawItemNo, aCanvas, aClearRect))  // 当前DrawItem是某批注中的一部分
             {
                 HCDrawItemAnnotate vDrawAnnotate;
                 bool vActive;
@@ -558,18 +558,15 @@ namespace HC.View
                 {
                     vDrawAnnotate = FDrawItemAnnotates[i];
 
-                    if (!aPaintInfo.Print)
-                    {
-                        vActive = vDrawAnnotate.DataAnnotate.Equals(FHotAnnotate)
-                            || vDrawAnnotate.DataAnnotate.Equals(FActiveAnnotate);
+                    vActive = vDrawAnnotate.DataAnnotate.Equals(FHotAnnotate)
+                        || vDrawAnnotate.DataAnnotate.Equals(FActiveAnnotate);
 
-                        if (vActive)
-                            aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
-                        else
-                            aCanvas.Brush.Color = HC.AnnotateBKColor;
+                    if (vActive)
+                        aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
+                    else
+                        aCanvas.Brush.Color = HC.AnnotateBKColor;
 
-                        aCanvas.FillRect(vDrawAnnotate.DrawRect);
-                    }
+                    aCanvas.FillRect(vDrawAnnotate.DrawRect);
 
                     if (vDrawAnnotate.First())  // 是批注头
                     {

@@ -24,6 +24,36 @@ namespace HC.View
 
         private bool FAutoHeight;  // True根据内容自动匹配合适的高度 False用户拖动后的自定义高度
 
+        private int CalcMaxCellHeight()
+        {
+            int vResult = HC.MinRowHeight;
+            for (int i = 0; i <= this.Count - 1; i++)  // 找行中最高的单元
+            {
+                if ((this[i].CellData != null) && (this[i].RowSpan == 0))
+                {
+                    if (this[i].CellData.Height > vResult)
+                        vResult = this[i].CellData.Height;
+                }
+            }
+
+            return vResult;
+        }
+
+        private void SetHeight(int value)
+        {
+            if (FHeight != value)
+            {
+                int vMaxDataHeight = CalcMaxCellHeight();
+                if (vMaxDataHeight < value)
+                    FHeight = value;
+                else
+                    FHeight = vMaxDataHeight;
+
+                for (int i = 0; i <= this.Count - 1; i++)
+                    this[i].Height = FHeight;
+            }
+        }
+
         public HCTableRow(HCStyle aStyle, int aColCount) : this()
         {
             HCTableCell vCell = null;
@@ -45,6 +75,13 @@ namespace HC.View
 
         }
 
+        public void FormatInit()
+        {
+            FHeight = CalcMaxCellHeight();
+            for (int i = 0; i <= this.Count - 1; i++)
+                this[i].Height = FHeight;
+        }
+
         public void SetRowWidth(int aWidth)
         {
             int vWidth = aWidth / this.Count;
@@ -54,30 +91,6 @@ namespace HC.View
             }
 
             this[this.Count - 1].Width = aWidth - (this.Count - 1) * vWidth;
-        }
-
-        public void SetHeight(int value)
-        {
-            if (FHeight != value)
-            {
-                int vMaxDataHeight = 0;
-                for (int i = 0; i <= this.Count - 1; i++)  // 找行中最高的单元
-                {
-                    if ((this[i].CellData != null) && (this[i].RowSpan == 0))
-                    {
-                        if (this[i].CellData.Height > vMaxDataHeight)
-                        vMaxDataHeight = this[i].CellData.Height;
-                    }
-                }
-
-                if (vMaxDataHeight < value)
-                    FHeight = value;
-                else
-                    FHeight = vMaxDataHeight;
-                
-                for (int i = 0; i <= this.Count - 1; i++)
-                    this[i].Height = FHeight;
-            }
         }
 
         public void ToXml(XmlElement aNode)
