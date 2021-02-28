@@ -1037,6 +1037,9 @@ namespace HC.View
         private bool DoSearchByOffset(string AKeyword, string vKeyword, bool AForward, bool AMatchCase, 
             int AItemNo, int AOffset)
         {
+            if (!this.Items[AItemNo].Visible)
+                return false;
+
             string vText, vConcatText, vOverText;
             int vPos = -1, vItemNo = -1;
 
@@ -1101,13 +1104,14 @@ namespace HC.View
                             && (this.Items[vItemNo - 1].StyleNo > HCStyle.Null))
                         {
 
-                            if (this.Items[vItemNo - 1].Length < vKeyword.Length)
+                            if (!this.Items[vItemNo - 1].Visible)
                             {
                                 vItemNo--;
                                 continue;
                             }
 
-                            vText = this.Items[vItemNo - 1].Text.Substring(vKeyword.Length - 1);  // 取后面比关键字少一个字符长度的，以便和当前末尾最后一个拼接
+                            vText = (this.Items[vItemNo - 1] as HCTextItem).TextEffective();
+                            vText = vText.Substring(vKeyword.Length - 1);
                             vOverText = vOverText + vText;  // 记录拼接了多少个字符
                             vConcatText = vText + vConcatText;  // 拼接后的字符
                             if (!AMatchCase)
@@ -1124,7 +1128,9 @@ namespace HC.View
                                     - vText.Length;  // 减去最前面Item占的宽度
                                 while (vItemNo < AItemNo)  // 减去中间Item的宽度
                                 {
-                                    this.SelectInfo.EndItemOffset = this.SelectInfo.EndItemOffset - this.Items[vItemNo].Length;
+                                    if (this.Items[vItemNo].Visible)
+                                        this.SelectInfo.EndItemOffset = this.SelectInfo.EndItemOffset - (this.Items[vItemNo] as HCTextItem).TextEffective().Length;
+
                                     vItemNo++;
                                 }
             
@@ -1150,13 +1156,14 @@ namespace HC.View
                             && (!this.Items[vItemNo + 1].ParaFirst)
                             && (this.Items[vItemNo + 1].StyleNo > HCStyle.Null))  // 同段后面的TextItem
                         {
-                            if (this.Items[vItemNo + 1].Length < vKeyword.Length)
+                            if (!this.Items[vItemNo + 1].Visible)
                             {
                                 vItemNo++;
                                 continue;
                             }
 
-                            vText = this.Items[vItemNo + 1].Text.Substring(0, vKeyword.Length - 1);  // 取后面比关键字少一个字符长度的，以便和当前末尾最后一个拼接
+                            vText = (this.Items[vItemNo + 1] as HCTextItem).TextEffective();
+                            vText = vText.Substring(0, vKeyword.Length - 1);
                             vOverText = vOverText + vText;  // 记录拼接了多少个字符
                             vConcatText = vConcatText + vText;  // 拼接后的字符
                             if (!AMatchCase)
@@ -1174,10 +1181,12 @@ namespace HC.View
             
                                 while (vItemNo >= AItemNo + 1)  // 减去中间Item的宽度
                                 {
-                                    this.SelectInfo.EndItemOffset = this.SelectInfo.EndItemOffset - this.Items[vItemNo].Length;
+                                    if (this.Items[vItemNo].Visible)
+                                        this.SelectInfo.EndItemOffset = this.SelectInfo.EndItemOffset - (this.Items[vItemNo] as HCTextItem).TextEffective().Length;
+
                                     vItemNo--;
                                 }
-            
+
                                 Result = true;
                                 break;
                             }

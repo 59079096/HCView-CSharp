@@ -2791,7 +2791,7 @@ namespace HC.View
                     if (DoSaveItem(aStartItemNo))
                     {
                         if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
-                            Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, FItems[aStartItemNo].Length - aStartOffset);
+                            Result = (FItems[aStartItemNo] as HCTextItem).SubStringEffective(aStartOffset + 1, FItems[aStartItemNo].Length - aStartOffset);
                         else
                         if ((FItems[aStartItemNo] as HCCustomRectItem).SelectExists())
                             Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();
@@ -2801,14 +2801,20 @@ namespace HC.View
                     else
                         vParaFirstTemp = FItems[aStartItemNo].ParaFirst;
 
-                    for (int i = aStartItemNo + 1; i <= aEndItemNo - 1; i++)
+                    string vText = "";
+                    for (int i = aStartItemNo + 1; i < aEndItemNo; i++)
                     {
                         if (DoSaveItem(i))
                         {
-                            if (vParaFirstTemp || FItems[i].ParaFirst)
-                                Result = Result + HC.sLineBreak + FItems[i].Text;
+                            if (FItems[i].StyleNo > HCStyle.Null)
+                                vText = (FItems[i] as HCTextItem).TextEffective();
                             else
-                                Result = Result + FItems[i].Text;
+                                vText = FItems[i].Text;
+
+                            if (vParaFirstTemp || FItems[i].ParaFirst)
+                                Result = Result + HC.sLineBreak + vText;
+                            else
+                                Result = Result + vText;
 
                             if (vParaFirstTemp && !FItems[i].ParaFirst)
                                 vParaFirstTemp = false;
@@ -2824,7 +2830,7 @@ namespace HC.View
                             if (vParaFirstTemp || FItems[aEndItemNo].ParaFirst)
                                 Result = Result + HC.sLineBreak;
 
-                            Result = Result + (FItems[aEndItemNo] as HCTextItem).SubString(1, aEndOffset);
+                            Result = Result + (FItems[aEndItemNo] as HCTextItem).SubStringEffective(1, aEndOffset);
                         }
                         else
                         {
@@ -2843,7 +2849,7 @@ namespace HC.View
                     if (DoSaveItem(aStartItemNo))
                     {
                         if (FItems[aStartItemNo].StyleNo > HCStyle.Null)
-                            Result = (FItems[aStartItemNo] as HCTextItem).SubString(aStartOffset + 1, aEndOffset - aStartOffset);
+                            Result = (FItems[aStartItemNo] as HCTextItem).SubStringEffective(aStartOffset + 1, aEndOffset - aStartOffset);
                         else
                         if ((FItems[aStartItemNo] as HCCustomRectItem).SelectExists())
                             Result = (FItems[aStartItemNo] as HCCustomRectItem).SaveSelectToText();

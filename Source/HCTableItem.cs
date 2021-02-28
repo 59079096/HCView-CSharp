@@ -265,6 +265,7 @@ namespace HC.View
         /// <summary> 表格行有添加时 </summary>
         private void DoRowAdd(HCTableRow aRow)
         {
+            aRow.OnGetVPaddingPix = DowRowGetVPaddingPix;
             HCTableCellData vCellData = null;
 
             for (int i = 0; i < aRow.ColCount; i++)
@@ -278,6 +279,11 @@ namespace HC.View
         private void DoRowRemove(HCTableRow row)
         {
             InitializeMouseInfo();
+        }
+
+        private Byte DowRowGetVPaddingPix()
+        {
+            return FCellVPaddingPix;
         }
 
         private void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
@@ -361,8 +367,11 @@ namespace HC.View
                                 {
                                     if (FRows[vR][i].CellData == null)
                                     {
+                                        if (FRows[vR][i].ColSpan < 0)
+                                            continue;
+
                                         GetDestCell(vR, i, ref vDestRow2, ref vDestCol2);  // 获取目标单元格
-                                        if ((vDestRow2 != vDestRow) && (vDestCol2 != vDestCol))
+                                        if (vDestRow2 != vDestRow || vDestCol2 != vDestCol)
                                             FRows[vDestRow2][i].Height = FRows[vDestRow2][i].Height + vH;
                                     }
                                 }
@@ -4776,18 +4785,23 @@ namespace HC.View
         /// <returns></returns>
         public bool CellsCanMerge(int aStartRow, int aStartCol, int aEndRow, int aEndCol)
         {
-            for (int vR = aStartRow; vR <= aEndRow; vR++)
+            int vEndRow = -1, vEndCol = -1, vDestRow = -1, vDestCol = -1, vSrcRow = -1, vSrcCol = -1;
+            GetSourceCell(aEndRow, aEndCol, ref vEndRow, ref vEndCol);
+
+            for (int vR = aStartRow; vR <= vEndRow; vR++)
             {
-                for (int vC = aStartCol; vC <= aEndCol; vC++)
+                for (int vC = aStartCol; vC <= vEndCol; vC++)
                 {
-                    if (FRows[vR][vC].CellData != null)
+                    if (FRows[vR][vC].CellData == null)
                     {
-                        if (!FRows[vR][vC].CellData.CellSelectedAll)
+                        GetDestCell(vR, vC, ref vDestRow, ref vDestCol);
+                        GetSourceCell(vDestRow, vDestCol, ref vSrcRow, ref vSrcCol);
+                        if (vDestRow < aStartRow || vSrcRow > vEndRow || vDestCol < aStartCol || vSrcCol > vEndCol)
                             return false;
                     }
                 }
             }
-            
+
             return true;
         }
 
@@ -4932,16 +4946,10 @@ namespace HC.View
 
         public bool SelectedCellCanMerge()
         {
-            bool Result = false;
             if (FSelectCellRang.SelectExists())
-            {
-                int vEndRow = FSelectCellRang.EndRow;
-                int vEndCol = FSelectCellRang.EndCol;
-                AdjustCellRange(FSelectCellRang.StartRow, FSelectCellRang.StartCol, ref vEndRow, ref vEndCol);
-                Result = CellsCanMerge(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEndRow, vEndCol);
-            }
+                return CellsCanMerge(FSelectCellRang.StartRow, FSelectCellRang.StartCol, FSelectCellRang.EndRow, FSelectCellRang.EndCol);
 
-            return Result;
+            return false;
         }
 
         public HCTableCell GetEditCell()
