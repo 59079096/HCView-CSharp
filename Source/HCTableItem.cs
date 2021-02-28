@@ -265,7 +265,7 @@ namespace HC.View
         /// <summary> 表格行有添加时 </summary>
         private void DoRowAdd(HCTableRow aRow)
         {
-            aRow.OnGetVPaddingPix = DowRowGetVPaddingPix;
+            aRow.OnGetVPaddingPix = DoRowGetVPaddingPix;
             HCTableCellData vCellData = null;
 
             for (int i = 0; i < aRow.ColCount; i++)
@@ -281,7 +281,7 @@ namespace HC.View
             InitializeMouseInfo();
         }
 
-        private Byte DowRowGetVPaddingPix()
+        private Byte DoRowGetVPaddingPix()
         {
             return FCellVPaddingPix;
         }
