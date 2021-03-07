@@ -1683,7 +1683,7 @@ namespace HC.View
         public HCCustomRectItem GetActiveRectItem()
         {
             HCCustomItem vItem = GetActiveItem();
-            if (vItem.StyleNo < HCStyle.Null)
+            if (vItem != null && vItem.StyleNo < HCStyle.Null)
                 return vItem as HCCustomRectItem;
             else
                 return null;

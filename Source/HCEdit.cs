@@ -468,6 +468,58 @@ namespace HC.View
                 FOnRemoveItem(aData, aItem);
         }
 
+        protected void DataSaveLiteStream(Stream stream, HCProcedure proc)
+        {
+            HC._SaveFileFormatAndVersion(stream);
+            FStyle.SaveToStream(stream);
+            proc();
+        }
+
+        protected void DataLoadLiteStream(Stream stream, HCLoadProc proc)
+        {
+            string vFileFormat = "";
+            ushort vFileVersion = 0;
+            byte vLang = 0;
+            HC._LoadFileFormatAndVersion(stream, ref vFileFormat, ref vFileVersion, ref vLang);
+            using (HCStyle vStyle = new HCStyle())
+            {
+                vStyle.LoadFromStream(stream, vFileVersion);
+                proc(vFileVersion, vStyle);
+            }
+        }
+
+        /// <summary> 复制前，便于控制是否允许复制 </summary>
+        protected virtual bool DoCopyRequest(int aFormat)
+        {
+            HCCustomItem vTopItem = FData.GetTopLevelItem();
+            if (vTopItem is HCEditItem)
+            {
+                if ((vTopItem as HCEditItem).SelectTextExists())
+                    return (aFormat == User.CF_TEXT) || (aFormat == User.CF_UNICODETEXT);
+            }
+
+            return true;
+        }
+
+        /// <summary> 粘贴前，便于控制是否允许粘贴 </summary>
+        protected virtual bool DoPasteRequest(int aFormat)
+        {
+            HCCustomItem vTopItem = FData.GetTopLevelItem();
+            if (vTopItem is HCEditItem)
+                return (aFormat == User.CF_TEXT) || (aFormat == User.CF_UNICODETEXT);
+
+            return true;
+        }
+
+        /// <summary> 复制前，便于订制特征数据如内容来源 </summary>
+        protected virtual void DoCopyAsStream(Stream aStream) { }
+
+        /// <summary> 粘贴前，便于确认订制特征数据如内容来源 </summary>
+        protected virtual bool DoPasteFormatStream(Stream aStream)
+        {
+            return true;
+        }
+
         protected override void WndProc(ref Message Message)
         {
             switch (Message.Msg)
@@ -556,8 +608,11 @@ namespace HC.View
                 MemoryStream vStream = new MemoryStream();
                 try
                 {
-                    HC._SaveFileFormatAndVersion(vStream);  // 保存文件格式和版本
-                    _DeleteUnUsedStyle();
+                    DoCopyAsStream(vStream);
+                    DataSaveLiteStream(vStream, delegate ()
+                    {
+                        this.FData.GetTopLevelData().SaveSelectToStream(vStream);
+                    });
 
                     FStyle.SaveToStream(vStream);
                     FData.GetTopLevelData().SaveSelectToStream(vStream);
@@ -613,8 +668,11 @@ namespace HC.View
                     try
                     {
                         User.EmptyClipboard();
-                        User.SetClipboardData(FHCExtFormat.Id, vMemExt);
-                        User.SetClipboardData(User.CF_TEXT, vMem);  // 文本格式
+                        if (DoCopyRequest(HC.HCExtFormat.Id))
+                            User.SetClipboardData(FHCExtFormat.Id, vMemExt);
+
+                        if (DoCopyRequest(User.CF_UNICODETEXT))
+                            User.SetClipboardData(User.CF_TEXT, vMem);
                     }
                     finally
                     {
@@ -637,30 +695,11 @@ namespace HC.View
                 MemoryStream vStream = (MemoryStream)vIData.GetData(HC.HC_EXT);
                 try
                 {
-                    string vFileFormat = "";
-                    ushort vFileVersion = 0;
-                    byte vLan = 0;
-
                     vStream.Position = 0;
-                    HC._LoadFileFormatAndVersion(vStream, ref vFileFormat, ref vFileVersion, ref vLan);  // 文件格式和版本
-                    HCStyle vStyle = new HCStyle();
-                    try
-                    {
-                        vStyle.LoadFromStream(vStream, vFileVersion);
-                        this.BeginUpdate();
-                        try
-                        {
-                            FData.InsertStream(vStream, vStyle, vFileVersion);
-                        }
-                        finally
-                        {
-                            this.EndUpdate();
-                        }
-                    }
-                    finally
-                    {
-                        vStyle.Dispose();
-                    }
+                    if (!DoPasteFormatStream(vStream))
+                        return;
+
+                    InsertLiteStream(vStream);
                 }
                 finally
                 {
@@ -1174,6 +1213,25 @@ namespace HC.View
         {
             FUpdateCount--;
             DoMapChanged();
+        }
+
+        public bool InsertLiteStream(Stream stream)
+        {
+            bool vResult = false;
+            DataLoadLiteStream(stream, delegate (ushort fileVersion, HCStyle style)
+            {
+                this.BeginUpdate();
+                try
+                {
+                    vResult = FData.InsertStream(stream, style, fileVersion);
+                }
+                finally
+                {
+                    this.EndUpdate();
+                }
+            });
+
+            return vResult;
         }
 
         public int CurStyleNo

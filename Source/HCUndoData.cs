@@ -341,7 +341,9 @@ namespace HC.View
                 case HCAction.actItemProperty:
                     HCItemPropertyUndoAction vPropAction = aAction as HCItemPropertyUndoAction;
                     if ((vPropAction.ItemProperty == ItemProperty.uipParaFirst)
-                        && (vPropAction.ItemProperty == ItemProperty.uipPageBreak))
+                        || (vPropAction.ItemProperty == ItemProperty.uipPageBreak)
+                        || (vPropAction.ItemProperty == ItemProperty.uipStyleNo)
+                        )
                     {
                         if (Result > 0)
                             Result--;
@@ -385,12 +387,56 @@ namespace HC.View
                             Result--;
                     }
                     break;
+
+                case HCAction.actItemProperty:
+                    HCItemPropertyUndoAction vPropAction = aAction as HCItemPropertyUndoAction;
+                    if ((vPropAction.ItemProperty == ItemProperty.uipParaFirst)
+                        || (vPropAction.ItemProperty == ItemProperty.uipPageBreak)
+                        || (vPropAction.ItemProperty == ItemProperty.uipStyleNo)
+                        )
+                    {
+                        if (Result < Items.Count - 1)
+                            Result++;
+                    }
+                    break;
             }
 
             if (Result > Items.Count - 1)
                 Result = Items.Count - 1;
 
             return Result;
+        }
+
+        private void CalcAffectRange(HCCustomUndo aUndo)
+        {
+            FFormatFirstItemNo = GetActionAffectFirst(aUndo.Actions.First, aUndo.IsUndo);
+            FFormatLastItemNo = GetActionAffectLast(aUndo.Actions.First, aUndo.IsUndo);
+            int vFirstNo = -1, vLastNo = -1, vIncCount = 0;
+            if (aUndo.Actions.First.Tag == HCAction.actInsertItem)
+                vIncCount++;
+
+            for (int i = 1; i < aUndo.Actions.Count; i++)
+            {
+                vFirstNo = GetActionAffectFirst(aUndo.Actions[i], aUndo.IsUndo);
+                vLastNo = GetActionAffectLast(aUndo.Actions[i], aUndo.IsUndo);
+                if (aUndo.Actions[i].Tag == HCAction.actInsertItem)
+                    vIncCount++;
+
+                if (FFormatFirstItemNo > vFirstNo)
+                    FFormatFirstItemNo = vFirstNo;
+
+                if (FFormatLastItemNo < vLastNo)
+                    FFormatLastItemNo = vLastNo;
+            }
+
+            if (FFormatFirstItemNo < 0)
+                FFormatFirstItemNo = 0;
+
+            if (aUndo.IsUndo)
+                FFormatLastItemNo += vIncCount;
+
+            if (FFormatLastItemNo > Items.Count - 1)
+                FFormatLastItemNo = Items.Count - 1;
         }
 
         #endregion
@@ -549,18 +595,9 @@ namespace HC.View
                 FItemAddCount = 0;
                 vCaretDrawItemNo = (aUndo as HCDataUndo).CaretDrawItemNo;
 
-                if (aUndo.Actions[0].ItemNo > aUndo.Actions[aUndo.Actions.Count - 1].ItemNo)
-                {
-                    FFormatFirstItemNo = GetParaFirstItemNo(GetActionAffectFirst(aUndo.Actions.Last, aUndo.IsUndo));
-                    FFormatLastItemNo = GetParaLastItemNo(GetActionAffectLast(aUndo.Actions.First, aUndo.IsUndo));
-                }
-                else
-                {
-                    FFormatFirstItemNo = GetParaFirstItemNo(GetActionAffectFirst(aUndo.Actions.First, aUndo.IsUndo));
-                    FFormatLastItemNo = GetParaLastItemNo(GetActionAffectLast(aUndo.Actions.Last, aUndo.IsUndo));
-                }
-
-                FFormatFirstDrawItemNo = Items[FFormatFirstItemNo].FirstDItemNo;
+                CalcAffectRange(aUndo);
+                FFormatLastItemNo = GetParaLastItemNo(FFormatLastItemNo);
+                FFormatFirstDrawItemNo = GetFormatFirstDrawItem(FFormatFirstItemNo);
                 FormatPrepare(FFormatFirstDrawItemNo, FFormatLastItemNo);
             }
 

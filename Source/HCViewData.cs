@@ -1307,7 +1307,10 @@ namespace HC.View
             {
                 vItemNo = SelectInfo.StartItemNo;
                 vOffset = SelectInfo.StartItemOffset;
-                ReSetSelectAndCaret(SelectInfo.EndItemNo, SelectInfo.EndItemOffset, !aForward);
+                if (SelectInfo.EndItemNo >= 0)
+                    ReSetSelectAndCaret(SelectInfo.EndItemNo, SelectInfo.EndItemOffset, !aForward);
+                else
+                    ReSetSelectAndCaret(vItemNo, vOffset, !aForward);
 
                 SelectInfo.StartItemNo = vItemNo;
                 SelectInfo.StartItemOffset = vOffset;

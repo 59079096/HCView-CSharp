@@ -3217,6 +3217,7 @@ namespace HC.View
                 {
                     FSelectCellRang.StartRow = FRows.Count - 1;
                     FSelectCellRang.StartCol = FColWidths.Count - 1;
+                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
 
                     vRow = FSelectCellRang.StartRow;
                     vCol = FSelectCellRang.StartCol;
@@ -3246,6 +3247,12 @@ namespace HC.View
                                 continue;
                             else
                             {
+                                if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                FSelectCellRang.StartCol = j;
+                                FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                 vCellData = this[vRow, j].CellData;
                                 vCellData.SelectInfo.StartItemNo = vCellData.Items.Count - 1;
                                 vCellData.SelectInfo.StartItemOffset = vCellData.GetItemOffsetAfter(vCellData.Items.Count - 1);
@@ -3254,10 +3261,7 @@ namespace HC.View
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartCol = j;
                                 break;
-                            }
                         }
                     }
 
@@ -3271,6 +3275,13 @@ namespace HC.View
                                     continue;
                                 else
                                 {
+                                    if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                        FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                    FSelectCellRang.StartRow = i;
+                                    FSelectCellRang.StartCol = j;
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                     vCellData = FRows[i][j].CellData;
                                     vCellData.SelectInfo.StartItemNo = vCellData.Items.Count - 1;
                                     vCellData.SelectInfo.StartItemOffset = vCellData.GetItemOffsetAfter(vCellData.Items.Count - 1);
@@ -3279,17 +3290,11 @@ namespace HC.View
                                 }
 
                                 if (Result)
-                                {
-                                    FSelectCellRang.StartCol = j;
                                     break;
-                                }
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartRow = i;
                                 break;
-                            }
                         }
                     }
                 }
@@ -3300,6 +3305,8 @@ namespace HC.View
                 {
                     FSelectCellRang.StartRow = 0;
                     FSelectCellRang.StartCol = 0;
+                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                     // 从头开始
                     FRows[0][0].CellData.SelectInfo.StartItemNo = 0;
                     FRows[0][0].CellData.SelectInfo.StartItemOffset = 0;
@@ -3319,16 +3326,19 @@ namespace HC.View
                                 continue;
                             else
                             {
+                                if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                FSelectCellRang.StartCol = j;
+                                FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                 FRows[vRow][j].CellData.SelectInfo.StartItemNo = 0;
                                 FRows[vRow][j].CellData.SelectInfo.StartItemOffset = 0;
                                 Result = FRows[vRow][j].CellData.Search(aKeyword, aForward, aMatchCase);
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartCol = j;
                                 break;
-                            }
                         }
                     }
 
@@ -3342,30 +3352,36 @@ namespace HC.View
                                     continue;
                                 else
                                 {
+                                    if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                        FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                    FSelectCellRang.StartRow = i;
+                                    FSelectCellRang.StartCol = j;
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                     FRows[i][j].CellData.SelectInfo.StartItemNo = 0;
                                     FRows[i][j].CellData.SelectInfo.StartItemOffset = 0;
                                     Result = FRows[i][j].CellData.Search(aKeyword, aForward, aMatchCase);
                                 }
 
                                 if (Result)
-                                {
-                                    FSelectCellRang.StartCol = j;
                                     break;
-                                }
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartRow = i;
                                 break;
-                            }
                         }
                     }
                 }
             }
 
             if (!Result)
+            {
+                if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
                 FSelectCellRang.Initialize();
+            }
 
             return Result;
         }
@@ -4547,7 +4563,7 @@ namespace HC.View
                 return;
 
             RECT vRect = HC.Bounds(ALeft, ATop, Width, vH);
-            if (!APaintInfo.Print)
+            //if (!APaintInfo.Print)
             {
                 ACanvas.Brush.Color = HC.clBtnFace;
                 ACanvas.FillRect(vRect);

@@ -59,7 +59,7 @@ namespace HC.View
 
         private Byte GetVPadding()
         {
-            if (FOnGetVPaddingPix == null)
+            if (FOnGetVPaddingPix != null)
                 return FOnGetVPaddingPix();
             else
                 return 0;

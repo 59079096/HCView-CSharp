@@ -2304,7 +2304,7 @@ namespace HC.View
             ActiveSection.DeleteSelected();
         }
 
-        /// <summary> 复制选中内容(tcf格式) </summary>
+        /// <summary> 复制选中内容(hcf格式) </summary>
         public void Copy()
         {
             if (ActiveSection.SelectExists())
@@ -2315,7 +2315,6 @@ namespace HC.View
                     MemoryStream vStream = new MemoryStream();
                     try
                     {
-
                         DoCopyAsStream(vStream);  // 通知保存事件
                         DataSaveLiteStream(vStream, delegate ()
                         {
