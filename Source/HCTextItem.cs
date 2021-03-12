@@ -180,7 +180,7 @@ namespace HC.View
             if (FHyperLink != "")
                 aNode.SetAttribute("link", FHyperLink);
 
-            aNode.InnerText = Text;
+            aNode.InnerText = FText;
         }
 
         public override void ParseXml(XmlElement aNode)
