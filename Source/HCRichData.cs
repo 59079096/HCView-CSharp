@@ -913,7 +913,11 @@ namespace HC.View
                         vBeforItem.StyleNo = vStyleNo;
                         vBeforItem.Text = vSelText;  // 创建前半部分文本对应的Item
                         vBeforItem.ParaFirst = vItem.ParaFirst;
-                        vItem.ParaFirst = false;
+                        if (vItem.ParaFirst)
+                        {
+                            UndoAction_ItemParaFirst(aItemNo, 0, false);
+                            vItem.ParaFirst = false;
+                        }
 
                         Items.Insert(aItemNo, vBeforItem);
                         UndoAction_InsertItem(aItemNo, 0);
@@ -4102,15 +4106,14 @@ namespace HC.View
 
                                 Undo_New();
                                 UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
-                                // 如果RectItem前面(同一行)有高度小于此RectItme的Item(如Tab)，
-                                // 其格式化时以RectItem为高，重新格式化时如果从RectItem所在位置起始格式化，
-                                // 行高度仍会以Tab为行高，也就是RectItem高度，所以需要从行开始格式化
                                 Items.Delete(SelectInfo.StartItemNo);
                                 if (MergeItemText(Items[SelectInfo.StartItemNo - 1], Items[SelectInfo.StartItemNo]))
                                 {
                                     UndoAction_InsertText(SelectInfo.StartItemNo - 1,
-                                        Items[SelectInfo.StartItemNo - 1].Length + 1, Items[SelectInfo.StartItemNo].Text);
+                                        Items[SelectInfo.StartItemNo - 1].Length - Items[SelectInfo.StartItemNo].Length + 1,
+                                        Items[SelectInfo.StartItemNo].Text);
 
+                                    UndoAction_DeleteItem(SelectInfo.StartItemNo, 0);
                                     Items.RemoveAt(SelectInfo.StartItemNo);
                                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - 2, -2);
                                 }

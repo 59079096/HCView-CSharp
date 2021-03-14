@@ -265,6 +265,7 @@ namespace HC.View
         /// <summary> 表格行有添加时 </summary>
         private void DoRowAdd(HCTableRow aRow)
         {
+            aRow.OnGetVPaddingPix = DoRowGetVPaddingPix;
             HCTableCellData vCellData = null;
 
             for (int i = 0; i < aRow.ColCount; i++)
@@ -278,6 +279,11 @@ namespace HC.View
         private void DoRowRemove(HCTableRow row)
         {
             InitializeMouseInfo();
+        }
+
+        private Byte DoRowGetVPaddingPix()
+        {
+            return FCellVPaddingPix;
         }
 
         private void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
@@ -361,8 +367,11 @@ namespace HC.View
                                 {
                                     if (FRows[vR][i].CellData == null)
                                     {
+                                        if (FRows[vR][i].ColSpan < 0)
+                                            continue;
+
                                         GetDestCell(vR, i, ref vDestRow2, ref vDestCol2);  // 获取目标单元格
-                                        if ((vDestRow2 != vDestRow) && (vDestCol2 != vDestCol))
+                                        if (vDestRow2 != vDestRow || vDestCol2 != vDestCol)
                                             FRows[vDestRow2][i].Height = FRows[vDestRow2][i].Height + vH;
                                     }
                                 }
@@ -3208,6 +3217,7 @@ namespace HC.View
                 {
                     FSelectCellRang.StartRow = FRows.Count - 1;
                     FSelectCellRang.StartCol = FColWidths.Count - 1;
+                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
 
                     vRow = FSelectCellRang.StartRow;
                     vCol = FSelectCellRang.StartCol;
@@ -3237,6 +3247,12 @@ namespace HC.View
                                 continue;
                             else
                             {
+                                if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                FSelectCellRang.StartCol = j;
+                                FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                 vCellData = this[vRow, j].CellData;
                                 vCellData.SelectInfo.StartItemNo = vCellData.Items.Count - 1;
                                 vCellData.SelectInfo.StartItemOffset = vCellData.GetItemOffsetAfter(vCellData.Items.Count - 1);
@@ -3245,10 +3261,7 @@ namespace HC.View
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartCol = j;
                                 break;
-                            }
                         }
                     }
 
@@ -3262,6 +3275,13 @@ namespace HC.View
                                     continue;
                                 else
                                 {
+                                    if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                        FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                    FSelectCellRang.StartRow = i;
+                                    FSelectCellRang.StartCol = j;
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                     vCellData = FRows[i][j].CellData;
                                     vCellData.SelectInfo.StartItemNo = vCellData.Items.Count - 1;
                                     vCellData.SelectInfo.StartItemOffset = vCellData.GetItemOffsetAfter(vCellData.Items.Count - 1);
@@ -3270,17 +3290,11 @@ namespace HC.View
                                 }
 
                                 if (Result)
-                                {
-                                    FSelectCellRang.StartCol = j;
                                     break;
-                                }
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartRow = i;
                                 break;
-                            }
                         }
                     }
                 }
@@ -3291,6 +3305,8 @@ namespace HC.View
                 {
                     FSelectCellRang.StartRow = 0;
                     FSelectCellRang.StartCol = 0;
+                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                     // 从头开始
                     FRows[0][0].CellData.SelectInfo.StartItemNo = 0;
                     FRows[0][0].CellData.SelectInfo.StartItemOffset = 0;
@@ -3310,16 +3326,19 @@ namespace HC.View
                                 continue;
                             else
                             {
+                                if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                FSelectCellRang.StartCol = j;
+                                FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                 FRows[vRow][j].CellData.SelectInfo.StartItemNo = 0;
                                 FRows[vRow][j].CellData.SelectInfo.StartItemOffset = 0;
                                 Result = FRows[vRow][j].CellData.Search(aKeyword, aForward, aMatchCase);
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartCol = j;
                                 break;
-                            }
                         }
                     }
 
@@ -3333,30 +3352,36 @@ namespace HC.View
                                     continue;
                                 else
                                 {
+                                    if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                                        FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
+                                    FSelectCellRang.StartRow = i;
+                                    FSelectCellRang.StartCol = j;
+                                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = true;
+
                                     FRows[i][j].CellData.SelectInfo.StartItemNo = 0;
                                     FRows[i][j].CellData.SelectInfo.StartItemOffset = 0;
                                     Result = FRows[i][j].CellData.Search(aKeyword, aForward, aMatchCase);
                                 }
 
                                 if (Result)
-                                {
-                                    FSelectCellRang.StartCol = j;
                                     break;
-                                }
                             }
 
                             if (Result)
-                            {
-                                FSelectCellRang.StartRow = i;
                                 break;
-                            }
                         }
                     }
                 }
             }
 
             if (!Result)
+            {
+                if (FSelectCellRang.StartRow >= 0 && FSelectCellRang.StartCol >= 0)
+                    FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol].Active = false;
+
                 FSelectCellRang.Initialize();
+            }
 
             return Result;
         }
@@ -4538,7 +4563,7 @@ namespace HC.View
                 return;
 
             RECT vRect = HC.Bounds(ALeft, ATop, Width, vH);
-            if (!APaintInfo.Print)
+            //if (!APaintInfo.Print)
             {
                 ACanvas.Brush.Color = HC.clBtnFace;
                 ACanvas.FillRect(vRect);
@@ -4776,18 +4801,23 @@ namespace HC.View
         /// <returns></returns>
         public bool CellsCanMerge(int aStartRow, int aStartCol, int aEndRow, int aEndCol)
         {
-            for (int vR = aStartRow; vR <= aEndRow; vR++)
+            int vEndRow = -1, vEndCol = -1, vDestRow = -1, vDestCol = -1, vSrcRow = -1, vSrcCol = -1;
+            GetSourceCell(aEndRow, aEndCol, ref vEndRow, ref vEndCol);
+
+            for (int vR = aStartRow; vR <= vEndRow; vR++)
             {
-                for (int vC = aStartCol; vC <= aEndCol; vC++)
+                for (int vC = aStartCol; vC <= vEndCol; vC++)
                 {
-                    if (FRows[vR][vC].CellData != null)
+                    if (FRows[vR][vC].CellData == null)
                     {
-                        if (!FRows[vR][vC].CellData.CellSelectedAll)
+                        GetDestCell(vR, vC, ref vDestRow, ref vDestCol);
+                        GetSourceCell(vDestRow, vDestCol, ref vSrcRow, ref vSrcCol);
+                        if (vDestRow < aStartRow || vSrcRow > vEndRow || vDestCol < aStartCol || vSrcCol > vEndCol)
                             return false;
                     }
                 }
             }
-            
+
             return true;
         }
 
@@ -4932,16 +4962,10 @@ namespace HC.View
 
         public bool SelectedCellCanMerge()
         {
-            bool Result = false;
             if (FSelectCellRang.SelectExists())
-            {
-                int vEndRow = FSelectCellRang.EndRow;
-                int vEndCol = FSelectCellRang.EndCol;
-                AdjustCellRange(FSelectCellRang.StartRow, FSelectCellRang.StartCol, ref vEndRow, ref vEndCol);
-                Result = CellsCanMerge(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEndRow, vEndCol);
-            }
+                return CellsCanMerge(FSelectCellRang.StartRow, FSelectCellRang.StartCol, FSelectCellRang.EndRow, FSelectCellRang.EndCol);
 
-            return Result;
+            return false;
         }
 
         public HCTableCell GetEditCell()

@@ -110,7 +110,7 @@ namespace HC.View
             return FReadOnly;
         }
 
-        protected virtual void SetReadOnly(value)
+        protected virtual void SetReadOnly(bool value)
         {
             if (FReadOnly != value)
                 FReadOnly = value;

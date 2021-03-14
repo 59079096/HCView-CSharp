@@ -62,6 +62,16 @@ namespace HC.View
             FHyperLink = "";
         }
 
+        public virtual string TextEffective()
+        {
+            return this.GetText();
+        }
+
+        public virtual string SubStringEffective(int startOffs, int length)
+        {
+            return this.SubString(startOffs, length);
+        }
+
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
@@ -170,7 +180,7 @@ namespace HC.View
             if (FHyperLink != "")
                 aNode.SetAttribute("link", FHyperLink);
 
-            aNode.InnerText = Text;
+            aNode.InnerText = FText;
         }
 
         public override void ParseXml(XmlElement aNode)

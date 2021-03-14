@@ -17,6 +17,8 @@ using System.Xml;
 
 namespace HC.View
 {
+    public delegate Byte OnGetVPaddingPixEvent();
+
     public class HCTableRow : HCList<HCTableCell>
     {
         private int FHeight,  // 行高，不带上下边框 = 行中单元格最高的(单元格高包括单元格为分页而在某行额外偏移的高度)
@@ -24,7 +26,8 @@ namespace HC.View
 
         private bool FAutoHeight;  // True根据内容自动匹配合适的高度 False用户拖动后的自定义高度
 
-        private int CalcMaxCellHeight()
+        private OnGetVPaddingPixEvent FOnGetVPaddingPix;
+        private int CalcMaxCellDataHeight()
         {
             int vResult = HC.MinRowHeight;
             for (int i = 0; i <= this.Count - 1; i++)  // 找行中最高的单元
@@ -43,15 +46,23 @@ namespace HC.View
         {
             if (FHeight != value)
             {
-                int vMaxDataHeight = CalcMaxCellHeight();
-                if (vMaxDataHeight < value)
+                int vMaxHeight = CalcMaxCellDataHeight() + GetVPadding() + GetVPadding();
+                if (vMaxHeight < value)
                     FHeight = value;
                 else
-                    FHeight = vMaxDataHeight;
+                    FHeight = vMaxHeight;
 
                 for (int i = 0; i <= this.Count - 1; i++)
                     this[i].Height = FHeight;
             }
+        }
+
+        private Byte GetVPadding()
+        {
+            if (FOnGetVPaddingPix != null)
+                return FOnGetVPaddingPix();
+            else
+                return 0;
         }
 
         public HCTableRow(HCStyle aStyle, int aColCount) : this()
@@ -77,7 +88,13 @@ namespace HC.View
 
         public void FormatInit()
         {
-            FHeight = CalcMaxCellHeight();
+            int vHeight = CalcMaxCellDataHeight() + GetVPadding() + GetVPadding();
+            if (FAutoHeight)
+                FHeight = vHeight;
+            else
+            if (FHeight < vHeight)
+                FHeight = vHeight;
+
             for (int i = 0; i <= this.Count - 1; i++)
                 this[i].Height = FHeight;
         }
@@ -137,6 +154,12 @@ namespace HC.View
         {
             get { return FFmtOffset; }
             set { FFmtOffset = value; }
+        }
+
+        public OnGetVPaddingPixEvent OnGetVPaddingPix
+        {
+            get { return FOnGetVPaddingPix; }
+            set { FOnGetVPaddingPix = value; }
         }
     }
 }
