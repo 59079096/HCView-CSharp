@@ -2556,7 +2556,7 @@ namespace HC.View
                 return;
 
             int vX = -1, vY = -1;
-            CoordToItemOffset(e.X, e.Y, aItemNo, aOffset, ref vX, ref vY);
+            CoordToDrawItem(e.X, e.Y, FMouseMoveDrawItemNo, ref vX, ref vY);
             MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
             if (aDrawItemMouseMove)
                 DoDrawItemMouseMove(this, aItemNo, aOffset, FMouseMoveDrawItemNo, vMouseArgs);

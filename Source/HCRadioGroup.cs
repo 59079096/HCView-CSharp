@@ -65,6 +65,7 @@ namespace HC.View
         private bool FColumnAlign;
         private HCList<HCRadioButton> FItems;
         private HCRadioStyle FRadioStyle = HCRadioStyle.Radio;
+        private EventHandler FOnSetItemChecked;
         public static byte RadioButtonWidth = 16;
 
         private void ReLayout()
@@ -232,6 +233,9 @@ namespace HC.View
         {
             FItems[index].Checked = value;
             this.DoChange();
+
+            if (FOnSetItemChecked != null)
+                FOnSetItemChecked(this, null);
         }
 
         protected void DoItemNotify(object sender, NListEventArgs<HCRadioButton> e)
@@ -480,6 +484,14 @@ namespace HC.View
             FItems.Add(vRadioButton);
         }
 
+        public void SetAllChecked(bool check)
+        {
+            for (int i = 0; i < FItems.Count; i++)
+                FItems[i].Checked = check;
+
+            this.DoChange();
+        }
+
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
@@ -712,6 +724,12 @@ namespace HC.View
         public List<HCRadioButton> Items
         {
             get { return FItems; }
+        }
+
+        public EventHandler OnSetItemChecked
+        {
+            get { return FOnSetItemChecked; }
+            set { FOnSetItemChecked = value; }
         }
     }
 }
