@@ -1289,7 +1289,7 @@ namespace HC.View
         }
 
         //
-        public bool ActiveTableInsertRowAfter(byte aRowCount)
+        public bool ActiveTableInsertRowAfter(int aRowCount)
         {
             HCFunction vEvent = delegate()
             {
@@ -1299,7 +1299,7 @@ namespace HC.View
             return DoSectionDataAction(FActiveData, vEvent);
         }
 
-        public bool ActiveTableInsertRowBefor(byte aRowCount)
+        public bool ActiveTableInsertRowBefor(int aRowCount)
         {
             HCFunction vEvent = delegate()
             {
@@ -1339,7 +1339,7 @@ namespace HC.View
             return DoSectionDataAction(FActiveData, vEvent);
         }
 
-        public bool ActiveTableInsertColAfter(byte aColCount)
+        public bool ActiveTableInsertColAfter(int aColCount)
         {
             HCFunction vEvent = delegate()
             {
@@ -1349,7 +1349,7 @@ namespace HC.View
             return DoSectionDataAction(FActiveData, vEvent);
         }
 
-        public bool ActiveTableInsertColBefor(byte aColCount)
+        public bool ActiveTableInsertColBefor(int aColCount)
         {
             HCFunction vEvent = delegate()
             {

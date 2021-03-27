@@ -1713,7 +1713,7 @@ namespace HC.View
         {
             HCCustomDrawItem Result = null;
             HCCustomItem vItem = GetActiveItem();
-            (vItem != null && vItem.StyleNo < HCStyle.Null)
+            if (vItem != null && vItem.StyleNo < HCStyle.Null)
                 Result = (vItem as HCCustomRectItem).GetTopLevelDrawItem();
             if (Result == null)
                 Result = GetActiveDrawItem();

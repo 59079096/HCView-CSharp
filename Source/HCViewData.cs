@@ -215,7 +215,7 @@ namespace HC.View
         private bool SelectOffsetAfter_(int itemNo, int drawItemNo)
         {
             bool vResult = Items[itemNo].IsSelectComplate;
-            if (!vResult && SelectInfo.EndItemNo >= 0)
+            if (!vResult && Items[itemNo].StyleNo > HCStyle.Null && SelectInfo.EndItemNo >= 0)
             {
                 if (itemNo == SelectInfo.EndItemNo)
                 {

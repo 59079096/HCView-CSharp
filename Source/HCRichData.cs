@@ -5927,7 +5927,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertRowAfter(byte aRowCount)
+        public bool TableInsertRowAfter(int aRowCount)
         {
             if (!CanEdit())
                 return false;
@@ -5940,7 +5940,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertRowBefor(byte aRowCount)
+        public bool TableInsertRowBefor(int aRowCount)
         {
             if (!CanEdit())
                 return false;
@@ -5992,7 +5992,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertColAfter(byte aColCount)
+        public bool TableInsertColAfter(int aColCount)
         {
             if (!CanEdit())
                 return false;
@@ -6005,7 +6005,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertColBefor(byte aColCount)
+        public bool TableInsertColBefor(int aColCount)
         {
             if (!CanEdit())
                 return false;
