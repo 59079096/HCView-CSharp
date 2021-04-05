@@ -1777,6 +1777,11 @@ namespace HC.View
             return vResult;
         }
 
+        public bool IsRectItem(int itemNo)
+        {
+            return FItems[itemNo].StyleNo < HCStyle.Null;
+        }
+
         /// <summary> 返回Item的文本样式 </summary>
         public int GetItemStyle(int aItemNo)
         {

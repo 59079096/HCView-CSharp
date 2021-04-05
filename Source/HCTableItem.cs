@@ -1563,8 +1563,9 @@ namespace HC.View
                     if (vCellPt.Y != 0)
                     {
                         Undo_RowResize(FMouseDownRow, FRows[FMouseDownRow].Height, FRows[FMouseDownRow].Height + vCellPt.Y);
-                        FRows[FMouseDownRow].Height = FRows[FMouseDownRow].Height + vCellPt.Y;
-                        FRows[FMouseDownRow].AutoHeight = false;
+                        vCellPt.Y = FRows[FMouseDownRow].Height + vCellPt.Y;
+                        FRows[FMouseDownRow].Height = vCellPt.Y;
+                        FRows[FMouseDownRow].AutoHeight = (vCellPt.Y != FRows[FMouseDownRow].Height);
                     }
                 }
 
@@ -4112,13 +4113,13 @@ namespace HC.View
             FSelectCellRang.Initialize();
 
             this.Width = aWidth;
-            int vRowHeight = FDefaultRowHeight;
+            int vFirstRowHeight = -1;
 #if RESETTABLEUSEFIRSTROWHEIGHT
             if (FRows.Count > 0)
-                vRowHeight = FRows[0].Height;
+                vFirstRowHeight = FRows[0].Height;
 #endif
 
-            Height = aRowCount * (vRowHeight + FBorderWidthPix) + FBorderWidthPix;
+            Height = aRowCount * (FDefaultRowHeight + FBorderWidthPix) + FBorderWidthPix;
             int vDataWidth = aWidth - (aColCount + 1) * FBorderWidthPix;
 
             FRows.Clear();
@@ -4128,11 +4129,15 @@ namespace HC.View
                 vRow = new HCTableRow(OwnerData.Style, aColCount);
                 vRow.SetRowWidth(vDataWidth);
                 if (i == 0)
+                {
                     FDefaultRowHeight = vRow[0].CellData.Height + FCellVPaddingPix + FCellVPaddingPix;
+                    if (vFirstRowHeight < 0)
+                        vFirstRowHeight = FDefaultRowHeight;
+                }
 
 #if RESETTABLEUSEFIRSTROWHEIGHT
-                vRow.Height = vRowHeight;
-                if (vRowHeight != FDefaultRowHeight)
+                vRow.Height = vFirstRowHeight;
+                if (vFirstRowHeight != FDefaultRowHeight)
                     vRow.AutoHeight = false;
 #endif
 

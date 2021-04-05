@@ -812,6 +812,13 @@ namespace EMRView
 
                 if (FTrace)
                 {
+                    HCCustomItem vItem = this.ActiveSectionTopLevelData().GetActiveItem();
+                    if (vItem is HCTextRectItem)
+                    {
+                        base.OnKeyPress(e);
+                        return;
+                    }
+
                     MakeSelectTraceIf();
                     InsertEmrTraceItem(e.KeyChar.ToString());
 
@@ -3142,7 +3149,10 @@ namespace EMRView
                         try
                         {
                             if (aDeGroupEndNo - aDeGroupStartNo > 1)  // 中间有内容
+                            {
+                                aData.DisSelect();
                                 aData.DeleteItems(aDeGroupStartNo + 1, aDeGroupEndNo - 1, false);
+                            }
                             else
                                 aData.SetSelectBound(aDeGroupStartNo, HC.View.HC.OffsetAfter, aDeGroupStartNo, HC.View.HC.OffsetAfter);
 
@@ -3153,6 +3163,7 @@ namespace EMRView
                             aData.EndFormat(false);
                         }
 
+                        this.ClearUndo();
                         this.FormatData();
                     }
                     finally

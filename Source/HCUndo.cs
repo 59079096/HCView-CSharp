@@ -734,16 +734,23 @@ namespace HC.View
 
         public void UndoGroupEnd(int aItemNo, int aOffset)
         {
-            HCUndoGroupEnd vUndoGroupEnd = null;
-            if (FOnUndoGroupEnd != null)
-                vUndoGroupEnd = FOnUndoGroupEnd(aItemNo, aOffset);
+            if (!(this.Last() is HCUndoGroupBegin))
+            {
+                HCUndoGroupEnd vUndoGroupEnd = null;
+                if (FOnUndoGroupEnd != null)
+                    vUndoGroupEnd = FOnUndoGroupEnd(aItemNo, aOffset);
+                else
+                    vUndoGroupEnd = new HCUndoGroupEnd();
+
+                vUndoGroupEnd.ItemNo = aItemNo;
+                vUndoGroupEnd.Offset = aOffset;
+
+                DoNewUndo(vUndoGroupEnd);
+            }
             else
-                vUndoGroupEnd = new HCUndoGroupEnd();
+            if (this.Last() is HCUndoGroupBegin)
+                this.Delete(this.Count - 1);
 
-            vUndoGroupEnd.ItemNo = aItemNo;
-            vUndoGroupEnd.Offset = aOffset;
-
-            DoNewUndo(vUndoGroupEnd);
             FGroupWorking = false;
         }
 

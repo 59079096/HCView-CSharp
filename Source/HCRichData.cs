@@ -1695,6 +1695,9 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
+            if (!DeleteSelected())
+                return false;
+
             if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actInsertItem)) 
                 return false;
 
@@ -2527,6 +2530,7 @@ namespace HC.View
                     || (vMouseDownItemOffset != FMouseDownItemOffset)
                     || (CaretDrawItemNo != vDrawItemNo))  // 位置发生变化
                 {
+                    Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
                     FMouseDownReCaret = true;
 
