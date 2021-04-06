@@ -541,7 +541,7 @@ namespace EMRView
             else
             if (aNode.HasAttribute("tracestyles"))
             {
-                byte.TryParse(aNode.GetAttribute("tracestyle"), out vByte);
+                byte.TryParse(aNode.GetAttribute("tracestyles"), out vByte);
                 FTraceStyles.Value = vByte;
             }
 

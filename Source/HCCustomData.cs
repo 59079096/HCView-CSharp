@@ -1474,6 +1474,35 @@ namespace HC.View
             return Result;
        }
 
+        public void CoordToDrawItem(int x, int y, int drawItemNo, ref int aX, ref int aY)
+        {
+            aX = x;
+            aY = y;
+
+            RECT vDrawRect = FDrawItems[drawItemNo].Rect;
+
+            vDrawRect.Inflate(0, -GetLineBlankSpace(drawItemNo) / 2);
+
+            aX = aX - vDrawRect.Left;
+            aY = aY - vDrawRect.Top;
+            if (FItems[FDrawItems[drawItemNo].ItemNo].StyleNo < HCStyle.Null)
+            {
+                HCCustomRectItem vRectItem = FItems[FDrawItems[drawItemNo].ItemNo] as HCCustomRectItem;
+                switch (FStyle.ParaStyles[vRectItem.ParaNo].AlignVert)  // 垂直对齐方式
+                {
+                    case ParaAlignVert.pavCenter:
+                        aY = aY - (vDrawRect.Height - vRectItem.Height) / 2;
+                        break;
+                    case ParaAlignVert.pavTop:
+                        break;
+
+                    default:
+                        aY = aY - (vDrawRect.Height - vRectItem.Height);
+                        break;
+                }
+            }
+        }
+
         /// <summary>
         /// 获取Data中的坐标X、Y处的Item和Offset，并返回X、Y相对DrawItem的坐标
         /// </summary>
@@ -1485,33 +1514,15 @@ namespace HC.View
         /// <param name="aY"></param>
         public void CoordToItemOffset(int x, int y, int aItemNo, int aOffset, ref int aX, ref int aY)
         {
-            aX = x;
-            aY = y;
             if (aItemNo < 0)
+            {
+                aX = x;
+                aY = y;
                 return;
+            }
 
             int vDrawItemNo = GetDrawItemNoByOffset(aItemNo, aOffset);
-            RECT vDrawRect = FDrawItems[vDrawItemNo].Rect;
-
-            vDrawRect.Inflate(0, -GetLineBlankSpace(vDrawItemNo) / 2);
-
-            aX = aX - vDrawRect.Left;
-            aY = aY - vDrawRect.Top;
-            if (FItems[aItemNo].StyleNo < HCStyle.Null)
-            {
-                switch (FStyle.ParaStyles[FItems[aItemNo].ParaNo].AlignVert)  // 垂直对齐方式
-                {
-                    case ParaAlignVert.pavCenter: 
-                        aY = aY - (vDrawRect.Height - (FItems[aItemNo] as HCCustomRectItem).Height) / 2;
-                        break;
-                    case ParaAlignVert.pavTop: 
-                        break;
-
-                    default:
-                        aY = aY - (vDrawRect.Height - (FItems[aItemNo] as HCCustomRectItem).Height);
-                        break;
-                }
-            }
+            CoordToDrawItem(x, y, vDrawItemNo, ref aX, ref aY);
         }
 
         /// <summary>
@@ -1702,7 +1713,7 @@ namespace HC.View
         {
             HCCustomDrawItem Result = null;
             HCCustomItem vItem = GetActiveItem();
-            if (vItem.StyleNo < HCStyle.Null)
+            if (vItem != null && vItem.StyleNo < HCStyle.Null)
                 Result = (vItem as HCCustomRectItem).GetTopLevelDrawItem();
             if (Result == null)
                 Result = GetActiveDrawItem();
@@ -1719,7 +1730,7 @@ namespace HC.View
             {
                 Result = vDrawItem.Rect.TopLeft();
                 HCCustomItem vItem = GetActiveItem();
-                if (vItem.StyleNo < HCStyle.Null)
+                if (vItem != null && vItem.StyleNo < HCStyle.Null)
                 {
                     vPt = (vItem as HCCustomRectItem).GetTopLevelDrawItemCoord();
                     vPt.Y = vPt.Y + FStyle.LineSpaceMin / 2;
@@ -1737,7 +1748,7 @@ namespace HC.View
             HCCustomDrawItem vResult = null;
 
             HCCustomItem vItem = GetActiveItem();
-            if (vItem.StyleNo < HCStyle.Null)
+            if (vItem != null && vItem.StyleNo < HCStyle.Null)
             {
                 vResult = (vItem as HCCustomRectItem).GetTopLevelRectDrawItem();
                 if (vResult == null)
@@ -1764,6 +1775,11 @@ namespace HC.View
             }
 
             return vResult;
+        }
+
+        public bool IsRectItem(int itemNo)
+        {
+            return FItems[itemNo].StyleNo < HCStyle.Null;
         }
 
         /// <summary> 返回Item的文本样式 </summary>

@@ -2153,13 +2153,13 @@ namespace HC.View
         }
 
         /// <summary> 当前表格选中行下面插入行 </summary>
-        public bool ActiveTableInsertRowAfter(byte aRowCount)
+        public bool ActiveTableInsertRowAfter(int aRowCount)
         {
             return ActiveSection.ActiveTableInsertRowAfter(aRowCount);
         }
 
         /// <summary> 当前表格选中行上面插入行 </summary>
-        public bool ActiveTableInsertRowBefor(byte aRowCount)
+        public bool ActiveTableInsertRowBefor(int aRowCount)
         {
             return ActiveSection.ActiveTableInsertRowBefor(aRowCount);
         }
@@ -2183,13 +2183,13 @@ namespace HC.View
         }
 
         /// <summary> 当前表格选中列左侧插入列 </summary>
-        public bool ActiveTableInsertColBefor(byte aColCount)
+        public bool ActiveTableInsertColBefor(int aColCount)
         {
             return ActiveSection.ActiveTableInsertColBefor(aColCount);
         }
 
         /// <summary> 当前表格选中列右侧插入列 </summary>
-        public bool ActiveTableInsertColAfter(byte aColCount)
+        public bool ActiveTableInsertColAfter(int aColCount)
         {
             return ActiveSection.ActiveTableInsertColAfter(aColCount);
         }
@@ -4267,7 +4267,7 @@ namespace HC.View
         }
 
         /// <summary> 节有新的Item插入时触发 </summary>
-        public SectionDataItemEventHandler OnSectionItemInsert
+        public SectionDataItemEventHandler OnSectionInsertItem
         {
             get { return FOnSectionInsertItem; }
             set { FOnSectionInsertItem = value; }

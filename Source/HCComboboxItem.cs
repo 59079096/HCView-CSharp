@@ -277,7 +277,6 @@ namespace HC.View
                 ACanvas.FillRect(FButtonDrawRect);
             }
             else
-            if (PrintOnlyText)
                 return;
 
             ACanvas.Pen.Color = Color.Black;

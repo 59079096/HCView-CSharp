@@ -1695,6 +1695,9 @@ namespace HC.View
             if (!CanEdit())
                 return false;
 
+            if (!DeleteSelected())
+                return false;
+
             if (!DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actInsertItem)) 
                 return false;
 
@@ -2527,6 +2530,7 @@ namespace HC.View
                     || (vMouseDownItemOffset != FMouseDownItemOffset)
                     || (CaretDrawItemNo != vDrawItemNo))  // 位置发生变化
                 {
+                    Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
                     FMouseDownReCaret = true;
 
@@ -2556,7 +2560,7 @@ namespace HC.View
                 return;
 
             int vX = -1, vY = -1;
-            CoordToItemOffset(e.X, e.Y, aItemNo, aOffset, ref vX, ref vY);
+            CoordToDrawItem(e.X, e.Y, FMouseMoveDrawItemNo, ref vX, ref vY);
             MouseEventArgs vMouseArgs = new MouseEventArgs(e.Button, e.Clicks, vX, vY, e.Delta);
             if (aDrawItemMouseMove)
                 DoDrawItemMouseMove(this, aItemNo, aOffset, FMouseMoveDrawItemNo, vMouseArgs);
@@ -5927,7 +5931,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertRowAfter(byte aRowCount)
+        public bool TableInsertRowAfter(int aRowCount)
         {
             if (!CanEdit())
                 return false;
@@ -5940,7 +5944,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertRowBefor(byte aRowCount)
+        public bool TableInsertRowBefor(int aRowCount)
         {
             if (!CanEdit())
                 return false;
@@ -5992,7 +5996,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertColAfter(byte aColCount)
+        public bool TableInsertColAfter(int aColCount)
         {
             if (!CanEdit())
                 return false;
@@ -6005,7 +6009,7 @@ namespace HC.View
             return RectItemAction(vEvent);
         }
 
-        public bool TableInsertColBefor(byte aColCount)
+        public bool TableInsertColBefor(int aColCount)
         {
             if (!CanEdit())
                 return false;

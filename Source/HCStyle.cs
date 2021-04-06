@@ -354,6 +354,7 @@ namespace HC.View
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             aStream.WriteByte(FFormatVersion);
+            aStream.WriteByte(FLineSpaceMin);
             SaveParaStyles(aStream);
             SaveTextStyles(aStream);
 
@@ -403,6 +404,11 @@ namespace HC.View
             else
                 FFormatVersion = 1;
 
+            if (aFileVersion > 49)
+                this.FLineSpaceMin = (byte)aStream.ReadByte();
+            else
+                this.FLineSpaceMin = 8;
+
             LoadParaStyles(aStream, aFileVersion);
             LoadTextStyles(aStream, aFileVersion);
         }
@@ -440,6 +446,7 @@ namespace HC.View
             aNode.SetAttribute("fscount", FTextStyles.Count.ToString());
             aNode.SetAttribute("pscount", FParaStyles.Count.ToString());
             aNode.SetAttribute("fmtver", FFormatVersion.ToString());
+            aNode.SetAttribute("linespacemin", FLineSpaceMin.ToString());
 
             XmlElement vNode = aNode.OwnerDocument.CreateElement("textstyles");
             for (int i = 0; i <= FTextStyles.Count - 1; i++)
@@ -464,6 +471,13 @@ namespace HC.View
         {
             if (aNode.HasAttribute("fmtver"))
                 FFormatVersion = byte.Parse(aNode.GetAttribute("fmtver"));
+            else
+                FFormatVersion = 1;
+
+            if (aNode.HasAttribute("linespacemin"))
+                FLineSpaceMin = byte.Parse(aNode.GetAttribute("linespacemin"));
+            else
+                FLineSpaceMin = 8;
 
             XmlElement vNode = null;
             for (int i = 0; i < aNode.ChildNodes.Count; i++)

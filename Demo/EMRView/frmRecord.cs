@@ -326,7 +326,7 @@ namespace EMRView
             if (FEmrView == null)
             {
                 FEmrView = new HCEmrView();
-                FEmrView.OnSectionItemInsert = DoInsertItem;
+                FEmrView.OnSectionInsertItem = DoInsertItem;
                 FEmrView.MouseDown += DoEmrViewMouseDown;
                 FEmrView.MouseUp += DoEmrViewMouseUp;
                 FEmrView.OnSectionDrawItemMouseMove += DoSectionDrawItemMouseMove;

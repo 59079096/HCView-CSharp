@@ -166,7 +166,7 @@ namespace HC.View
 
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
 
-            if (!this.AutoSize)
+            if (!this.AutoSize && !aPaintInfo.Print)
                 aCanvas.TextRect(aDrawRect, aDrawRect.Left + FPaddingLeft - FLeftOffset, aDrawRect.Top + FPaddingTop, FText);
             else
                 aCanvas.TextOut(aDrawRect.Left + FPaddingLeft, aDrawRect.Top + FPaddingTop, FText);
@@ -176,7 +176,7 @@ namespace HC.View
 
             if (FBorderSides.Value > 0)
             {
-                if (FMouseIn || Active)
+                if (!aPaintInfo.Print && (FMouseIn || Active))
                     aCanvas.Pen.Color = Color.Blue;
                 else  // 鼠标不在其中或打印
                     aCanvas.Pen.Color = Color.Black;
