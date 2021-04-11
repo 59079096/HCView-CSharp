@@ -376,7 +376,7 @@ namespace HC.View
             }
 
             bool vResult = false;
-            if ((e.Button == MouseButtons.Left) && (FActiveOjb != HCShapeLineObj.sloNone))
+            if ((e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None) && (FActiveOjb != HCShapeLineObj.sloNone))
             {
                 vResult = true;
 
@@ -968,7 +968,7 @@ namespace HC.View
                 return true;
             }
 
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.None)
             {
                 if (FActivePointIndex >= 0)
                 {

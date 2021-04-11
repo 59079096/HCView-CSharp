@@ -1123,7 +1123,7 @@ namespace HC.View
             HCTableCell vCell = null;
             POINT vCellPt = new POINT();
 
-            FMouseLBDowning = (e.Button == MouseButtons.Left);
+            FMouseLBDowning = (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None);
             FOutSelectInto = false;
             FSelecting = false;  // 准备划选
             FDraging = false;  // 准备拖拽
@@ -1189,7 +1189,12 @@ namespace HC.View
                         OwnerData.Style.UpdateInfoReCaret();
                     }
 
-                    DisSelect();  // 清除原选中
+                    if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // shift键重新确定选中范围
+                    {
+
+                    }
+                    else
+                        DisSelect();  // 清除原选中
 
                     if ((FMouseDownRow != vMouseDownRow) || (FMouseDownCol != vMouseDownCol))
                     {
@@ -1398,7 +1403,7 @@ namespace HC.View
             
             if (vResizeInfo.TableSite == TableSite.tsCell)
             {
-                if (FMouseLBDowning || (e.Button == MouseButtons.Left))
+                if (FMouseLBDowning || (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None))
                 {
                     if (FDraging || OwnerData.Style.UpdateInfo.DragingSelected)
                     {

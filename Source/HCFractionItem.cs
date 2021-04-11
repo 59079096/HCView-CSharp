@@ -140,7 +140,7 @@ namespace HC.View
         {
             bool vResult = base.MouseDown(e);
           
-            FMouseLBDowning = (e.Button == MouseButtons.Left);
+            FMouseLBDowning = (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.None);
             FOutSelectInto = false;
             
             if (FMouseMoveArea != FActiveArea)
@@ -182,7 +182,7 @@ namespace HC.View
 
         public override bool MouseMove(MouseEventArgs e)
         {
-            if ((!FMouseLBDowning) && (e.Button == MouseButtons.Left))
+            if ((!FMouseLBDowning) && (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None))
                 FOutSelectInto = true;
             
             if (!FOutSelectInto)

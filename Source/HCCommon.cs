@@ -134,10 +134,10 @@ namespace HC.View
             // 4.5 ResizeItem存CanResize属性
             // 4.6 节存储页码格式
 
-            HC_FileVersion = "5.0";
+            HC_FileVersion = "5.1";
 
         public const ushort
-            HC_FileVersionInt = 50;
+            HC_FileVersionInt = 51;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -1068,7 +1068,8 @@ namespace HC.View
         hosRedoing,
         hosInsertBreakItem,
         hosBatchInsert,  // 调用InsertItem批量插入多个Item时(如数据组批量插入2个)防止别的操作引起位置变化导致后面插入位置不正确
-        hosDestroying  // 编辑器在销毁中
+        hosDestroying,  // 编辑器在销毁中
+        hosFormatBrushing  // 格式刷
     }
 
     public enum CharType : byte 

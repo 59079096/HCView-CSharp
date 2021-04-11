@@ -647,8 +647,16 @@ namespace HC.View
         public override void ParseXml(System.Xml.XmlElement aNode)
         {
             base.ParseXml(aNode);
-            FReadOnly = bool.Parse(aNode.Attributes["readonly"].Value);
-            FPrintOnlyText = bool.Parse(aNode.Attributes["printonlytext"].Value);
+            if (aNode.HasAttribute("readonly"))
+                FReadOnly = aNode.Attributes["readonly"].Value == "1";
+            else
+                FReadOnly = false;
+
+            if (aNode.HasAttribute("printonlytext"))
+                FPrintOnlyText = aNode.Attributes["printonlytext"].Value == "1";
+            else
+                FPrintOnlyText = true;
+
             HC.SetBorderSideByPro(aNode.Attributes["border"].Value, FBorderSides);
             FBorderWidth = byte.Parse(aNode.Attributes["borderwidth"].Value);
             FText = aNode.InnerText;

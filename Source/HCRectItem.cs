@@ -888,6 +888,7 @@ namespace HC.View
     public class HCControlItem : HCTextRectItem
     {
         private bool FAutoSize;
+        private bool FEnabled;
         private EventHandler FOnClick;
         protected bool FMouseIn;
         protected byte FPaddingLeft, FPaddingTop, FPaddingRight, FPaddingBottom;
@@ -923,6 +924,7 @@ namespace HC.View
         {
             FMouseIn = false;
             FAutoSize = true;
+            FEnabled = true;
             FPaddingLeft = 5;
             FPaddingRight = 5;
             FPaddingTop = 5;
@@ -940,28 +942,48 @@ namespace HC.View
         public override void SaveToStreamRange(Stream aStream, int aStart, int  aEnd)
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
-            byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
+            byte vByte = 0;
+            if (FAutoSize)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FEnabled)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FAutoSize = BitConverter.ToBoolean(vBuffer, 0);
+            if (aFileVersion < 51)
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FAutoSize);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FAutoSize = BitConverter.ToBoolean(vBuffer, 0);
+            }
+            else
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FAutoSize = HC.IsOdd(vByte >> 7);
+                FEnabled = HC.IsOdd(vByte >> 6);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
         {
             base.ToXml(aNode);
             aNode.SetAttribute("autosize", FAutoSize.ToString());
+            aNode.SetAttribute("enabled", FEnabled.ToString());
         }
 
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
             FAutoSize = bool.Parse(aNode.Attributes["autosize"].Value);
+            if (aNode.HasAttribute("enabled"))
+                FEnabled = bool.Parse(aNode.Attributes["enabled"].Value);
+            else
+                FEnabled = true;
         }
 
         public virtual RECT ClientRect()
@@ -973,6 +995,12 @@ namespace HC.View
         {
             get { return FAutoSize; }
             set { FAutoSize = value; }
+        }
+
+        public bool Enabled
+        {
+            get { return FEnabled; }
+            set { FEnabled = value; }
         }
 
         public EventHandler OnClick

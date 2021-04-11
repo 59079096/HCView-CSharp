@@ -73,7 +73,7 @@ namespace HC.View
             else
             {
                 bool vResult = base.MouseMove(e);
-                if ((!this.Resizing) && (e.Button == MouseButtons.Left))
+                if ((!this.Resizing) && (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None))
                 {
                     FLeft += e.X - FMousePt.X;
                     FTop += e.Y - FMousePt.Y;

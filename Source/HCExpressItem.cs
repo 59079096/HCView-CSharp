@@ -133,7 +133,7 @@ namespace HC.View
         public override bool MouseDown(MouseEventArgs e)
         {
             bool vResult = base.MouseDown(e);
-            FMouseLBDowning = (e.Button == MouseButtons.Left);
+            FMouseLBDowning = (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.None);
             FOutSelectInto = false;
             
             if (FMouseMoveArea != FActiveArea)

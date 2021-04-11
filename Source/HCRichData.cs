@@ -2480,7 +2480,7 @@ namespace HC.View
             FMouseDownReCaret = false;
             //FSelectSeekOffset = -1;
 
-            FMouseLBDowning = (e.Button == MouseButtons.Left);
+            FMouseLBDowning = (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None);
 
             FMouseDownX = e.X;
             FMouseDownY = e.Y;
@@ -2493,7 +2493,13 @@ namespace HC.View
 
             if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // shift键重新确定选中范围
             {
-                if (SelectByMouseDownShift(ref vMouseDownItemNo, ref  vMouseDownItemOffset))
+                FMouseDownItemNo = vMouseDownItemNo;
+                FMouseDownItemOffset = vMouseDownItemOffset;
+
+                if ((!vRestrain) && (Items[FMouseDownItemNo].StyleNo < HCStyle.Null) && (vMouseDownItemOffset == HC.OffsetInner))  // RectItem
+                    DoItemMouseDown(FMouseDownItemNo, FMouseDownItemOffset, e);
+                else
+                if (SelectByMouseDownShift(ref vMouseDownItemNo, ref vMouseDownItemOffset))
                 {
                     MatchItemSelectState();  // 设置选中范围内的Item选中状态
                     Style.UpdateInfoRePaint();
@@ -2503,12 +2509,9 @@ namespace HC.View
                     FMouseDownItemOffset = vMouseDownItemOffset;
                     FSelectSeekNo = vMouseDownItemNo;
                     FSelectSeekOffset = vMouseDownItemOffset;
-
-                    if ((!vRestrain) && (Items[FMouseDownItemNo].StyleNo < HCStyle.Null))  // RectItem
-                        DoItemMouseDown(FMouseDownItemNo, FMouseDownItemOffset, e);
-
-                    return;
                 }
+
+                return;
             }
 
             bool vMouseDownInSelect = CoordInSelect(e.X, e.Y, vMouseDownItemNo, vMouseDownItemOffset, vRestrain);

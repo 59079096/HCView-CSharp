@@ -178,7 +178,7 @@ namespace HC.View
         {
             bool vResult = false;
 
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.None)
             {
                 if (this.ReadOnly)
                     return vResult;
