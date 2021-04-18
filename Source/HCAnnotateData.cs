@@ -673,14 +673,14 @@ namespace HC.View
             if (Style.UpdateInfo.DragingSelected)
             {
                 vDataAnnotate = GetDrawItemFirstDataAnnotateAt(vCaretDrawItemNo,
-                    GetDrawItemOffsetWidth(vCaretDrawItemNo,
+                    this.DrawItems[vCaretDrawItemNo].Rect.Left + GetDrawItemOffsetWidth(vCaretDrawItemNo,
                       this.MouseMoveItemOffset - DrawItems[vCaretDrawItemNo].CharOffs + 1),
                     DrawItems[vCaretDrawItemNo].Rect.Top + 1);
             }
             else
             {
                 vDataAnnotate = GetDrawItemFirstDataAnnotateAt(vCaretDrawItemNo,
-                    GetDrawItemOffsetWidth(vCaretDrawItemNo,
+                    this.DrawItems[vCaretDrawItemNo].Rect.Left + GetDrawItemOffsetWidth(vCaretDrawItemNo,
                       SelectInfo.StartItemOffset - DrawItems[vCaretDrawItemNo].CharOffs + 1),
                     DrawItems[vCaretDrawItemNo].Rect.Top + 1);
             }

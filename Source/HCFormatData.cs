@@ -897,6 +897,7 @@ namespace HC.View
 
         protected virtual void ReSetSelectAndCaret(int aItemNo, int aOffset, bool aNextWhenMid = false)
         {
+            this.DisSelect();
             SelectInfo.StartItemNo = aItemNo;
             SelectInfo.StartItemOffset = aOffset;
 
