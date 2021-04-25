@@ -914,7 +914,7 @@ namespace HC.View
 
         public override bool MouseUp(MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left && HC.PtInRect(this.ClientRect(), e.X, e.Y))
+            if (e.Button == MouseButtons.Left && FEnabled && HC.PtInRect(this.ClientRect(), e.X, e.Y))
                 this.DoClick();
 
             return base.MouseUp(e);
@@ -937,6 +937,7 @@ namespace HC.View
         {
             base.Assign(source);
             FAutoSize = (source as HCControlItem).AutoSize;
+            FEnabled = (source as HCControlItem).Enabled;
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int  aEnd)

@@ -63,7 +63,7 @@ namespace HC.View
 
         public override bool MouseUp(MouseEventArgs e)
         {
-            if (OwnerData.CanEdit() && !OwnerData.Style.UpdateInfo.Selecting)
+            if (this.Enabled && OwnerData.CanEdit() && !OwnerData.Style.UpdateInfo.Selecting)
             {
                 if (FItemHit)
                 {

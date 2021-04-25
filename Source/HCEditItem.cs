@@ -345,7 +345,7 @@ namespace HC.View
 
         public override void KeyDown(KeyEventArgs e)
         {
-            if (!FReadOnly)
+            if (this.Enabled && !FReadOnly)
             {
                 switch (e.KeyValue)
                 {
@@ -417,7 +417,7 @@ namespace HC.View
 
         public override void KeyPress(ref Char key)
         {
-            if (!FReadOnly)
+            if (this.Enabled && !FReadOnly)
             {
                 if (SelectTextExists())
                     DeleteSelectText();

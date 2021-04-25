@@ -140,7 +140,7 @@ namespace HC.View
 
                 Height = vTop + vSize.cy + FPaddingBottom;
 
-                if (FColumnAlign)
+                if (FColumnAlign && FItems.Count > 0)
                 {
                     for (int i = 0; i < vColumnAct - 1; i++)
                     {
@@ -346,6 +346,9 @@ namespace HC.View
             }
 
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
+            if (!this.Enabled && !aPaintInfo.Print)
+                aCanvas.Font.Color = System.Drawing.Color.Gray;
+
             if (!AutoSize)
             {
                 RECT vClipBoxRect = new RECT();
@@ -388,7 +391,7 @@ namespace HC.View
         public override bool MouseDown(MouseEventArgs e)
         {
             bool vResult = base.MouseDown(e);
-            if (OwnerData.CanEdit() && (e.Button == MouseButtons.Left))
+            if (this.Enabled && OwnerData.CanEdit() && (e.Button == MouseButtons.Left))
             {
                 int vIndex = GetItemAt(e.X, e.Y);
                 if (vIndex >= 0)

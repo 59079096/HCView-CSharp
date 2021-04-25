@@ -2447,12 +2447,14 @@ namespace HC.View
                 if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                     InsertText(Clipboard.GetText());
                 else
-                if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_UNICODETEXT))
+                if (vIData.GetDataPresent(DataFormats.UnicodeText) && DoPasteRequest(User.CF_UNICODETEXT))
                     InsertText(Clipboard.GetText());
                 else
                 if (vIData.GetDataPresent(DataFormats.Bitmap) && DoPasteRequest(User.CF_BITMAP))
                 {
                     Image vImage = (Image)vIData.GetData(typeof(Bitmap));
+                    if (vImage == null)
+                        return;
 
                     HCRichData vTopData = this.ActiveSectionTopLevelData() as HCRichData;
                     HCImageItem vImageItem = vTopData.CreateItemByStyle(HCStyle.Image) as HCImageItem;

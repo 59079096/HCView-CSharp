@@ -294,19 +294,19 @@ namespace HC.View
 
         public override void KeyDown(KeyEventArgs e)
         {
-            if (!FStatic)
+            if (!FStatic && this.Enabled)
                 base.KeyDown(e);
         }
 
         public override void KeyPress(ref char key)
         {
-            if (!FStatic)
+            if (!FStatic && this.Enabled)
                 base.KeyPress(ref key);
         }
 
         public override bool MouseDown(MouseEventArgs e)
         {
-            if (!this.ReadOnly && OwnerData.CanEdit()
+            if (this.Enabled && !this.ReadOnly && OwnerData.CanEdit()
                 && (e.Button == MouseButtons.Left) && HC.PtInRect(FButtonRect, e.X, e.Y))
             {
                 DoPopup();

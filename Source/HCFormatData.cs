@@ -786,7 +786,7 @@ namespace HC.View
                 vRect.Left = aPos.X;
                 vRect.Top = aPos.Y;
                 vRect.Right = vRect.Left;
-                vRect.Bottom = vRect.Top + 5;
+                vRect.Bottom = vRect.Top + FItemFormatHeight;
                 NewDrawItem(aItemNo, aOffset, vItem.Length, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
             }
             else
@@ -1178,6 +1178,7 @@ namespace HC.View
         {
             if (itemNo >= 0)
             {
+                this.DisSelect();
                 ReSetSelectAndCaret(itemNo, offset);
                 Style.UpdateInfoReCaret(true);
                 if (FOnItemSetCaretRequest != null)

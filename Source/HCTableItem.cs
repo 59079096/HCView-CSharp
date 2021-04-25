@@ -3583,6 +3583,9 @@ namespace HC.View
             CalcMergeRowHeightFrom(0);
             this.Height = GetFormatHeight();
             this.Width = GetFormatWidth();
+
+            if (FSelectCellRang.SelectExists())
+                MatchCellSelectState();
         }
 
         /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>
@@ -4811,18 +4814,16 @@ namespace HC.View
         /// <returns></returns>
         public bool CellsCanMerge(int aStartRow, int aStartCol, int aEndRow, int aEndCol)
         {
-            int vEndRow = -1, vEndCol = -1, vDestRow = -1, vDestCol = -1, vSrcRow = -1, vSrcCol = -1;
-            GetSourceCell(aEndRow, aEndCol, ref vEndRow, ref vEndCol);
-
-            for (int vR = aStartRow; vR <= vEndRow; vR++)
+            int vDestRow = -1, vDestCol = -1, vSrcRow = -1, vSrcCol = -1;
+            for (int vR = aStartRow; vR <= aEndRow; vR++)
             {
-                for (int vC = aStartCol; vC <= vEndCol; vC++)
+                for (int vC = aStartCol; vC <= aEndCol; vC++)
                 {
                     if (FRows[vR][vC].CellData == null)
                     {
                         GetDestCell(vR, vC, ref vDestRow, ref vDestCol);
                         GetSourceCell(vDestRow, vDestCol, ref vSrcRow, ref vSrcCol);
-                        if (vDestRow < aStartRow || vSrcRow > vEndRow || vDestCol < aStartCol || vSrcCol > vEndCol)
+                        if (vDestRow < aStartRow || vSrcRow > aEndRow || vDestCol < aStartCol || vSrcCol > aEndCol)
                             return false;
                     }
                 }
