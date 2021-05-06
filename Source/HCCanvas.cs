@@ -853,7 +853,7 @@ namespace HC.View
                 try
                 {
                     IntPtr vMemDC = (IntPtr)GDI.CreateCompatibleDC(vImageHDC);
-                    IntPtr vHbitmap = bitmap.GetHbitmap();// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
+                    IntPtr vHbitmap = bitmap.GetHbitmap(Color.White);// (IntPtr)GDI.CreateCompatibleBitmap(vImageHDC, FImage.Width, FImage.Height);
                     GDI.SelectObject(vMemDC, vHbitmap);
                     //GDI.BitBlt(aCanvas.Handle, aDrawRect.Left, aDrawRect.Top, aDrawRect.Width, aDrawRect.Height, vMemDC, 0, 0, GDI.SRCCOPY);
                     GDI.StretchBlt(FHandle, rect.Left, rect.Top, rect.Width, rect.Height, vMemDC, 0, 0, bitmap.Width, bitmap.Height, GDI.SRCCOPY);
