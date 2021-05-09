@@ -554,16 +554,19 @@ namespace HC.View
         {
             base.ParseXml(aNode);
             FItems.Clear();
-            string vText = aNode.Attributes["item"].Value;
-            string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+            if (aNode.HasAttribute("item"))
+            {
+                string vText = aNode.Attributes["item"].Value;
+                string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
 
-            for (int i = 0; i < vStrings.Length; i++)
-                FItems.Add(new HCCbbItem(vStrings[i]));
+                for (int i = 0; i < vStrings.Length; i++)
+                    FItems.Add(new HCCbbItem(vStrings[i]));
+            }
 
             if (aNode.HasAttribute("itemvalue"))
             {
-                vText = aNode.Attributes["itemvalue"].Value;
-                vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                string vText = aNode.Attributes["itemvalue"].Value;
+                string[] vStrings = vText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
                 for (int i = 0; i < vStrings.Length; i++)
                     FItemValues.Add(new HCCbbItem(vStrings[i]));
             }

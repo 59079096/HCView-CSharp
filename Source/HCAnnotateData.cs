@@ -243,10 +243,11 @@ namespace HC.View
                 return false;
 
             bool Result = false;
+            HCDataAnnotate vDataAnnotate = null;
             FDrawItemAnnotates.Clear();
             for (int i = 0; i <= FDataAnnotates.Count - 1; i++)
             {
-                HCDataAnnotate vDataAnnotate = FDataAnnotates[i];
+                vDataAnnotate = FDataAnnotates[i];
                 if (vDataAnnotate.EndItemNo < vItemNo)
                     continue;
 

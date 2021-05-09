@@ -437,5 +437,10 @@ namespace HC.View
             get { return FBottomText; }
             set { FBottomText = value; }
         }
+
+        public ExpressArea ActiveArea
+        {
+            get { return FActiveArea; }
+        }
     }
 }

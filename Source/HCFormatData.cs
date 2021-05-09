@@ -540,7 +540,7 @@ namespace HC.View
             vRect.Right = vRect.Left + vRectItem.Width;
             vRect.Bottom = vRect.Top + vRectItem.Height + Style.LineSpaceMin;
             NewDrawItem(aItemNo, aOffset, 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
-
+            vRectItem.IsFormatDirty = false;
             vRemainderWidth = aFmtRight - vRect.Right;  // 放入后的剩余量
         }
 

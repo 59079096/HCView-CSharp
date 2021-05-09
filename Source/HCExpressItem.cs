@@ -25,6 +25,13 @@ namespace HC.View
         private string FLeftText, FRightText;
         private RECT FLeftRect, FRightRect;
 
+        private void SetRightText(string text)
+        {
+            FRightText = text;
+            if (FActiveArea == ExpressArea.ceaRight && FCaretOffset > FRightText.Length)
+                FCaretOffset = (short)FRightText.Length;
+        }
+
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
             HCStyle vStyle = aRichData.Style;
@@ -415,7 +422,7 @@ namespace HC.View
         public string RightText
         {
             get { return FRightText; }
-            set { FRightText = value; }
+            set { SetRightText(value); }
         }
     }
 }
