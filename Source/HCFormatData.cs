@@ -166,21 +166,19 @@ namespace HC.View
             }
             //Assert((vLineBegDItemNo >= 0), '断言失败：行起始DItemNo小于0！');
 
-            vMaxBottom = -1;
+            int vLineMaxDItemNo = -1;
             for (int i = vLineBegDItemNo; i <= aLineEndDItemNo; i++)
             {
                 if (Items[DrawItems[i].ItemNo].Visible)
                 {
-                    vMaxBottom = i;
+                    vLineMaxDItemNo = i;
                     break;
                 }
             }
 
-            bool vResult = vMaxBottom >= 0;
+            bool vResult = vLineMaxDItemNo >= 0;
             if (!vResult)
                 return false;
-
-            vLineBegDItemNo = vMaxBottom;
 
             // 找行DrawItem中最高的
             vMaxBottom = DrawItems[aLineEndDItemNo].Rect.Bottom;  // 先默认行最后一个DItem的Rect底位置最大

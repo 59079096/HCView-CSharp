@@ -2516,14 +2516,19 @@ namespace HC.View
 
             if (vMouseDownInSelect)
             {
-                if (FMouseLBDowning)
+                if (Items[vMouseDownItemNo].StyleNo < HCStyle.Null)
+                    DoItemMouseDown(vMouseDownItemNo, vMouseDownItemOffset, e);
+
+                if (FMouseLBDowning && !SelectedResizing())
                 {
                     FDraging = true;
                     Style.UpdateInfo.DragingSelected = true;
                 }
-
-                if (Items[vMouseDownItemNo].StyleNo < HCStyle.Null)
-                    DoItemMouseDown(vMouseDownItemNo, vMouseDownItemOffset, e);
+                else
+                {
+                    FMouseDownItemNo = vMouseDownItemNo;
+                    FMouseDownItemOffset = vMouseDownItemOffset;
+                }
             }
             else  // 没点在选中区域中
             {

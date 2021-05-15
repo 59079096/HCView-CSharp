@@ -2075,8 +2075,8 @@ namespace HC.View
         /// <returns></returns>
         public bool SelectedResizing()
         {
-            if ((FSelectInfo.StartItemNo >= 0) 
-              && (FSelectInfo.EndItemNo < 0) 
+            if ((FSelectInfo.StartItemNo >= 0)
+              && (FSelectInfo.EndItemNo < 0 || FSelectInfo.StartItemNo == FSelectInfo.EndItemNo)
               && (FItems[FSelectInfo.StartItemNo] is HCResizeRectItem))
                 return (FItems[FSelectInfo.StartItemNo] as HCResizeRectItem).Resizing;
             else

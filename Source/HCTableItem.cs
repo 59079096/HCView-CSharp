@@ -2577,7 +2577,7 @@ namespace HC.View
             FFixColor = HC.clBtnFace;
             FBorderVisible = true;
             FResizeKeepWidth = false;
-            this.ParaFirst = true;
+
             StyleNo = HCStyle.Table;
             ParaNo = OwnerData.CurParaNo;
             CanPageBreak = true;
@@ -3654,10 +3654,10 @@ namespace HC.View
                 return;
             }
 
-            bool vFirstLinePlace = true;
+            bool vFirstLinePlace = true, vFindBreak = false;
             int vPageBreakBottom = aPageDataFmtBottom;
             
-            int vDestRow = -1, vDestCol = -1, vDestCellDataFmtTop = 0, vCellDataVerTop, vLastDFromRowBottom = 0;
+            int vDestRow = -1, vDestCol = -1, vDestCellDataFmtTop = 0, vCellDataVerTop;
             HCTableCellData vCellData = null;
             HCCustomDrawItem vDrawItem = null;
 
@@ -3687,18 +3687,8 @@ namespace HC.View
 
                     if (vDestCellDataFmtTop + vCellDataVerTop + vDrawItem.Rect.Bottom + FBorderWidthPix > aPageDataFmtBottom)
                     {                                               // |如果FBorderWidth比行高大就不合适
+                        vFindBreak = true;
                         if (i == 0)
-                        {
-                            vFirstLinePlace = false;
-                            vPageBreakBottom = vBreakRowFmtTop;
-                            break;
-                        }
-                    }
-
-                    if (i == vCellData.DrawItems.Count - 1)
-                    {
-                        vLastDFromRowBottom = FRows[vDestRow][vDestCol].Height - (FCellVPaddingPix + vCellData.Height + FCellVPaddingPix);
-                        if (vDestCellDataFmtTop + vCellDataVerTop + vDrawItem.Rect.Bottom + FBorderWidthPix + vLastDFromRowBottom > aPageDataFmtBottom)
                         {
                             vFirstLinePlace = false;
                             vPageBreakBottom = vBreakRowFmtTop;
@@ -3710,11 +3700,17 @@ namespace HC.View
                 if (!vFirstLinePlace)
                     break;
             }
-      
+
+            if (vFirstLinePlace && !vFindBreak)
+            {
+                vFirstLinePlace = false;
+                vPageBreakBottom = vBreakRowFmtTop;
+            }
+
             // 根据上面计算出来的截断位置(可能是PageData底部也可能是整体下移行底部)
             // 处理内容的偏移，循环原理和上面找是否有整体下移行一样
             int vCellInc = 0;  // 行各内容为避开分页额外增加的格式化高度
-            int vRowBreakSeat = 0, vH = 0;
+            int vRowBreakSeat = 0, vH = 0, vLastDFromRowBottom = 0;
             ColCross vColCross;
 
             List<ColCross> vColCrosses = new List<ColCross>();
