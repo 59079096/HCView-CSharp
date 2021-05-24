@@ -672,8 +672,15 @@ namespace HC.View
         public override void Clear()
         {
             InitializeField();
-
+            int vStyleNo = this.Items[0].StyleNo;
+            int vParaNo = this.Items[0].ParaNo;
             base.Clear();
+            if (vStyleNo > HCStyle.Null && vStyleNo < this.Style.TextStyles.Count)
+                FCurStyleNo = vStyleNo;
+
+            if (vParaNo < this.Style.ParaStyles.Count)
+                FCurParaNo = vParaNo;
+
             SetEmptyData();
         }
 

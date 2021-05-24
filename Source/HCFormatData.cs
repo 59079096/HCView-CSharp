@@ -776,7 +776,12 @@ namespace HC.View
             else  // 非段第1个
             {
                 vParaFirst = false;
-                vLineFirst = (aPos.X == aFmtLeft) && (DrawItems[aLastDrawItemNo].Width != 0);
+                vLineFirst = (aPos.X == aFmtLeft);
+                if (vLineFirst && DrawItems[aLastDrawItemNo].Width == 0)
+                {
+                    if (this.DrawItems[aLastDrawItemNo].LineFirst)
+                        vLineFirst = false;
+                }
             }
 
             if (!vItem.Visible)  // 不显示的Item
@@ -1181,6 +1186,11 @@ namespace HC.View
                 if (FOnItemSetCaretRequest != null)
                     FOnItemSetCaretRequest(this, itemNo, offset);
             }
+        }
+
+        public virtual void SetFormatChange()
+        {
+            FFormatChange = true;
         }
 
         public virtual int GetDrawItemFormatTop(int drawItemNo)

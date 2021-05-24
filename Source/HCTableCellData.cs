@@ -31,7 +31,7 @@ namespace HC.View
         private bool FCellSelectedAll;
 
         private int FCellHeight;  // 所属单元格高度(因合并或手动拖高，单元格高度会大于等于其内数据高度)
-        private EventHandler FOnFormatDirty;
+        private EventHandler FOnFormatDirty, FOnSetFormatChange;
         private GetRootDataEventHandler FOnGetRootData;
         private GetFormatTopFun FOnGetFormatTop;
 
@@ -77,7 +77,9 @@ namespace HC.View
         protected override void ReFormatData(int AFirstDrawItemNo, int ALastItemNo = -1, int AExtraItemCount = 0, bool AForceClearExtra = false)
         {
             base.ReFormatData(AFirstDrawItemNo, ALastItemNo, AExtraItemCount, AForceClearExtra);
-            this.FormatChange = false;
+            if (this.FormatChange)
+                this.SetFormatChange();
+
             if (this.FormatHeightChange)
                 this.DoFormatDirty();
         }
@@ -86,6 +88,12 @@ namespace HC.View
         {
             if (FOnFormatDirty != null)
                 FOnFormatDirty(this, null);
+        }
+
+        protected void DoSetFormatChange()
+        {
+            if (FOnSetFormatChange != null)
+                FOnSetFormatChange(this, null);
         }
 
         /// <summary> 取消选中 </summary>
@@ -103,6 +111,12 @@ namespace HC.View
             bool Result = base.DeleteSelected();
             FCellSelectedAll = false;
             return Result;
+        }
+
+        public override void SetFormatChange()
+        {
+            this.FormatChange = false;
+            this.DoSetFormatChange();
         }
 
         protected void SetActive(bool value)
@@ -282,6 +296,12 @@ namespace HC.View
         {
             get { return FOnFormatDirty; }
             set { FOnFormatDirty = value; }
+        }
+
+        public EventHandler OnSetFormatChange
+        {
+            get { return FOnSetFormatChange; }
+            set { FOnSetFormatChange = value; }
         }
     }
 }

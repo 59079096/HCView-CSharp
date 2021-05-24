@@ -199,6 +199,7 @@ namespace HC.View
             aCellData.OnGetRootData = DoCellDataGetRootData;
             aCellData.OnGetFormatTop = DoCellDataGetFormatTop;
             aCellData.OnFormatDirty = DoCellDataFormatDirty;
+            aCellData.OnSetFormatChange = DoCellDataSetFormatChange;
         }
 
         private HCCustomData DoCellDataGetRootData()
@@ -209,6 +210,11 @@ namespace HC.View
         private void DoCellDataFormatDirty(object sender, EventArgs e)
         {
             this.FormatDirty();
+        }
+
+        private void DoCellDataSetFormatChange(object sender, EventArgs e)
+        {
+            (this.OwnerData as HCRichData).SetFormatChange();
         }
 
         private void DoCheckCellScript(int row, int col)
@@ -3563,6 +3569,14 @@ namespace HC.View
                 }
                 else
                     ApplyCellAlign_(GetEditCell(), aAlign);
+            }
+            else
+            {
+                for (int vR = 0; vR < RowCount; vR++)
+                {
+                    for (int vC = 0; vC < FColWidths.Count; vC++)
+                        ApplyCellAlign_(FRows[vR][vC], aAlign);
+                }
             }
         }
 
