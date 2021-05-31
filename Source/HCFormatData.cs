@@ -1188,7 +1188,7 @@ namespace HC.View
             }
         }
 
-        public virtual void SetFormatChange()
+        public virtual void SetFormatHeightChange()
         {
             FFormatChange = true;
         }

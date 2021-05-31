@@ -31,7 +31,7 @@ namespace HC.View
         private bool FCellSelectedAll;
 
         private int FCellHeight;  // 所属单元格高度(因合并或手动拖高，单元格高度会大于等于其内数据高度)
-        private EventHandler FOnFormatDirty, FOnSetFormatChange;
+        private EventHandler FOnFormatDirty, FOnSetFormatHeightChange;
         private GetRootDataEventHandler FOnGetRootData;
         private GetFormatTopFun FOnGetFormatTop;
 
@@ -77,11 +77,12 @@ namespace HC.View
         protected override void ReFormatData(int AFirstDrawItemNo, int ALastItemNo = -1, int AExtraItemCount = 0, bool AForceClearExtra = false)
         {
             base.ReFormatData(AFirstDrawItemNo, ALastItemNo, AExtraItemCount, AForceClearExtra);
-            if (this.FormatChange)
-                this.SetFormatChange();
-
+            this.FormatChange = false;
             if (this.FormatHeightChange)
+            {
+                this.SetFormatHeightChange();
                 this.DoFormatDirty();
+            }
         }
 
         protected void DoFormatDirty()
@@ -90,10 +91,10 @@ namespace HC.View
                 FOnFormatDirty(this, null);
         }
 
-        protected void DoSetFormatChange()
+        protected void DoSetFormatHeightChange()
         {
-            if (FOnSetFormatChange != null)
-                FOnSetFormatChange(this, null);
+            if (FOnSetFormatHeightChange != null)
+                FOnSetFormatHeightChange(this, null);
         }
 
         /// <summary> 取消选中 </summary>
@@ -113,10 +114,10 @@ namespace HC.View
             return Result;
         }
 
-        public override void SetFormatChange()
+        public override void SetFormatHeightChange()
         {
             this.FormatChange = false;
-            this.DoSetFormatChange();
+            this.DoSetFormatHeightChange();
         }
 
         protected void SetActive(bool value)
@@ -298,10 +299,10 @@ namespace HC.View
             set { FOnFormatDirty = value; }
         }
 
-        public EventHandler OnSetFormatChange
+        public EventHandler OnSetFormatHeightChange
         {
-            get { return FOnSetFormatChange; }
-            set { FOnSetFormatChange = value; }
+            get { return FOnSetFormatHeightChange; }
+            set { FOnSetFormatHeightChange = value; }
         }
     }
 }

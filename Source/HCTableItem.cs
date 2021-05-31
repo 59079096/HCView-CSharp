@@ -199,7 +199,7 @@ namespace HC.View
             aCellData.OnGetRootData = DoCellDataGetRootData;
             aCellData.OnGetFormatTop = DoCellDataGetFormatTop;
             aCellData.OnFormatDirty = DoCellDataFormatDirty;
-            aCellData.OnSetFormatChange = DoCellDataSetFormatChange;
+            aCellData.OnSetFormatHeightChange = DoCellDataSetFormatHeightChange;
         }
 
         private HCCustomData DoCellDataGetRootData()
@@ -212,9 +212,9 @@ namespace HC.View
             this.FormatDirty();
         }
 
-        private void DoCellDataSetFormatChange(object sender, EventArgs e)
+        private void DoCellDataSetFormatHeightChange(object sender, EventArgs e)
         {
-            (this.OwnerData as HCRichData).SetFormatChange();
+            (this.OwnerData as HCRichData).SetFormatHeightChange();
         }
 
         private void DoCheckCellScript(int row, int col)
