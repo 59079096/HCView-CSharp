@@ -209,7 +209,7 @@ namespace HC.View
         HCDrawItems FDrawItems;
         SelectInfo FSelectInfo;
         bool FLoading;
-        int FCaretDrawItemNo;  // 当前Item光标处的DrawItem限定其只在相关的光标处理中使用(解决同一Item分行后Offset为行尾时不能区分是上行尾还是下行始)
+        int FCaretDrawItemNo;
 
         DataItemEventHandler FOnInsertItem, FOnRemoveItem;
         DataItemNoFunEventHandler FOnSaveItem;
