@@ -1824,7 +1824,12 @@ namespace HC.View
                     else  // 无样式表
                     {
                         if (vItem.StyleNo > HCStyle.Null)
-                            vItem.StyleNo = CurStyleNo;
+                        {
+                            if (CurStyleNo < HCStyle.Null)
+                                vItem.StyleNo = Style.GetStyleNo(Style.DefaultTextStyle, true);
+                            else
+                                vItem.StyleNo = CurStyleNo;
+                        }
 
                         vItem.ParaNo = vCaretParaNo;
                     }
