@@ -1561,7 +1561,7 @@ namespace HC.View
                                     
                                     FColWidths[vUpCol] = FColWidths[vUpCol] + vCellPt.X;  // 当前列变化
                                     if (FResizeKeepWidth && (vUpCol < FColWidths.Count - 1))
-                                        FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] + vCellPt.X;
+                                        FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] - vCellPt.X;
                                 }
                             }
                         }

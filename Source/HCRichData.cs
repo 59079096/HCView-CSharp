@@ -5368,7 +5368,7 @@ namespace HC.View
             else
                 vAddStartNo = 0;
 
-            for (int i = vAddStartNo; i <= aSrcData.Items.Count - 1; i++)
+            for (int i = vAddStartNo; i < aSrcData.Items.Count; i++)
             {
                 if (!aSrcData.IsEmptyLine(i))
                 {
