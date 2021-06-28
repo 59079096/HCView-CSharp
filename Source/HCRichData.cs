@@ -4031,17 +4031,20 @@ namespace HC.View
                     case User.VK_BACK:  // 在RectItem前
                         if (vCurItem.ParaFirst && DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actBackDeleteText))
                         {
+                            if (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0)  // 在段最前面删除
+                                ApplyParaFirstIndent(Math.Max(0, Style.ParaStyles[vCurItem.ParaNo].FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth)));
+                            else
                             if (SelectInfo.StartItemNo > 0)  // 第一个前回删不处理，停止格式化
                             {
-                                if (vCurItem.ParaFirst && (SelectInfo.StartItemNo > 0))
-                                {
+                                //if (SelectInfo.StartItemNo > 0)
+                                //{
                                     vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1,
                                         GetItemOffsetAfter(SelectInfo.StartItemNo - 1));
 
                                     vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
-                                }
-                                else
-                                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                //}
+                                //else
+                                //    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                                         
                                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
@@ -4754,7 +4757,7 @@ namespace HC.View
                 if (vCurItem.ParaFirst && (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0))  // 在段最前面删除
                 {
                     HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
-                    ApplyParaFirstIndent(vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                    ApplyParaFirstIndent(Math.Max(0, vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth)));
                 }
                 else
                 if (vCurItem.PageBreak)
