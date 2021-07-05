@@ -5831,12 +5831,17 @@ namespace HC.View
 
                     string[] vStrings = aText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
                     string vS;
-                    for (int i = 0; i < vStrings.Length; i++)
+                    for (int i = 0; i < vStrings.Length - 1; i++)
                     {
                         vS = vStrings[i];
-                        DoInsertTextEx(vS, vNewPara, ref vAddCount);
+                        if (vNewPara || vS != "")
+                            DoInsertTextEx(vS, vNewPara, ref vAddCount);
+
                         vNewPara = true;
                     }
+
+                    vS = vStrings[vStrings.Length - 1];
+                    DoInsertTextEx(vS, vNewPara, ref vAddCount);
 
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vAddCount, vAddCount);
                     Result = true;
