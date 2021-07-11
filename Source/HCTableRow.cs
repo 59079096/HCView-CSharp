@@ -17,7 +17,7 @@ using System.Xml;
 
 namespace HC.View
 {
-    public delegate Byte OnGetVPaddingPixEvent();
+    public delegate int OnGetTableIntEvent();
 
     public class HCTableRow : HCList<HCTableCell>
     {
@@ -26,10 +26,15 @@ namespace HC.View
 
         private bool FAutoHeight;  // True根据内容自动匹配合适的高度 False用户拖动后的自定义高度
 
-        private OnGetVPaddingPixEvent FOnGetVPaddingPix;
+        private OnGetTableIntEvent FOnGetVPaddingPix, FOnGetDefaultRowHeight;
         private int CalcMaxCellDataHeight()
         {
-            int vResult = HC.MinRowHeight;
+            int vResult;
+            if (FOnGetDefaultRowHeight != null)
+                vResult = FOnGetDefaultRowHeight();
+            else
+                vResult = HC.MinRowHeight;
+
             for (int i = 0; i <= this.Count - 1; i++)  // 找行中最高的单元
             {
                 if ((this[i].CellData != null) && (this[i].RowSpan == 0))
@@ -57,7 +62,7 @@ namespace HC.View
             }
         }
 
-        private Byte GetVPadding()
+        private int GetVPadding()
         {
             if (FOnGetVPaddingPix != null)
                 return FOnGetVPaddingPix();
@@ -156,10 +161,16 @@ namespace HC.View
             set { FFmtOffset = value; }
         }
 
-        public OnGetVPaddingPixEvent OnGetVPaddingPix
+        public OnGetTableIntEvent OnGetVPaddingPix
         {
             get { return FOnGetVPaddingPix; }
             set { FOnGetVPaddingPix = value; }
+        }
+
+        public OnGetTableIntEvent OnGetDefaultRowHeight
+        {
+            get { return FOnGetDefaultRowHeight; }
+            set { FOnGetDefaultRowHeight = value; }
         }
     }
 }

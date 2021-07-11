@@ -60,7 +60,7 @@ namespace HC.View
 
     public class HCRadioGroup : HCControlItem
     {
-        private bool FMultSelect, FItemHit;
+        private bool FMultSelect, FItemHit, FBoxRight;
         private Byte FColumns, FBatchCount;
         private bool FColumnAlign;
         private HCList<HCRadioButton> FItems;
@@ -199,8 +199,13 @@ namespace HC.View
                 }
                 else
                 {
-                    if (HC.PtInRect(HC.Bounds(FItems[i].Rect.Left, FItems[i].Rect.Top,
-                        RadioButtonWidth, RadioButtonWidth), x, y))
+                    RECT vBoxRect;
+                    if (FBoxRight)
+                        vBoxRect = HC.Bounds(FItems[i].Rect.Right - RadioButtonWidth, FItems[i].Rect.Top, RadioButtonWidth, RadioButtonWidth);
+                    else
+                        vBoxRect = HC.Bounds(FItems[i].Rect.Left, FItems[i].Rect.Top, RadioButtonWidth, RadioButtonWidth);
+
+                    if (HC.PtInRect(vBoxRect, x, y))
                     {
                         Result = i;
                         break;
@@ -265,29 +270,33 @@ namespace HC.View
         protected void DoPaintItems(HCCanvas canvas, RECT drawRect, PaintInfo paintInfo)
         {
             POINT vPoint = new POINT();
-            RECT vItemRect;
+            RECT vBoxRect;
             for (int i = 0; i <= FItems.Count - 1; i++)
             {
                 vPoint.X = FItems[i].Rect.Left;
                 vPoint.Y = FItems[i].Rect.Top;
                 vPoint.Offset(drawRect.Left, drawRect.Top);
-                vItemRect = HC.Bounds(vPoint.X, vPoint.Y, RadioButtonWidth, RadioButtonWidth);
+                if (FBoxRight)
+                    vBoxRect = HC.Bounds(FItems[i].Rect.Right + drawRect.Left - RadioButtonWidth, vPoint.Y, RadioButtonWidth, RadioButtonWidth);
+                else
+                    vBoxRect = HC.Bounds(vPoint.X, vPoint.Y, RadioButtonWidth, RadioButtonWidth);
+
 
                 if (paintInfo.Print)
                 {
                     if (FItems[i].Checked)
                     {
                         if (FRadioStyle == HCRadioStyle.Radio)
-                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsChecked, HCControlStyle.hcyRadio);
+                            HC.HCDrawFrameControl(canvas, vBoxRect, HCControlState.hcsChecked, HCControlStyle.hcyRadio);
                         else
-                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsChecked, HCControlStyle.hcyCheck);
+                            HC.HCDrawFrameControl(canvas, vBoxRect, HCControlState.hcsChecked, HCControlStyle.hcyCheck);
                     }
                     else
                     {
                         if (FRadioStyle == HCRadioStyle.Radio)
-                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsCustom, HCControlStyle.hcyRadio);
+                            HC.HCDrawFrameControl(canvas, vBoxRect, HCControlState.hcsCustom, HCControlStyle.hcyRadio);
                         else
-                            HC.HCDrawFrameControl(canvas, vItemRect, HCControlState.hcsCustom, HCControlStyle.hcyCheck);
+                            HC.HCDrawFrameControl(canvas, vBoxRect, HCControlState.hcsCustom, HCControlStyle.hcyCheck);
                     }
 
                     canvas.Brush.Style = HCBrushStyle.bsClear;
@@ -297,20 +306,23 @@ namespace HC.View
                     if (FItems[i].Checked)
                     {
                         if (FRadioStyle == HCRadioStyle.Radio)
-                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONRADIO);
+                            User.DrawFrameControl(canvas.Handle, ref vBoxRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONRADIO);
                         else
-                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONCHECK);
+                            User.DrawFrameControl(canvas.Handle, ref vBoxRect, Kernel.DFC_BUTTON, Kernel.DFCS_CHECKED | Kernel.DFCS_BUTTONCHECK);
                     }
                     else
                     {
                         if (FRadioStyle == HCRadioStyle.Radio)
-                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONRADIO);
+                            User.DrawFrameControl(canvas.Handle, ref vBoxRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONRADIO);
                         else
-                            User.DrawFrameControl(canvas.Handle, ref vItemRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONCHECK);
+                            User.DrawFrameControl(canvas.Handle, ref vBoxRect, Kernel.DFC_BUTTON, Kernel.DFCS_BUTTONCHECK);
                     }
                 }
 
-                canvas.TextOut(vPoint.X + RadioButtonWidth, vPoint.Y, FItems[i].Text);
+                if (FBoxRight)
+                    canvas.TextOut(vPoint.X, vPoint.Y, FItems[i].Text);
+                else
+                    canvas.TextOut(vPoint.X + RadioButtonWidth, vPoint.Y, FItems[i].Text);
             }
         }
 
@@ -444,6 +456,7 @@ namespace HC.View
             FColumns = 0;
             FColumnAlign = true;
             FItemHit = false;
+            FBoxRight = false;
             FItems = new HCList<HCRadioButton>();
             FItems.OnInsert += new EventHandler<NListEventArgs<HCRadioButton>>(DoItemNotify);
             FItems.OnDelete += OnItemDelete;
@@ -511,6 +524,9 @@ namespace HC.View
             if (FColumnAlign)
                 vByte = (byte)(vByte | (1 << 5));
 
+            if (FBoxRight)
+                vByte = (byte)(vByte | (1 << 4));
+
             aStream.WriteByte(vByte);
 
             string vTexts = "", vTextValues = "";
@@ -553,6 +569,7 @@ namespace HC.View
                     FMultSelect = HC.IsOdd(vByte >> 7);
                     FItemHit = HC.IsOdd(vByte >> 6);
                     FColumnAlign = HC.IsOdd(vByte >> 5);
+                    FBoxRight = HC.IsOdd(vByte >> 4);
                 }
 
                 FItems.Clear();
@@ -710,6 +727,12 @@ namespace HC.View
         {
             get { return FItemHit; }
             set { FItemHit = value; }
+        }
+
+        public bool BoxRight
+        {
+            get { return FBoxRight; }
+            set { FBoxRight = value; }
         }
 
         public byte Columns

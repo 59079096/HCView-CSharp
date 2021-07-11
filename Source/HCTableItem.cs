@@ -272,6 +272,7 @@ namespace HC.View
         private void DoRowAdd(HCTableRow aRow)
         {
             aRow.OnGetVPaddingPix = DoRowGetVPaddingPix;
+            aRow.OnGetDefaultRowHeight = DoRowGetDefaultRowHeight;
             HCTableCellData vCellData = null;
 
             for (int i = 0; i < aRow.ColCount; i++)
@@ -287,9 +288,14 @@ namespace HC.View
             InitializeMouseInfo();
         }
 
-        private Byte DoRowGetVPaddingPix()
+        private int DoRowGetVPaddingPix()
         {
             return FCellVPaddingPix;
+        }
+
+        private int DoRowGetDefaultRowHeight()
+        {
+            return FDefaultRowHeight;
         }
 
         private void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
@@ -692,7 +698,7 @@ namespace HC.View
             {
                 // 不在当前屏幕范围内的不绘制(1)
                 vCellDataDrawTop = vCellDataDrawTop + FRows[vR].FmtOffset + FCellVPaddingPix;
-                if (vCellDataDrawTop > aDataScreenBottom)
+                if (vCellDataDrawTop >= aDataScreenBottom)
                 {
                     if ((vFirstDrawRow < 0) && IsBreakRow(vR))
                         vDrawFixRow = (FFixRow >= 0) && (vR > FFixRow + FFixRowCount - 1);
@@ -702,7 +708,7 @@ namespace HC.View
 
                 vCellDataDrawBottom = vCellDataDrawTop - FCellVPaddingPix + FRows[vR].Height - FCellVPaddingPix;
 
-                if (vCellDataDrawBottom < aDataScreenTop)
+                if (vCellDataDrawBottom <= aDataScreenTop)
                 {
                     vCellDataDrawTop = vCellDataDrawBottom + FCellVPaddingPix + FBorderWidthPix;  // 准备判断下一行是否是可显示第一行
                     continue;
@@ -925,8 +931,11 @@ namespace HC.View
                             
                             vBorderLeft = vCellDrawLeft - FBorderWidthPix;
                             vBorderRight = vCellDrawLeft + FColWidths[vC] + GetColSpanWidth(vDestRow, vDestCol);
-                            
-                            if ((vBorderTop < aDataScreenTop) && (aDataDrawTop >= 0))
+
+                            if (IsBreakRow(vR) && vR == vFirstDrawRow)
+                                vBorderTop = vBorderTop - 1;
+
+                            if (vBorderTop < aDataScreenTop && aDataDrawTop >= 0)
                                 vBorderTop = aDataScreenTop;
 
                             IntPtr vExtPen = HC.CreateExtPen(aCanvas.Pen);
@@ -4597,34 +4606,13 @@ namespace HC.View
                 return;
 
             RECT vRect = HC.Bounds(ALeft, ATop, Width, vH);
-            //if (!APaintInfo.Print)
+            if (!APaintInfo.Print)
             {
                 ACanvas.Brush.Color = HC.clBtnFace;
                 ACanvas.FillRect(vRect);
             }
 
-            int vTop = ATop;
-            for (int vR = FFixRow; vR <= FFixRow + FFixRowCount - 1; vR++)
-            {
-                vH = 0;  // 行中未发生合并的最高单元格
-                for (int vC = 0; vC <= FRows[vR].ColCount - 1; vC++)  // 得到行中未发生合并Data内容最高的单元格高
-                {
-                    if ((FRows[vR][vC].CellData != null)  // 不是被合并的单元格)
-                    && (FRows[vR][vC].RowSpan >= 0))  // 不是行合并的行单元格
-                    vH = Math.Max(vH, FRows[vR][vC].CellData.Height);
-                }
-
-                vH = FCellVPaddingPix + vH + FCellVPaddingPix;  // 增加上下边距
-                vH = Math.Max(vH, FRows[vR].Height) + FBorderWidthPix + FBorderWidthPix;
-
-                vRect = HC.Bounds(ALeft, vTop, Width, vH);
-                if (vRect.Top >= AScreenBottom)
-                    break;
-
-                PaintRow(vR, vRect.Left, vRect.Top, vRect.Bottom, ACanvas, APaintInfo);
-                
-                vTop = vTop + FBorderWidthPix + FRows[vR].Height;
-            }
+            DoPaint(OwnerData.Style, vRect, ATop, ATop + vH, ATop, ATop + vH, ACanvas, APaintInfo);
         }
 
         public void PaintFixCols(int aTableDrawTop, int aLeft, int aTop, int aScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)

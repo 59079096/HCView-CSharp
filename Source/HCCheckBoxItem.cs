@@ -24,11 +24,14 @@ namespace HC.View
     public class HCCheckBoxItem : HCControlItem
     {
         private string FText;
-        private bool FChecked, FItemHit;
+        private bool FChecked, FItemHit, FBoxRight;
 
         private RECT GetBoxRect()
         {
-            return HC.Bounds(FPaddingLeft, (Height - CheckBoxSize) / 2, CheckBoxSize, CheckBoxSize);
+            if (FBoxRight)
+                return HC.Bounds(Width - FPaddingLeft - CheckBoxSize, (Height - CheckBoxSize) / 2, CheckBoxSize, CheckBoxSize);
+            else
+                return HC.Bounds(FPaddingLeft, (Height - CheckBoxSize) / 2, CheckBoxSize, CheckBoxSize);
         }
 
         private void SetChecked(bool value)
@@ -138,7 +141,10 @@ namespace HC.View
 
             aCanvas.Brush.Style = HCBrushStyle.bsClear;
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
-            aCanvas.TextOut(aDrawRect.Left + FPaddingLeft + CheckBoxSize + FPaddingLeft, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
+            if (FBoxRight)
+                aCanvas.TextOut(aDrawRect.Left, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
+            else
+                aCanvas.TextOut(aDrawRect.Left + FPaddingLeft + CheckBoxSize + FPaddingLeft, aDrawRect.Top + (Height - aCanvas.TextHeight("H")) / 2, FText);
         }
 
         public byte CheckBoxSize = 14;
@@ -150,6 +156,7 @@ namespace HC.View
             FChecked = aChecked;
             FText = aText;
             FItemHit = false;
+            FBoxRight = false;
             FPaddingLeft = 2;
         }
 
@@ -164,8 +171,14 @@ namespace HC.View
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
 
-            byte[] vBuffer = BitConverter.GetBytes(FChecked);
-            aStream.Write(vBuffer, 0, vBuffer.Length);  // 存勾选状态
+            byte vByte = 0;
+            if (FChecked)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FBoxRight)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
             HC.HCSaveTextToStream(aStream, FText);  // 存Text
         }
 
@@ -173,9 +186,18 @@ namespace HC.View
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
-            byte[] vBuffer = BitConverter.GetBytes(FChecked);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FChecked = BitConverter.ToBoolean(vBuffer, 0);
+            if (aFileVersion > 51)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FChecked = HC.IsOdd(vByte >> 7);
+                FBoxRight = HC.IsOdd(vByte >> 6);
+            }
+            else
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FChecked);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FChecked = BitConverter.ToBoolean(vBuffer, 0);
+            }
             HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
         }
 
@@ -197,6 +219,12 @@ namespace HC.View
         {
             get { return FChecked; }
             set { SetChecked(value); }
+        }
+
+        public bool BoxRight
+        {
+            get { return FBoxRight; }
+            set { FBoxRight = value; }
         }
     }
 }
