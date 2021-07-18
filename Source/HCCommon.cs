@@ -991,6 +991,11 @@ namespace HC.View
             }
         }
 
+        public static string ReplaceUnPreChar(string text)
+        {
+            return text.Replace("\u2002", " ").Replace("\u0009", "");
+        }
+
         public static void HCDrawWave(HCCanvas canvas, RECT rect)
         {
             bool vDT = false;

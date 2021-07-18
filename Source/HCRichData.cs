@@ -5829,7 +5829,7 @@ namespace HC.View
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                    string[] vStrings = aText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                    string[] vStrings = HC.ReplaceUnPreChar(aText).Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
                     string vS;
                     for (int i = 0; i < vStrings.Length - 1; i++)
                     {

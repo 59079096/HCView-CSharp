@@ -549,7 +549,7 @@ namespace HC.View
         }
 
         #region DoPaint子方法CheckRowBorderShouLian 找当前行各列分页时的收敛位置
-        private void CheckRowBorderShouLian(int aRow, int aDataDrawBottom, RECT aDrawRect, ref int vShouLian, ref int vFirstDrawRow)
+        private void CheckRowBorderShouLian(int aRow, int aDataDrawBottom, int dataScreenBottom, RECT aDrawRect, ref int vShouLian, ref int vFirstDrawRow)
         {
             if (vShouLian == 0)
             {
@@ -577,6 +577,7 @@ namespace HC.View
                 int vBreakBottom = 0, vCellDataVerTop;
                 int vDestCellDataDrawTop = 0, vDestRow2 = -1, vDestCol2 = -1, vDrawItemCount = 0, vRowColCount = FRows[aRow].ColCount;
                 HCTableCellData vCellData = null;
+                bool vFindShouLian = false;
                 RECT vRect;
                 for (int vC = 0; vC < vRowColCount; vC++)  // 遍历同行各列，获取截断位置(因为各行在CheckFormatPage已经算好分页位置，所以此处只要一个单元格跨页位置同时适用当前行所有单元格跨页位置
                 {
@@ -610,7 +611,8 @@ namespace HC.View
                                 }
                                 else  // 第一行就在当前页放不下
                                     vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop - FBorderWidthPix);
-                                
+
+                                vFindShouLian = true;
                                 break;
                             }
                             else  // 没有超过当前页
@@ -618,8 +620,11 @@ namespace HC.View
                         }
                     }
                 }
-                
-                vShouLian = Math.Max(vShouLian, vBreakBottom);
+
+                if (!vFindShouLian)
+                    vShouLian = Math.Min(dataScreenBottom, vRowDataDrawTop + FRows[aRow].FmtOffset + FRows[aRow].Height) - FBorderWidthPix;
+                else
+                    vShouLian = Math.Max(vShouLian, vBreakBottom);
             }
         }
 
@@ -851,7 +856,7 @@ namespace HC.View
                                     {
                                         if (vSrcRowBorderTop > aDataDrawBottom)
                                         {
-                                            CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
+                                            CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDataScreenBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
                                             vBorderBottom = vShouLian;  //为什么是2 Min(vBorderBottom, vShouLian);  // ADataDrawBottom
                                         }
                                             
@@ -882,7 +887,7 @@ namespace HC.View
                                         {
                                             if (vSrcRowBorderTop > aDataDrawBottom)
                                             {
-                                                CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
+                                                CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDataScreenBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
                                                 vBorderBottom = vShouLian;  //为什么是2 Min(vBorderBottom, vShouLian);  // ADataDrawBottom
                                             }
                                                 
@@ -896,7 +901,7 @@ namespace HC.View
                             else  // 普通单元格(不是合并目标也不是合并源)
                             if (IsBreakRow(vR))
                             {
-                                CheckRowBorderShouLian(vR, aDataDrawBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);
+                                CheckRowBorderShouLian(vR, aDataDrawBottom, aDataScreenBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);
                                 vBorderBottom = vShouLian;
                             }
                         }
@@ -942,7 +947,7 @@ namespace HC.View
                             IntPtr vOldPen = (IntPtr)GDI.SelectObject(aCanvas.Handle, vExtPen);
                             try
                             {
-                                if ((vBorderTop > 0) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
+                                if ((vBorderTop + FBorderWidthPix > 0) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
                                 {
                                     if (aPaintInfo.Print)
                                     {
@@ -970,7 +975,7 @@ namespace HC.View
                                     }
                                 }
 
-                                if ((vBorderBottom <= aDataScreenBottom) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
+                                if ((vBorderBottom < aDataScreenBottom) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
                                 {
                                     if (aPaintInfo.Print)
                                     {
@@ -3715,8 +3720,9 @@ namespace HC.View
                         {
                             vFirstLinePlace = false;
                             vPageBreakBottom = vBreakRowFmtTop;
-                            break;
                         }
+
+                        break;
                     }
                 }
             
@@ -3727,7 +3733,7 @@ namespace HC.View
             if (vFirstLinePlace && !vFindBreak)
             {
                 vFirstLinePlace = false;
-                vPageBreakBottom = vBreakRowFmtTop;
+                //vPageBreakBottom = vBreakRowFmtTop;
             }
 
             // 根据上面计算出来的截断位置(可能是PageData底部也可能是整体下移行底部)

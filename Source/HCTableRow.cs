@@ -98,7 +98,10 @@ namespace HC.View
                 FHeight = vHeight;
             else
             if (FHeight < vHeight)
+            {
                 FHeight = vHeight;
+                FAutoHeight = true;
+            }
 
             for (int i = 0; i <= this.Count - 1; i++)
                 this[i].Height = FHeight;
