@@ -1045,6 +1045,8 @@ namespace HC.View
                 {
                     aCanvas.Font.Size = 10;
                     aCanvas.Font.Family = "宋体";
+                    aCanvas.Font.Color = Color.Black;
+                    aCanvas.Font.FontStyles.Value = 0;
                 }
                 finally
                 {
