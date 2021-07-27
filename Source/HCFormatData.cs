@@ -166,21 +166,19 @@ namespace HC.View
             }
             //Assert((vLineBegDItemNo >= 0), '断言失败：行起始DItemNo小于0！');
 
-            vMaxBottom = -1;
+            int vLineMaxDItemNo = -1;
             for (int i = vLineBegDItemNo; i <= aLineEndDItemNo; i++)
             {
                 if (Items[DrawItems[i].ItemNo].Visible)
                 {
-                    vMaxBottom = i;
+                    vLineMaxDItemNo = i;
                     break;
                 }
             }
 
-            bool vResult = vMaxBottom >= 0;
+            bool vResult = vLineMaxDItemNo >= 0;
             if (!vResult)
                 return false;
-
-            vLineBegDItemNo = vMaxBottom;
 
             // 找行DrawItem中最高的
             vMaxBottom = DrawItems[aLineEndDItemNo].Rect.Bottom;  // 先默认行最后一个DItem的Rect底位置最大
@@ -540,7 +538,7 @@ namespace HC.View
             vRect.Right = vRect.Left + vRectItem.Width;
             vRect.Bottom = vRect.Top + vRectItem.Height + Style.LineSpaceMin;
             NewDrawItem(aItemNo, aOffset, 1, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
-
+            vRectItem.IsFormatDirty = false;
             vRemainderWidth = aFmtRight - vRect.Right;  // 放入后的剩余量
         }
 
@@ -778,7 +776,12 @@ namespace HC.View
             else  // 非段第1个
             {
                 vParaFirst = false;
-                vLineFirst = (aPos.X == aFmtLeft) && (DrawItems[aLastDrawItemNo].Width != 0);
+                vLineFirst = (aPos.X == aFmtLeft);
+                if (vLineFirst && DrawItems[aLastDrawItemNo].Width == 0)
+                {
+                    if (this.DrawItems[aLastDrawItemNo].LineFirst)
+                        vLineFirst = false;
+                }
             }
 
             if (!vItem.Visible)  // 不显示的Item
@@ -786,7 +789,7 @@ namespace HC.View
                 vRect.Left = aPos.X;
                 vRect.Top = aPos.Y;
                 vRect.Right = vRect.Left;
-                vRect.Bottom = vRect.Top + 5;
+                vRect.Bottom = vRect.Top + FItemFormatHeight;
                 NewDrawItem(aItemNo, aOffset, vItem.Length, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
             }
             else
@@ -1177,11 +1180,17 @@ namespace HC.View
         {
             if (itemNo >= 0)
             {
+                this.DisSelect();
                 ReSetSelectAndCaret(itemNo, offset);
                 Style.UpdateInfoReCaret(true);
                 if (FOnItemSetCaretRequest != null)
                     FOnItemSetCaretRequest(this, itemNo, offset);
             }
+        }
+
+        public virtual void SetFormatHeightChange()
+        {
+            FFormatChange = true;
         }
 
         public virtual int GetDrawItemFormatTop(int drawItemNo)

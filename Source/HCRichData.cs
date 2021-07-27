@@ -198,23 +198,22 @@ namespace HC.View
         }
 
         /// <summary> 为避免表格插入行、列大量重复代码 </summary>
-        private bool RectItemAction(RectItemActionEventHandler aAction)
+        private bool RectItemAction(int itemNo, RectItemActionEventHandler aAction)
         {
             bool Result = false;
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
-            int vCurItemNo = GetActiveItemNo();
-            if (Items[vCurItemNo] is HCCustomRectItem)
+            if (Items[itemNo] is HCCustomRectItem)
             {
-                GetFormatRange(vCurItemNo, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                GetFormatRange(itemNo, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                 Undo_New();
-                if ((Items[vCurItemNo] as HCCustomRectItem).MangerUndo)
-                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                if ((Items[itemNo] as HCCustomRectItem).MangerUndo)
+                    UndoAction_ItemSelf(itemNo, HC.OffsetInner);
                 else
-                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+                    UndoAction_ItemMirror(itemNo, HC.OffsetInner);
 
-                Result = aAction(Items[vCurItemNo] as HCCustomRectItem);
+                Result = aAction(Items[itemNo] as HCCustomRectItem);
                 if (Result)
                 {
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
@@ -228,21 +227,20 @@ namespace HC.View
             return Result;
         }
 
-        private bool TextItemAction(TextItemActionEventHandler aAction)
+        private bool TextItemAction(int itemNo, TextItemActionEventHandler aAction)
         {
             bool vResult = false;
-            int vCurItemNo = this.GetActiveItemNo();
             int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
-            if (this.Items[vCurItemNo] is HCTextItem)
+            if (this.Items[itemNo] is HCTextItem)
             {
-                GetFormatRange(vCurItemNo, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                GetFormatRange(itemNo, 0, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                 Undo_New();
-                UndoAction_ItemMirror(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                UndoAction_ItemMirror(itemNo, 0);
 
                 //UndoAction_ItemSelf(vCurItemNo, OffsetInner);
-                vResult = aAction(Items[vCurItemNo] as HCTextItem);
+                vResult = aAction(Items[itemNo] as HCTextItem);
                 if (vResult)
                 {
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo, 0);
@@ -674,8 +672,15 @@ namespace HC.View
         public override void Clear()
         {
             InitializeField();
-
+            int vStyleNo = this.Items[0].StyleNo;
+            int vParaNo = this.Items[0].ParaNo;
             base.Clear();
+            if (vStyleNo > HCStyle.Null && vStyleNo < this.Style.TextStyles.Count)
+                FCurStyleNo = vStyleNo;
+
+            if (vParaNo < this.Style.ParaStyles.Count)
+                FCurParaNo = vParaNo;
+
             SetEmptyData();
         }
 
@@ -1010,7 +1015,6 @@ namespace HC.View
                         GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                         FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                        (Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsFormatDirty = false;
                     }
                     else
                         this.FormatInit();
@@ -1208,7 +1212,7 @@ namespace HC.View
                 return true;
             };
 
-            RectItemAction(vEvent);
+            RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public override bool DisSelect()
@@ -1820,7 +1824,12 @@ namespace HC.View
                     else  // 无样式表
                     {
                         if (vItem.StyleNo > HCStyle.Null)
-                            vItem.StyleNo = CurStyleNo;
+                        {
+                            if (CurStyleNo < HCStyle.Null)
+                                vItem.StyleNo = Style.GetStyleNo(Style.DefaultTextStyle, true);
+                            else
+                                vItem.StyleNo = CurStyleNo;
+                        }
 
                         vItem.ParaNo = vCaretParaNo;
                     }
@@ -2185,6 +2194,7 @@ namespace HC.View
                         if (IsEmptyLine(aIndex))
                         {
                             aItem.ParaFirst = true;
+                            aItem.PageBreak = Items[aIndex].PageBreak;
                             UndoAction_DeleteItem(aIndex, 0);
                             Items.Delete(aIndex);
                             vIncCount--;
@@ -2217,6 +2227,7 @@ namespace HC.View
                             FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
                             aItem.ParaFirst = true;
+                            aItem.PageBreak = Items[aIndex - 1].PageBreak;
                             UndoAction_DeleteItem(aIndex - 1, 0);
                             Items.RemoveAt(aIndex - 1);
                             vIncCount--;
@@ -2238,6 +2249,7 @@ namespace HC.View
                         && (Items[aIndex - 1].Text == "")) // 空行
                     {
                         aItem.ParaFirst = true;
+                        aItem.PageBreak = Items[aIndex - 1].PageBreak;
                         UndoAction_DeleteItem(aIndex - 1, 0);
                         Items.RemoveAt(aIndex - 1);
                         vIncCount--;
@@ -2400,8 +2412,6 @@ namespace HC.View
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-
-                    vRectItem.IsFormatDirty = false;
                 }
                 else
                     this.FormatInit();
@@ -2480,7 +2490,7 @@ namespace HC.View
             FMouseDownReCaret = false;
             //FSelectSeekOffset = -1;
 
-            FMouseLBDowning = (e.Button == MouseButtons.Left);
+            FMouseLBDowning = (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None);
 
             FMouseDownX = e.X;
             FMouseDownY = e.Y;
@@ -2493,7 +2503,13 @@ namespace HC.View
 
             if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // shift键重新确定选中范围
             {
-                if (SelectByMouseDownShift(ref vMouseDownItemNo, ref  vMouseDownItemOffset))
+                FMouseDownItemNo = vMouseDownItemNo;
+                FMouseDownItemOffset = vMouseDownItemOffset;
+
+                if ((!vRestrain) && (Items[FMouseDownItemNo].StyleNo < HCStyle.Null) && (vMouseDownItemOffset == HC.OffsetInner))  // RectItem
+                    DoItemMouseDown(FMouseDownItemNo, FMouseDownItemOffset, e);
+                else
+                if (SelectByMouseDownShift(ref vMouseDownItemNo, ref vMouseDownItemOffset))
                 {
                     MatchItemSelectState();  // 设置选中范围内的Item选中状态
                     Style.UpdateInfoRePaint();
@@ -2503,26 +2519,28 @@ namespace HC.View
                     FMouseDownItemOffset = vMouseDownItemOffset;
                     FSelectSeekNo = vMouseDownItemNo;
                     FSelectSeekOffset = vMouseDownItemOffset;
-
-                    if ((!vRestrain) && (Items[FMouseDownItemNo].StyleNo < HCStyle.Null))  // RectItem
-                        DoItemMouseDown(FMouseDownItemNo, FMouseDownItemOffset, e);
-
-                    return;
                 }
+
+                return;
             }
 
             bool vMouseDownInSelect = CoordInSelect(e.X, e.Y, vMouseDownItemNo, vMouseDownItemOffset, vRestrain);
 
             if (vMouseDownInSelect)
             {
-                if (FMouseLBDowning)
+                if (Items[vMouseDownItemNo].StyleNo < HCStyle.Null)
+                    DoItemMouseDown(vMouseDownItemNo, vMouseDownItemOffset, e);
+
+                if (FMouseLBDowning && !SelectedResizing())
                 {
                     FDraging = true;
                     Style.UpdateInfo.DragingSelected = true;
                 }
-
-                if (Items[vMouseDownItemNo].StyleNo < HCStyle.Null)
-                    DoItemMouseDown(vMouseDownItemNo, vMouseDownItemOffset, e);
+                else
+                {
+                    FMouseDownItemNo = vMouseDownItemNo;
+                    FMouseDownItemOffset = vMouseDownItemOffset;
+                }
             }
             else  // 没点在选中区域中
             {
@@ -3891,7 +3909,6 @@ namespace HC.View
                         GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                         FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                        vRectItem.IsFormatDirty = false;
                     }
                     else
                         this.FormatInit();
@@ -4014,17 +4031,20 @@ namespace HC.View
                     case User.VK_BACK:  // 在RectItem前
                         if (vCurItem.ParaFirst && DoAcceptAction(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, HCAction.actBackDeleteText))
                         {
+                            if (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0)  // 在段最前面删除
+                                ApplyParaFirstIndent(Math.Max(0, Style.ParaStyles[vCurItem.ParaNo].FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth)));
+                            else
                             if (SelectInfo.StartItemNo > 0)  // 第一个前回删不处理，停止格式化
                             {
-                                if (vCurItem.ParaFirst && (SelectInfo.StartItemNo > 0))
-                                {
+                                //if (SelectInfo.StartItemNo > 0)
+                                //{
                                     vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo - 1,
                                         GetItemOffsetAfter(SelectInfo.StartItemNo - 1));
 
                                     vFormatLastItemNo = GetParaLastItemNo(SelectInfo.StartItemNo);
-                                }
-                                else
-                                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                                //}
+                                //else
+                                //    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                                         
                                 FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
@@ -4737,7 +4757,7 @@ namespace HC.View
                 if (vCurItem.ParaFirst && (Style.ParaStyles[vCurItem.ParaNo].FirstIndent > 0))  // 在段最前面删除
                 {
                     HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
-                    ApplyParaFirstIndent(vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                    ApplyParaFirstIndent(Math.Max(0, vParaStyle.FirstIndent - HCUnitConversion.PixXToMillimeter(HC.TabCharWidth)));
                 }
                 else
                 if (vCurItem.PageBreak)
@@ -5328,7 +5348,6 @@ namespace HC.View
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                    vRectItem.IsFormatDirty = false;
                 }
                 else
                     this.FormatInit();
@@ -5352,7 +5371,7 @@ namespace HC.View
             else
                 vAddStartNo = 0;
 
-            for (int i = vAddStartNo; i <= aSrcData.Items.Count - 1; i++)
+            for (int i = vAddStartNo; i < aSrcData.Items.Count; i++)
             {
                 if (!aSrcData.IsEmptyLine(i))
                 {
@@ -5798,7 +5817,6 @@ namespace HC.View
                         GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                         FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                         ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-                        vRectItem.IsFormatDirty = false;
                     }
                     else
                         this.FormatInit();
@@ -5811,14 +5829,19 @@ namespace HC.View
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
 
-                    string[] vStrings = aText.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                    string[] vStrings = HC.ReplaceUnPreChar(aText).Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
                     string vS;
-                    for (int i = 0; i < vStrings.Length; i++)
+                    for (int i = 0; i < vStrings.Length - 1; i++)
                     {
                         vS = vStrings[i];
-                        DoInsertTextEx(vS, vNewPara, ref vAddCount);
+                        if (vNewPara || vS != "")
+                            DoInsertTextEx(vS, vNewPara, ref vAddCount);
+
                         vNewPara = true;
                     }
+
+                    vS = vStrings[vStrings.Length - 1];
+                    DoInsertTextEx(vS, vNewPara, ref vAddCount);
 
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vAddCount, vAddCount);
                     Result = true;
@@ -5915,7 +5938,7 @@ namespace HC.View
                 return true;
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool ActiveTableResetRowCol(int rowCount, int colCount)
@@ -5928,7 +5951,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).ResetRowCol(this.Width, rowCount, colCount);
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool TableInsertRowAfter(int aRowCount)
@@ -5941,7 +5964,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).InsertRowAfter(aRowCount);
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool TableInsertRowBefor(int aRowCount)
@@ -5954,7 +5977,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).InsertRowBefor(aRowCount);
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool ActiveTableDeleteCurRow()
@@ -5967,7 +5990,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).DeleteCurRow();
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool ActiveTableSplitCurRow()
@@ -5980,7 +6003,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).SplitCurRow();
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool ActiveTableSplitCurCol()
@@ -5993,7 +6016,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).SplitCurCol();
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool TableInsertColAfter(int aColCount)
@@ -6006,7 +6029,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).InsertColAfter(aColCount);
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool TableInsertColBefor(int aColCount)
@@ -6019,7 +6042,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).InsertColBefor(aColCount);
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool ActiveTableDeleteCurCol()
@@ -6032,7 +6055,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).DeleteCurCol();
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool MergeTableSelectCells()
@@ -6045,7 +6068,7 @@ namespace HC.View
                 return (ARectItem as HCTableItem).MergeSelectCells();
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public bool TableApplyContentAlign(HCContentAlign aAlign)
@@ -6059,7 +6082,7 @@ namespace HC.View
                 return true;
             };
 
-            return RectItemAction(vEvent);
+            return RectItemAction(this.GetActiveItemNo(), vEvent);
         }
 
         public void ActiveItemReAdaptEnvironment()
@@ -6090,8 +6113,6 @@ namespace HC.View
                     GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
                     FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
                     ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
-
-                    vRectItem.IsFormatDirty = false;
                 }
                 else
                     this.FormatInit();

@@ -199,6 +199,7 @@ namespace HC.View
             aCellData.OnGetRootData = DoCellDataGetRootData;
             aCellData.OnGetFormatTop = DoCellDataGetFormatTop;
             aCellData.OnFormatDirty = DoCellDataFormatDirty;
+            aCellData.OnSetFormatHeightChange = DoCellDataSetFormatHeightChange;
         }
 
         private HCCustomData DoCellDataGetRootData()
@@ -209,6 +210,11 @@ namespace HC.View
         private void DoCellDataFormatDirty(object sender, EventArgs e)
         {
             this.FormatDirty();
+        }
+
+        private void DoCellDataSetFormatHeightChange(object sender, EventArgs e)
+        {
+            (this.OwnerData as HCRichData).SetFormatHeightChange();
         }
 
         private void DoCheckCellScript(int row, int col)
@@ -266,6 +272,7 @@ namespace HC.View
         private void DoRowAdd(HCTableRow aRow)
         {
             aRow.OnGetVPaddingPix = DoRowGetVPaddingPix;
+            aRow.OnGetDefaultRowHeight = DoRowGetDefaultRowHeight;
             HCTableCellData vCellData = null;
 
             for (int i = 0; i < aRow.ColCount; i++)
@@ -281,9 +288,14 @@ namespace HC.View
             InitializeMouseInfo();
         }
 
-        private Byte DoRowGetVPaddingPix()
+        private int DoRowGetVPaddingPix()
         {
             return FCellVPaddingPix;
+        }
+
+        private int DoRowGetDefaultRowHeight()
+        {
+            return FDefaultRowHeight;
         }
 
         private void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
@@ -537,7 +549,7 @@ namespace HC.View
         }
 
         #region DoPaint子方法CheckRowBorderShouLian 找当前行各列分页时的收敛位置
-        private void CheckRowBorderShouLian(int aRow, int aDataDrawBottom, RECT aDrawRect, ref int vShouLian, ref int vFirstDrawRow)
+        private void CheckRowBorderShouLian(int aRow, int aDataDrawBottom, int dataScreenBottom, RECT aDrawRect, ref int vShouLian, ref int vFirstDrawRow)
         {
             if (vShouLian == 0)
             {
@@ -565,6 +577,7 @@ namespace HC.View
                 int vBreakBottom = 0, vCellDataVerTop;
                 int vDestCellDataDrawTop = 0, vDestRow2 = -1, vDestCol2 = -1, vDrawItemCount = 0, vRowColCount = FRows[aRow].ColCount;
                 HCTableCellData vCellData = null;
+                bool vFindShouLian = false;
                 RECT vRect;
                 for (int vC = 0; vC < vRowColCount; vC++)  // 遍历同行各列，获取截断位置(因为各行在CheckFormatPage已经算好分页位置，所以此处只要一个单元格跨页位置同时适用当前行所有单元格跨页位置
                 {
@@ -598,7 +611,8 @@ namespace HC.View
                                 }
                                 else  // 第一行就在当前页放不下
                                     vShouLian = Math.Max(vShouLian, vDestCellDataDrawTop - FBorderWidthPix);
-                                
+
+                                vFindShouLian = true;
                                 break;
                             }
                             else  // 没有超过当前页
@@ -606,8 +620,11 @@ namespace HC.View
                         }
                     }
                 }
-                
-                vShouLian = Math.Max(vShouLian, vBreakBottom);
+
+                if (!vFindShouLian)
+                    vShouLian = Math.Min(dataScreenBottom, vRowDataDrawTop + FRows[aRow].FmtOffset + FRows[aRow].Height) - FBorderWidthPix;
+                else
+                    vShouLian = Math.Max(vShouLian, vBreakBottom);
             }
         }
 
@@ -686,7 +703,7 @@ namespace HC.View
             {
                 // 不在当前屏幕范围内的不绘制(1)
                 vCellDataDrawTop = vCellDataDrawTop + FRows[vR].FmtOffset + FCellVPaddingPix;
-                if (vCellDataDrawTop > aDataScreenBottom)
+                if (vCellDataDrawTop >= aDataScreenBottom)
                 {
                     if ((vFirstDrawRow < 0) && IsBreakRow(vR))
                         vDrawFixRow = (FFixRow >= 0) && (vR > FFixRow + FFixRowCount - 1);
@@ -696,7 +713,7 @@ namespace HC.View
 
                 vCellDataDrawBottom = vCellDataDrawTop - FCellVPaddingPix + FRows[vR].Height - FCellVPaddingPix;
 
-                if (vCellDataDrawBottom < aDataScreenTop)
+                if (vCellDataDrawBottom <= aDataScreenTop)
                 {
                     vCellDataDrawTop = vCellDataDrawBottom + FCellVPaddingPix + FBorderWidthPix;  // 准备判断下一行是否是可显示第一行
                     continue;
@@ -839,7 +856,7 @@ namespace HC.View
                                     {
                                         if (vSrcRowBorderTop > aDataDrawBottom)
                                         {
-                                            CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
+                                            CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDataScreenBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
                                             vBorderBottom = vShouLian;  //为什么是2 Min(vBorderBottom, vShouLian);  // ADataDrawBottom
                                         }
                                             
@@ -870,7 +887,7 @@ namespace HC.View
                                         {
                                             if (vSrcRowBorderTop > aDataDrawBottom)
                                             {
-                                                CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
+                                                CheckRowBorderShouLian(vDestRow2, aDataDrawBottom, aDataScreenBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);  // 从当前行找收敛
                                                 vBorderBottom = vShouLian;  //为什么是2 Min(vBorderBottom, vShouLian);  // ADataDrawBottom
                                             }
                                                 
@@ -884,7 +901,7 @@ namespace HC.View
                             else  // 普通单元格(不是合并目标也不是合并源)
                             if (IsBreakRow(vR))
                             {
-                                CheckRowBorderShouLian(vR, aDataDrawBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);
+                                CheckRowBorderShouLian(vR, aDataDrawBottom, aDataScreenBottom, aDrawRect, ref vShouLian, ref vFirstDrawRow);
                                 vBorderBottom = vShouLian;
                             }
                         }
@@ -919,15 +936,18 @@ namespace HC.View
                             
                             vBorderLeft = vCellDrawLeft - FBorderWidthPix;
                             vBorderRight = vCellDrawLeft + FColWidths[vC] + GetColSpanWidth(vDestRow, vDestCol);
-                            
-                            if ((vBorderTop < aDataScreenTop) && (aDataDrawTop >= 0))
+
+                            if (IsBreakRow(vR) && vR == vFirstDrawRow)
+                                vBorderTop = vBorderTop - 1;
+
+                            if (vBorderTop < aDataScreenTop && aDataDrawTop >= 0)
                                 vBorderTop = aDataScreenTop;
 
                             IntPtr vExtPen = HC.CreateExtPen(aCanvas.Pen);
                             IntPtr vOldPen = (IntPtr)GDI.SelectObject(aCanvas.Handle, vExtPen);
                             try
                             {
-                                if ((vBorderTop > 0) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
+                                if ((vBorderTop + FBorderWidthPix > 0) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsTop)))
                                 {
                                     if (aPaintInfo.Print)
                                     {
@@ -955,7 +975,7 @@ namespace HC.View
                                     }
                                 }
 
-                                if ((vBorderBottom <= aDataScreenBottom) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
+                                if ((vBorderBottom < aDataScreenBottom) && (FRows[vR][vC].BorderSides.Contains((byte)BorderSide.cbsBottom)))
                                 {
                                     if (aPaintInfo.Print)
                                     {
@@ -1123,7 +1143,7 @@ namespace HC.View
             HCTableCell vCell = null;
             POINT vCellPt = new POINT();
 
-            FMouseLBDowning = (e.Button == MouseButtons.Left);
+            FMouseLBDowning = (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None);
             FOutSelectInto = false;
             FSelecting = false;  // 准备划选
             FDraging = false;  // 准备拖拽
@@ -1189,7 +1209,12 @@ namespace HC.View
                         OwnerData.Style.UpdateInfoReCaret();
                     }
 
-                    DisSelect();  // 清除原选中
+                    if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // shift键重新确定选中范围
+                    {
+
+                    }
+                    else
+                        DisSelect();  // 清除原选中
 
                     if ((FMouseDownRow != vMouseDownRow) || (FMouseDownCol != vMouseDownCol))
                     {
@@ -1398,7 +1423,7 @@ namespace HC.View
             
             if (vResizeInfo.TableSite == TableSite.tsCell)
             {
-                if (FMouseLBDowning || (e.Button == MouseButtons.Left))
+                if (FMouseLBDowning || (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None))
                 {
                     if (FDraging || OwnerData.Style.UpdateInfo.DragingSelected)
                     {
@@ -1550,7 +1575,7 @@ namespace HC.View
                                     
                                     FColWidths[vUpCol] = FColWidths[vUpCol] + vCellPt.X;  // 当前列变化
                                     if (FResizeKeepWidth && (vUpCol < FColWidths.Count - 1))
-                                        FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] + vCellPt.X;
+                                        FColWidths[vUpCol + 1] = FColWidths[vUpCol + 1] - vCellPt.X;
                                 }
                             }
                         }
@@ -3559,6 +3584,14 @@ namespace HC.View
                 else
                     ApplyCellAlign_(GetEditCell(), aAlign);
             }
+            else
+            {
+                for (int vR = 0; vR < RowCount; vR++)
+                {
+                    for (int vC = 0; vC < FColWidths.Count; vC++)
+                        ApplyCellAlign_(FRows[vR][vC], aAlign);
+                }
+            }
         }
 
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
@@ -3578,6 +3611,9 @@ namespace HC.View
             CalcMergeRowHeightFrom(0);
             this.Height = GetFormatHeight();
             this.Width = GetFormatWidth();
+
+            if (FSelectCellRang.SelectExists())
+                MatchCellSelectState();
         }
 
         /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>
@@ -3646,7 +3682,7 @@ namespace HC.View
                 return;
             }
 
-            bool vFirstLinePlace = true;
+            bool vFirstLinePlace = true, vFindBreak = false;
             int vPageBreakBottom = aPageDataFmtBottom;
             
             int vDestRow = -1, vDestCol = -1, vDestCellDataFmtTop = 0, vCellDataVerTop;
@@ -3679,23 +3715,31 @@ namespace HC.View
 
                     if (vDestCellDataFmtTop + vCellDataVerTop + vDrawItem.Rect.Bottom + FBorderWidthPix > aPageDataFmtBottom)
                     {                                               // |如果FBorderWidth比行高大就不合适
+                        vFindBreak = true;
                         if (i == 0)
                         {
                             vFirstLinePlace = false;
                             vPageBreakBottom = vBreakRowFmtTop;
-                            break;
                         }
+
+                        break;
                     }
                 }
             
                 if (!vFirstLinePlace)
                     break;
             }
-      
+
+            if (vFirstLinePlace && !vFindBreak)
+            {
+                vFirstLinePlace = false;
+                //vPageBreakBottom = vBreakRowFmtTop;
+            }
+
             // 根据上面计算出来的截断位置(可能是PageData底部也可能是整体下移行底部)
             // 处理内容的偏移，循环原理和上面找是否有整体下移行一样
             int vCellInc = 0;  // 行各内容为避开分页额外增加的格式化高度
-            int vRowBreakSeat = 0, vLastDFromRowBottom = 0, vH = 0;
+            int vRowBreakSeat = 0, vH = 0, vLastDFromRowBottom = 0;
             ColCross vColCross;
 
             List<ColCross> vColCrosses = new List<ColCross>();
@@ -4568,34 +4612,13 @@ namespace HC.View
                 return;
 
             RECT vRect = HC.Bounds(ALeft, ATop, Width, vH);
-            //if (!APaintInfo.Print)
+            if (!APaintInfo.Print)
             {
                 ACanvas.Brush.Color = HC.clBtnFace;
                 ACanvas.FillRect(vRect);
             }
 
-            int vTop = ATop;
-            for (int vR = FFixRow; vR <= FFixRow + FFixRowCount - 1; vR++)
-            {
-                vH = 0;  // 行中未发生合并的最高单元格
-                for (int vC = 0; vC <= FRows[vR].ColCount - 1; vC++)  // 得到行中未发生合并Data内容最高的单元格高
-                {
-                    if ((FRows[vR][vC].CellData != null)  // 不是被合并的单元格)
-                    && (FRows[vR][vC].RowSpan >= 0))  // 不是行合并的行单元格
-                    vH = Math.Max(vH, FRows[vR][vC].CellData.Height);
-                }
-
-                vH = FCellVPaddingPix + vH + FCellVPaddingPix;  // 增加上下边距
-                vH = Math.Max(vH, FRows[vR].Height) + FBorderWidthPix + FBorderWidthPix;
-
-                vRect = HC.Bounds(ALeft, vTop, Width, vH);
-                if (vRect.Top >= AScreenBottom)
-                    break;
-
-                PaintRow(vR, vRect.Left, vRect.Top, vRect.Bottom, ACanvas, APaintInfo);
-                
-                vTop = vTop + FBorderWidthPix + FRows[vR].Height;
-            }
+            DoPaint(OwnerData.Style, vRect, ATop, ATop + vH, ATop, ATop + vH, ACanvas, APaintInfo);
         }
 
         public void PaintFixCols(int aTableDrawTop, int aLeft, int aTop, int aScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
@@ -4806,18 +4829,16 @@ namespace HC.View
         /// <returns></returns>
         public bool CellsCanMerge(int aStartRow, int aStartCol, int aEndRow, int aEndCol)
         {
-            int vEndRow = -1, vEndCol = -1, vDestRow = -1, vDestCol = -1, vSrcRow = -1, vSrcCol = -1;
-            GetSourceCell(aEndRow, aEndCol, ref vEndRow, ref vEndCol);
-
-            for (int vR = aStartRow; vR <= vEndRow; vR++)
+            int vDestRow = -1, vDestCol = -1, vSrcRow = -1, vSrcCol = -1;
+            for (int vR = aStartRow; vR <= aEndRow; vR++)
             {
-                for (int vC = aStartCol; vC <= vEndCol; vC++)
+                for (int vC = aStartCol; vC <= aEndCol; vC++)
                 {
                     if (FRows[vR][vC].CellData == null)
                     {
                         GetDestCell(vR, vC, ref vDestRow, ref vDestCol);
                         GetSourceCell(vDestRow, vDestCol, ref vSrcRow, ref vSrcCol);
-                        if (vDestRow < aStartRow || vSrcRow > vEndRow || vDestCol < aStartCol || vSrcCol > vEndCol)
+                        if (vDestRow < aStartRow || vSrcRow > aEndRow || vDestCol < aStartCol || vSrcCol > aEndCol)
                             return false;
                     }
                 }

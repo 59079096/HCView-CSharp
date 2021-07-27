@@ -297,7 +297,7 @@ namespace HC.View
 
         public override void KeyDown(System.Windows.Forms.KeyEventArgs e)
         {
-            if (this.ReadOnly)
+            if (!this.Enabled || this.ReadOnly)
                 return;
 
             //base.KeyDown(e);
@@ -348,7 +348,7 @@ namespace HC.View
         public override void KeyPress(ref char key)
         {
             //base.KeyPress(ref key);
-            if (this.ReadOnly)
+            if (!this.Enabled || this.ReadOnly)
                 return;
 
             int vNumber = 0;

@@ -178,7 +178,7 @@ namespace HC.View
         {
             bool vResult = false;
 
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.None)
             {
                 if (this.ReadOnly)
                     return vResult;
@@ -548,26 +548,6 @@ namespace HC.View
                         ACanvas.LineTo(aDataDrawLeft - 16, vTop + 3);
                     }
                 }
-                
-                if (FShowUnderLine)
-                {
-                    if (DrawItems[aDrawItemNo].LineFirst)
-                    {
-                        ACanvas.Pen.BeginUpdate();
-                        try
-                        {
-                            ACanvas.Pen.Color = Color.Black;
-                            ACanvas.Pen.Style = HCPenStyle.psSolid;
-                        }
-                        finally
-                        {
-                            ACanvas.Pen.EndUpdate();
-                        }
-                            
-                        ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Bottom);
-                        ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Bottom);
-                    }
-                }
 
                 if (FShowLineNo)
                 {
@@ -618,7 +598,44 @@ namespace HC.View
             HCCanvas ACanvas, PaintInfo APaintInfo)
         {
             base.DoDrawItemPaintAfter(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDataDrawLeft, aDataDrawRight,
-                aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
+				aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
+
+            if (FShowUnderLine)
+            {
+                if (DrawItems[aDrawItemNo].LineFirst)
+                {
+                    ACanvas.Pen.BeginUpdate();
+                    try
+                    {
+                        ACanvas.Pen.Color = Color.Black;
+                        ACanvas.Pen.Style = HCPenStyle.psSolid;
+                    }
+                    finally
+                    {
+                        ACanvas.Pen.EndUpdate();
+                    }
+
+                    ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Top - 1);
+                    ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Top - 1);
+                }
+
+                if (aDrawItemNo == DrawItems.Count - 1)
+                {
+                    ACanvas.Pen.BeginUpdate();
+                    try
+                    {
+                        ACanvas.Pen.Color = Color.Black;
+                        ACanvas.Pen.Style = HCPenStyle.psSolid;
+                    }
+                    finally
+                    {
+                        ACanvas.Pen.EndUpdate();
+                    }
+
+                    ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Bottom);
+                    ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Bottom);
+                }
+            }
         }
 
         protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)

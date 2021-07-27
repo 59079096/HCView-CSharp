@@ -237,21 +237,14 @@ namespace HC.View
                 return false;
 
             int vItemNo = this.DrawItems[aDrawItemNo].ItemNo;
-            if (vItemNo < FDataAnnotates.First.StartItemNo)
-                return false;
-            if (vItemNo > FDataAnnotates.Last.EndItemNo)
-                return false;
-
             bool Result = false;
+            HCDataAnnotate vDataAnnotate = null;
             FDrawItemAnnotates.Clear();
             for (int i = 0; i <= FDataAnnotates.Count - 1; i++)
             {
-                HCDataAnnotate vDataAnnotate = FDataAnnotates[i];
-                if (vDataAnnotate.EndItemNo < vItemNo)
+                vDataAnnotate = FDataAnnotates[i];
+                if (vDataAnnotate.StartItemNo > vItemNo || vDataAnnotate.EndItemNo < vItemNo)
                     continue;
-
-                if (vDataAnnotate.StartItemNo > vItemNo)
-                    break;
 
                 if (aDrawItemNo == vDataAnnotate.StartDrawItemNo)
                 {
@@ -673,14 +666,14 @@ namespace HC.View
             if (Style.UpdateInfo.DragingSelected)
             {
                 vDataAnnotate = GetDrawItemFirstDataAnnotateAt(vCaretDrawItemNo,
-                    GetDrawItemOffsetWidth(vCaretDrawItemNo,
+                    this.DrawItems[vCaretDrawItemNo].Rect.Left + GetDrawItemOffsetWidth(vCaretDrawItemNo,
                       this.MouseMoveItemOffset - DrawItems[vCaretDrawItemNo].CharOffs + 1),
                     DrawItems[vCaretDrawItemNo].Rect.Top + 1);
             }
             else
             {
                 vDataAnnotate = GetDrawItemFirstDataAnnotateAt(vCaretDrawItemNo,
-                    GetDrawItemOffsetWidth(vCaretDrawItemNo,
+                    this.DrawItems[vCaretDrawItemNo].Rect.Left + GetDrawItemOffsetWidth(vCaretDrawItemNo,
                       SelectInfo.StartItemOffset - DrawItems[vCaretDrawItemNo].CharOffs + 1),
                     DrawItems[vCaretDrawItemNo].Rect.Top + 1);
             }

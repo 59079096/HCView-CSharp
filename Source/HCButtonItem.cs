@@ -38,7 +38,7 @@ namespace HC.View
 
         public override bool MouseDown(MouseEventArgs e)
         {
-            if (HC.PtInRect(this.ClientRect(), e.X, e.Y))
+            if (this.Enabled && HC.PtInRect(this.ClientRect(), e.X, e.Y))
                 FDown = true;
 
             return base.MouseDown(e);

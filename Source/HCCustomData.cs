@@ -209,7 +209,7 @@ namespace HC.View
         HCDrawItems FDrawItems;
         SelectInfo FSelectInfo;
         bool FLoading;
-        int FCaretDrawItemNo;  // 当前Item光标处的DrawItem限定其只在相关的光标处理中使用(解决同一Item分行后Offset为行尾时不能区分是上行尾还是下行始)
+        int FCaretDrawItemNo;
 
         DataItemEventHandler FOnInsertItem, FOnRemoveItem;
         DataItemNoFunEventHandler FOnSaveItem;
@@ -1223,10 +1223,13 @@ namespace HC.View
         /// <returns></returns>
         public int GetDrawItemOffsetWidth(int aDrawItemNo, int aDrawOffs, HCCanvas aStyleCanvas = null)
         {
-            int Result = 0;
             if (aDrawOffs == 0)
-                return Result;
+                return 0;
 
+            if (!FItems[FDrawItems[aDrawItemNo].ItemNo].Visible)
+                return 0;
+
+            int Result = 0;
             HCCustomDrawItem vDrawItem = FDrawItems[aDrawItemNo];
             int vStyleNo = FItems[vDrawItem.ItemNo].StyleNo;
             if (vStyleNo < HCStyle.Null)
@@ -2072,8 +2075,8 @@ namespace HC.View
         /// <returns></returns>
         public bool SelectedResizing()
         {
-            if ((FSelectInfo.StartItemNo >= 0) 
-              && (FSelectInfo.EndItemNo < 0) 
+            if ((FSelectInfo.StartItemNo >= 0)
+              && (FSelectInfo.EndItemNo < 0 || FSelectInfo.StartItemNo == FSelectInfo.EndItemNo)
               && (FItems[FSelectInfo.StartItemNo] is HCResizeRectItem))
                 return (FItems[FSelectInfo.StartItemNo] as HCResizeRectItem).Resizing;
             else
@@ -2345,8 +2348,6 @@ namespace HC.View
                 {
                     vDrawItem = FDrawItems[i];
                     vItem = FItems[vDrawItem.ItemNo];
-                    if (!vItem.Visible)
-                        continue;
 
                     vDrawRect = vDrawItem.Rect;
                     vDrawRect.Offset(aDataDrawLeft, vVOffset);  // 偏移到指定的画布绘制位置(SectionData时为页数据在格式化中可显示起始位置)
@@ -2356,6 +2357,13 @@ namespace HC.View
 
                     vClearRect = vDrawRect;
                     vClearRect.Inflate(0, -vLineSpace / 2);  // 除去行间距净Rect，即内容的显示区域
+
+                    if (!vItem.Visible)
+                    {
+                        DrawItemPaintAfter(this, vDrawItem.ItemNo, i, vDrawRect, vClearRect, aDataDrawLeft, aDataDrawRight, aDataDrawBottom,
+                            aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);  // 绘制内容后
+                        continue;
+                    }
 
                     // 绘制内容前
                     DrawItemPaintBefor(this, vDrawItem.ItemNo, i, vDrawRect, vClearRect, aDataDrawLeft, aDataDrawRight, 

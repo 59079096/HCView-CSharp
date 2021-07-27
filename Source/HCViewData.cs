@@ -1111,7 +1111,9 @@ namespace HC.View
                             }
 
                             vText = (this.Items[vItemNo - 1] as HCTextItem).TextEffective();
-                            vText = vText.Substring(vKeyword.Length - 1);
+                            if (vText.Length > vKeyword.Length - 1)
+                                vText = vText.Substring(vKeyword.Length - 1);
+
                             vOverText = vOverText + vText;  // 记录拼接了多少个字符
                             vConcatText = vText + vConcatText;  // 拼接后的字符
                             if (!AMatchCase)
@@ -1163,7 +1165,9 @@ namespace HC.View
                             }
 
                             vText = (this.Items[vItemNo + 1] as HCTextItem).TextEffective();
-                            vText = vText.Substring(0, vKeyword.Length - 1);
+                            if (vText.Length > vKeyword.Length - 1)
+                                vText = vText.Substring(0, vKeyword.Length - 1);
+
                             vOverText = vOverText + vText;  // 记录拼接了多少个字符
                             vConcatText = vConcatText + vText;  // 拼接后的字符
                             if (!AMatchCase)

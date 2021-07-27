@@ -2160,7 +2160,7 @@ namespace HC.View
             #region 有FloatItem时短路
             if (FActiveData.FloatItems.Count > 0)
             {
-                if ((e.Button == MouseButtons.Left) && (FActiveData.FloatItemIndex >= 0))
+                if ((e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None) && (FActiveData.FloatItemIndex >= 0))
                 {
                     if (!FActiveData.ActiveFloatItem.Resizing)
                         FActiveData.ActiveFloatItem.PageIndex = FMousePageIndex;

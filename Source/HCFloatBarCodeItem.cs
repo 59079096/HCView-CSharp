@@ -146,12 +146,12 @@ namespace HC.View
             FCode128.Text = aNode.InnerText;
 
             if (aNode.HasAttribute("autosize"))
-                FAutoSize = bool.Parse(aNode.Attributes["autosize"].Value);
+                FAutoSize = aNode.Attributes["autosize"].Value == "1";
             else
                 FAutoSize = true;
 
             if (aNode.HasAttribute("showtext"))
-                FCode128.TextVisible = bool.Parse(aNode.Attributes["showtext"].Value);
+                FCode128.TextVisible = aNode.Attributes["showtext"].Value == "1";
             else
                 FCode128.TextVisible = true;
 
