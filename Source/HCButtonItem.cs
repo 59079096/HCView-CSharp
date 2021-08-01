@@ -39,7 +39,7 @@ namespace HC.View
         public override bool MouseDown(MouseEventArgs e)
         {
             if (this.Enabled && HC.PtInRect(this.ClientRect(), e.X, e.Y))
-                FDown = true;
+                FDown = e.Button == MouseButtons.Left;
 
             return base.MouseDown(e);
         }
@@ -88,8 +88,8 @@ namespace HC.View
 
             aCanvas.Brush.Style = HCBrushStyle.bsClear;
             aStyle.TextStyles[TextStyleNo].ApplyStyle(aCanvas, aPaintInfo.ScaleY / aPaintInfo.Zoom);
-            aCanvas.TextOut(aDrawRect.Left + FPaddingLeft, aDrawRect.Top + FPaddingTop,//(Height - aCanvas.TextHeight("H")) / 2,
-                FText);
+            SIZE vSize = aCanvas.TextExtent(FText);
+            aCanvas.TextOut(aDrawRect.Left + (aDrawRect.Width - vSize.cx) / 2, aDrawRect.Top + (aDrawRect.Height - vSize.cy) / 2, FText);
         }
 
         public HCButtonItem(HCCustomData aOwnerData, string aText) : base(aOwnerData)
