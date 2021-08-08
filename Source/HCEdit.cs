@@ -154,6 +154,8 @@ namespace HC.View
             if ((FCaret != null) && FStyle.UpdateInfo.ReCaret)
             {
                 FStyle.UpdateInfo.ReCaret = false;
+                FStyle.UpdateInfo.ReStyle = false;
+                FStyle.UpdateInfo.ReScroll = false;
                 ReBuildCaret(aScrollBar);
                 UpdateImmPosition();
             }
