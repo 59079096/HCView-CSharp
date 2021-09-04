@@ -1679,23 +1679,25 @@ namespace HC.View
         /// <summary> 删除不使用的文本样式 </summary>
         public static void DeleteUnUsedStyle(HCStyle aStyle, List<HCSection> aSections, HashSet<SectionArea> aParts)  //  = (saHeader, saPage, saFooter)
         {
-            for (int i = 0; i <= aStyle.TextStyles.Count - 1; i++)
+            aStyle.TextStyles[0].CheckSaveUsed = true;
+            aStyle.TextStyles[0].TempNo = 0;
+            for (int i = 1; i < aStyle.TextStyles.Count; i++)
             {
                 aStyle.TextStyles[i].CheckSaveUsed = false;
                 aStyle.TextStyles[i].TempNo = HCStyle.Null;
             }
 
-            for (int i = 0; i <= aStyle.ParaStyles.Count - 1; i++)
+            for (int i = 0; i < aStyle.ParaStyles.Count; i++)
             {
                 aStyle.ParaStyles[i].CheckSaveUsed = false;
                 aStyle.ParaStyles[i].TempNo = HCStyle.Null;
             }
 
-            for (int i = 0; i <= aSections.Count - 1; i++)
+            for (int i = 0; i < aSections.Count; i++)
                 aSections[i].MarkStyleUsed(true, aParts);
 
             int vUnCount = 0;
-            for (int i = 0; i <= aStyle.TextStyles.Count - 1; i++)
+            for (int i = 1; i < aStyle.TextStyles.Count; i++)
             {
                 if (aStyle.TextStyles[i].CheckSaveUsed)
                     aStyle.TextStyles[i].TempNo = i - vUnCount;
@@ -1704,7 +1706,7 @@ namespace HC.View
             }
 
             vUnCount = 0;
-            for (int i = 0; i <= aStyle.ParaStyles.Count - 1; i++)
+            for (int i = 0; i < aStyle.ParaStyles.Count; i++)
             {
                 if (aStyle.ParaStyles[i].CheckSaveUsed)
                     aStyle.ParaStyles[i].TempNo = i - vUnCount;
@@ -1713,7 +1715,7 @@ namespace HC.View
             }
 
             HCCustomData vData = null;
-            for (int i = 0; i <= aSections.Count - 1; i++)
+            for (int i = 0; i < aSections.Count; i++)
             {
                 aSections[i].MarkStyleUsed(false, aParts);
 
@@ -1724,7 +1726,7 @@ namespace HC.View
                 vData.CurParaNo = aStyle.ParaStyles[vData.CurParaNo].TempNo;
             }
 
-            for (int i = aStyle.TextStyles.Count - 1; i >= 0; i--)
+            for (int i = aStyle.TextStyles.Count - 1; i >= 1; i--)
             {
                 if (!aStyle.TextStyles[i].CheckSaveUsed)
                     aStyle.TextStyles.RemoveAt(i);

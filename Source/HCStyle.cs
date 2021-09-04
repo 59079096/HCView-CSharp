@@ -263,6 +263,7 @@ namespace HC.View
             HCTextStyle vTextStyle = new HCTextStyle();
             FTextStyles.Add(vTextStyle);
             vTextStyle.ApplyStyle(FTempCanvas);
+            FTempStyleNo = FTextStyles.Count - 1;
             return FTextStyles.Count - 1;
         }
 
@@ -271,6 +272,11 @@ namespace HC.View
             HCParaStyle vParaStyle = new HCParaStyle();
             FParaStyles.Add(vParaStyle);
             return FParaStyles.Count - 1;
+        }
+
+        public int GetDefaultStyleNo()
+        {
+            return this.GetStyleNo(FDefaultTextStyle, true);
         }
 
         public int GetStyleNo(HCTextStyle aTextStyle, bool aCreateIfNull)
@@ -290,7 +296,9 @@ namespace HC.View
                 HCTextStyle vTextStyle = new HCTextStyle();
                 vTextStyle.AssignEx(aTextStyle);
                 FTextStyles.Add(vTextStyle);
+                vTextStyle.ApplyStyle(FTempCanvas);
                 Result = FTextStyles.Count - 1;
+                FTempStyleNo = Result;
             }
 
             return Result;

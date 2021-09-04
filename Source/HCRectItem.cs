@@ -588,7 +588,7 @@ namespace HC.View
     public class HCDomainItem : HCCustomRectItem  // 域
     {
         private byte FLevel;
-        private RECT FDrawRect;
+        protected RECT FDrawRect;
         private MarkType FMarkType;
 
         public bool Empty;

@@ -143,23 +143,25 @@ namespace HC.View
 
         public static void DeleteUnUsedStyle(HCStyle style, List<HCSection> sections, HashSet<SectionArea> parts)
         {
-            for (int i = 0; i <= style.TextStyles.Count - 1; i++)
+            style.TextStyles[0].CheckSaveUsed = true;
+            style.TextStyles[0].TempNo = 0;
+            for (int i = 1; i < style.TextStyles.Count; i++)
             {
                 style.TextStyles[i].CheckSaveUsed = false;
                 style.TextStyles[i].TempNo = HCStyle.Null;
             }
 
-            for (int i = 0; i <= style.ParaStyles.Count - 1; i++)
+            for (int i = 0; i < style.ParaStyles.Count; i++)
             {
                 style.ParaStyles[i].CheckSaveUsed = false;
                 style.ParaStyles[i].TempNo = HCStyle.Null;
             }
 
-            for (int i = 0; i <= sections.Count - 1; i++)
+            for (int i = 0; i < sections.Count; i++)
                 sections[i].MarkStyleUsed(true, parts);
 
             int vUnCount = 0;
-            for (int i = 0; i <= style.TextStyles.Count - 1; i++)
+            for (int i = 1; i < style.TextStyles.Count; i++)
             {
                 if (style.TextStyles[i].CheckSaveUsed)
                     style.TextStyles[i].TempNo = i - vUnCount;
@@ -168,7 +170,7 @@ namespace HC.View
             }
 
             vUnCount = 0;
-            for (int i = 0; i <= style.ParaStyles.Count - 1; i++)
+            for (int i = 0; i < style.ParaStyles.Count; i++)
             {
                 if (style.ParaStyles[i].CheckSaveUsed)
                     style.ParaStyles[i].TempNo = i - vUnCount;
@@ -177,7 +179,7 @@ namespace HC.View
             }
 
             HCCustomData vData = null;
-            for (int i = 0; i <= sections.Count - 1; i++)
+            for (int i = 0; i < sections.Count; i++)
             {
                 sections[i].MarkStyleUsed(false, parts);
 
@@ -188,7 +190,7 @@ namespace HC.View
                 vData.CurParaNo = style.ParaStyles[vData.CurParaNo].TempNo;
             }
 
-            for (int i = style.TextStyles.Count - 1; i >= 0; i--)
+            for (int i = style.TextStyles.Count - 1; i >= 1; i--)
             {
                 if (!style.TextStyles[i].CheckSaveUsed)
                     style.TextStyles.RemoveAt(i);

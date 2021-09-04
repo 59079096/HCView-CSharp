@@ -631,7 +631,7 @@ namespace HC.View
             DoCaretItemChanged();
         }
 
-        protected int CalculateLineHeight(HCTextStyle aTextStyle, HCParaStyle aParaStyle)
+        public int CalculateLineHeight(HCTextStyle aTextStyle, HCParaStyle aParaStyle)
         {
             int Result = aTextStyle.FontHeight;// THCStyle.GetFontHeight(ACanvas);  // 行高
             if (aParaStyle.LineSpaceMode == ParaLineSpaceMode.plsMin)

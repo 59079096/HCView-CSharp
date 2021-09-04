@@ -227,21 +227,23 @@ namespace HC.View
 
         private void _DeleteUnUsedStyle()
         {
-            for (int i = 0; i <= FStyle.TextStyles.Count - 1; i++)
+            FStyle.TextStyles[0].CheckSaveUsed = true;
+            FStyle.TextStyles[0].TempNo = 0;
+            for (int i = 1; i < FStyle.TextStyles.Count; i++)
             {
                 FStyle.TextStyles[i].CheckSaveUsed = false;
                 FStyle.TextStyles[i].TempNo = HCStyle.Null;
             }
-            for (int i = 0; i <= FStyle.ParaStyles.Count - 1; i++)
+            for (int i = 0; i < FStyle.ParaStyles.Count; i++)
             {
                 FStyle.ParaStyles[i].CheckSaveUsed = false;
                 FStyle.ParaStyles[i].TempNo = HCStyle.Null;
             }
 
             FData.MarkStyleUsed(true);
-            
+
             int vUnCount = 0;
-            for (int i = 0; i <= FStyle.TextStyles.Count - 1; i++)
+            for (int i = 1; i < FStyle.TextStyles.Count; i++)
             {
                 if (FStyle.TextStyles[i].CheckSaveUsed)
                     FStyle.TextStyles[i].TempNo = i - vUnCount;
@@ -250,7 +252,7 @@ namespace HC.View
             }
 
             vUnCount = 0;
-            for (int i = 0; i <= FStyle.ParaStyles.Count - 1; i++)
+            for (int i = 0; i < FStyle.ParaStyles.Count; i++)
             {
                 if (FStyle.ParaStyles[i].CheckSaveUsed)
                     FStyle.ParaStyles[i].TempNo = i - vUnCount;
@@ -260,7 +262,7 @@ namespace HC.View
 
             FData.MarkStyleUsed(false);
 
-            for (int i = FStyle.TextStyles.Count - 1; i >= 0; i--)
+            for (int i = FStyle.TextStyles.Count - 1; i >= 1; i--)
             {
                 if (!FStyle.TextStyles[i].CheckSaveUsed)
                     FStyle.TextStyles.RemoveAt(i);
