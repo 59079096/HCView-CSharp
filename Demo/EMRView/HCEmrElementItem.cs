@@ -626,6 +626,151 @@ namespace EMRView
         }
     }
 
+    public class DeTableRow : HCTableRow
+    {
+        private Dictionary<string, string> FPropertys;
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
+        }
+
+        protected override HCTableCell DoCreateCell(HCStyle style)
+        {
+            return new DeTableCell(style);
+        }
+
+        public DeTableRow(HCStyle style, int colCount)
+            : base(style, colCount)
+        {
+            FPropertys = new Dictionary<string, string>();
+        }
+
+        ~DeTableRow()
+        {
+
+        }
+
+        public override void SaveToStream(Stream stream)
+        {
+            base.SaveToStream(stream);
+            HC.View.HC.HCSaveTextToStream(stream, HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void LoadFromStream(Stream stream, ushort fileVersion)
+        {
+            base.LoadFromStream(stream, fileVersion);
+            if (fileVersion > 53)
+            {
+                string vS = "";
+                HC.View.HC.HCLoadTextFromStream(stream, ref vS, fileVersion);
+                HC.View.HC.SetPropertyString(vS, FPropertys);
+            }
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            HC.View.HC.SetPropertyString(vProp, FPropertys);
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
+        }
+    }
+
+    public class DeTableCell : HCTableCell
+    {
+        private Dictionary<string, string> FPropertys;
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
+        }
+
+        public DeTableCell(HCStyle style)
+            : base(style)
+        {
+            FPropertys = new Dictionary<string, string>();
+        }
+
+        ~DeTableCell()
+        {
+
+        }
+
+        public override void SaveToStream(Stream stream)
+        {
+            base.SaveToStream(stream);
+            HC.View.HC.HCSaveTextToStream(stream, HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void LoadFromStream(Stream stream, HCStyle style, ushort fileVersion)
+        {
+            base.LoadFromStream(stream, style, fileVersion);
+            if (fileVersion > 53)
+            {
+                string vS = "";
+                HC.View.HC.HCLoadTextFromStream(stream, ref vS, fileVersion);
+                HC.View.HC.SetPropertyString(vS, FPropertys);
+            }
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            aNode.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+            HC.View.HC.SetPropertyString(vProp, FPropertys);
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
+        }
+    }
+
     public class DeTable : HCTableItem
     {
         private bool FEditProtect, FDeleteAllow;
@@ -642,6 +787,16 @@ namespace EMRView
         private void SetValue(string key, string  value)
         {
             HC.View.HC.HCSetProperty(FPropertys, key, value);
+        }
+
+        protected override void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
+        {
+            base.CellChangeByAction(aRow, aCol, aProcedure);
+        }
+
+        protected override HCTableRow DoCreateRow(HCStyle style, int colCount)
+        {
+            return new DeTableRow(style, colCount);
         }
 
         public DeTable(HCCustomData aOwnerData, int aRowCount, int aColCount, int aWidth) 
@@ -686,10 +841,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -825,10 +980,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -956,10 +1111,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -1107,10 +1262,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -1265,10 +1420,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -1422,10 +1577,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -1559,10 +1714,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -1690,10 +1845,10 @@ namespace EMRView
             base.LoadFromStream(aStream, aStyle, aFileVersion);
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 
@@ -1834,10 +1989,10 @@ namespace EMRView
                 return;
 
             byte vByte = (byte)aStream.ReadByte();
-            FEditProtect = (vByte >> 7) == 1;
+            FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
 
             if (aFileVersion > 34)
-                FDeleteAllow = (vByte >> 6) == 1;
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
             else
                 FDeleteAllow = true;
 

@@ -64,8 +64,18 @@ namespace HC.View
 
             if (FEmpty)
             {
-                aCanvas.Pen.Color = Color.Black;
-                aCanvas.Pen.Width = 1;
+                aCanvas.Pen.BeginUpdate();
+                try
+                {
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.Black;
+                    aCanvas.Pen.Width = 1;
+                }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
+
                 aCanvas.Rectangle(aDrawRect);
             }
 

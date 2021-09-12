@@ -887,6 +887,7 @@ namespace HC.View
 
     public class HCControlItem : HCTextRectItem
     {
+        private int FTag = 0;
         private bool FAutoSize;
         private bool FEnabled;
         private EventHandler FOnClick;
@@ -951,6 +952,8 @@ namespace HC.View
                 vByte = (byte)(vByte | (1 << 6));
 
             aStream.WriteByte(vByte);
+            byte[] vBuffer = BitConverter.GetBytes(FTag);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -967,6 +970,14 @@ namespace HC.View
                 byte vByte = (byte)aStream.ReadByte();
                 FAutoSize = HC.IsOdd(vByte >> 7);
                 FEnabled = HC.IsOdd(vByte >> 6);
+                if (aFileVersion > 53)
+                {
+                    byte[] vBuffer = BitConverter.GetBytes(FTag);
+                    aStream.Read(vBuffer, 0, vBuffer.Length);
+                    FTag = BitConverter.ToInt32(vBuffer, 0);
+                }
+                else
+                    FTag = 0;
             }
         }
 
@@ -975,6 +986,7 @@ namespace HC.View
             base.ToXml(aNode);
             aNode.SetAttribute("autosize", FAutoSize.ToString());
             aNode.SetAttribute("enabled", FEnabled.ToString());
+            aNode.SetAttribute("tag", FTag.ToString());
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -985,6 +997,11 @@ namespace HC.View
                 FEnabled = bool.Parse(aNode.Attributes["enabled"].Value);
             else
                 FEnabled = true;
+
+            if (aNode.HasAttribute("tag"))
+                FTag = int.Parse(aNode.Attributes["tag"].Value);
+            else
+                FTag = 0;
         }
 
         public virtual RECT ClientRect()

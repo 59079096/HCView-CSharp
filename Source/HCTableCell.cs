@@ -284,7 +284,7 @@ namespace HC.View
                 FCellData.SaveToStream(aStream);
         }
 
-        public void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        public virtual void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             byte[] vBuffer = BitConverter.GetBytes(FWidth);
             aStream.Read(vBuffer, 0, vBuffer.Length);
@@ -332,7 +332,7 @@ namespace HC.View
             }
         }
 
-        public void ToXml(XmlElement aNode)
+        public virtual void ToXml(XmlElement aNode)
         {
             aNode.SetAttribute("width", FWidth.ToString());
             aNode.SetAttribute("height", FHeight.ToString());
@@ -350,7 +350,7 @@ namespace HC.View
             }
         }
 
-        public void ParseXml(XmlElement aNode)
+        public virtual void ParseXml(XmlElement aNode)
         {
             FWidth = int.Parse(aNode.Attributes["width"].Value);
             FHeight = int.Parse(aNode.Attributes["height"].Value);

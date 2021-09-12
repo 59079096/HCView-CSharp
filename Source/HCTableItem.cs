@@ -298,7 +298,7 @@ namespace HC.View
             return FDefaultRowHeight;
         }
 
-        private void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
+        protected virtual void CellChangeByAction(int aRow, int aCol, HCProcedure aProcedure)
         {
             this.IsFormatDirty = false;
             aProcedure();
@@ -546,6 +546,11 @@ namespace HC.View
         protected override void SetResizing(bool value)
         {
             base.SetResizing(value);
+        }
+
+        protected virtual HCTableRow DoCreateRow(HCStyle style, int colCount)
+        {
+            return new HCTableRow(style, colCount);
         }
 
         #region DoPaint子方法CheckRowBorderShouLian 找当前行各列分页时的收敛位置
@@ -2429,7 +2434,7 @@ namespace HC.View
             {
                 for (int vRow = 0; vRow <= RowCount - 1; vRow++)
                 {
-                    vCell = new HCTableCell(OwnerData.Style);
+                    vCell = FRows[vRow].CreateCell(OwnerData.Style);
                     vCell.Width = vWidth;
                     vCell.Height = FRows[vRow].Height;
                     InitializeCellData(vCell.CellData);
@@ -2473,7 +2478,7 @@ namespace HC.View
 
             for (int i = 0; i <= aCount - 1; i++)
             {
-                vTableRow = new HCTableRow(OwnerData.Style, FColWidths.Count);
+                vTableRow = DoCreateRow(OwnerData.Style, FColWidths.Count);
                 vTableRow.Height = FDefaultRowHeight;
 
                 for (int vCol = 0; vCol <= FColWidths.Count - 1; vCol++)
@@ -3906,6 +3911,8 @@ namespace HC.View
                 
                 for (int vC = 0; vC <= FRows[vR].ColCount - 1; vC++)  // 各列数
                     FRows[vR][vC].SaveToStream(aStream);
+
+                FRows[vR].SaveToStream(aStream);
             }
         }
 
@@ -4007,7 +4014,7 @@ namespace HC.View
             HCTableRow vRow;
             for (int i = 0; i <= vRowCount - 1; i++)
             {
-                vRow = new HCTableRow(OwnerData.Style, vColCount);  // 注意行创建时是table拥有者的Style，加载时是传入的AStyle
+                vRow = DoCreateRow(OwnerData.Style, vColCount);  // 注意行创建时是table拥有者的Style，加载时是传入的AStyle
                 FRows.Add(vRow);
             }
 
@@ -4045,6 +4052,8 @@ namespace HC.View
                     FRows[vR][vC].CellData.Width = FColWidths[vC] - 2 * FCellHPaddingPix;
                     FRows[vR][vC].LoadFromStream(aStream, aStyle, aFileVersion);
                 }
+
+                FRows[vR].LoadFromStream(aStream, aFileVersion);
             }
         }
 
@@ -4130,7 +4139,7 @@ namespace HC.View
             // 创建行、列
             for (int i = 0; i <= vR - 1; i++)
             {
-                HCTableRow vRow = new HCTableRow(OwnerData.Style, vC);  // 注意行创建时是table拥有者的Style，加载时是传入的AStyle
+                HCTableRow vRow = DoCreateRow(OwnerData.Style, vC);  // 注意行创建时是table拥有者的Style，加载时是传入的AStyle
                 FRows.Add(vRow);
             }
 
@@ -4170,7 +4179,7 @@ namespace HC.View
             HCTableRow vRow;
             for (int i = 0; i <= aRowCount - 1; i++)
             {
-                vRow = new HCTableRow(OwnerData.Style, aColCount);
+                vRow = DoCreateRow(OwnerData.Style, aColCount);
                 vRow.SetRowWidth(vDataWidth);
                 if (i == 0)
                 {
