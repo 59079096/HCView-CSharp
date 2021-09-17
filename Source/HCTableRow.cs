@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
@@ -70,12 +71,17 @@ namespace HC.View
                 return 0;
         }
 
+        protected virtual HCTableCell DoCreateCell(HCStyle style)
+        {
+            return new HCTableCell(style);
+        }
+
         public HCTableRow(HCStyle aStyle, int aColCount) : this()
         {
             HCTableCell vCell = null;
             for (int i = 0; i <= aColCount - 1; i++)
             {
-                vCell = new HCTableCell(aStyle);
+                vCell = DoCreateCell(aStyle);
                 this.Add(vCell);
             }
             FAutoHeight = true;
@@ -118,7 +124,16 @@ namespace HC.View
             this[this.Count - 1].Width = aWidth - (this.Count - 1) * vWidth;
         }
 
-        public void ToXml(XmlElement aNode)
+        public HCTableCell CreateCell(HCStyle style)
+        {
+            return DoCreateCell(style);
+        }
+
+        public virtual void SaveToStream(Stream stream) { }
+
+        public virtual void LoadFromStream(Stream stream, ushort fileVersion) { }
+
+        public virtual void ToXml(XmlElement aNode)
         {
             aNode.SetAttribute("autoheight", FAutoHeight.ToString());
             aNode.SetAttribute("height", FHeight.ToString());
@@ -130,7 +145,7 @@ namespace HC.View
             }
         }
 
-        public void ParseXml(XmlElement aNode)
+        public virtual void ParseXml(XmlElement aNode)
         {
             FAutoHeight = bool.Parse(aNode.Attributes["autoheight"].Value);
             FHeight = int.Parse(aNode.Attributes["height"].Value);

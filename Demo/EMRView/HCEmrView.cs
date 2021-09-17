@@ -1973,8 +1973,11 @@ namespace EMRView
             vItemTraverse.Process = vTraveEvent;  // 遍历到每一个文本对象是触发的事件
 
 #if PROCSERIES
-            if (this.FEditProcIndex != "")
+            if (FProcCount > 0)
             {
+                if (FEditProcIndex == "")
+                    return false;
+
                 vItemTraverse.SectionIndex = FEditProcInfo.SectionIndex;
                 HCPageData vPageData = Sections[FEditProcInfo.SectionIndex].Page;
                 for (int i = FEditProcInfo.BeginNo; i <= FEditProcInfo.EndNo; i++)

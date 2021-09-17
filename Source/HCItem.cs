@@ -204,6 +204,7 @@ namespace HC.View
             set { FScaleY = value; }
         }
 
+        /// <summary> 缩放比例 </summary>
         public Single Zoom
         {
             get { return FZoom; }

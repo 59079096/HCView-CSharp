@@ -64,8 +64,18 @@ namespace HC.View
 
             if (FEmpty)
             {
-                aCanvas.Pen.Color = Color.Black;
-                aCanvas.Pen.Width = 1;
+                aCanvas.Pen.BeginUpdate();
+                try
+                {
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.Black;
+                    aCanvas.Pen.Width = 1;
+                }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
+
                 aCanvas.Rectangle(aDrawRect);
             }
 
@@ -208,6 +218,18 @@ namespace HC.View
         public void LoadGraphicFile(string aFileName, bool resize = true)
         {
             FImage = new Bitmap(aFileName);
+            using (Bitmap vBitmap = new Bitmap(FImage.Width, FImage.Height))
+            {
+                vBitmap.SetResolution(FImage.HorizontalResolution, FImage.VerticalResolution);
+                using (Graphics vGraphic = Graphics.FromImage(vBitmap))
+                {
+                    vGraphic.Clear(Color.White);
+                    vGraphic.DrawImageUnscaled(FImage, 0, 0);
+                }
+
+                FImage = new Bitmap(vBitmap);
+            }
+
             DoImageChange(this);
 
             if (resize)
@@ -222,6 +244,18 @@ namespace HC.View
         public void LoadGraphicStream(Stream stream, bool resize = true)
         {
             FImage = new Bitmap(stream);
+            using (Bitmap vBitmap = new Bitmap(FImage.Width, FImage.Height))
+            {
+                vBitmap.SetResolution(FImage.HorizontalResolution, FImage.VerticalResolution);
+                using (Graphics vGraphic = Graphics.FromImage(vBitmap))
+                {
+                    vGraphic.Clear(Color.White);
+                    vGraphic.DrawImageUnscaled(FImage, 0, 0);
+                }
+
+                FImage = new Bitmap(vBitmap);
+            }
+
             DoImageChange(this);
 
             if (resize)
@@ -246,25 +280,9 @@ namespace HC.View
             // 图像不能直接写流，会导致流前面部分数据错误
             using (MemoryStream vImgStream = new MemoryStream())
             {
-                if (!OwnerData.Style.States.Contain(HCState.hosPasting))
+                using (Bitmap vBitmap = new Bitmap(FImage))
                 {
-                    using (Bitmap vBitmap = new Bitmap(FImage))
-                    {
-                        vBitmap.Save(vImgStream, FImage.RawFormat);
-                    }
-                }
-                else
-                {
-                    using (Bitmap vBitmap = new Bitmap(FImage.Width, FImage.Height))
-                    {
-                        using (Graphics vGraphic = Graphics.FromImage(vBitmap))
-                        {
-                            vGraphic.Clear(Color.White);
-                            vGraphic.DrawImage(FImage, 0, 0);
-                        }
-
-                        vBitmap.Save(vImgStream, ImageFormat.Jpeg);
-                    }
+                    vBitmap.Save(vImgStream, ImageFormat.Jpeg);
                 }
 
                 // write bitmap data size

@@ -15,6 +15,7 @@ using HC.Win32;
 using HC.View;
 using System.IO;
 using System.Xml;
+using System.Drawing;
 
 namespace EMRView
 {
@@ -39,6 +40,7 @@ namespace EMRView
     public class DeGroup : HCDomainItem
     {
         private bool FChanged, FReadOnly;
+        private int FTextStyleNo = HCStyle.Domain;
         #if PROCSERIES
         private bool FIsProc;
         #endif
@@ -98,12 +100,30 @@ namespace EMRView
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
+            byte[] buffer = System.BitConverter.GetBytes(FTextStyleNo);
+            aStream.Write(buffer, 0, buffer.Length);
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
+
+            if (aFileVersion > 52)
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FTextStyleNo);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FTextStyleNo = System.BitConverter.ToInt32(vBuffer, 0);
+
+                if (!OwnerData.Style.States.Contain(HCState.hosLoading))
+                {
+                    if (aStyle != null)
+                        FTextStyleNo = OwnerData.Style.GetStyleNo(aStyle.TextStyles[FTextStyleNo], true);
+                    else
+                        FTextStyleNo = 0;
+                }
+            }
+
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
@@ -117,6 +137,112 @@ namespace EMRView
             FReadOnly = (source as DeGroup).ReadOnly;
             HC.View.HC.SetPropertyString(vS, FPropertys);
             CheckPropertys();
+        }
+
+        public override void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyle)
+        {
+            FTextStyleNo = aMatchStyle.GetMatchStyleNo(aStyle, FTextStyleNo);
+        }
+
+        public override void MarkStyleUsed(bool aMark)
+        {
+            if (aMark)
+                OwnerData.Style.TextStyles[FTextStyleNo].CheckSaveUsed = true;
+            else
+                FTextStyleNo = OwnerData.Style.TextStyles[FTextStyleNo].TempNo;
+        }
+
+        public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
+        {
+            this.Width = 0;
+            if (FTextStyleNo < HCStyle.Null)
+            {
+                if (this.OwnerData.Style.States.Contain(HCState.hosLoading))
+                {
+                    HCTextStyle vTextStyle = new HCTextStyle();
+                    FTextStyleNo = aRichData.Style.GetStyleNo(vTextStyle, true);
+                }
+                else
+                    FTextStyleNo = aRichData.Style.GetDefaultStyleNo();
+            }
+
+            aRichData.Style.ApplyTempStyle(FTextStyleNo);
+            this.Height = aRichData.CalculateLineHeight(aRichData.Style.TextStyles[FTextStyleNo], aRichData.Style.ParaStyles[this.ParaNo]) - aRichData.Style.LineSpaceMin;
+            this.Empty = false;
+            HCCustomItem vItem = null;
+            if (MarkType == MarkType.cmtBeg)
+            {
+                if (aItemNo < aRichData.Items.Count - 1)
+                {
+                    vItem = aRichData.Items[aItemNo + 1];
+                    if (vItem.StyleNo == this.StyleNo && (vItem as HCDomainItem).MarkType == MarkType.cmtEnd)
+                    {
+                        this.Width = 10;
+                        this.Empty = true;
+                    }
+                    else
+                    if (vItem.ParaFirst)
+                        this.Width = 10;
+                }
+                else
+                    this.Width = 10;
+            }
+            else
+            {
+                vItem = aRichData.Items[aItemNo - 1];
+                if (vItem.StyleNo == this.StyleNo && (vItem as HCDomainItem).MarkType == MarkType.cmtBeg)
+                {
+                    this.Width = 10;
+                    this.Empty = true;
+                }
+                else
+                if (this.ParaFirst)
+                    this.Width = 10;
+            }
+        }
+
+        public override void PaintTop(HCCanvas aCanvas)
+        {
+            aCanvas.Pen.Width = 1;
+            //int vH = this.OwnerData.Style.LineSpaceMin / 2;
+            int vH = (FDrawRect.Height - this.OwnerData.Style.TextStyles[FTextStyleNo].FontHeight) / 2;
+            if (this.MarkType == HC.View.MarkType.cmtBeg)
+            {
+                aCanvas.Pen.BeginUpdate();
+                try
+                {
+                    aCanvas.Pen.Width = 1;
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
+                }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
+                aCanvas.MoveTo(FDrawRect.Left + 2, FDrawRect.Top + vH);
+                aCanvas.LineTo(FDrawRect.Left, FDrawRect.Top + vH);
+                aCanvas.LineTo(FDrawRect.Left, FDrawRect.Bottom - vH);
+                aCanvas.LineTo(FDrawRect.Left + 2, FDrawRect.Bottom - vH);
+            }
+            else
+            {
+                aCanvas.Pen.BeginUpdate();
+                try
+                {
+                    aCanvas.Pen.Width = 1;
+                    aCanvas.Pen.Style = HCPenStyle.psSolid;
+                    aCanvas.Pen.Color = Color.FromArgb(0, 0, 255);
+                }
+                finally
+                {
+                    aCanvas.Pen.EndUpdate();
+                }
+
+                aCanvas.MoveTo(FDrawRect.Right - 2, FDrawRect.Top + vH);
+                aCanvas.LineTo(FDrawRect.Right, FDrawRect.Top + vH);
+                aCanvas.LineTo(FDrawRect.Right, FDrawRect.Bottom - vH);
+                aCanvas.LineTo(FDrawRect.Right - 2, FDrawRect.Bottom - vH);
+            }
         }
 
         public override int GetOffsetAt(int x)
