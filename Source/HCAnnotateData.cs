@@ -22,7 +22,7 @@ namespace HC.View
 {
     public class HCDataAnnotate : SelectInfo
     {
-        private int FID, FStartDrawItemNo, FEndDrawItemNo;
+        private int FID;
         private string FTitle, FText;
 
         public HCDataAnnotate()
@@ -35,55 +35,20 @@ namespace HC.View
 
         }
 
-        public override void Initialize()
-        {
-            base.Initialize();
-            FID = -1;
-        }
-
-        public void CopyRange(SelectInfo aSrc)
-        {
-            this.StartItemNo = aSrc.StartItemNo;
-            this.StartItemOffset = aSrc.StartItemOffset;
-            this.EndItemNo = aSrc.EndItemNo;
-            this.EndItemOffset = aSrc.EndItemOffset;
-        }
-
-        public void SaveToStream(Stream aStream)
-        {
-            byte[] vBuffer = BitConverter.GetBytes(this.StartItemNo);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(this.StartItemOffset);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(this.EndItemNo);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(this.EndItemOffset);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(FID);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
-
-            HC.HCSaveTextToStream(aStream, FTitle);
-            HC.HCSaveTextToStream(aStream, FText);
-        }
-
         public void LoadFromStream(Stream aStream, ushort aFileVersion)
         {
-            byte[] vBuffer = BitConverter.GetBytes(this.StartItemNo);
+            byte[] vBuffer = BitConverter.GetBytes(FID);
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            this.StartItemNo = BitConverter.ToInt32(vBuffer, 0);
+            FID = BitConverter.ToInt32(vBuffer, 0);
 
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            this.StartItemOffset = BitConverter.ToInt32(vBuffer, 0);
+            FID = BitConverter.ToInt32(vBuffer, 0);
 
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            this.EndItemNo = BitConverter.ToInt32(vBuffer, 0);
+            FID = BitConverter.ToInt32(vBuffer, 0);
 
             aStream.Read(vBuffer, 0, vBuffer.Length);
-            this.EndItemOffset = BitConverter.ToInt32(vBuffer, 0);
+            FID = BitConverter.ToInt32(vBuffer, 0);
 
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FID = BitConverter.ToInt32(vBuffer, 0);
@@ -91,414 +56,38 @@ namespace HC.View
             HC.HCLoadTextFromStream(aStream, ref FTitle, aFileVersion);
             HC.HCLoadTextFromStream(aStream, ref FText, aFileVersion);
         }
-
-        public int ID
-        {
-            get { return FID; }
-            set { FID = value; }
-        }
-
-        public int StartDrawItemNo
-        {
-            get { return FStartDrawItemNo; }
-            set { FStartDrawItemNo = value; }
-        }
-
-        public int EndDrawItemNo
-        {
-            get { return FEndDrawItemNo; }
-            set { FEndDrawItemNo = value; }
-        }
-
-        public string Title
-        {
-            get { return FTitle; }
-            set { FTitle = value; }
-        }
-
-        public string Text
-        {
-            get { return FText; }
-            set { FText = value; }
-        }
     }
-
-    public class HCDataAnnotates : HCList<HCDataAnnotate>
+    public class HCAnnotateInfo : HCDomainInfo
     {
-        private EventHandler FOnInsertAnnotate, FOnRemoveAnnotate;
-
-        private void HCDataAnnotate_OnInsert(object sender, NListEventArgs<HCDataAnnotate> e)
+        public HCAnnotateInfo() : base()
         {
-            if (FOnInsertAnnotate != null)
-                FOnInsertAnnotate(e.Item, null);
+
         }
 
-        private void HCDataAnnotate_OnRemove(object sender, NListEventArgs<HCDataAnnotate> e)
+        ~HCAnnotateInfo()
         {
-            if (FOnRemoveAnnotate != null)
-                FOnRemoveAnnotate(e.Item, null);
-        }
 
-        public HCDataAnnotates()
-        {
-            this.OnInsert += new EventHandler<NListEventArgs<HCDataAnnotate>>(HCDataAnnotate_OnInsert);
-            this.OnDelete += new EventHandler<NListEventArgs<HCDataAnnotate>>(HCDataAnnotate_OnRemove);
-        }
-
-        public void DeleteByID(int aID)
-        {
-            for (int i = 0; i <= this.Count - 1; i++)
-            {
-                if (this[i].ID == aID)
-                {
-                    this.RemoveAt(i);
-                    break;
-                }
-            }
-        }
-
-        public void NewDataAnnotate(SelectInfo aSelectInfo, string aTitle, string aText)
-        {
-            HCDataAnnotate vDataAnnotate = new HCDataAnnotate();
-            vDataAnnotate.CopyRange(aSelectInfo);
-            vDataAnnotate.Title = aTitle;
-            vDataAnnotate.Text = aText;
-            this.Add(vDataAnnotate);
-            vDataAnnotate.ID = this.Count - 1;
-        }
-
-        public EventHandler OnInsertAnnotate
-        {
-            get { return FOnInsertAnnotate; }
-            set { FOnInsertAnnotate = value; }
-        }
-
-        public EventHandler OnRemoveAnnotate
-        {
-            get { return FOnRemoveAnnotate; }
-            set { FOnRemoveAnnotate = value; }
-        }
-    }
-
-    public enum HCAnnotateMark : byte
-    {
-        amFirst, amNormal, amLast, amBoth
-    }
-
-    public class HCDrawItemAnnotate : Object
-    {
-        public RECT DrawRect;
-        public HCAnnotateMark Mark;
-        public HCDataAnnotate DataAnnotate;
-
-        public bool First()
-        {
-            return (Mark == HCAnnotateMark.amFirst) || (Mark == HCAnnotateMark.amBoth);
-        }
-
-        public bool Last()
-        {
-            return (Mark == HCAnnotateMark.amLast) | (Mark == HCAnnotateMark.amBoth);
-        }
-    }
-
-    public class HCDrawItemAnnotates : HCList<HCDrawItemAnnotate>
-    {
-        public void NewDrawAnnotate(RECT aRect, HCAnnotateMark aMark, HCDataAnnotate aDataAnnotate)
-        {
-            HCDrawItemAnnotate vDrawItemAnnotate = new HCDrawItemAnnotate();
-            vDrawItemAnnotate.DrawRect = aRect;
-            vDrawItemAnnotate.Mark = aMark;
-            vDrawItemAnnotate.DataAnnotate = aDataAnnotate;
-            this.Add(vDrawItemAnnotate);
         }
     }
 
     public delegate void DataDrawItemAnnotateEventHandler(HCCustomData aData, int aDrawItemNo,
-        RECT aDrawRect, HCDataAnnotate aDataAnnotate);
+        RECT aDrawRect, HCAnnotateItem aAnnotateItem);
 
-    public delegate void DataAnnotateEventHandler(HCCustomData aData, HCDataAnnotate aDataAnnotate);
+    public delegate void DataAnnotateEventHandler(HCCustomData aData, HCAnnotateItem aAnnotateItem);
 
     public class HCAnnotateData : HCRichData
     {
-        private HCDataAnnotates FDataAnnotates;
-        private HCDataAnnotate FHotAnnotate, FActiveAnnotate;  // 当前高亮批注、当前激活的批注
-        private HCDrawItemAnnotates FDrawItemAnnotates;
+        private uint FNextID, FAnnotateCount;
+        private Stack<uint> FIDStrack;
+        private HCAnnotateInfo FHotAnnotate, FActiveAnnotate;  // 当前高亮批注、当前激活的批注
         private DataDrawItemAnnotateEventHandler FOnDrawItemAnnotate;
         private DataAnnotateEventHandler FOnInsertAnnotate, FOnRemoveAnnotate;
-
-        /// <summary> 获取指定的DrawItem所属的批注以及在各批注中的区域 </summary>
-        /// <param name="ADrawItemNo"></param>
-        /// <param name="ACanvas">应用了DrawItem样式的Canvas</param>
-        /// <returns></returns>
-        private bool DrawItemOfAnnotate(int aDrawItemNo, HCCanvas aCanvas, RECT aDrawRect)
-        {
-            if (FDataAnnotates.Count == 0)
-                return false;
-
-            int vItemNo = this.DrawItems[aDrawItemNo].ItemNo;
-            bool Result = false;
-            HCDataAnnotate vDataAnnotate = null;
-            FDrawItemAnnotates.Clear();
-            for (int i = 0; i <= FDataAnnotates.Count - 1; i++)
-            {
-                vDataAnnotate = FDataAnnotates[i];
-                if (vDataAnnotate.StartItemNo > vItemNo || vDataAnnotate.EndItemNo < vItemNo)
-                    continue;
-
-                if (aDrawItemNo == vDataAnnotate.StartDrawItemNo)
-                {
-                    if (aDrawItemNo == vDataAnnotate.EndDrawItemNo)
-                    {
-                        FDrawItemAnnotates.NewDrawAnnotate(
-                            new RECT(aDrawRect.Left + GetDrawItemOffsetWidth(aDrawItemNo, vDataAnnotate.StartItemOffset - this.DrawItems[aDrawItemNo].CharOffs + 1, aCanvas),
-                                aDrawRect.Top,
-                                aDrawRect.Left + GetDrawItemOffsetWidth(aDrawItemNo, vDataAnnotate.EndItemOffset - this.DrawItems[aDrawItemNo].CharOffs + 1, aCanvas),
-                                aDrawRect.Bottom),
-                            HCAnnotateMark.amBoth, vDataAnnotate);
-                    }
-                    else  // 仅是批注头
-                    {
-                        FDrawItemAnnotates.NewDrawAnnotate(
-                            new RECT(aDrawRect.Left + GetDrawItemOffsetWidth(aDrawItemNo, vDataAnnotate.StartItemOffset - this.DrawItems[aDrawItemNo].CharOffs + 1, aCanvas),
-                                aDrawRect.Top, aDrawRect.Right, aDrawRect.Bottom),
-                        HCAnnotateMark.amFirst, vDataAnnotate);
-                    }
-
-                    Result = true;
-                }
-                else
-                if (aDrawItemNo == vDataAnnotate.EndDrawItemNo)  // 当前DrawItem是批注结束
-                {
-                    FDrawItemAnnotates.NewDrawAnnotate(
-                        new RECT(aDrawRect.Left, aDrawRect.Top,
-                            aDrawRect.Left + GetDrawItemOffsetWidth(aDrawItemNo, vDataAnnotate.EndItemOffset - this.DrawItems[aDrawItemNo].CharOffs + 1, aCanvas),
-                            aDrawRect.Bottom),
-                    HCAnnotateMark.amLast, vDataAnnotate);
-
-                    Result = true;
-                }
-                else
-                if (aDrawItemNo > vDataAnnotate.StartDrawItemNo && aDrawItemNo < vDataAnnotate.EndDrawItemNo)  // 当前DrawItem是批注范围内
-                {
-                    FDrawItemAnnotates.NewDrawAnnotate(aDrawRect, HCAnnotateMark.amNormal, vDataAnnotate);
-                    Result = true;
-                }
-            }
-
-            return Result;
-        }
-
-        /// <summary> 指定DrawItem范围内的批注获取各自的DrawItem范围 </summary>
-        /// <param name="AFirstDrawItemNo">起始DrawItem</param>
-        /// <param name="ALastDrawItemNo">结束DrawItem</param>
-        private void CheckAnnotateRange(int aFirstDrawItemNo, int aLastDrawItemNo)
-        {
-            if (aFirstDrawItemNo < 0)
-                return;
-
-            int vFirstNo = this.DrawItems[aFirstDrawItemNo].ItemNo;
-            int vLastNo = this.DrawItems[aLastDrawItemNo].ItemNo;
-            HCDataAnnotate vDataAnnotate;
-            for (int i = 0; i <= FDataAnnotates.Count - 1; i++)
-            {
-                vDataAnnotate = FDataAnnotates[i];
-
-                if (vDataAnnotate.EndItemNo < vFirstNo)  // 未进入本次查找范围
-                    continue;
-
-                if (vDataAnnotate.StartItemNo > vLastNo)  // 超出本次查找的范围
-                    break;
-
-                vDataAnnotate.StartDrawItemNo =
-                    this.GetDrawItemNoByOffset(vDataAnnotate.StartItemNo, vDataAnnotate.StartItemOffset);
-                vDataAnnotate.EndDrawItemNo =
-                    this.GetDrawItemNoByOffset(vDataAnnotate.EndItemNo, vDataAnnotate.EndItemOffset);
-                if (vDataAnnotate.EndItemOffset == this.DrawItems[vDataAnnotate.EndDrawItemNo].CharOffs)  // 如果在结束的最前面，按上一个
-                  vDataAnnotate.EndDrawItemNo = vDataAnnotate.EndDrawItemNo - 1;
-            }
-        }
-
-        private HCDataAnnotate GetDrawItemFirstDataAnnotateAt(int aDrawItemNo, int x, int y)
-        {
-            HCDataAnnotate Result = null;
-
-            int vStyleNo = GetDrawItemStyle(aDrawItemNo);
-            if (vStyleNo > HCStyle.Null)
-                Style.ApplyTempStyle(vStyleNo);
-
-            if (DrawItemOfAnnotate(aDrawItemNo, Style.TempCanvas, DrawItems[aDrawItemNo].Rect))
-            {
-                POINT vPt = new POINT(x, y);
-                for (int i = 0; i <= FDrawItemAnnotates.Count - 1; i++)
-                {
-                    if (HC.PtInRect(FDrawItemAnnotates[i].DrawRect, vPt))
-                    {
-                        Result = FDrawItemAnnotates[i].DataAnnotate;
-                        break;
-                    }
-                }
-            }
-
-            return Result;
-        }
-
-        #region  DoItemAction子方法
-
-        private void _AnnotateRemove(int aItemNo, int aOffset)
-        {
-
-        }
-
-        private void _AnnotateInsertChar(int aItemNo, int aOffset)
-        {
-            HCDataAnnotate vDataAnn;
-
-            for (int i = FDataAnnotates.Count - 1; i >= 0; i--)
-            {
-                if (FDataAnnotates[i].StartItemNo > aItemNo)
-                    continue;
-
-                if (FDataAnnotates[i].EndItemNo < aItemNo)
-                    break;
-
-                vDataAnn = FDataAnnotates[i];
-                if (vDataAnn.StartItemNo == aItemNo)
-                {
-                    if (vDataAnn.EndItemNo == aItemNo)
-                    {
-                        if (aOffset <= vDataAnn.StartItemOffset)
-                        {
-                            vDataAnn.StartItemOffset = vDataAnn.StartItemOffset + 1;
-                            vDataAnn.EndItemOffset = vDataAnn.EndItemOffset + 1;
-                        }
-                        else
-                        {
-                            if (aOffset < vDataAnn.StartItemOffset)
-                                vDataAnn.StartItemOffset = vDataAnn.StartItemOffset + 1;
-                        }
-
-                        if (vDataAnn.StartItemOffset == vDataAnn.EndItemOffset)
-                            FDataAnnotates.Delete(i);
-                    }
-                    else  // 批注起始和结束不是同一个Item
-                    {
-                        if (aOffset <= vDataAnn.StartItemOffset)
-                            vDataAnn.StartItemOffset = vDataAnn.StartItemOffset + 1;
-                    }
-                }
-                else
-                {
-                    if (vDataAnn.EndItemNo == aItemNo)  // 是批注结束Item
-                    {
-                        if (aOffset <= vDataAnn.EndItemOffset)
-                            vDataAnn.EndItemOffset = vDataAnn.EndItemOffset + 1;
-                    }
-                }
-            }
-        }
-
-        private void _AnnotateBackChar(int aItemNo, int aOffset)
-        {
-            HCDataAnnotate vDataAnn;
-
-            for (int i = FDataAnnotates.Count - 1; i >= 0; i--)
-            {
-                if (FDataAnnotates[i].StartItemNo > aItemNo)
-                    continue;
-                if (FDataAnnotates[i].EndItemNo < aItemNo)
-                    break;
-
-                vDataAnn = FDataAnnotates[i];
-                if (vDataAnn.StartItemNo == aItemNo)
-                {
-                    if (vDataAnn.EndItemNo == aItemNo)
-                    {
-                        if ((aOffset > vDataAnn.StartItemOffset) && (aOffset <= vDataAnn.EndItemOffset))
-                        {
-                            vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
-                        }
-                        else
-                        if (aOffset <= vDataAnn.StartItemOffset)  // 在批注所在的Item批注位置前面删除
-                        {
-                            vDataAnn.StartItemOffset = vDataAnn.StartItemOffset - 1;
-                            vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
-                        }
-
-                        if (vDataAnn.StartItemOffset == vDataAnn.EndItemOffset)
-                            FDataAnnotates.Delete(i);
-                    }
-                    else
-                    {
-                        if (aOffset >= vDataAnn.StartItemOffset)
-                            vDataAnn.StartItemOffset = vDataAnn.StartItemOffset - 1;
-                    }
-                }
-                else
-                {
-                    if (vDataAnn.EndItemNo == aItemNo)
-                    {
-                        if (aOffset <= vDataAnn.EndItemOffset)
-                            vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
-                    }
-                }
-            }
-        }
-
-        private void _AnnotateDeleteChar(int aItemNo, int aOffset)
-        {
-            HCDataAnnotate vDataAnn;
-
-            for (int i = FDataAnnotates.Count - 1; i >= 0; i--)
-            {
-                if (FDataAnnotates[i].StartItemNo > aItemNo)
-                    continue;
-                if (FDataAnnotates[i].EndItemNo < aItemNo)
-                    break;
-
-                vDataAnn = FDataAnnotates[i];
-                if (vDataAnn.StartItemNo == aItemNo)
-                {
-                    if (vDataAnn.EndItemNo == aItemNo)
-                    {
-                        if (aOffset <= vDataAnn.StartItemOffset)
-                        {
-                            vDataAnn.StartItemOffset = vDataAnn.StartItemOffset - 1;
-                            vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
-                        }
-                        else
-                        {
-                            if (aOffset <= vDataAnn.EndItemOffset)
-                                vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
-                        }
-
-                        if (vDataAnn.StartItemOffset == vDataAnn.EndItemOffset)
-                            FDataAnnotates.Delete(i);
-                    }
-                    else
-                    {
-                        if (aOffset <= vDataAnn.StartItemOffset)
-                            vDataAnn.StartItemOffset = vDataAnn.StartItemOffset - 1;
-                    }
-                }
-                else
-                {
-                    if (vDataAnn.EndItemNo == aItemNo)
-                    {
-                        if (aOffset <= vDataAnn.EndItemOffset)
-                            vDataAnn.EndItemOffset = vDataAnn.EndItemOffset - 1;
-                    }
-                }
-            }
-        }
-
-        #endregion
 
         protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.DoLoadFromStream(aStream, aStyle, aFileVersion);
 
-            if (aFileVersion > 22)
+            if (aFileVersion > 22 && aFileVersion < 55)
             {
                 ushort vAnnCount = 0;
                 byte[] vBuffer = BitConverter.GetBytes(vAnnCount);
@@ -506,36 +95,68 @@ namespace HC.View
                 vAnnCount = BitConverter.ToUInt16(vBuffer, 0);
                 if (vAnnCount > 0)
                 {
-                    for (int i = 0; i <= vAnnCount - 1; i++)
+                    for (int i = 0; i < vAnnCount; i++)
                     {
                         HCDataAnnotate vAnn = new HCDataAnnotate();
                         vAnn.LoadFromStream(aStream, aFileVersion);
-                        FDataAnnotates.Add(vAnn);
+                        //FDataAnnotates.Add(vAnn);
                     }
                 }
             }
+
+            if (aFileVersion > 54)
+            {
+                byte[] vBuffer = BitConverter.GetBytes(FNextID);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FNextID = BitConverter.ToUInt32(vBuffer, 0);
+            }
+            else
+                FNextID = 0;
         }
 
-        protected override void DoItemAction(int aItemNo, int aOffset, HCAction aAction)
+        protected override void DoInsertItem(HCCustomItem aItem)
         {
-            switch (aAction)
+            if (aItem.StyleNo == HCStyle.Annotate && (aItem as HCAnnotateItem).MarkType == MarkType.cmtBeg)
             {
-                case HCAction.actDeleteItem:
-                    _AnnotateRemove(aItemNo, aOffset);
-                    break;
-
-                case HCAction.actInsertText:
-                    _AnnotateInsertChar(aItemNo, aOffset);
-                    break;
-
-                case HCAction.actBackDeleteText:
-                    _AnnotateBackChar(aItemNo, aOffset);
-                    break;
-
-                case HCAction.actDeleteText:
-                    _AnnotateDeleteChar(aItemNo, aOffset);
-                    break;
+                FAnnotateCount++;
+                if (FOnInsertAnnotate != null)
+                    FOnInsertAnnotate(this, aItem as HCAnnotateItem);
             }
+
+            base.DoInsertItem(aItem);
+        }
+
+        protected override void DoRemoveItem(HCCustomItem aItem)
+        {
+            if (aItem.StyleNo == HCStyle.Annotate && (aItem as HCAnnotateItem).MarkType == MarkType.cmtBeg)
+            {
+                FAnnotateCount--;
+                if (FOnRemoveAnnotate != null)
+                    FOnRemoveAnnotate(this, aItem as HCAnnotateItem);
+            }
+
+            base.DoRemoveItem(aItem);
+        }
+
+        protected override bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
+        {
+            bool vResult = true;
+            if (Style.States.Contain(HCState.hosLoading)
+                || Style.States.Contain(HCState.hosUndoing)
+                || Style.States.Contain(HCState.hosRedoing)
+                )
+                return vResult;
+
+            if (aAction == HCAction.actDeleteItem)
+            {
+                if (Items[aItemNo].StyleNo == HCStyle.Annotate)  // 是批注
+                    vResult = false;
+            }
+
+            if (vResult)
+                vResult = base.DoAcceptAction(aItemNo, aOffset, aAction);
+
+            return vResult;
         }
 
         protected override void DoDrawItemPaintContent(HCCustomData aData, int aItemNo, int aDrawItemNo,
@@ -543,223 +164,459 @@ namespace HC.View
             int aDataDrawLeft, int aDataDrawRight, int aDataDrawBottom, int aDataScreenTop, int aDataScreenBottom,
             HCCanvas aCanvas, PaintInfo aPaintInfo)
         {
-            if ((!aPaintInfo.Print) && (FOnDrawItemAnnotate != null) && DrawItemOfAnnotate(aDrawItemNo, aCanvas, aClearRect))  // 当前DrawItem是某批注中的一部分
+            if ((!aPaintInfo.Print) && (FOnDrawItemAnnotate != null))  // 当前DrawItem是某批注中的一部分
             {
-                HCDrawItemAnnotate vDrawAnnotate;
-                bool vActive;
-                for (int i = 0; i <= FDrawItemAnnotates.Count - 1; i++)
-                {
-                    vDrawAnnotate = FDrawItemAnnotates[i];
-
-                    vActive = vDrawAnnotate.DataAnnotate.Equals(FHotAnnotate)
-                        || vDrawAnnotate.DataAnnotate.Equals(FActiveAnnotate);
-
-                    if (vActive)
-                        aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
-                    else
-                        aCanvas.Brush.Color = HC.AnnotateBKColor;
-
-                    aCanvas.FillRect(vDrawAnnotate.DrawRect);
-
-                    if (vDrawAnnotate.First())  // 是批注头
-                    {
-                        aCanvas.Pen.BeginUpdate();
-                        try
-                        {
-                            aCanvas.Pen.Color = Color.Red;
-                            aCanvas.Pen.Width = 1;
-                        }
-                        finally
-                        {
-                            aCanvas.Pen.EndUpdate();
-                        }
-
-                        aCanvas.MoveTo(vDrawAnnotate.DrawRect.Left + 2, vDrawAnnotate.DrawRect.Top - 2);
-                        aCanvas.LineTo(vDrawAnnotate.DrawRect.Left, vDrawAnnotate.DrawRect.Top);
-                        aCanvas.LineTo(vDrawAnnotate.DrawRect.Left, vDrawAnnotate.DrawRect.Bottom);
-                        aCanvas.LineTo(vDrawAnnotate.DrawRect.Left + 2, vDrawAnnotate.DrawRect.Bottom + 2);
-                    }
-
-                    if (vDrawAnnotate.Last())  // 是批注尾
-                    {
-                        aCanvas.Pen.BeginUpdate();
-                        try
-                        {
-                            aCanvas.Pen.Color = Color.Red;
-                            aCanvas.Pen.Width = 1;
-                        }
-                        finally
-                        {
-                            aCanvas.Pen.EndUpdate();
-                        }
-
-                        aCanvas.MoveTo(vDrawAnnotate.DrawRect.Right - 2, vDrawAnnotate.DrawRect.Top - 2);
-                        aCanvas.LineTo(vDrawAnnotate.DrawRect.Right, vDrawAnnotate.DrawRect.Top);
-                        aCanvas.LineTo(vDrawAnnotate.DrawRect.Right, vDrawAnnotate.DrawRect.Bottom);
-                        aCanvas.LineTo(vDrawAnnotate.DrawRect.Right - 2, vDrawAnnotate.DrawRect.Bottom + 2);
-
-                        FOnDrawItemAnnotate(aData, aDrawItemNo, vDrawAnnotate.DrawRect, vDrawAnnotate.DataAnnotate);
-                    }
-                }
+                if (aData.Items[aItemNo].StyleNo == HCStyle.Annotate && ((aData.Items[aItemNo] as HCAnnotateItem).MarkType == MarkType.cmtEnd))
+                    FOnDrawItemAnnotate(aData, aDrawItemNo, aDrawRect, aData.Items[aItemNo] as HCAnnotateItem);
             }
 
             base.DoDrawItemPaintContent(aData, aItemNo, aDrawItemNo, aDrawRect, aClearRect, aDrawText,
                 aDataDrawLeft, aDataDrawRight, aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
-        protected void DoInsertAnnotate(object sender, EventArgs e)
-        {
-            Style.UpdateInfoRePaint();
-            if (FOnInsertAnnotate != null)
-                FOnInsertAnnotate(this, (HCDataAnnotate)sender);
-        }
-
-        protected void DoRemoveAnnotate(object sender, EventArgs e)
-        {
-            Style.UpdateInfoRePaint();
-            if (FOnRemoveAnnotate != null)
-                FOnRemoveAnnotate(this, (HCDataAnnotate)sender);
-        }
-
         public HCAnnotateData(HCStyle aStyle) : base(aStyle)
         {
-            FDataAnnotates = new HCDataAnnotates();
-            FDataAnnotates.OnInsertAnnotate = DoInsertAnnotate;
-            FDataAnnotates.OnRemoveAnnotate = DoRemoveAnnotate;
-            FDrawItemAnnotates = new HCDrawItemAnnotates();
-            FHotAnnotate = null;
-            FActiveAnnotate = null;
+            FNextID = 0;
+            FIDStrack = new Stack<uint>();
+            FAnnotateCount = 0;
+            FHotAnnotate = new HCAnnotateInfo();
+            FHotAnnotate.Data = this;
+            FActiveAnnotate = new HCAnnotateInfo();
+            FActiveAnnotate.Data = this;
         }
 
         ~HCAnnotateData()
         {
-            FDataAnnotates.Clear();
-            FDrawItemAnnotates.Clear();
+
         }
 
         public override void GetCaretInfo(int aItemNo, int aOffset, ref HCCaretInfo aCaretInfo)
         {
+            if (FAnnotateCount > 0 && this.SelectInfo.StartItemNo >= 0)
+            {
+                HCCustomData vTopData = GetTopLevelData();
+                if (vTopData == this)
+                    GetAnnotateFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveAnnotate);
+            }
+
             base.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
-
-            if (!this.Style.UpdateInfo.DragingSelected && this.SelectExists())
-            {
-                if (this.SelectInSameDrawItem() && (this.Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null))
-                {
-
-                }
-                else
-                    aCaretInfo.Visible = false;
-            }
-
-            int vCaretDrawItemNo = -1;
-            if (this.CaretDrawItemNo < 0)
-            {
-                if (Style.UpdateInfo.DragingSelected)
-                    vCaretDrawItemNo = GetDrawItemNoByOffset(this.MouseMoveItemNo, this.MouseMoveItemOffset);
-                else
-                    vCaretDrawItemNo = GetDrawItemNoByOffset(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
-            }
-            else
-                vCaretDrawItemNo = CaretDrawItemNo;
-
-            HCDataAnnotate vDataAnnotate = null;
-            if (Style.UpdateInfo.DragingSelected)
-            {
-                vDataAnnotate = GetDrawItemFirstDataAnnotateAt(vCaretDrawItemNo,
-                    this.DrawItems[vCaretDrawItemNo].Rect.Left + GetDrawItemOffsetWidth(vCaretDrawItemNo,
-                      this.MouseMoveItemOffset - DrawItems[vCaretDrawItemNo].CharOffs + 1),
-                    DrawItems[vCaretDrawItemNo].Rect.Top + 1);
-            }
-            else
-            {
-                vDataAnnotate = GetDrawItemFirstDataAnnotateAt(vCaretDrawItemNo,
-                    this.DrawItems[vCaretDrawItemNo].Rect.Left + GetDrawItemOffsetWidth(vCaretDrawItemNo,
-                      SelectInfo.StartItemOffset - DrawItems[vCaretDrawItemNo].CharOffs + 1),
-                    DrawItems[vCaretDrawItemNo].Rect.Top + 1);
-            }
-
-            if (FActiveAnnotate != vDataAnnotate)
-            {
-                FActiveAnnotate = vDataAnnotate;
-                Style.UpdateInfoRePaint();
-            }
-        }
-
-        public override void PaintData(int aDataDrawLeft, int aDataDrawTop, int aDataDrawRight, int aDataDrawBottom,
-            int aDataScreenTop, int aDataScreenBottom, int aVOffset, int aFirstDItemNo, int aLastDItemNo,
-            HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            CheckAnnotateRange(aFirstDItemNo, aLastDItemNo);  // 指定DrawItem范围内的批注获取各自的DrawItem范围
-            base.PaintData(aDataDrawLeft, aDataDrawTop, aDataDrawRight, aDataDrawBottom, aDataScreenTop,
-                aDataScreenBottom, aVOffset, aFirstDItemNo, aLastDItemNo, aCanvas, aPaintInfo);
-            FDrawItemAnnotates.Clear();
         }
 
         public override void MouseMove(MouseEventArgs e)
         {
             base.MouseMove(e);
+            if (FAnnotateCount > 0)
+                this.GetAnnotateFrom(this.MouseMoveItemNo, this.MouseMoveItemOffset, FHotAnnotate);
+            else
+                FHotAnnotate.Clear();
 
-            HCDataAnnotate vDataAnnotate = GetDrawItemFirstDataAnnotateAt(MouseMoveDrawItemNo, e.X, e.Y);
-
-            if (FHotAnnotate != vDataAnnotate)
+            HCAnnotateData vTopData = this.GetTopLevelDataAt(e.X, e.Y) as HCAnnotateData;
+            if (vTopData == this || vTopData.HotAnnotate.BeginNo < 0)
             {
-                FHotAnnotate = vDataAnnotate;
-                Style.UpdateInfoRePaint();
+                if (FHotAnnotate.BeginNo >= 0)
+                    Style.UpdateInfoRePaint();
             }
         }
 
         public override void InitializeField()
         {
             base.InitializeField();
-            FHotAnnotate = null;
-            FActiveAnnotate = null;
-        }
+            if (FHotAnnotate != null)
+                FHotAnnotate.Clear();
 
-        public override void Clear()
-        {
-            FDataAnnotates.Clear();
-            base.Clear();
+            if (FActiveAnnotate != null)
+                FActiveAnnotate.Clear();
         }
 
         public override void SaveToStream(Stream aStream)
         {
- 	        base.SaveToStream(aStream);
-            ushort vAnnCount = (ushort)FDataAnnotates.Count;
-            byte[] vBuffer = BitConverter.GetBytes(vAnnCount);
+            base.SaveToStream(aStream);
+            byte[] vBuffer = BitConverter.GetBytes(FNextID);
             aStream.Write(vBuffer, 0, vBuffer.Length);
+        }
 
-            for (int i = 0; i <= vAnnCount - 1; i++)
-                FDataAnnotates[i].SaveToStream(aStream);
+        public int GetAnnotateBeginBefor(int itemNo, uint AID)
+        {
+            for (int i = itemNo; i >= 0; i--)
+            {
+                if (Items[i].StyleNo == HCStyle.Annotate)
+                {
+                    if ((Items[i] as HCAnnotateItem).MarkType == MarkType.cmtBeg
+                        && (Items[i] as HCAnnotateItem).ID == AID)
+                        return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public int GetAnnotateEndAfter(int itemNo, uint AID)
+        {
+            for (int i = itemNo; i < Items.Count; i++)
+            {
+                if (Items[i].StyleNo == HCStyle.Annotate)
+                {
+                    if ((Items[i] as HCAnnotateItem).MarkType == MarkType.cmtEnd
+                        && (Items[i] as HCAnnotateItem).ID == AID)
+                        return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public void GetAnnotateFrom(int itemNo, int offset, HCAnnotateInfo annotateInfo)
+        {
+            annotateInfo.Clear();
+
+            if (itemNo < 0 || offset < 0)
+                return;
+
+            HCAnnotateItem vAnnotateItem = null;
+            uint vID = 0;
+            if (Items[itemNo].StyleNo == HCStyle.Annotate)  // 起始位置就是批注
+            {
+                vAnnotateItem = Items[itemNo] as HCAnnotateItem;
+                if (vAnnotateItem.MarkType == MarkType.cmtBeg)  // 起始位置是起始标记
+                {
+                    if (offset == HC.OffsetAfter)  // 光标在起始标记后面
+                    {
+                        annotateInfo.Data = this;
+                        annotateInfo.BeginNo = itemNo;  // 当前即为起始标识
+                        vID = vAnnotateItem.ID;
+                        annotateInfo.EndNo = GetAnnotateEndAfter(itemNo + 1, vID);  // 这里+1是批注不会出现不配对的前提下
+                        return;
+                    }
+                }
+                else  // 起始位置是结束标记
+                {
+                    if (offset == HC.OffsetBefor)  // 光标在结束标记前面
+                    {
+                        annotateInfo.Data = this;
+                        annotateInfo.EndNo = itemNo;
+                        vID = vAnnotateItem.ID;
+                        annotateInfo.BeginNo = GetAnnotateBeginBefor(itemNo - 1, vID);  // 这里-1是批注不会出现不配对的前提下
+                        return;
+                    }
+                }
+            }
+
+            FIDStrack.Clear();
+            for (int i = itemNo; i >= 0; i--)
+            {
+                if (Items[i].StyleNo == HCStyle.Annotate)
+                {
+                    vAnnotateItem = Items[i] as HCAnnotateItem;
+                    if (vAnnotateItem.MarkType == MarkType.cmtEnd)  // 是结束
+                        FIDStrack.Push(vAnnotateItem.ID);
+                    else  // 是起始
+                    {
+                        if (FIDStrack.Count > 0)  // 有栈
+                        {
+                            vID = FIDStrack.Peek();
+                            if (vAnnotateItem.ID == vID)  // 消除配对
+                                FIDStrack.Pop();
+                            else
+                            {
+                                annotateInfo.Data = this;
+                                annotateInfo.BeginNo = i;
+                                vID = vAnnotateItem.ID;
+                                break;
+                            }
+                        }
+                        else  // 没有栈
+                        {
+                            annotateInfo.Data = this;
+                            annotateInfo.BeginNo = i;
+                            vID = vAnnotateItem.ID;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (annotateInfo.BeginNo >= 0)
+                annotateInfo.EndNo = GetAnnotateEndAfter(itemNo + 1, vID);
+        }
+
+        private int InsertAnnotateByOffset(HCAnnotateItem annotateItem, int itemNo, int offset)
+        {
+            int vResult = 0;
+
+            if (offset == HC.OffsetBefor)  // 在最开始
+            {
+                annotateItem.ParaFirst = Items[itemNo].ParaFirst;
+                annotateItem.PageBreak = Items[itemNo].PageBreak;
+                if (Items[itemNo].StyleNo > HCStyle.Null && Items[itemNo].Text == "")  // 空item
+                {
+                    UndoAction_DeleteItem(itemNo, 0);
+                    Items.Delete(itemNo);
+                    vResult--;
+                }
+                else
+                {
+                    if (Items[itemNo].ParaFirst)
+                    {
+                        UndoAction_ItemParaFirst(itemNo, 0, false);
+                        Items[itemNo].ParaFirst = false;
+                    }
+
+                    if (Items[itemNo].PageBreak)
+                    {
+                        UndoAction_ItemPageBreak(itemNo, 0, false);
+                        Items[itemNo].PageBreak = false;
+                    }
+                }
+
+                Items.Insert(itemNo, annotateItem);
+                UndoAction_InsertItem(itemNo, HC.OffsetBefor);
+                vResult++;
+            }
+            else
+            if (offset == GetItemOffsetAfter(itemNo))  // 在最后面
+            {
+                Items.Insert(itemNo + 1, annotateItem);
+                UndoAction_InsertItem(itemNo + 1, HC.OffsetBefor);
+                vResult++;
+            }
+            else  // 在item中间
+            if (IsRectItem(itemNo))  // 在RectItem中间按最后面算
+            {
+                Items.Insert(itemNo + 1, annotateItem);
+                UndoAction_InsertItem(itemNo + 1, HC.OffsetBefor);
+                vResult++;
+            }
+            else  // 在结束TextItem中间打断
+            {
+                string vS = (Items[itemNo] as HCTextItem).SubString(offset + 1, Items[itemNo].Length - offset);
+                UndoAction_DeleteText(itemNo, offset + 1, vS);
+                // 原位置后半部分
+                HCCustomItem vAfterItem = Items[itemNo].BreakByOffset(offset);
+                // 插入原TextItem后半部分增加Text后的
+                Style.States.Include(HCState.hosInsertBreakItem);  // 最后一个是原文在插入前就存在的内容，为插入事件提供更精细化的处理
+                try
+                {
+                    Items.Insert(itemNo + 1, vAfterItem);
+                }
+                finally
+                {
+                    Style.States.Exclude(HCState.hosInsertBreakItem);
+                }
+
+                UndoAction_InsertItem(itemNo + 1, 0);
+                vResult++;
+
+                Items.Insert(itemNo + 1, annotateItem);
+                UndoAction_InsertItem(itemNo + 1, HC.OffsetBefor);
+                vResult++;
+            }
+
+            return vResult;
         }
 
         public bool InsertAnnotate(string aTitle, string aText)
         {
+            bool vResult = false;
+            if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null && SelectInfo.StartItemOffset == HC.OffsetInner)
+            {
+                Undo_New();
+
+                HCCustomRectItem vRectItem = Items[SelectInfo.StartItemNo] as HCCustomRectItem;
+                if (vRectItem.MangerUndo)
+                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                else
+                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                vResult = (Items[SelectInfo.StartItemNo] as HCCustomRectItem).InsertAnnotate(aTitle, aText);
+
+                int vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+                if (vRectItem.IsFormatDirty)
+                {
+                    GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                }
+                else
+                    this.FormatInit();
+
+                return vResult;
+            }
+            else
+            {
+
+                if (!CanEdit())
+                    return false;
+
+                this.Style.States.Include(HCState.hosBatchInsert);  // 批量插入防止插入1个起始触发取配对时，结束还没插入呢
+                try
+                {
+                    int vIncCount = 0, vFormatFirstDrawItemNo = -1, vFormatLastItemNo = -1;
+                    Undo_New();
+
+                    if (this.SelectExists())
+                    {
+                        vFormatFirstDrawItemNo = GetFormatFirstDrawItem(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                        vFormatLastItemNo = GetParaLastItemNo(SelectInfo.EndItemNo);
+                    }
+                    else
+                        GetFormatRange(SelectInfo.StartItemNo, 1, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+
+                    FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    FNextID++;
+
+                    // 插入尾
+                    HCAnnotateItem vAnnotateItem = new HCAnnotateItem(this);
+                    vAnnotateItem.MarkType = MarkType.cmtEnd;
+                    vAnnotateItem.ID = FNextID;
+                    vAnnotateItem.Content.Title = aTitle;
+                    vAnnotateItem.Content.Text = aText;
+                    if (SelectInfo.EndItemNo >= 0) // 有选中结束item
+                        vIncCount = InsertAnnotateByOffset(vAnnotateItem, SelectInfo.EndItemNo, SelectInfo.EndItemOffset);
+                    else
+                        vIncCount = InsertAnnotateByOffset(vAnnotateItem, SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+
+                    // 插入头
+                    vAnnotateItem = new HCAnnotateItem(this);
+                    vAnnotateItem.MarkType = MarkType.cmtBeg;
+                    vAnnotateItem.ID = FNextID;
+                    vIncCount = vIncCount + InsertAnnotateByOffset(vAnnotateItem, SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                    ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo + vIncCount, vIncCount);
+                }
+                finally
+                {
+                    this.Style.States.Exclude(HCState.hosBatchInsert);
+                }
+
+                Style.UpdateInfoRePaint();
+                Style.UpdateInfoReCaret();
+                // 因上面批量屏蔽了取当前位置域的功能，所以都插完后，取一下当前位置域情况
+                ReSetSelectAndCaret(SelectInfo.StartItemNo);
+                return true;
+            }
+        }
+
+        public bool DeleteAnnotate(int beginNo, int endNo, bool keepPara = true)
+        {
             if (!CanEdit())
                 return false;
 
-            if (!this.SelectExists())
+            if (endNo < beginNo)
                 return false;
 
-            HCCustomData vTopData = GetTopLevelData();
-            if ((vTopData is HCAnnotateData) && (vTopData != this))
-                (vTopData as HCAnnotateData).InsertAnnotate(aTitle, aText);
+            this.InitializeField();
+
+            int vFormatFirstDrawItemNo = -1, vFormatDrawItemNo2 = -1, vFormatLastItemNo = -1;
+            GetFormatRange(beginNo, 0, ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);  // 头
+            if ((!keepPara) && (endNo < Items.Count - 1) && (Items[endNo + 1].ParaFirst))
+                GetFormatRange(endNo + 1, GetItemOffsetAfter(endNo + 1), ref vFormatDrawItemNo2, ref vFormatLastItemNo);
             else
-                FDataAnnotates.NewDataAnnotate(SelectInfo, aTitle, aText);
+                GetFormatRange(endNo, GetItemOffsetAfter(endNo), ref vFormatDrawItemNo2, ref vFormatLastItemNo);  // 尾
+
+            if (Items[beginNo].ParaFirst && vFormatFirstDrawItemNo > 0)  // 段首删除时要从上一段最后
+            {
+                vFormatFirstDrawItemNo--;
+                vFormatFirstDrawItemNo = GetFormatFirstDrawItem(vFormatFirstDrawItemNo);  // 从行首开始
+            }
+
+            FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+
+            bool vStartParaFirst = Items[beginNo].ParaFirst;
+            int vDelCount = 2;
+
+            Undo_New();
+
+            UndoAction_DeleteItem(endNo, 0);
+            Items.Delete(endNo);
+            UndoAction_DeleteItem(beginNo, 0);
+            Items.Delete(beginNo);
+
+            if (Items.Count == 0)  // 删除没有了，不用SetEmptyData，因为其无Undo
+            {
+                HCCustomItem vItem = CreateDefaultTextItem();
+                this.CurStyleNo = vItem.StyleNo;
+                vItem.ParaFirst = true;
+                Items.Add(vItem);
+                vDelCount--;
+                UndoAction_InsertItem(0, 0);
+            }
+            else
+            if (vStartParaFirst)  // 段首删除了
+            {
+                if (beginNo < Items.Count - 1 && !Items[beginNo].ParaFirst)  // 下一个不是段首(同段还有内容，置首)
+                {
+                    UndoAction_ItemParaFirst(beginNo, 0, true);
+                    Items[beginNo].ParaFirst = true;
+                }
+                else  // 段删除完了
+                if (keepPara)  // 保持段
+                {
+                    HCCustomItem vItem = CreateDefaultTextItem();
+                    this.CurStyleNo = vItem.StyleNo;
+                    vItem.ParaFirst = true;
+                    Items.Insert(beginNo, vItem);
+                    vDelCount--;
+                    UndoAction_InsertItem(beginNo, 0);
+                }
+            }
+
+            ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo - vDelCount, -vDelCount);
+
+            Style.UpdateInfoRePaint();
+            Style.UpdateInfoReCaret();
+
+            if (vStartParaFirst && keepPara)
+                ReSetSelectAndCaret(beginNo, 0);
+            else
+            if (beginNo > 0)  // 不是从第1个开始删除
+                ReSetSelectAndCaret(beginNo - 1);
+            else  // 从第一个开始删除
+                ReSetSelectAndCaret(0, 0);  // 光标置到现在的最前面，为其后插入内容做准备
 
             return true;
         }
 
-        public HCDataAnnotates DataAnnotates
+        public bool DeleteActiveAnnotate()
         {
-            get { return FDataAnnotates; }
+            if (SelectExists())
+                return false;
+
+            bool vResult = false;
+
+            if (FActiveAnnotate.BeginNo >= 0)
+                vResult = DeleteAnnotate(FActiveAnnotate.BeginNo, FActiveAnnotate.EndNo);
+            else
+            if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null
+                && SelectInfo.StartItemOffset == HC.OffsetInner)
+            {
+                Undo_New();
+
+                HCCustomRectItem vRectItem = Items[SelectInfo.StartItemNo] as HCCustomRectItem;
+                if (vRectItem.MangerUndo)
+                    UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                else
+                    UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                vResult = (Items[SelectInfo.StartItemNo] as HCCustomRectItem).DeleteActiveAnnotate();
+                if (vRectItem.IsFormatDirty)
+                {
+                    int vFirstDrawItemNo = -1, vLastItemNo = -1;
+                    GetFormatRange(ref vFirstDrawItemNo, ref vLastItemNo);
+                    FormatPrepare(vFirstDrawItemNo, vLastItemNo);
+                    ReFormatData(vFirstDrawItemNo, vLastItemNo);
+                }
+                else
+                    this.FormatInit();
+            }
+
+            return vResult;
         }
 
-        public HCDataAnnotate HotAnnotate
+        public HCAnnotateInfo HotAnnotate
         {
             get { return FHotAnnotate; }
         }
 
-        public HCDataAnnotate ActiveAnnotate
+        public HCAnnotateInfo ActiveAnnotate
         {
             get { return FActiveAnnotate; }
         }

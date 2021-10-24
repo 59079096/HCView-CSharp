@@ -2956,6 +2956,41 @@ namespace HC.View
             return Result;
         }
 
+        public override bool InsertAnnotate(string title, string text)
+        {
+            HCTableCell vCell = GetEditCell();
+            if (vCell == null)
+                return false;
+
+            bool Result = false;
+            HCProcedure vEvent = delegate ()
+            {
+                Result = vCell.CellData.InsertAnnotate(title, text);
+            };
+
+            CellChangeByAction(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEvent);
+
+            return Result;
+        }
+
+        public override bool DeleteActiveAnnotate()
+        {
+            bool Result = base.DeleteActiveAnnotate();
+
+            if (FSelectCellRang.EditCell())
+            {
+                HCProcedure vEvent = delegate ()
+                {
+                    HCTableCell vEditCell = FRows[FSelectCellRang.StartRow][FSelectCellRang.StartCol];
+                    Result = vEditCell.CellData.DeleteActiveAnnotate();
+                };
+
+                CellChangeByAction(FSelectCellRang.StartRow, FSelectCellRang.StartCol, vEvent);
+            }
+
+            return Result;
+        }
+
         public override void DeleteActiveDataItems(int aStartNo, int aEndNo, bool aKeepPara)
         {
             if (FSelectCellRang.EditCell())

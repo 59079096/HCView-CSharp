@@ -67,9 +67,9 @@ namespace HC.View
     public delegate bool SectionDataItemNoFunEvent(object sender, HCCustomData aData, int aItemNo);
 
     public delegate void SectionDrawItemAnnotateEventHandler(object sender, HCCustomData aData, int aDrawItemNo, RECT aDrawRect,
-        HCDataAnnotate aDataAnnotate);
+        HCAnnotateItem annotateItem);
 
-    public delegate void SectionAnnotateEventHandler(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate);
+    public delegate void SectionAnnotateEventHandler(object sender, HCCustomData aData, HCAnnotateItem annotateItem);
 
     public delegate void SectionDataItemMouseEventHandler(object sender, HCCustomData aData, int aItemNo, int aOffset, MouseEventArgs e);
 
@@ -226,22 +226,22 @@ namespace HC.View
                     aDataDrawBottom, aDataScreenTop, aDataScreenBottom, ACanvas, APaintInfo);
         }
 
-        private void DoDataInsertAnnotate(HCCustomData aData, HCDataAnnotate aDataAnnotate)
+        private void DoDataInsertAnnotate(HCCustomData aData, HCAnnotateItem annotateItem)
         {
             if (FOnInsertAnnotate != null)
-                FOnInsertAnnotate(this, aData, aDataAnnotate);
+                FOnInsertAnnotate(this, aData, annotateItem);
         }
 
-        private void DoDataRemoveAnnotate(HCCustomData aData, HCDataAnnotate aDataAnnotate)
+        private void DoDataRemoveAnnotate(HCCustomData aData, HCAnnotateItem annotateItem)
         {
             if (FOnRemoveAnnotate != null)
-                FOnRemoveAnnotate(this, aData, aDataAnnotate);
+                FOnRemoveAnnotate(this, aData, annotateItem);
         }
 
-        private void DoDataDrawItemAnnotate(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, HCDataAnnotate aDataAnnotate)
+        private void DoDataDrawItemAnnotate(HCCustomData aData, int aDrawItemNo, RECT aDrawRect, HCAnnotateItem annotateItem)
         {
             if (FOnDrawItemAnnotate != null)
-                FOnDrawItemAnnotate(this, aData, aDrawItemNo, aDrawRect, aDataAnnotate);
+                FOnDrawItemAnnotate(this, aData, aDrawItemNo, aDrawRect, annotateItem);
         }
 
         private void DoDataInsertItem(HCCustomData aData, HCCustomItem aItem)
@@ -2597,6 +2597,16 @@ namespace HC.View
         public void DisSelect()
         {
             FActiveData.DisSelect();
+        }
+
+        public bool DeleteActiveAnnotate()
+        {
+            HCFunction vEvent = delegate ()
+            {
+                return FActiveData.DeleteActiveAnnotate();
+            };
+
+            return DoSectionDataAction(FActiveData, vEvent);
         }
 
         public bool DeleteActiveDomain()

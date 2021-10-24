@@ -637,6 +637,10 @@ namespace HC.View
                         Result = new HCSupSubScriptItem(this, "", "");
                         break;
 
+                    case HCStyle.Annotate:
+                        Result = new HCAnnotateItem(this);
+                        break;
+
                     case HCStyle.FloatLine:
                         Result = new HCFloatLineItem(this);
                         break;

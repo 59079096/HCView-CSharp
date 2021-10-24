@@ -163,6 +163,7 @@ namespace HC.View
             Bullet = -22,
             FloatLine = -101,
             FloatBarCode = -102,
+            Annotate = -118,
             Custom = -1000;  // 自定义类型分界线
 
         public HCStyle()

@@ -51,6 +51,7 @@ namespace HC.View
         private bool FCanEditChecked, FCanEditSnapShot;
 
         private HCAnnotatePre FAnnotatePre;  // 批注管理
+        private bool FPrintAnnotatePre = false;
 
         private HCViewModel FViewModel;  // 界面显示模式：页面、Web
         private HCCaret FCaret;
@@ -333,12 +334,12 @@ namespace HC.View
         }
 
         private void DoSectionDrawItemAnnotate(object sender, HCCustomData aData,
-            int aDrawItemNo, RECT aDrawRect, HCDataAnnotate aDataAnnotate)
+            int aDrawItemNo, RECT aDrawRect, HCAnnotateItem annotateItem)
         {
             HCDrawAnnotate vDrawAnnotate = new HCDrawAnnotate();
             vDrawAnnotate.Data = aData;
             vDrawAnnotate.DrawRect = aDrawRect;
-            vDrawAnnotate.DataAnnotate = aDataAnnotate;
+            vDrawAnnotate.AnnotateItem = annotateItem;
             FAnnotatePre.AddDrawAnnotate(vDrawAnnotate);
         }
 
@@ -347,14 +348,14 @@ namespace HC.View
             return FUndoList;
         }
 
-        private void DoSectionInsertAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
+        private void DoSectionInsertAnnotate(object sender, HCCustomData aData, HCAnnotateItem annotateItem)
         {
-            FAnnotatePre.InsertDataAnnotate(aDataAnnotate);
+            FAnnotatePre.InsertDataAnnotate(annotateItem);
         }
 
-        private void DoSectionRemoveAnnotate(object sender, HCCustomData aData, HCDataAnnotate aDataAnnotate)
+        private void DoSectionRemoveAnnotate(object sender, HCCustomData aData, HCAnnotateItem annotateItem)
         {
-            FAnnotatePre.RemoveDataAnnotate(aDataAnnotate);
+            FAnnotatePre.RemoveDataAnnotate(annotateItem);
         }
 
         private void DoSectionCurParaNoChange(object sender, EventArgs e)
@@ -1813,6 +1814,11 @@ namespace HC.View
             return ActiveSection.DeleteActiveDomain();
         }
 
+        public bool DeleteActiveAnnotate()
+        {
+            return ActiveSection.DeleteActiveAnnotate();
+        }
+
         /// <summary> 删除当前Data指定范围内的Item </summary>
         public void DeleteActiveDataItems(int aStartNo, int aEndNo = -1, bool aKeepPara = true)
         {
@@ -3172,7 +3178,8 @@ namespace HC.View
         public virtual void SaveToStream(Stream aStream, bool aQuick = false, HashSet<SectionArea> aAreas = null)
         {
 #if USESCRIPT
-            this.DisSelect();
+            if (!aQuick)
+                this.DisSelect();
 #endif
             FStyle.States.Include(HCState.hosSaving);
             try
@@ -3566,7 +3573,7 @@ namespace HC.View
                         vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);  // 4961
                         vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);  // 7016
 
-                        if (FSections[vSectionIndex].Page.DataAnnotates.Count > 0)
+                        if (FPrintAnnotatePre && FAnnotatePre.Visible)
                         {
                             vPaintInfo.ScaleX = (float)vPrintWidth / (FSections[vSectionIndex].PaperWidthPix + HC.AnnotationWidth);
                             //vPaintInfo.ScaleY = (float)vPrintHeight / (FSections[vSectionIndex].PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
@@ -3693,7 +3700,7 @@ namespace HC.View
                     int vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);
                     int vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);
 
-                    if (this.ActiveSection.Page.DataAnnotates.Count > 0)
+                    if (FPrintAnnotatePre && FAnnotatePre.Visible)
                     {
                         vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
                         //vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
@@ -3823,7 +3830,7 @@ namespace HC.View
                     int vPrintWidth = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALWIDTH);
                     int vPrintHeight = GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.PHYSICALHEIGHT);
 
-                    if (this.ActiveSection.Page.DataAnnotates.Count > 0)
+                    if (FPrintAnnotatePre && FAnnotatePre.Visible)
                     {
                         vPaintInfo.ScaleX = (float)vPrintWidth / (this.ActiveSection.PaperWidthPix + HC.AnnotationWidth);
                         //vPaintInfo.ScaleY = (float)vPrintHeight / (this.ActiveSection.PaperHeightPix + HC.AnnotationWidth * vPrintHeight / vPrintWidth);
@@ -4510,8 +4517,10 @@ namespace HC.View
         }
     }
 
-    public class HCDrawAnnotate : HCDrawItemAnnotate
+    public class HCDrawAnnotate
     {
+        public RECT DrawRect;
+        public HCAnnotateItem AnnotateItem;
         public HCCustomData Data;
         public RECT Rect;
     }
@@ -4660,7 +4669,7 @@ namespace HC.View
                         if (vDrawAnnotate is HCDrawAnnotateDynamic)
                             vText = (vDrawAnnotate as HCDrawAnnotateDynamic).Title + ":" + (vDrawAnnotate as HCDrawAnnotateDynamic).Text;
                         else
-                            vText = vDrawAnnotate.DataAnnotate.Title + ":" + vDrawAnnotate.DataAnnotate.Text;
+                            vText = vDrawAnnotate.AnnotateItem.Content.Title + ":" + vDrawAnnotate.AnnotateItem.Content.Text;
 
                         vDrawAnnotate.Rect = new RECT(0, 0, HC.AnnotationWidth - 30, 0);
 
@@ -4668,6 +4677,15 @@ namespace HC.View
                             User.DT_TOP | User.DT_LEFT | User.DT_WORDBREAK | User.DT_CALCRECT, IntPtr.Zero);  // 计算区域
                         if (vDrawAnnotate.Rect.Right < HC.AnnotationWidth - 30)
                             vDrawAnnotate.Rect.Right = HC.AnnotationWidth - 30;
+
+                        if (vDrawAnnotate.AnnotateItem.Replys.Count > 0)
+                        {
+                            vDrawAnnotate.Rect.Bottom += vDrawAnnotate.AnnotateItem.Replys.Count * 20;
+                            for (int j = 0; j < vDrawAnnotate.AnnotateItem.Replys.Count; j++)
+                            {
+
+                            }
+                        }
 
                         vDrawAnnotate.Rect.Offset(aPageRect.Right + 20, vTop + 5);
                         vDrawAnnotate.Rect.Inflate(5, 5);
@@ -4731,28 +4749,28 @@ namespace HC.View
                         }
                         else
                         {
-                            vText = vDrawAnnotate.DataAnnotate.Title + ":" + vDrawAnnotate.DataAnnotate.Text;
+                            vText = vDrawAnnotate.AnnotateItem.Content.Title + ":" + vDrawAnnotate.AnnotateItem.Content.Text;
                             vData = vDrawAnnotate.Data as HCAnnotateData;
 
-                            if (vDrawAnnotate.DataAnnotate == vData.HotAnnotate)
+                            if (vData.HotAnnotate.EndNo >= 0 && vDrawAnnotate.AnnotateItem == vData.HotAnnotate.Data.Items[vData.HotAnnotate.EndNo])
                             {
                                 aCanvas.Pen.Style = HCPenStyle.psSolid;
                                 aCanvas.Pen.Width = 1;
                                 aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
                             }
                             else
-                                if (vDrawAnnotate.DataAnnotate == vData.ActiveAnnotate)
-                                {
-                                    aCanvas.Pen.Style = HCPenStyle.psSolid;
-                                    aCanvas.Pen.Width = 2;
-                                    aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
-                                }
-                                else
-                                {
-                                    aCanvas.Pen.Style = HCPenStyle.psDot;
-                                    aCanvas.Pen.Width = 1;
-                                    aCanvas.Brush.Color = HC.AnnotateBKColor;
-                                }
+                            if (vData.ActiveAnnotate.EndNo >= 0 && vDrawAnnotate.AnnotateItem == vData.ActiveAnnotate.Data.Items[vData.ActiveAnnotate.EndNo])
+                            {
+                                aCanvas.Pen.Style = HCPenStyle.psSolid;
+                                aCanvas.Pen.Width = 2;
+                                aCanvas.Brush.Color = HC.AnnotateBKActiveColor;
+                            }
+                            else
+                            {
+                                aCanvas.Pen.Style = HCPenStyle.psDot;
+                                aCanvas.Pen.Width = 1;
+                                aCanvas.Brush.Color = HC.AnnotateBKColor;
+                            }
                         }
 
                         if (aPaintInfo.Print)
@@ -4776,13 +4794,13 @@ namespace HC.View
         }
 
         /// <summary> 有批注插入 </summary>
-        public void InsertDataAnnotate(HCDataAnnotate aDataAnnotate)
+        public void InsertDataAnnotate(HCAnnotateItem annotateItem)
         {
             FCount++;
             FVisible = true;
         }
 
-        public void RemoveDataAnnotate(HCDataAnnotate aDataAnnotate)
+        public void RemoveDataAnnotate(HCAnnotateItem annotateItem)
         {
             FCount--;
             if (FCount == 0)
@@ -4797,23 +4815,6 @@ namespace HC.View
         public void ClearDrawAnnotate()
         {
             FDrawAnnotates.Clear();
-        }
-
-        public HCDataAnnotate ActiveAnnotate()
-        {
-            if (FActiveDrawAnnotateIndex < 0)
-                return null;
-            else
-                return FDrawAnnotates[FActiveDrawAnnotateIndex].DataAnnotate;
-        }
-
-        public void DeleteDataAnnotateByDraw(int aIndex)
-        {
-            if (aIndex >= 0)
-            {
-                (FDrawAnnotates[aIndex].Data as HCAnnotateData).DataAnnotates.DeleteByID(FDrawAnnotates[aIndex].DataAnnotate.ID);
-                DoUpdateView();
-            }
         }
 
         public void MouseDown(int x, int y)
