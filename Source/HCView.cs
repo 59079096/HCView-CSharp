@@ -4678,7 +4678,7 @@ namespace HC.View
                         if (vDrawAnnotate.Rect.Right < HC.AnnotationWidth - 30)
                             vDrawAnnotate.Rect.Right = HC.AnnotationWidth - 30;
 
-                        if (vDrawAnnotate.AnnotateItem.Replys.Count > 0)
+                        if (vDrawAnnotate.AnnotateItem != null && vDrawAnnotate.AnnotateItem.Replys.Count > 0)
                         {
                             vDrawAnnotate.Rect.Bottom += vDrawAnnotate.AnnotateItem.Replys.Count * 20;
                             for (int j = 0; j < vDrawAnnotate.AnnotateItem.Replys.Count; j++)
