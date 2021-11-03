@@ -179,6 +179,16 @@ namespace HC.View
             return false;
         }
 
+        public virtual bool InsertAnnotate(string title, string text)
+        {
+            return false;
+        }
+
+        public virtual bool DeleteActiveAnnotate()
+        {
+            return false;
+        }
+
         /// <summary> 删除当前域 </summary>
         public virtual bool DeleteActiveDomain() 
         {

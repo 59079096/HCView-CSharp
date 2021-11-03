@@ -78,7 +78,7 @@ namespace HC.View
             TibetanVowel = "\u0F74\u0F7A\u0F7C\u0F72",
             TibetanOther = 
                   "\u0FB8\u0F7E\u0F83\u0F37\u0F35\u0F7F\u0FB7\u0FBA\u0F95"
-                + "\u0F96\u0F7B\u0FB2\u0F9F\u0FB1\u0FAD\u0F80\u0F7D\u0FA5"
+                + "\u0F96\u0F7B\u0FB3\u0FB2\u0F9F\u0FB1\u0FAD\u0F80\u0F7D\u0FA5"
                 + "\u0FA9\u0FAA\u0FAB\u0FB0\u0FB6\u0FA1\u0FA6\u0F94\u0FA8"
                 + "\u0F84\u0F92\u0F92\u0FAE\u0FAF\u0FB4\u0F90\u0F91\u0FA4"
                 + "\u0FA3\u0FA0\u0F97\u0F99\u0FBC\u0FBB\u0F19\u0F71\u0F3E"
@@ -134,10 +134,10 @@ namespace HC.View
             // 4.5 ResizeItem存CanResize属性
             // 4.6 节存储页码格式
 
-			HC_FileVersion = "5.4";
+			HC_FileVersion = "5.5";
 
 		public const ushort
-            HC_FileVersionInt = 54;
+            HC_FileVersionInt = 55;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
