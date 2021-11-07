@@ -585,7 +585,7 @@ namespace HC.View
         public override void MouseMove(MouseEventArgs e)
         {
             bool vRePaint = this.Style.DrawHotDomainRegion && (FHotDomain.BeginNo >= 0);
-            FHotDomain.Clear();
+            //FHotDomain.Clear();
             base.MouseMove(e);
             //if (!this.MouseMoveRestrain)
             {
