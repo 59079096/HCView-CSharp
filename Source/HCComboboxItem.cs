@@ -53,7 +53,7 @@ namespace HC.View
         private bool FMouseInButton;
         private HCPopupForm FPopupForm;
         private HCComScrollBar FScrollBar;
-        private EventHandler FOnPopupItem;
+        private EventHandler FOnPopupItem, FOnItemIndexChanged;
         public static byte BTNWIDTH = 16;
         public static byte BTNMARGIN = 1;
 
@@ -614,6 +614,12 @@ namespace HC.View
         {
             get { return FOnPopupItem; }
             set { FOnPopupItem = value; }
+        }
+
+        public EventHandler OnItemIndexChanged
+        {
+            get { return FOnItemIndexChanged; }
+            set { FOnItemIndexChanged = value; }
         }
     }
 }
