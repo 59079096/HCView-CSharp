@@ -25,6 +25,7 @@ namespace HC.View
     {
         private string FText;
         private bool FChecked, FItemHit, FBoxRight;
+        private EventHandler FOnCheckChanged;
 
         private RECT GetBoxRect()
         {
@@ -225,6 +226,12 @@ namespace HC.View
         {
             get { return FBoxRight; }
             set { FBoxRight = value; }
+        }
+
+        public EventHandler OnCheckChanged
+        {
+            get { return FOnCheckChanged; }
+            set { FOnCheckChanged = value; }
         }
     }
 }
