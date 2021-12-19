@@ -124,7 +124,7 @@ namespace HC.View
 
     public class SelectInfo : object
     {
-        private int FStartItemNo,  // 不能使用DrawItem记录，因为内容变动时Item的指定Offset对应的DrawItem，可能和变动前不一样
+        private int FStartItemNo,
             FStartItemOffset,  // 选中起始在第几个字符后面，0表示在Item最前面
             FEndItemNo,
             FEndItemOffset;  // 选中结束在第几个字符后面
