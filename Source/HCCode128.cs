@@ -595,7 +595,7 @@ namespace HC.View
                 if (this.FCode != "")
                 {
                     canvas.TextOut(rect.Left + (rect.Width - canvas.TextWidth(this.FText)) / 2,
-                        rect.Top + vHeight + 2, this.FText);
+                        rect.Top + vHeight, this.FText);
                 }
                 else
                 {
