@@ -5550,6 +5550,12 @@ namespace HC.View
             get { return FFixRowCount; }
         }
 
+        public bool ResizeKeepWidth
+        {
+            get { return FResizeKeepWidth; }
+            set { FResizeKeepWidth = value; }
+        }
+
         public int DefaultRowHeight
         {
             get { return FDefaultRowHeight; }
