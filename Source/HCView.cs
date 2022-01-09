@@ -1831,7 +1831,7 @@ namespace HC.View
         /// <summary> 删除当前节 </summary>
         public void DeleteActiveSection()
         {
-            if (FActiveSectionIndex > 0)
+            if (!this.ReadOnly && FActiveSectionIndex > 0)
             {
                 FSections.RemoveAt(FActiveSectionIndex);
                 FActiveSectionIndex = FActiveSectionIndex - 1;
