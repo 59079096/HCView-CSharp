@@ -325,7 +325,7 @@ namespace HC.View
         private POINT DoSectionGetScreenCoord(int x, int y)
         {
             Point vPt = this.PointToScreen(new Point(x, y));
-            return new POINT(vPt.X, vPt.Y);
+            return new POINT(ZoomIn(vPt.X), ZoomIn(vPt.Y));
         }
 
         private void DoSectionItemResize(HCCustomData aData, int aItemNo)
