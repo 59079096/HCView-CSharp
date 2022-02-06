@@ -901,6 +901,7 @@ namespace HC.View
         private bool FAutoSize;
         private bool FEnabled;
         private EventHandler FOnClick;
+        private KeyEventHandler FOnKeyDown;
         protected bool FMouseIn;
         protected byte FPaddingLeft, FPaddingTop, FPaddingRight, FPaddingBottom;
         protected int FMinWidth, FMinHeight;
@@ -949,6 +950,13 @@ namespace HC.View
             base.Assign(source);
             FAutoSize = (source as HCControlItem).AutoSize;
             FEnabled = (source as HCControlItem).Enabled;
+        }
+
+        public override void KeyDown(KeyEventArgs e)
+        {
+            base.KeyDown(e);
+            if (FOnKeyDown != null)
+                FOnKeyDown(this, e);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int  aEnd)
@@ -1035,6 +1043,13 @@ namespace HC.View
         {
             get { return FOnClick; }
             set { FOnClick = value; }
+        }
+
+        
+        public KeyEventHandler OnKeyDown
+        {
+            get { return FOnKeyDown; }
+            set { FOnKeyDown = value; }
         }
     }
 
