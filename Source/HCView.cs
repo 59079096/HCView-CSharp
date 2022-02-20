@@ -3582,9 +3582,10 @@ namespace HC.View
                         }
                         else
                         {
-                            vPaintInfo.ScaleX = (float)vPrintWidth / FSections[vSectionIndex].PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                            // vPrintCanvas.Graphics.DpiX / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX);
+                            vPaintInfo.ScaleX = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSX) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX); // (float)vPrintWidth / FSections[vSectionIndex].PaperWidthPix;
                             //vPaintInfo.ScaleY = (float)vPrintHeight / FSections[vSectionIndex].PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                            vPaintInfo.ScaleY = vPaintInfo.ScaleX;
+                            vPaintInfo.ScaleY = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSY) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSY);
                             vPaintInfo.Zoom = 1;
                         }
 
@@ -3709,9 +3710,9 @@ namespace HC.View
                     }
                     else
                     {
-                        vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                        vPaintInfo.ScaleX = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSX) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX);  // vPrintWidth / this.ActiveSection.PaperWidthPix;
                         //vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
+                        vPaintInfo.ScaleY = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSY) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSY); ;
                         vPaintInfo.Zoom = 1;
                     }
 
@@ -3839,9 +3840,9 @@ namespace HC.View
                     }
                     else
                     {
-                        vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                        vPaintInfo.ScaleX = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSX) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX);  // vPrintWidth / this.ActiveSection.PaperWidthPix;
                         //vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
+                        vPaintInfo.ScaleY = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSY) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSY);
                         vPaintInfo.Zoom = 1;
                     }
 
