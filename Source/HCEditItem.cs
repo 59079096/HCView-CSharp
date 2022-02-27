@@ -23,6 +23,7 @@ namespace HC.View
     public class HCEditItem : HCControlItem
     {
         private string FText;
+        private HCTextHorAlign FTextAlignHorz = HCTextHorAlign.hthaLeft;
         private byte FBorderWidth;
         private HCBorderSides FBorderSides;
         private bool FReadOnly, FPrintOnlyText;

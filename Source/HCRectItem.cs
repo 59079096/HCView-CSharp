@@ -790,6 +790,13 @@ namespace HC.View
         }
     }
 
+    public enum HCTextHorAlign : byte
+    {
+        hthaLeft = 0,
+        hthaCenter = 1,
+        hthaRight = 2
+    }
+
     public class HCTextRectItem : HCCustomRectItem  // 带文本样式的RectItem
     {
         private int FTextStyleNo;
