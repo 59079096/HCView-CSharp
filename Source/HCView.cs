@@ -1422,7 +1422,7 @@ namespace HC.View
             switch (Message.Msg)
             {
                 case User.WM_GETDLGCODE:
-                    Message.Result = (IntPtr)(User.DLGC_WANTTAB | User.DLGC_WANTARROWS);
+                    Message.Result = (IntPtr)(User.DLGC_WANTTAB | User.DLGC_WANTARROWS | User.DLGC_WANTCHARS);
                     return;
 
                 case User.WM_ERASEBKGND:
