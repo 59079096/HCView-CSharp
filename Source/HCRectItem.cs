@@ -154,6 +154,11 @@ namespace HC.View
 
         public virtual void ApplySelectParaStyle(HCStyle aStyle, HCParaMatch aMatchStyle) { }
 
+        public virtual bool MatchTextStyle(HCStyle style, HCStyleMatch matchStyle)
+        {
+            return false;
+        }
+
         public virtual void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyl) { }
 
         public virtual void ApplyContentAlign(HCContentAlign aAlign) { }
@@ -837,6 +842,12 @@ namespace HC.View
         public override bool JustifySplit()
         {
             return false;
+        }
+
+        public override bool MatchTextStyle(HCStyle style, HCStyleMatch matchStyle)
+        {
+            matchStyle.Append = !matchStyle.StyleHasMatch(style, FTextStyleNo);
+            return true;
         }
 
         public override void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyle)

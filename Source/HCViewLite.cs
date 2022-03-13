@@ -41,6 +41,17 @@ namespace HC.View
 
             DoLoadStreamBefor(stream, vFileVersion);  // 触发加载前事件
             style.LoadFromStream(stream, vFileVersion);  // 加载样式表
+
+            if (vFileVersion > 55)
+            {
+                vLang = (byte)stream.ReadByte();
+                vLang = (byte)stream.ReadByte();  // 布局方式
+                uint vSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vSize);
+                stream.Read(vBuffer, 0, vBuffer.Length);
+                vSize = BitConverter.ToUInt32(vBuffer, 0);
+            }
+
             loadSectionProc(vFileVersion);  // 加载节数量、节数据
             DoLoadStreamAfter(stream, vFileVersion);
         }
@@ -419,8 +430,16 @@ namespace HC.View
                     DeleteUnUsedStyle(FStyle, FSections, vArea);
 
                 FStyle.SaveToStream(aStream);
+
+                byte vByte = 0;
+                aStream.WriteByte(vByte);
+                aStream.WriteByte(vByte);
+                uint vSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vSize);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+
                 // 节数量
-                byte vByte = (byte)FSections.Count;
+                vByte = (byte)FSections.Count;
                 aStream.WriteByte(vByte);
                 // 各节数据
                 for (int i = 0; i <= FSections.Count - 1; i++)

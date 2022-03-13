@@ -1041,11 +1041,8 @@ namespace HC.View
                     }
                     else
                     {
-                        if (Items[i] is HCTextRectItem)
-                        {
-                            aMatchStyle.Append = !aMatchStyle.StyleHasMatch(Style, (Items[i] as HCTextRectItem).TextStyleNo);  // 根据第一个判断是添加样式还是减掉样式
+                        if ((Items[i] as HCCustomRectItem).MatchTextStyle(Style, aMatchStyle))
                             break;
-                        }
                     }
                 }
 
@@ -2950,7 +2947,18 @@ namespace HC.View
             if ((SelectInfo.StartItemOffset == 0) && (Items[SelectInfo.StartItemNo].ParaFirst))
             {
                 HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
-                ApplyParaFirstIndent(vParaStyle.FirstIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                int vStyleNo = MatchTextStyleNoAt(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                if (vStyleNo < HCStyle.Null)
+                    vStyleNo = Style.GetDefaultStyleNo();
+
+                int vTabW = HC.TabCharWidth;
+                if (vStyleNo > HCStyle.Null)
+                {
+                    Style.ApplyTempStyle(vStyleNo);
+                    vTabW = Style.TempCanvas.TextWidth('荆') * 2;
+                }
+
+                ApplyParaFirstIndent(vParaStyle.FirstIndent + HCUnitConversion.PixXToMillimeter(vTabW));
             }
             else
             {

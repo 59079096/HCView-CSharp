@@ -3904,10 +3904,16 @@ namespace HC.View
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
 
-            byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
+            byte vByte = 0;
+            if (FBorderVisible)
+                vByte = (byte)(vByte | (1 << 7));
 
-            vBuffer = BitConverter.GetBytes(FBorderWidthPt);  // 边框宽度
+            if (FResizeKeepWidth)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
+
+            byte[] vBuffer = BitConverter.GetBytes(FBorderWidthPt);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FCellVPaddingMM);
@@ -3990,10 +3996,20 @@ namespace HC.View
         {
             FRows.Clear();
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            
-            byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FBorderVisible = BitConverter.ToBoolean(vBuffer, 0);
+
+            byte[] vBuffer;
+            if (aFileVersion > 55)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FBorderVisible = HC.IsOdd(vByte >> 7);
+                FResizeKeepWidth = HC.IsOdd(vByte >> 6);
+            }
+            else
+            {
+                vBuffer = BitConverter.GetBytes(FBorderVisible);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FBorderVisible = BitConverter.ToBoolean(vBuffer, 0);
+            }
 
             if (aFileVersion > 31)
             {

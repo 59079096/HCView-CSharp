@@ -209,6 +209,17 @@ namespace HC.View
 
             DoLoadStreamBefor(aStream, vFileVersion);  // 触发加载前事件
             aStyle.LoadFromStream(aStream, vFileVersion);  // 加载样式表
+
+            if (vFileVersion > 55)
+            {
+                vLang = (byte)aStream.ReadByte();
+                vLang = (byte)aStream.ReadByte();  // 布局方式
+                uint vSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vSize);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vSize = BitConverter.ToUInt32(vBuffer, 0);
+            }
+
             aLoadSectionProc(vFileVersion);  // 加载节数量、节数据
             DoLoadStreamAfter(aStream, vFileVersion);
             DoMapChanged();
@@ -2123,6 +2134,9 @@ namespace HC.View
         /// <summary> 从当前位置后分节 </summary>
         public bool InsertSectionBreak()
         {
+            if (this.ReadOnly)
+                return false;
+
             bool Result = false;
             this.BeginUpdate();
             try
@@ -3203,8 +3217,17 @@ namespace HC.View
                 }
 
                 FStyle.SaveToStream(aStream);
+
+                byte vByte = 0;
+                aStream.WriteByte(vByte);
+                aStream.WriteByte(vByte);
+                uint vSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vSize);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+
+
                 // 节数量
-                byte vByte = (byte)FSections.Count;
+                vByte = (byte)FSections.Count;
                 aStream.WriteByte(vByte);
                 // 各节数据
                 for (int i = 0; i <= FSections.Count - 1; i++)

@@ -288,7 +288,7 @@ namespace HC.View
             }
         }
 
-        public int MatchTextStyleNoAt(int itemNo, int offset)
+        public virtual int MatchTextStyleNoAt(int itemNo, int offset)
         {
             if (FItems[itemNo].StyleNo < HCStyle.Null)  // 在RectItem前后或其上
             {
@@ -323,7 +323,12 @@ namespace HC.View
                         return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);
                 }
                 else  // 在RectItem上
-                    return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);  // 默认文本样式
+                {
+                    if (FItems[itemNo] is HCTextRectItem)
+                        return (FItems[itemNo] as HCTextRectItem).TextStyleNo;
+                    else
+                        return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);  // 默认文本样式
+                }
             }
             else  // 当前位置是TextItem
                 return FItems[itemNo].StyleNo;  // 防止静默移动选中位置没有更新当前样式
@@ -974,11 +979,7 @@ namespace HC.View
                         vStyleItemNo = aItemNo - 1;
                 }
 
-                if ((FItems[vStyleItemNo] is HCTextRectItem) && (FSelectInfo.StartItemOffset == HC.OffsetInner))
-                    this.CurStyleNo = (FItems[vStyleItemNo] as HCTextRectItem).TextStyleNo;
-                else
-                    this.CurStyleNo = FItems[vStyleItemNo].StyleNo;
-
+                this.CurStyleNo = MatchTextStyleNoAt(vStyleItemNo, FSelectInfo.StartItemOffset);
                 this.CurParaNo = FItems[vStyleItemNo].ParaNo;
             }
 

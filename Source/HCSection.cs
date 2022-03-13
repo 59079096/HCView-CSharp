@@ -710,8 +710,8 @@ namespace HC.View
             if (!aData.CanEdit())
                 return false;
 
-            if (aData.FloatItemIndex >= 0)
-                return false;
+            //if (aData.FloatItemIndex >= 0)
+            //    return false;
 
             bool Result = aAction();  // 处理变动
 
