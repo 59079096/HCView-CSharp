@@ -602,7 +602,7 @@ namespace HC.View
 
             if (FShowUnderLine)
             {
-                if (DrawItems[aDrawItemNo].LineFirst)
+                if (aData.IsLineLastDrawItem(aDrawItemNo))
                 {
                     ACanvas.Pen.BeginUpdate();
                     try
@@ -615,22 +615,8 @@ namespace HC.View
                         ACanvas.Pen.EndUpdate();
                     }
 
-                    ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Top - 1);
-                    ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Top - 1);
-                }
-
-                if (aDrawItemNo == DrawItems.Count - 1)
-                {
-                    ACanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        ACanvas.Pen.Color = Color.Black;
-                        ACanvas.Pen.Style = HCPenStyle.psSolid;
-                    }
-                    finally
-                    {
-                        ACanvas.Pen.EndUpdate();
-                    }
+                    ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Top);
+                    ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Top);
 
                     ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Bottom);
                     ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Bottom);

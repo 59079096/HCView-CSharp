@@ -893,6 +893,13 @@ namespace HC.View
             FLastFormatParaNo = HCStyle.Null;
         }
 
+        public override void Clear()
+        {
+            FFormatChange = false;
+            FormatInit();
+            base.Clear();
+        }
+
         protected void ReSetSelectAndCaret(int aItemNo)
         {
             ReSetSelectAndCaret(aItemNo, GetItemOffsetAfter(aItemNo));

@@ -703,6 +703,7 @@ namespace EMRView
 
     public class DeTableCell : HCTableCell
     {
+        private bool FEditProtect;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -718,9 +719,17 @@ namespace EMRView
             HC.View.HC.HCSetProperty(FPropertys, key, value);
         }
 
+        private void SetEditProtect(bool value)
+        {
+            FEditProtect = value;
+            if (this.CellData != null)
+                this.CellData.ReadOnly = FEditProtect;
+        }
+
         public DeTableCell(HCStyle style)
             : base(style)
         {
+            FEditProtect = false;
             FPropertys = new Dictionary<string, string>();
         }
 
@@ -732,6 +741,11 @@ namespace EMRView
         public override void SaveToStream(Stream stream)
         {
             base.SaveToStream(stream);
+            byte vByte = 0;
+            if (FEditProtect)
+                vByte = (byte)(vByte | (1 << 7));
+
+            stream.WriteByte(vByte);
             HC.View.HC.HCSaveTextToStream(stream, HC.View.HC.GetPropertyString(FPropertys));
         }
 
@@ -740,6 +754,12 @@ namespace EMRView
             base.LoadFromStream(stream, style, fileVersion);
             if (fileVersion > 53)
             {
+                if (fileVersion > 56)
+                {
+                    byte vByte = (byte)stream.ReadByte();
+                    FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
+                }
+
                 string vS = "";
                 HC.View.HC.HCLoadTextFromStream(stream, ref vS, fileVersion);
                 HC.View.HC.SetPropertyString(vS, FPropertys);
@@ -750,6 +770,8 @@ namespace EMRView
         {
             base.ToXml(aNode);
             aNode.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
         }
 
         public override void ParseXml(XmlElement aNode)
@@ -757,6 +779,10 @@ namespace EMRView
             base.ParseXml(aNode);
             string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
             HC.View.HC.SetPropertyString(vProp, FPropertys);
+            if (aNode.HasAttribute("editprotect"))
+                FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            else
+                FEditProtect = false;
         }
 
         public Dictionary<string, string> Propertys
@@ -768,6 +794,12 @@ namespace EMRView
         {
             get { return GetValue(aKey); }
             set { SetValue(aKey, value); }
+        }
+
+        public bool EditProtect
+        {
+            get { return FEditProtect; }
+            set { SetEditProtect(value); }
         }
     }
 
@@ -868,7 +900,10 @@ namespace EMRView
         public override void ParseXml(XmlElement aNode)
         {
             base.ParseXml(aNode);
-            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            if (aNode.HasAttribute("editprotect"))
+                FEditProtect = aNode.GetAttribute("editprotect") == "1";
+            else
+                FEditProtect = false;
 
             if (aNode.HasAttribute("deleteallow"))
                 FDeleteAllow = aNode.GetAttribute("deleteallow") == "1";

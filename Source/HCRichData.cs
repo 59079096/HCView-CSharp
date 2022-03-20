@@ -3950,6 +3950,10 @@ namespace HC.View
                             vRectItem.Active = false;
                             Style.UpdateInfoRePaint();
                             break;
+
+                        default:
+                            vRectItem.KeyDown(e);
+                            break;
                     }
                 }
             }

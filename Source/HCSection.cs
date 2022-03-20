@@ -1078,6 +1078,8 @@ namespace HC.View
                         break;
                 }
             }
+            else
+                FActiveData.KeyDown(e);
         }
 
         public void KeyUp(KeyEventArgs e)

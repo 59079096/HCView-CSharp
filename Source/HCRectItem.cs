@@ -972,7 +972,7 @@ namespace HC.View
 
         public override void KeyDown(KeyEventArgs e)
         {
-            base.KeyDown(e);
+            //base.KeyDown(e);
             if (FOnKeyDown != null)
                 FOnKeyDown(this, e);
         }

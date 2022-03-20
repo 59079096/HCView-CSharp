@@ -224,6 +224,7 @@ namespace HC.View
 
         private void DoCellDataItemReFormatRequest(HCCustomData data, HCCustomItem item)
         {
+            FormatDirty();
             (OwnerData as HCRichData).ItemReFormatRequest(this);
         }
 
@@ -3167,6 +3168,10 @@ namespace HC.View
                             }
                         }
                         break;
+
+                    default:
+                        vEditCell.CellData.KeyDown(e);
+                        break;
                 }
             }
             else
@@ -4205,7 +4210,7 @@ namespace HC.View
                 FRows[i].ParseXml(aNode.ChildNodes[i] as XmlElement);
         }
 
-        public bool ResetRowCol(int aWidth, int aRowCount, int aColCount)
+        public bool ResetRowCol(int aWidth, int aRowCount, int aColCount, bool userFirstRowHeight = false)
         {
             FFixRow = -1;
             FFixRowCount = 0;
@@ -4234,7 +4239,9 @@ namespace HC.View
                 vRow.SetRowWidth(vDataWidth);
                 if (i == 0)
                 {
-                    FDefaultRowHeight = vRow[0].CellData.Height + FCellVPaddingPix + FCellVPaddingPix;
+                    if (userFirstRowHeight)
+                        vFirstRowHeight = vRow[0].CellData.Height + FCellVPaddingPix + FCellVPaddingPix;
+                    else
                     if (vFirstRowHeight < 0)
                         vFirstRowHeight = FDefaultRowHeight;
                 }
@@ -5062,7 +5069,7 @@ namespace HC.View
                 return null;
         }
 
-        public void GetEditCell(ref int aRow, ref int aCol)
+        public bool GetEditCell(ref int aRow, ref int aCol)
         {
             aRow = -1;
             aCol = -1;
@@ -5070,7 +5077,10 @@ namespace HC.View
             {
                 aRow = FSelectCellRang.StartRow;
                 aCol = FSelectCellRang.StartCol;
+                return true;
             }
+
+            return false;
         }
 
         public bool InsertRowAfter(int aCount)
