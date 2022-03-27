@@ -96,6 +96,8 @@ namespace HC.View
             /// <summary> 可以挤压宽度的字符 </summary>
             LineSqueezeChar = "，。；、？“”",
             sLineBreak = "\r\n",
+            RecordSeparator = "\u001E",
+            UnitSeparator = "\u001F",
             HC_EXT = ".hcf",
             HC_EXT_DOCX = ".docx",
 
