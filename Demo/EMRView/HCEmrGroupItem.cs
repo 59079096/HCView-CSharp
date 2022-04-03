@@ -133,9 +133,8 @@ namespace EMRView
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            string vS = HC.View.HC.GetPropertyString((source as DeGroup).Propertys);
             FReadOnly = (source as DeGroup).ReadOnly;
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeGroup).Propertys, ref FPropertys);
             CheckPropertys();
         }
 

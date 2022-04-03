@@ -34,7 +34,7 @@ namespace HC.View
             /// <summary> 光标在RectItem后面 </summary>
             OffsetAfter = 2,
 
-            MinRowHeight = 20,
+            MinRowHeight = 10,
             MinColWidth = 20;
 
         public static Color clActiveBorder = Color.FromArgb(180, 180, 180);
@@ -663,6 +663,17 @@ namespace HC.View
                             aPropertys.Add(vKv[0], vKv[1]);
                     }
                 }
+            }
+        }
+
+        public static void AssignProperty(Dictionary<string, string> src, ref Dictionary<string, string> propertys)
+        {
+            propertys.Clear();
+            KeyValuePair<string, string> vElement;
+            for (int i = 0; i < src.Count; i++)
+            {
+                vElement = src.ElementAt(i);
+                propertys.Add(vElement.Key, vElement.Value);
             }
         }
 

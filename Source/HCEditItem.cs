@@ -600,8 +600,7 @@ namespace HC.View
 
         public override void ReFormatRequest()
         {
-            FormatDirty();
-            (OwnerData as HCRichData).ItemReFormatRequest(this);
+            base.ReFormatRequest();
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)

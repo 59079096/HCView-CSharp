@@ -2919,12 +2919,6 @@ namespace HC.View
             this.FormatDirty();
         }
 
-        public override void ReFormatRequest()
-        {
-            FormatDirty();
-            (OwnerData as HCRichData).ItemReFormatRequest(this);
-        }
-
         public override void ActiveItemReAdaptEnvironment()
         {
             if (FSelectCellRang.EditCell())

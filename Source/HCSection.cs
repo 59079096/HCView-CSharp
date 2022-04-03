@@ -2082,6 +2082,10 @@ namespace HC.View
             FPage.Clear();
             FPages.ClearEx();
             FActivePageIndex = 0;
+
+            FHeader.FormatChange = false;
+            FFooter.FormatChange = false;
+            FPage.FormatChange = false;
         }
 
         public virtual void MouseDown(MouseEventArgs e)
@@ -2584,6 +2588,10 @@ namespace HC.View
                 if (FPage.FloatItems[i].PageIndex > FPages.Count - 1)
                     FPage.FloatItems.RemoveAt(i);
             }
+
+            FHeader.FormatChange = false;
+            FFooter.FormatChange = false;
+            FPage.FormatChange = false;
         }
 
         public bool DeleteSelected()

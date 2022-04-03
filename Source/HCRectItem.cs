@@ -175,7 +175,11 @@ namespace HC.View
         /// <summary> ActiveItem重新适应其环境(供外部直接修改Item属性后重新和其前后Item连接组合) </summary>
         public virtual void ReFormatActiveItem() { }
 
-        public virtual void ReFormatRequest() { }
+        public virtual void ReFormatRequest()
+        {
+            FormatDirty();
+            (OwnerData as HCFormatData).ItemReFormatRequest(this);
+        }
 
         public virtual void ActiveItemReAdaptEnvironment() { }
 
@@ -395,6 +399,7 @@ namespace HC.View
         public virtual void FormatDirty()
         {
             FIsFormatDirty = true;
+            (this.OwnerData as HCFormatData).FormatDirty();
         }
 
         public virtual void TraverseItem(HCItemTraverse ATraverse) { }

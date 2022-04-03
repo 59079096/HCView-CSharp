@@ -34,7 +34,7 @@ namespace HC.View
         private bool FFormatHeightChange;
         /// <summary> 多次格式化是否有变动，外部由此决定是否重新计算分页起始结束DrawItemNo </summary>
         private bool FFormatChange;
-
+        private EventHandler FOnFormatDirty;
         private DataItemEventHandler FOnItemReFormatRequest;
         private DataItemNoOffsetEventHandler FOnItemSetCaretRequest;
 
@@ -879,25 +879,24 @@ namespace HC.View
             }
         }
 
+        protected void DoFormatDirty()
+        {
+            if (FOnFormatDirty != null)
+                FOnFormatDirty(this, null);
+        }
+
         protected void FormatInit()
         {
             if (!FFormatChange)
             {
                 FFormatHeightChange = false;
-                FFormatStartDrawItemNo = -1;
+                FFormatStartDrawItemNo = 0;
             }
 
             FFormatDrawItemCountChange = false;
             FFormatStartTop = 0;
             FFormatEndBottom = 0;
             FLastFormatParaNo = HCStyle.Null;
-        }
-
-        public override void Clear()
-        {
-            FFormatChange = false;
-            FormatInit();
-            base.Clear();
         }
 
         protected void ReSetSelectAndCaret(int aItemNo)
@@ -1174,6 +1173,12 @@ namespace HC.View
 
         public virtual void ItemReFormatRequest(HCCustomItem aItem)
         {
+            if (FFormatCount > 0)
+            {
+                this.FormatDirty();
+                return;
+            }
+
             if (FOnItemReFormatRequest != null)
                 FOnItemReFormatRequest(this, aItem);
         }
@@ -1214,6 +1219,11 @@ namespace HC.View
             }
 
             return -1;
+        }
+
+        public void FormatDirty()
+        {
+            this.DoFormatDirty();
         }
 
         public void BeginFormat()
@@ -1260,6 +1270,12 @@ namespace HC.View
         public int FormatCount
         {
             get { return FFormatCount; }
+        }
+
+        public EventHandler OnFormatDirty
+        {
+            get { return FOnFormatDirty; }
+            set { FOnFormatDirty = value; }
         }
 
         public DataItemEventHandler OnItemReFormatRequest

@@ -177,6 +177,7 @@ namespace EMRView
         private bool
             FMouseIn,
             FOutOfRang,  // 值不在正常范围内
+            FIsElement,
             FEditProtect,  // 编辑保护，不允许删除、手动录入
             FCopyProtect,  // 复制保护，不允许复制
             FDeleteAllow,  // 是否允许删除
@@ -196,12 +197,32 @@ namespace EMRView
 
         private void SetValue(string key, string value)
         {
-            HC.View.HC.HCSetProperty(FPropertys, key, value);
+            if (key == "Text")
+            {
+
+            }
+            else
+            if (key == "EditProtect")
+                FEditProtect = bool.Parse(value);
+            else
+            if (key == "DeleteAllow")
+                FDeleteAllow = bool.Parse(value);
+            else
+            if (key == "CopyProtect")
+                FCopyProtect = bool.Parse(value);
+            else
+            if (key == "AllocValue")
+                FAllocValue = bool.Parse(value);
+            else
+            {
+                HC.View.HC.HCSetProperty(FPropertys, key, value);
+                PropertyChange();
+            }
         }
 
-        private bool GetIsElement()
+        private void PropertyChange()
         {
-            return FPropertys.Keys.Contains(DeProp.Index);
+            FIsElement = FPropertys.Keys.Contains(DeProp.Index);
         }
 
         protected override void SetText(string value)
@@ -303,8 +324,8 @@ namespace EMRView
             FCopyProtect = (source as DeItem).CopyProtect;
             FAllocValue = (source as DeItem).AllocValue;
             FOutOfRang = (source as DeItem).OutOfRang;
-            string vS = HC.View.HC.GetPropertyString((source as DeItem).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeItem).Propertys, ref FPropertys);
+            PropertyChange();
         }
 
         public override bool CanConcatItems(HCCustomItem aItem)
@@ -475,6 +496,8 @@ namespace EMRView
                     this[DeProp.Trace] = "";
                 }
             }
+
+            PropertyChange();
         }
 
         public override void ToXml(XmlElement aNode)
@@ -564,7 +587,7 @@ namespace EMRView
 
         public bool IsElement
         {
-            get { return GetIsElement(); }
+            get { return FIsElement; }
         }
 
         public bool MouseIn
@@ -848,8 +871,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeTable).EditProtect;
             FDeleteAllow = (source as DeTable).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeTable).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeTable).Propertys, ref FPropertys);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -990,8 +1012,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeCheckBox).EditProtect;
             FDeleteAllow = (source as DeCheckBox).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeCheckBox).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeCheckBox).Propertys, ref FPropertys);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1121,8 +1142,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeEdit).EditProtect;
             FDeleteAllow = (source as DeEdit).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeEdit).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeButton).Propertys, ref FPropertys);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1264,8 +1284,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeEdit).EditProtect;
             FDeleteAllow = (source as DeEdit).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeEdit).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeEdit).Propertys, ref FPropertys);
         }
 
         public override bool InsertText(string aText)
@@ -1422,8 +1441,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeCombobox).EditProtect;
             FDeleteAllow = (source as DeCombobox).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeCombobox).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeCombobox).Propertys, ref FPropertys);
         }
 
         public override bool InsertText(string aText)
@@ -1579,8 +1597,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeDateTimePicker).EditProtect;
             FDeleteAllow = (source as DeDateTimePicker).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeDateTimePicker).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeDateTimePicker).Propertys, ref FPropertys);
         }
 
         public override bool InsertText(string aText)
@@ -1724,8 +1741,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeRadioGroup).EditProtect;
             FDeleteAllow = (source as DeRadioGroup).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeRadioGroup).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeRadioGroup).Propertys, ref FPropertys);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1855,8 +1871,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeFloatBarCodeItem).EditProtect;
             FDeleteAllow = (source as DeFloatBarCodeItem).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeFloatBarCodeItem).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeFloatBarCodeItem).Propertys, ref FPropertys);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1997,8 +2012,7 @@ namespace EMRView
             base.Assign(source);
             FEditProtect = (source as DeImageItem).EditProtect;
             FDeleteAllow = (source as DeImageItem).DeleteAllow;
-            string vS = HC.View.HC.GetPropertyString((source as DeImageItem).Propertys);
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeImageItem).Propertys, ref FPropertys);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
