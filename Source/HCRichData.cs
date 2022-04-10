@@ -1171,7 +1171,8 @@ namespace HC.View
             else  // 没有选中内容
             {
                 if ((GetItemStyle(SelectInfo.StartItemNo) < HCStyle.Null)
-                    && (SelectInfo.StartItemOffset == HC.OffsetInner))
+                    && (SelectInfo.StartItemOffset == HC.OffsetInner)
+                    && !(Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsSelectComplateTheory())
                 {
                     if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
                         UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
