@@ -186,6 +186,7 @@ namespace EMRView
 
         private DeTraceStyles FTraceStyles;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -242,6 +243,7 @@ namespace EMRView
         public DeItem() : base()
         {
             FPropertys = new Dictionary<string,string>();
+            FScripts = new Dictionary<string, string>();
             FEditProtect = false;
             FDeleteAllow = true;
             FAllocOnly = false;
@@ -326,6 +328,7 @@ namespace EMRView
             FOutOfRang = (source as DeItem).OutOfRang;
             HC.View.HC.AssignProperty((source as DeItem).Propertys, ref FPropertys);
             PropertyChange();
+            HC.View.HC.AssignProperty((source as DeItem).FScripts, ref FScripts);
         }
 
         public override bool CanConcatItems(HCCustomItem aItem)
@@ -443,6 +446,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -498,6 +502,11 @@ namespace EMRView
             }
 
             PropertyChange();
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -830,6 +839,7 @@ namespace EMRView
     {
         private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -859,6 +869,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
         }
 
         ~DeTable()
@@ -872,6 +883,7 @@ namespace EMRView
             FEditProtect = (source as DeTable).EditProtect;
             FDeleteAllow = (source as DeTable).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeTable).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeTable).FScripts, ref FScripts);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -888,6 +900,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -905,6 +918,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -976,6 +994,7 @@ namespace EMRView
         private bool FEditProtect, FDeleteAllow;
 
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -1000,6 +1019,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
         }
 
         ~DeCheckBox()
@@ -1013,6 +1033,7 @@ namespace EMRView
             FEditProtect = (source as DeCheckBox).EditProtect;
             FDeleteAllow = (source as DeCheckBox).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeCheckBox).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeCheckBox).FScripts, ref FScripts);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1029,6 +1050,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -1046,6 +1068,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -1112,6 +1139,7 @@ namespace EMRView
     {
         private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -1130,6 +1158,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
         }
 
         ~DeButton()
@@ -1143,6 +1172,7 @@ namespace EMRView
             FEditProtect = (source as DeEdit).EditProtect;
             FDeleteAllow = (source as DeEdit).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeButton).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeButton).FScripts, ref FScripts);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1159,6 +1189,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -1176,6 +1207,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -1242,6 +1278,7 @@ namespace EMRView
     {
         private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -1272,6 +1309,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
         }
 
         ~DeEdit()
@@ -1285,6 +1323,7 @@ namespace EMRView
             FEditProtect = (source as DeEdit).EditProtect;
             FDeleteAllow = (source as DeEdit).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeEdit).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeEdit).FScripts, ref FScripts);
         }
 
         public override bool InsertText(string aText)
@@ -1309,6 +1348,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -1326,6 +1366,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -1392,6 +1437,7 @@ namespace EMRView
     {
         private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -1428,6 +1474,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
             SaveItem = false;
         }
 
@@ -1442,6 +1489,7 @@ namespace EMRView
             FEditProtect = (source as DeCombobox).EditProtect;
             FDeleteAllow = (source as DeCombobox).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeCombobox).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeCombobox).FScripts, ref FScripts);
         }
 
         public override bool InsertText(string aText)
@@ -1466,6 +1514,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -1483,6 +1532,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -1549,6 +1603,7 @@ namespace EMRView
     {
         private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -1585,6 +1640,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
         }
 
         ~DeDateTimePicker()
@@ -1598,6 +1654,7 @@ namespace EMRView
             FEditProtect = (source as DeDateTimePicker).EditProtect;
             FDeleteAllow = (source as DeDateTimePicker).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeDateTimePicker).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeDateTimePicker).FScripts, ref FScripts);
         }
 
         public override bool InsertText(string aText)
@@ -1622,6 +1679,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -1639,6 +1697,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -1705,6 +1768,7 @@ namespace EMRView
     {
         private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -1729,6 +1793,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
         }
 
         ~DeRadioGroup()
@@ -1742,6 +1807,7 @@ namespace EMRView
             FEditProtect = (source as DeRadioGroup).EditProtect;
             FDeleteAllow = (source as DeRadioGroup).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeRadioGroup).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeRadioGroup).FScripts, ref FScripts);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -1758,6 +1824,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -1775,6 +1842,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)
@@ -1971,6 +2043,7 @@ namespace EMRView
     {
         private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -2000,6 +2073,7 @@ namespace EMRView
         {
             FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
         }
 
         ~DeImageItem()
@@ -2013,6 +2087,7 @@ namespace EMRView
             FEditProtect = (source as DeImageItem).EditProtect;
             FDeleteAllow = (source as DeImageItem).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeImageItem).Propertys, ref FPropertys);
+            HC.View.HC.AssignProperty((source as DeImageItem).FScripts, ref FScripts);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
@@ -2029,6 +2104,7 @@ namespace EMRView
             aStream.WriteByte(vByte);
 
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -2048,6 +2124,11 @@ namespace EMRView
             string vS = "";
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void ToXml(XmlElement aNode)

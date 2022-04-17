@@ -21,12 +21,9 @@ using System.Runtime.InteropServices;
 
 namespace HC.View
 {
-    public delegate POINT GetScreenCoordEventHandler(int x, int y);
-
     public class HCSectionData : HCViewData
     {
         private EventHandler FOnReadOnlySwitch;
-        private GetScreenCoordEventHandler FOnGetScreenCoord;
 
         private HCFloatItems FFloatItems;  // THCItems支持Add时控制暂时不用
         int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex;
@@ -312,14 +309,6 @@ namespace HC.View
             base.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
         }
 
-        public override POINT GetScreenCoord(int x, int y)
-        {
-            if (FOnGetScreenCoord != null)
-                return FOnGetScreenCoord(x, y);
-            else
-                return new POINT();
-        }
-
         public void TraverseFloatItem(HCItemTraverse aTraverse)
         {
             if (aTraverse != null)
@@ -476,12 +465,6 @@ namespace HC.View
         {
             get { return FOnReadOnlySwitch; }
             set { FOnReadOnlySwitch = value; }
-        }
-
-        public GetScreenCoordEventHandler OnGetScreenCoord
-        {
-            get { return FOnGetScreenCoord; }
-            set { FOnGetScreenCoord = value; }
         }
     }
 

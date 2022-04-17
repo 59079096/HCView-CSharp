@@ -1186,8 +1186,9 @@ namespace HC.View
         /// <summary> 粘贴前，便于控制是否允许粘贴 </summary>
         protected virtual bool DoPasteRequest(int aFormat)
         {
-            HCCustomItem vTopItem = ActiveSection.GetTopLevelItem();
-            if (vTopItem is HCEditItem)
+            HCCustomData vTopData = this.ActiveSectionTopLevelData();
+            HCCustomItem vTopItem = vTopData.GetActiveItem();
+            if (vTopItem is HCEditItem && vTopData.SelectInfo.StartItemOffset == HC.OffsetInner)
                 return (aFormat == User.CF_TEXT) || (aFormat == User.CF_UNICODETEXT);
 
             return true;

@@ -71,6 +71,7 @@ namespace HC.View
                 this.SelectInfo.Initialize();
                 this.SelectInfo.StartItemNo = aItemNo;
                 this.SelectInfo.StartItemOffset = aOffset;
+                this.GetActiveDomain();
             }
         }
 

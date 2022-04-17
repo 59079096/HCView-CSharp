@@ -1213,17 +1213,8 @@ namespace HC.View
 
                         DoSelectCellChange(FMouseDownRow, FMouseDownCol, vMouseDownRow, vMouseDownCol);
                         OwnerData.Style.UpdateInfoReCaret();
-                    }
 
-                    if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // shift键重新确定选中范围
-                    {
-
-                    }
-                    else
                         DisSelect();  // 清除原选中
-
-                    if ((FMouseDownRow != vMouseDownRow) || (FMouseDownCol != vMouseDownCol))
-                    {
                         FMouseDownRow = vMouseDownRow;
                         FMouseDownCol = vMouseDownCol;
                     }

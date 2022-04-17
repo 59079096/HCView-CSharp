@@ -579,6 +579,8 @@ namespace HC.View
         {
             if (SelectTextExists())
                 return FText.Substring(FCaretOffset + 1 - 1, FSelEnd - FCaretOffset);
+            if (this.IsSelectComplate)
+                return FText;
             else
                 return base.SaveSelectToText();
         }
@@ -685,9 +687,18 @@ namespace HC.View
             else
                 FPrintOnlyText = true;
 
+            if (aNode.HasAttribute("textalignhorz"))
+                FTextAlignHorz = (HCTextHorAlign)byte.Parse(aNode.Attributes["textalignhorz"].Value);
+            else
+                FTextAlignHorz = HCTextHorAlign.hthaLeft;
+
+            if (aNode.HasAttribute("textalignhorz"))
+                FTextAlignHorz = (HCTextHorAlign)byte.Parse(aNode.Attributes["textalignhorz"].Value);
+            else
+                FTextAlignHorz = HCTextHorAlign.hthaLeft;
+
             HC.SetBorderSideByPro(aNode.Attributes["border"].Value, FBorderSides);
             FBorderWidth = byte.Parse(aNode.Attributes["borderwidth"].Value);
-            FTextAlignHorz = (HCTextHorAlign)byte.Parse(aNode.Attributes["textalignhorz"].Value);
             FText = aNode.InnerText;
         }
 

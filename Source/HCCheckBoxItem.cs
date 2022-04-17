@@ -179,6 +179,9 @@ namespace HC.View
             if (FBoxRight)
                 vByte = (byte)(vByte | (1 << 6));
 
+            if (FItemHit)
+                vByte = (byte)(vByte | (1 << 5));
+
             aStream.WriteByte(vByte);
             HC.HCSaveTextToStream(aStream, FText);  // 存Text
         }
@@ -192,6 +195,7 @@ namespace HC.View
                 byte vByte = (byte)aStream.ReadByte();
                 FChecked = HC.IsOdd(vByte >> 7);
                 FBoxRight = HC.IsOdd(vByte >> 6);
+                FItemHit = HC.IsOdd(vByte >> 5);
             }
             else
             {
@@ -206,6 +210,7 @@ namespace HC.View
         {
             base.ToXml(aNode);
             aNode.SetAttribute("check", FChecked.ToString());
+            aNode.SetAttribute("itemhit", FItemHit.ToString());
             aNode.InnerText = FText;
         }
 
@@ -213,6 +218,11 @@ namespace HC.View
         {
             base.ParseXml(aNode);
             FChecked = bool.Parse(aNode.Attributes["check"].Value);
+            if (aNode.HasAttribute("itemhit"))
+                FItemHit = bool.Parse(aNode.Attributes["itemhit"].Value);
+            else
+                FItemHit = false;
+
             FText = aNode.InnerText;
         }
 

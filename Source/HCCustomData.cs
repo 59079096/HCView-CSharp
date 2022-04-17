@@ -379,10 +379,13 @@ namespace HC.View
                     {
                         if ((FSelectInfo.StartItemOffset == HC.OffsetInner)
                           || (FSelectInfo.EndItemOffset == HC.OffsetInner))
-                            FItems[aItemNo].SelectPart();
+                        {
+                            if ((FItems[aItemNo] as HCCustomRectItem).SelectExists())
+                                FItems[aItemNo].SelectPart();
+                        }
                         else
                             FItems[aItemNo].SelectComplate();
-                    
+
                     }
                     else  // TextItem
                     {
@@ -399,6 +402,14 @@ namespace HC.View
                         FItems[aItemNo].SelectComplate();
                     else
                     if (FSelectInfo.StartItemOffset < this.GetItemOffsetAfter(aItemNo))
+                    {
+                        if (FItems[aItemNo].StyleNo < HCStyle.Null)
+                        {
+                            if ((FItems[aItemNo] as HCCustomRectItem).SelectExists())
+                                FItems[aItemNo].SelectPart();
+                        }
+                    }
+                    else
                         FItems[aItemNo].SelectPart();
                 }
             }
@@ -410,8 +421,10 @@ namespace HC.View
                         FItems[aItemNo].SelectComplate();
                     else
                     if (FSelectInfo.EndItemOffset > HC.OffsetBefor)
-                        FItems[aItemNo].SelectPart();
-                
+                    {
+                        if ((FItems[aItemNo] as HCCustomRectItem).SelectExists())
+                            FItems[aItemNo].SelectPart();
+                    }
                 }
                 else  // TextItem
                 {
@@ -2033,6 +2046,7 @@ namespace HC.View
 
             FSelectInfo.StartItemNo = -1;
             FSelectInfo.StartItemOffset = -1;
+            FCaretDrawItemNo = -1;
 
             return Result;
         }

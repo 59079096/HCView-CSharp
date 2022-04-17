@@ -1192,8 +1192,11 @@ namespace HC.View
         {
             if (itemNo >= 0)
             {
-                this.DisSelect();
+                if (SelectInfo.EndItemNo >= 0)
+                    this.DisSelect();
+
                 ReSetSelectAndCaret(itemNo, offset);
+                Items[itemNo].Active = true;
                 Style.UpdateInfoReCaret(true);
                 if (FOnItemSetCaretRequest != null)
                     FOnItemSetCaretRequest(this, itemNo, offset);

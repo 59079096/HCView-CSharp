@@ -303,8 +303,15 @@ namespace HC.View
                 }
 
                 if ((aStartItemNo != aEndItemNo) && (aEndItemNo >= 0)
-                    && (Items[aEndItemNo].Length > 0) && (aEndItemNoOffset == 0)
-                    && (!Items[aEndItemNo].ParaFirst))
+                    && (Items[aEndItemNo].Length > 0)
+                    && (!Items[aEndItemNo].ParaFirst)
+                    && (aEndItemNoOffset == 0
+                            || (Items[aEndItemNo].StyleNo < HCStyle.Null
+                                    && aEndItemNoOffset == HC.OffsetInner
+                                    && !(Items[aEndItemNo] as HCCustomRectItem).SelectExists()
+                               )
+                       )
+                )
                 {
                     Items[aEndItemNo].DisSelect();  // 从前往后选，鼠标移动到前一次前面，原鼠标处被移出选中范围
 
@@ -324,7 +331,14 @@ namespace HC.View
                     aStartItemOffset = GetItemOffsetAfter(aStartItemNo);
                 }
 
-                if ((aStartItemNo != aEndItemNo) && (aEndItemNoOffset == GetItemOffsetAfter(aEndItemNo)))
+                if ((aStartItemNo != aEndItemNo)
+                    && (aEndItemNoOffset == GetItemOffsetAfter(aEndItemNo)
+                            || (Items[aEndItemNo].StyleNo < HCStyle.Null
+                                    && aEndItemNoOffset == HC.OffsetInner
+                                    && !(Items[aEndItemNo] as HCCustomRectItem).SelectExists()
+                               )
+                       )
+                )
                 {
                     Items[aEndItemNo].DisSelect();  // 从后往前选，鼠标移动到前一个后面，原鼠标处被移出选中范围
 
@@ -2650,6 +2664,9 @@ namespace HC.View
                         FMouseMoveRestrain = vRestrain;
                     }
 
+                    if ((Items[FMouseMoveItemNo].StyleNo < HCStyle.Null) && (FMouseDownItemOffset == HC.OffsetInner))
+                        DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
+
                     AdjustSelectRange(ref FMouseDownItemNo, ref FMouseDownItemOffset,
                       ref FMouseMoveItemNo, ref FMouseMoveItemOffset);  // 确定SelectRang
 
@@ -2662,9 +2679,6 @@ namespace HC.View
                     else
                         CaretDrawItemNo = FMouseMoveDrawItemNo;  // 按下上一下DrawItem最后，划选到下一个开始时，没有选中内容，要更换CaretDrawIemNo
                     
-                    if ((Items[FMouseMoveItemNo].StyleNo < HCStyle.Null) && (FMouseDownItemOffset == HC.OffsetInner))
-                        DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
-
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
                 }
