@@ -32,7 +32,6 @@ namespace HC.View
         private bool FFormatDrawItemCountChange;
         /// <summary> 当次格式化Data高度是否发生变化 </summary>
         private bool FFormatHeightChange;
-        /// <summary> 多次格式化是否有变动，外部由此决定是否重新计算分页起始结束DrawItemNo </summary>
         private bool FFormatChange;
         private EventHandler FOnFormatDirty;
         private DataItemEventHandler FOnItemReFormatRequest;
