@@ -34,7 +34,7 @@ namespace HC.View
             /// <summary> 光标在RectItem后面 </summary>
             OffsetAfter = 2,
 
-            MinRowHeight = 20,
+            MinRowHeight = 10,
             MinColWidth = 20;
 
         public static Color clActiveBorder = Color.FromArgb(180, 180, 180);
@@ -96,6 +96,8 @@ namespace HC.View
             /// <summary> 可以挤压宽度的字符 </summary>
             LineSqueezeChar = "，。；、？“”",
             sLineBreak = "\r\n",
+            RecordSeparator = "\u001E",
+            UnitSeparator = "\u001F",
             HC_EXT = ".hcf",
             HC_EXT_DOCX = ".docx",
 
@@ -130,14 +132,14 @@ namespace HC.View
             // 4.1 Combobox增加Static属性控制只选不可编辑
             // 4.2 Section存属性信息
             // 4.3 Data存Script属性，SectionData存数据大小占位
-            // 4.4 供EmrView存自己的信息
+            // 4.4 供EmrView存自己的信息public static string GetPropertyString
             // 4.5 ResizeItem存CanResize属性
             // 4.6 节存储页码格式
 
-			HC_FileVersion = "5.5";
+            HC_FileVersion = "5.8";
 
 		public const ushort
-            HC_FileVersionInt = 55;
+            HC_FileVersionInt = 58;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -631,7 +633,7 @@ namespace HC.View
                 s = "";
         }
 
-        public static string GetPropertyString(Dictionary<string, string> aProperty)
+        public static string GetPropertyString(Dictionary<string, string> aProperty, string recordSeparator = "=", string unitSeparator = HC.sLineBreak)
         {
             string vS = "";
             KeyValuePair<string, string> vElement;
@@ -639,28 +641,39 @@ namespace HC.View
             {
                 vElement = aProperty.ElementAt(i);
                 if (vElement.Key != "")
-                    vS = vS + vElement.Key + "=" + vElement.Value + HC.sLineBreak;
+                    vS = vS + vElement.Key + recordSeparator + vElement.Value + unitSeparator;
             }
 
             return vS;
         }
 
-        public static void SetPropertyString(string aStrings, Dictionary<string, string> aPropertys)
+        public static void SetPropertyString(string aStrings, Dictionary<string, string> aPropertys, string recordSeparator = "=", string unitSeparator = HC.sLineBreak)
         {
             aPropertys.Clear();
 
             if (aStrings != "")
             {
-                string[] vStrings = aStrings.Split(new string[] { HC.sLineBreak }, StringSplitOptions.None);
+                string[] vStrings = aStrings.Split(new string[] { unitSeparator }, StringSplitOptions.None);
                 for (int i = 0; i < vStrings.Length; i++)
                 {
                     if (vStrings[i] != "")
                     {
-                        string[] vKv = vStrings[i].Split(new string[] { "=" }, StringSplitOptions.None);
+                        string[] vKv = vStrings[i].Split(new string[] { recordSeparator }, StringSplitOptions.None);
                         if (vKv[0] != "")
                             aPropertys.Add(vKv[0], vKv[1]);
                     }
                 }
+            }
+        }
+
+        public static void AssignProperty(Dictionary<string, string> src, ref Dictionary<string, string> propertys)
+        {
+            propertys.Clear();
+            KeyValuePair<string, string> vElement;
+            for (int i = 0; i < src.Count; i++)
+            {
+                vElement = src.ElementAt(i);
+                propertys.Add(vElement.Key, vElement.Value);
             }
         }
 

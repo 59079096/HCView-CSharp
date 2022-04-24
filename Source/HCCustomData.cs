@@ -124,7 +124,7 @@ namespace HC.View
 
     public class SelectInfo : object
     {
-        private int FStartItemNo,  // 不能使用DrawItem记录，因为内容变动时Item的指定Offset对应的DrawItem，可能和变动前不一样
+        private int FStartItemNo,
             FStartItemOffset,  // 选中起始在第几个字符后面，0表示在Item最前面
             FEndItemNo,
             FEndItemOffset;  // 选中结束在第几个字符后面
@@ -288,7 +288,7 @@ namespace HC.View
             }
         }
 
-        public int MatchTextStyleNoAt(int itemNo, int offset)
+        public virtual int MatchTextStyleNoAt(int itemNo, int offset)
         {
             if (FItems[itemNo].StyleNo < HCStyle.Null)  // 在RectItem前后或其上
             {
@@ -323,7 +323,12 @@ namespace HC.View
                         return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);
                 }
                 else  // 在RectItem上
-                    return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);  // 默认文本样式
+                {
+                    if (FItems[itemNo] is HCTextRectItem)
+                        return (FItems[itemNo] as HCTextRectItem).TextStyleNo;
+                    else
+                        return FStyle.GetStyleNo(FStyle.DefaultTextStyle, true);  // 默认文本样式
+                }
             }
             else  // 当前位置是TextItem
                 return FItems[itemNo].StyleNo;  // 防止静默移动选中位置没有更新当前样式
@@ -374,10 +379,13 @@ namespace HC.View
                     {
                         if ((FSelectInfo.StartItemOffset == HC.OffsetInner)
                           || (FSelectInfo.EndItemOffset == HC.OffsetInner))
-                            FItems[aItemNo].SelectPart();
+                        {
+                            if ((FItems[aItemNo] as HCCustomRectItem).SelectExists())
+                                FItems[aItemNo].SelectPart();
+                        }
                         else
                             FItems[aItemNo].SelectComplate();
-                    
+
                     }
                     else  // TextItem
                     {
@@ -394,6 +402,14 @@ namespace HC.View
                         FItems[aItemNo].SelectComplate();
                     else
                     if (FSelectInfo.StartItemOffset < this.GetItemOffsetAfter(aItemNo))
+                    {
+                        if (FItems[aItemNo].StyleNo < HCStyle.Null)
+                        {
+                            if ((FItems[aItemNo] as HCCustomRectItem).SelectExists())
+                                FItems[aItemNo].SelectPart();
+                        }
+                    }
+                    else
                         FItems[aItemNo].SelectPart();
                 }
             }
@@ -405,8 +421,10 @@ namespace HC.View
                         FItems[aItemNo].SelectComplate();
                     else
                     if (FSelectInfo.EndItemOffset > HC.OffsetBefor)
-                        FItems[aItemNo].SelectPart();
-                
+                    {
+                        if ((FItems[aItemNo] as HCCustomRectItem).SelectExists())
+                            FItems[aItemNo].SelectPart();
+                    }
                 }
                 else  // TextItem
                 {
@@ -974,11 +992,7 @@ namespace HC.View
                         vStyleItemNo = aItemNo - 1;
                 }
 
-                if ((FItems[vStyleItemNo] is HCTextRectItem) && (FSelectInfo.StartItemOffset == HC.OffsetInner))
-                    this.CurStyleNo = (FItems[vStyleItemNo] as HCTextRectItem).TextStyleNo;
-                else
-                    this.CurStyleNo = FItems[vStyleItemNo].StyleNo;
-
+                this.CurStyleNo = MatchTextStyleNoAt(vStyleItemNo, FSelectInfo.StartItemOffset);
                 this.CurParaNo = FItems[vStyleItemNo].ParaNo;
             }
 
@@ -2032,6 +2046,7 @@ namespace HC.View
 
             FSelectInfo.StartItemNo = -1;
             FSelectInfo.StartItemOffset = -1;
+            FCaretDrawItemNo = -1;
 
             return Result;
         }

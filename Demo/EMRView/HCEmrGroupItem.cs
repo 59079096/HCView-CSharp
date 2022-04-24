@@ -45,6 +45,7 @@ namespace EMRView
         private bool FIsProc;
         #endif
         private Dictionary<string, string> FPropertys;
+        private Dictionary<string, string> FScripts;
 
         private string GetValue(string key)
         {
@@ -86,6 +87,7 @@ namespace EMRView
         public DeGroup(HCCustomData aOwnerData) : base(aOwnerData)
         {
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
             FReadOnly = false;
             #if PROCSERIES
             FIsProc = false;
@@ -103,6 +105,7 @@ namespace EMRView
             byte[] buffer = System.BitConverter.GetBytes(FTextStyleNo);
             aStream.Write(buffer, 0, buffer.Length);
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator));
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -128,15 +131,20 @@ namespace EMRView
             HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
             HC.View.HC.SetPropertyString(vS, FPropertys);
             CheckPropertys();
+            if (aFileVersion > 57)
+            {
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FScripts, HC.View.HC.RecordSeparator, HC.View.HC.UnitSeparator);
+            }
         }
 
         public override void Assign(HCCustomItem source)
         {
             base.Assign(source);
-            string vS = HC.View.HC.GetPropertyString((source as DeGroup).Propertys);
             FReadOnly = (source as DeGroup).ReadOnly;
-            HC.View.HC.SetPropertyString(vS, FPropertys);
+            HC.View.HC.AssignProperty((source as DeGroup).Propertys, ref FPropertys);
             CheckPropertys();
+            HC.View.HC.AssignProperty((source as DeGroup).FScripts, ref FScripts);
         }
 
         public override void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyle)

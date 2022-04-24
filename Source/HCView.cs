@@ -209,6 +209,17 @@ namespace HC.View
 
             DoLoadStreamBefor(aStream, vFileVersion);  // 触发加载前事件
             aStyle.LoadFromStream(aStream, vFileVersion);  // 加载样式表
+
+            if (vFileVersion > 55)
+            {
+                vLang = (byte)aStream.ReadByte();
+                vLang = (byte)aStream.ReadByte();  // 布局方式
+                uint vSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vSize);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                vSize = BitConverter.ToUInt32(vBuffer, 0);
+            }
+
             aLoadSectionProc(vFileVersion);  // 加载节数量、节数据
             DoLoadStreamAfter(aStream, vFileVersion);
             DoMapChanged();
@@ -325,7 +336,7 @@ namespace HC.View
         private POINT DoSectionGetScreenCoord(int x, int y)
         {
             Point vPt = this.PointToScreen(new Point(x, y));
-            return new POINT(vPt.X, vPt.Y);
+            return new POINT(ZoomIn(vPt.X), ZoomIn(vPt.Y));
         }
 
         private void DoSectionItemResize(HCCustomData aData, int aItemNo)
@@ -1175,8 +1186,9 @@ namespace HC.View
         /// <summary> 粘贴前，便于控制是否允许粘贴 </summary>
         protected virtual bool DoPasteRequest(int aFormat)
         {
-            HCCustomItem vTopItem = ActiveSection.GetTopLevelItem();
-            if (vTopItem is HCEditItem)
+            HCCustomData vTopData = this.ActiveSectionTopLevelData();
+            HCCustomItem vTopItem = vTopData.GetActiveItem();
+            if (vTopItem is HCEditItem && vTopData.SelectInfo.StartItemOffset == HC.OffsetInner)
                 return (aFormat == User.CF_TEXT) || (aFormat == User.CF_UNICODETEXT);
 
             return true;
@@ -1422,7 +1434,7 @@ namespace HC.View
             switch (Message.Msg)
             {
                 case User.WM_GETDLGCODE:
-                    Message.Result = (IntPtr)(User.DLGC_WANTTAB | User.DLGC_WANTARROWS);
+                    Message.Result = (IntPtr)(User.DLGC_WANTTAB | User.DLGC_WANTARROWS | User.DLGC_WANTCHARS);
                     return;
 
                 case User.WM_ERASEBKGND:
@@ -1831,7 +1843,7 @@ namespace HC.View
         /// <summary> 删除当前节 </summary>
         public void DeleteActiveSection()
         {
-            if (FActiveSectionIndex > 0)
+            if (!this.ReadOnly && FActiveSectionIndex > 0)
             {
                 FSections.RemoveAt(FActiveSectionIndex);
                 FActiveSectionIndex = FActiveSectionIndex - 1;
@@ -2123,6 +2135,9 @@ namespace HC.View
         /// <summary> 从当前位置后分节 </summary>
         public bool InsertSectionBreak()
         {
+            if (this.ReadOnly)
+                return false;
+
             bool Result = false;
             this.BeginUpdate();
             try
@@ -3203,8 +3218,17 @@ namespace HC.View
                 }
 
                 FStyle.SaveToStream(aStream);
+
+                byte vByte = 0;
+                aStream.WriteByte(vByte);
+                aStream.WriteByte(vByte);
+                uint vSize = 0;
+                byte[] vBuffer = BitConverter.GetBytes(vSize);
+                aStream.Write(vBuffer, 0, vBuffer.Length);
+
+
                 // 节数量
-                byte vByte = (byte)FSections.Count;
+                vByte = (byte)FSections.Count;
                 aStream.WriteByte(vByte);
                 // 各节数据
                 for (int i = 0; i <= FSections.Count - 1; i++)
@@ -3582,9 +3606,10 @@ namespace HC.View
                         }
                         else
                         {
-                            vPaintInfo.ScaleX = (float)vPrintWidth / FSections[vSectionIndex].PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                            // vPrintCanvas.Graphics.DpiX / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX);
+                            vPaintInfo.ScaleX = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSX) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX); // (float)vPrintWidth / FSections[vSectionIndex].PaperWidthPix;
                             //vPaintInfo.ScaleY = (float)vPrintHeight / FSections[vSectionIndex].PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                            vPaintInfo.ScaleY = vPaintInfo.ScaleX;
+                            vPaintInfo.ScaleY = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSY) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSY);
                             vPaintInfo.Zoom = 1;
                         }
 
@@ -3709,9 +3734,9 @@ namespace HC.View
                     }
                     else
                     {
-                        vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                        vPaintInfo.ScaleX = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSX) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX);  // vPrintWidth / this.ActiveSection.PaperWidthPix;
                         //vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
+                        vPaintInfo.ScaleY = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSY) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSY); ;
                         vPaintInfo.Zoom = 1;
                     }
 
@@ -3839,9 +3864,9 @@ namespace HC.View
                     }
                     else
                     {
-                        vPaintInfo.ScaleX = (float)vPrintWidth / this.ActiveSection.PaperWidthPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSX) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSX);
+                        vPaintInfo.ScaleX = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSX) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSX);  // vPrintWidth / this.ActiveSection.PaperWidthPix;
                         //vPaintInfo.ScaleY = (float)vPrintHeight / this.ActiveSection.PaperHeightPix;  // GetDeviceCaps(Printer.Handle, LOGPIXELSY) / GetDeviceCaps(FStyle.DefCanvas.Handle, LOGPIXELSY);
-                        vPaintInfo.ScaleY = vPaintInfo.ScaleX;
+                        vPaintInfo.ScaleY = (float)GDI.GetDeviceCaps(vPrintCanvas.Handle, GDI.LOGPIXELSY) / GDI.GetDeviceCaps(FStyle.TempCanvas.Handle, GDI.LOGPIXELSY);
                         vPaintInfo.Zoom = 1;
                     }
 

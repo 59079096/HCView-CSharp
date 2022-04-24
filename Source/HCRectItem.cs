@@ -154,6 +154,11 @@ namespace HC.View
 
         public virtual void ApplySelectParaStyle(HCStyle aStyle, HCParaMatch aMatchStyle) { }
 
+        public virtual bool MatchTextStyle(HCStyle style, HCStyleMatch matchStyle)
+        {
+            return false;
+        }
+
         public virtual void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyl) { }
 
         public virtual void ApplyContentAlign(HCContentAlign aAlign) { }
@@ -170,7 +175,11 @@ namespace HC.View
         /// <summary> ActiveItem重新适应其环境(供外部直接修改Item属性后重新和其前后Item连接组合) </summary>
         public virtual void ReFormatActiveItem() { }
 
-        public virtual void ReFormatRequest() { }
+        public virtual void ReFormatRequest()
+        {
+            FormatDirty();
+            (OwnerData as HCFormatData).ItemReFormatRequest(this);
+        }
 
         public virtual void ActiveItemReAdaptEnvironment() { }
 
@@ -390,6 +399,7 @@ namespace HC.View
         public virtual void FormatDirty()
         {
             FIsFormatDirty = true;
+            (this.OwnerData as HCFormatData).FormatDirty();
         }
 
         public virtual void TraverseItem(HCItemTraverse ATraverse) { }
@@ -790,6 +800,13 @@ namespace HC.View
         }
     }
 
+    public enum HCTextHorAlign : byte
+    {
+        hthaLeft = 0,
+        hthaCenter = 1,
+        hthaRight = 2
+    }
+
     public class HCTextRectItem : HCCustomRectItem  // 带文本样式的RectItem
     {
         private int FTextStyleNo;
@@ -830,6 +847,12 @@ namespace HC.View
         public override bool JustifySplit()
         {
             return false;
+        }
+
+        public override bool MatchTextStyle(HCStyle style, HCStyleMatch matchStyle)
+        {
+            matchStyle.Append = !matchStyle.StyleHasMatch(style, FTextStyleNo);
+            return true;
         }
 
         public override void ApplySelectTextStyle(HCStyle aStyle, HCStyleMatch aMatchStyle)
@@ -901,6 +924,7 @@ namespace HC.View
         private bool FAutoSize;
         private bool FEnabled;
         private EventHandler FOnClick;
+        private KeyEventHandler FOnKeyDown;
         protected bool FMouseIn;
         protected byte FPaddingLeft, FPaddingTop, FPaddingRight, FPaddingBottom;
         protected int FMinWidth, FMinHeight;
@@ -949,6 +973,13 @@ namespace HC.View
             base.Assign(source);
             FAutoSize = (source as HCControlItem).AutoSize;
             FEnabled = (source as HCControlItem).Enabled;
+        }
+
+        public override void KeyDown(KeyEventArgs e)
+        {
+            //base.KeyDown(e);
+            if (FOnKeyDown != null)
+                FOnKeyDown(this, e);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int  aEnd)
@@ -1035,6 +1066,13 @@ namespace HC.View
         {
             get { return FOnClick; }
             set { FOnClick = value; }
+        }
+
+        
+        public KeyEventHandler OnKeyDown
+        {
+            get { return FOnKeyDown; }
+            set { FOnKeyDown = value; }
         }
     }
 

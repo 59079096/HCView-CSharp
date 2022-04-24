@@ -224,6 +224,7 @@ namespace HC.View
 
         private void DoCellDataItemReFormatRequest(HCCustomData data, HCCustomItem item)
         {
+            FormatDirty();
             (OwnerData as HCRichData).ItemReFormatRequest(this);
         }
 
@@ -1212,17 +1213,8 @@ namespace HC.View
 
                         DoSelectCellChange(FMouseDownRow, FMouseDownCol, vMouseDownRow, vMouseDownCol);
                         OwnerData.Style.UpdateInfoReCaret();
-                    }
 
-                    if ((e.Button == MouseButtons.Left) && ((Control.ModifierKeys & Keys.Shift) == Keys.Shift))  // shift键重新确定选中范围
-                    {
-
-                    }
-                    else
                         DisSelect();  // 清除原选中
-
-                    if ((FMouseDownRow != vMouseDownRow) || (FMouseDownCol != vMouseDownCol))
-                    {
                         FMouseDownRow = vMouseDownRow;
                         FMouseDownCol = vMouseDownCol;
                     }
@@ -2918,12 +2910,6 @@ namespace HC.View
             this.FormatDirty();
         }
 
-        public override void ReFormatRequest()
-        {
-            FormatDirty();
-            (OwnerData as HCRichData).ItemReFormatRequest(this);
-        }
-
         public override void ActiveItemReAdaptEnvironment()
         {
             if (FSelectCellRang.EditCell())
@@ -3166,6 +3152,10 @@ namespace HC.View
                                 e.Handled = vOldKey;
                             }
                         }
+                        break;
+
+                    default:
+                        vEditCell.CellData.KeyDown(e);
                         break;
                 }
             }
@@ -3904,10 +3894,16 @@ namespace HC.View
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
 
-            byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
-            aStream.Write(vBuffer, 0, vBuffer.Length);
+            byte vByte = 0;
+            if (FBorderVisible)
+                vByte = (byte)(vByte | (1 << 7));
 
-            vBuffer = BitConverter.GetBytes(FBorderWidthPt);  // 边框宽度
+            if (FResizeKeepWidth)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
+
+            byte[] vBuffer = BitConverter.GetBytes(FBorderWidthPt);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
             vBuffer = BitConverter.GetBytes(FCellVPaddingMM);
@@ -3990,10 +3986,20 @@ namespace HC.View
         {
             FRows.Clear();
             base.LoadFromStream(aStream, aStyle, aFileVersion);
-            
-            byte[] vBuffer = BitConverter.GetBytes(FBorderVisible);
-            aStream.Read(vBuffer, 0, vBuffer.Length);
-            FBorderVisible = BitConverter.ToBoolean(vBuffer, 0);
+
+            byte[] vBuffer;
+            if (aFileVersion > 55)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FBorderVisible = HC.IsOdd(vByte >> 7);
+                FResizeKeepWidth = HC.IsOdd(vByte >> 6);
+            }
+            else
+            {
+                vBuffer = BitConverter.GetBytes(FBorderVisible);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FBorderVisible = BitConverter.ToBoolean(vBuffer, 0);
+            }
 
             if (aFileVersion > 31)
             {
@@ -4189,7 +4195,7 @@ namespace HC.View
                 FRows[i].ParseXml(aNode.ChildNodes[i] as XmlElement);
         }
 
-        public bool ResetRowCol(int aWidth, int aRowCount, int aColCount)
+        public bool ResetRowCol(int aWidth, int aRowCount, int aColCount, bool userFirstRowHeight = false)
         {
             FFixRow = -1;
             FFixRowCount = 0;
@@ -4218,7 +4224,9 @@ namespace HC.View
                 vRow.SetRowWidth(vDataWidth);
                 if (i == 0)
                 {
-                    FDefaultRowHeight = vRow[0].CellData.Height + FCellVPaddingPix + FCellVPaddingPix;
+                    if (userFirstRowHeight)
+                        vFirstRowHeight = vRow[0].CellData.Height + FCellVPaddingPix + FCellVPaddingPix;
+                    else
                     if (vFirstRowHeight < 0)
                         vFirstRowHeight = FDefaultRowHeight;
                 }
@@ -5046,7 +5054,7 @@ namespace HC.View
                 return null;
         }
 
-        public void GetEditCell(ref int aRow, ref int aCol)
+        public bool GetEditCell(ref int aRow, ref int aCol)
         {
             aRow = -1;
             aCol = -1;
@@ -5054,7 +5062,10 @@ namespace HC.View
             {
                 aRow = FSelectCellRang.StartRow;
                 aCol = FSelectCellRang.StartCol;
+                return true;
             }
+
+            return false;
         }
 
         public bool InsertRowAfter(int aCount)
@@ -5548,6 +5559,12 @@ namespace HC.View
         public byte FixRowCount
         {
             get { return FFixRowCount; }
+        }
+
+        public bool ResizeKeepWidth
+        {
+            get { return FResizeKeepWidth; }
+            set { FResizeKeepWidth = value; }
         }
 
         public int DefaultRowHeight

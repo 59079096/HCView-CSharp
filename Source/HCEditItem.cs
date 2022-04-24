@@ -23,6 +23,7 @@ namespace HC.View
     public class HCEditItem : HCControlItem
     {
         private string FText;
+        private HCTextHorAlign FTextAlignHorz = HCTextHorAlign.hthaLeft;
         private byte FBorderWidth;
         private HCBorderSides FBorderSides;
         private bool FReadOnly, FPrintOnlyText;
@@ -38,6 +39,24 @@ namespace HC.View
             else
                 FTextSize = OwnerData.Style.TempCanvas.TextExtent("H");
         }
+
+        private void CalcSize()
+        {
+            CalcTextSize();
+
+            if (this.AutoSize)
+            {
+                Width = FPaddingLeft + FTextSize.cx + FPaddingRight;  // 间距
+                Height = FPaddingTop + FTextSize.cy + FPaddingBottom;
+            }
+
+            if (Width < FMinWidth)
+                Width = FMinWidth;
+
+            if (Height < FMinHeight)
+                Height = FMinHeight;
+        }
+
         private void ScrollAdjust(int offset)
         {
             if (this.AutoSize)
@@ -118,19 +137,7 @@ namespace HC.View
 
         public override void FormatToDrawItem(HCCustomData aRichData, int aItemNo)
         {
-            CalcTextSize();
-
-            if (this.AutoSize)
-            {
-                Width = FPaddingLeft + FTextSize.cx + FPaddingRight;  // 间距
-                Height = FPaddingTop + FTextSize.cy + FPaddingBottom;
-            }
-            
-            if (Width < FMinWidth)
-                Width = FMinWidth;
-
-            if (Height < FMinHeight)
-                Height = FMinHeight;
+            CalcSize();
         }
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
@@ -405,14 +412,10 @@ namespace HC.View
                         FCaretOffset = (short)FText.Length;
                         ScrollAdjust(FCaretOffset);
                         break;
-
-                    default:
-                        base.KeyDown(e);
-                        break;
                 }
             }
-            else
-                base.KeyDown(e);
+            
+            base.KeyDown(e);
         }
 
         public override void KeyPress(ref Char key)
@@ -427,8 +430,8 @@ namespace HC.View
                 ScrollAdjust(FCaretOffset);
                 this.FormatDirty();
             }
-            else
-                base.KeyPress(ref key);
+     
+            base.KeyPress(ref key);
         }
 
         public override bool InsertText(string aText)
@@ -478,7 +481,7 @@ namespace HC.View
                 aCaretInfo.X = FPaddingLeft;// + (Width - FMargin - OwnerData.Style.DefCanvas.TextWidth(FText) - FMargin) div 2;
             }
             
-            aCaretInfo.Y = FPaddingLeft;
+            aCaretInfo.Y = FPaddingTop;
 
             if ((!this.AutoSize) && (aCaretInfo.X > Width))
                 aCaretInfo.Visible = false;
@@ -504,6 +507,15 @@ namespace HC.View
             }
         }
 
+        protected void SetTextAlignHorz(HCTextHorAlign value)
+        {
+            if (FTextAlignHorz != value)
+            {
+                FTextAlignHorz = value;
+                ReFormatRequest();
+            }
+        }
+
         public HCEditItem(HCCustomData aOwnerData, string aText)
             : base(aOwnerData)
         {
@@ -515,13 +527,14 @@ namespace HC.View
             FPaddingBottom = 4;
             FCaretOffset = -1;
             Width = 50;
-            FPrintOnlyText = true;
+            FPrintOnlyText = false;
             FBorderWidth = 1;
             FBorderSides = new HCBorderSides();
             FBorderSides.InClude((byte)BorderSide.cbsLeft);
             FBorderSides.InClude((byte)BorderSide.cbsTop);
             FBorderSides.InClude((byte)BorderSide.cbsRight);
             FBorderSides.InClude((byte)BorderSide.cbsBottom);
+            this.CalcSize();
         }
 
         public bool SelectTextExists()
@@ -566,6 +579,8 @@ namespace HC.View
         {
             if (SelectTextExists())
                 return FText.Substring(FCaretOffset + 1 - 1, FSelEnd - FCaretOffset);
+            if (this.IsSelectComplate)
+                return FText;
             else
                 return base.SaveSelectToText();
         }
@@ -585,6 +600,11 @@ namespace HC.View
             this.Text = "";
         }
 
+        public override void ReFormatRequest()
+        {
+            base.ReFormatRequest();
+        }
+
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
@@ -601,6 +621,9 @@ namespace HC.View
 
             aStream.WriteByte(FBorderSides.Value);
             aStream.WriteByte(FBorderWidth);
+
+            vByte = (byte)FTextAlignHorz;
+            aStream.WriteByte(vByte);
         }
 
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
@@ -628,6 +651,12 @@ namespace HC.View
                 FBorderSides.Value = (byte)aStream.ReadByte();
                 FBorderWidth = (byte)aStream.ReadByte();
             }
+
+            if (aFileVersion > 56)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FTextAlignHorz = (HCTextHorAlign)vByte;
+            }
         }
 
         public override void ToXml(System.Xml.XmlElement aNode)
@@ -641,6 +670,7 @@ namespace HC.View
 
             aNode.SetAttribute("border", HC.GetBorderSidePro(FBorderSides));
             aNode.SetAttribute("borderwidth", FBorderWidth.ToString());
+            aNode.SetAttribute("textalignhorz", FTextAlignHorz.ToString());
             aNode.InnerText = FText;
         }
 
@@ -656,6 +686,16 @@ namespace HC.View
                 FPrintOnlyText = aNode.Attributes["printonlytext"].Value == "1";
             else
                 FPrintOnlyText = true;
+
+            if (aNode.HasAttribute("textalignhorz"))
+                FTextAlignHorz = (HCTextHorAlign)byte.Parse(aNode.Attributes["textalignhorz"].Value);
+            else
+                FTextAlignHorz = HCTextHorAlign.hthaLeft;
+
+            if (aNode.HasAttribute("textalignhorz"))
+                FTextAlignHorz = (HCTextHorAlign)byte.Parse(aNode.Attributes["textalignhorz"].Value);
+            else
+                FTextAlignHorz = HCTextHorAlign.hthaLeft;
 
             HC.SetBorderSideByPro(aNode.Attributes["border"].Value, FBorderSides);
             FBorderWidth = byte.Parse(aNode.Attributes["borderwidth"].Value);
@@ -684,6 +724,12 @@ namespace HC.View
         {
             get { return FBorderWidth; }
             set { FBorderWidth = value; }
+        }
+
+        public HCTextHorAlign TextAlignHorz
+        {
+            get { return FTextAlignHorz; }
+            set { SetTextAlignHorz(value); }
         }
     }
 }

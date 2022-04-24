@@ -21,12 +21,9 @@ using System.Runtime.InteropServices;
 
 namespace HC.View
 {
-    public delegate POINT GetScreenCoordEventHandler(int x, int y);
-
     public class HCSectionData : HCViewData
     {
         private EventHandler FOnReadOnlySwitch;
-        private GetScreenCoordEventHandler FOnGetScreenCoord;
 
         private HCFloatItems FFloatItems;  // THCItems支持Add时控制暂时不用
         int FFloatItemIndex, FMouseDownIndex, FMouseMoveIndex;
@@ -312,14 +309,6 @@ namespace HC.View
             base.GetCaretInfo(aItemNo, aOffset, ref aCaretInfo);
         }
 
-        public override POINT GetScreenCoord(int x, int y)
-        {
-            if (FOnGetScreenCoord != null)
-                return FOnGetScreenCoord(x, y);
-            else
-                return new POINT();
-        }
-
         public void TraverseFloatItem(HCItemTraverse aTraverse)
         {
             if (aTraverse != null)
@@ -477,12 +466,6 @@ namespace HC.View
             get { return FOnReadOnlySwitch; }
             set { FOnReadOnlySwitch = value; }
         }
-
-        public GetScreenCoordEventHandler OnGetScreenCoord
-        {
-            get { return FOnGetScreenCoord; }
-            set { FOnGetScreenCoord = value; }
-        }
     }
 
     public class HCHeaderData : HCSectionData
@@ -602,7 +585,7 @@ namespace HC.View
 
             if (FShowUnderLine)
             {
-                if (DrawItems[aDrawItemNo].LineFirst)
+                if (aData.IsLineLastDrawItem(aDrawItemNo))
                 {
                     ACanvas.Pen.BeginUpdate();
                     try
@@ -615,22 +598,8 @@ namespace HC.View
                         ACanvas.Pen.EndUpdate();
                     }
 
-                    ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Top - 1);
-                    ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Top - 1);
-                }
-
-                if (aDrawItemNo == DrawItems.Count - 1)
-                {
-                    ACanvas.Pen.BeginUpdate();
-                    try
-                    {
-                        ACanvas.Pen.Color = Color.Black;
-                        ACanvas.Pen.Style = HCPenStyle.psSolid;
-                    }
-                    finally
-                    {
-                        ACanvas.Pen.EndUpdate();
-                    }
+                    ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Top);
+                    ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Top);
 
                     ACanvas.MoveTo(aDataDrawLeft, aDrawRect.Bottom);
                     ACanvas.LineTo(aDataDrawLeft + this.Width, aDrawRect.Bottom);

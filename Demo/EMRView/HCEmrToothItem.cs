@@ -74,7 +74,17 @@ namespace EMRView
                 aCanvas.TextOut(aDrawRect.Left + FRightBottomRect.Left, aDrawRect.Top + FRightBottomRect.Top, FRightBottomText);
 
             // 十字线
-            aCanvas.Pen.Color = Color.Black;
+            aCanvas.Pen.BeginUpdate();
+            try
+            {
+                aCanvas.Pen.Color = Color.Black;
+                aCanvas.Pen.Width = 1;
+            }
+            finally
+            {
+                aCanvas.Pen.EndUpdate();
+            }
+
             aCanvas.MoveTo(aDrawRect.Left, aDrawRect.Top + FLeftTopRect.Bottom + FPadding);
             aCanvas.LineTo(aDrawRect.Right, aDrawRect.Top + FLeftTopRect.Bottom + FPadding);
             aCanvas.MoveTo(aDrawRect.Left + FLeftTopRect.Right + FPadding, aDrawRect.Top);

@@ -798,7 +798,7 @@ namespace HC.Win32
 		[DllImport("gdi32")] public static extern int CreateIC(string lpDriverName, string lpDeviceName, string lpOutput, ref DEVMODE lpInitData);
 		[DllImport("gdi32")] public static extern int CreateMetaFile(string lpString);
 		[DllImport("gdi32")] public static extern int CreatePalette(ref LOGPALETTE lpLogPalette);
-		[DllImport("gdi32")] public static extern int CreatePatternBrush(HANDLE hBitmap);
+		[DllImport("gdi32")] public static extern IntPtr CreatePatternBrush(HANDLE hBitmap);
 		[DllImport("gdi32")] public static extern int CreatePen(int nPenStyle, int nWidth, int crColor);
 		[DllImport("gdi32")] public static extern int CreatePenIndirect(ref LOGPEN lpLogPen);
 		[DllImport("gdi32")] public static extern int CreatePolyPolygonRgn(ref POINT lpPoint, ref int lpPolyCounts, int nCount, int nPolyFillMode);

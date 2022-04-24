@@ -71,7 +71,7 @@ namespace HC.View
             vCaretInfo.Height = 0;
             vCaretInfo.Visible = true;
         
-            FData.GetCaretInfo(FData.SelectInfo.StartItemNo, FData.SelectInfo.StartItemOffset, ref  vCaretInfo);
+            FData.GetCaretInfoCur(ref vCaretInfo);
 
             if (!vCaretInfo.Visible)
             {
@@ -151,14 +151,18 @@ namespace HC.View
 
         private void CheckUpdateInfo(bool aScrollBar = false)
         {
+            if (FUpdateCount > 0)
+                return;
+
             if ((FCaret != null) && FStyle.UpdateInfo.ReCaret)
             {
+                ReBuildCaret(aScrollBar);
                 FStyle.UpdateInfo.ReCaret = false;
                 FStyle.UpdateInfo.ReStyle = false;
                 FStyle.UpdateInfo.ReScroll = false;
-                ReBuildCaret(aScrollBar);
                 UpdateImmPosition();
             }
+
             if (FStyle.UpdateInfo.RePaint)
             {
                 FStyle.UpdateInfo.RePaint = false;
@@ -472,6 +476,22 @@ namespace HC.View
                 FOnRemoveItem(aData, aItem);
         }
 
+        private void DoDataItemReFormatRequest(HCCustomData aData, HCCustomItem aItem)
+        {
+            if (!aData.CanEdit())
+                return;
+
+            (aData as HCFormatData).ReFormatActiveItem();  // 处理变动
+            DoChange();
+        }
+
+        private POINT DoDataGetScreenCoord(int x, int y)
+        {
+            Point vPt = this.PointToScreen(new Point(x, y));
+            //return new POINT(ZoomIn(vPt.X), ZoomIn(vPt.Y));
+            return new POINT(vPt.X, vPt.Y);
+        }
+
         protected void DataSaveLiteStream(Stream stream, HCProcedure proc)
         {
             HC._SaveFileFormatAndVersion(stream);
@@ -569,14 +589,7 @@ namespace HC.View
                                 Imm.ImmGetCompositionString(FhImc, Imm.GCS_RESULTSTR, vBuffer, vSize);
                                 string vS = System.Text.Encoding.Default.GetString(vBuffer);
                                 if (vS != "")
-                                {
-                                    FData.InsertText(vS);
-                                    FStyle.UpdateInfoRePaint();
-                                    FStyle.UpdateInfoReCaret();
-                                    CheckUpdateInfo();
-
-                                    return;
-                                }
+                                    this.InsertText(vS);
                             }
 
                             Message.Result = IntPtr.Zero;
@@ -672,7 +685,7 @@ namespace HC.View
                     try
                     {
                         User.EmptyClipboard();
-                        if (DoCopyRequest(HC.HCExtFormat.Id))
+                        if (DoCopyRequest(FHCExtFormat.Id))
                             User.SetClipboardData(FHCExtFormat.Id, vMemExt);
 
                         if (DoCopyRequest(User.CF_UNICODETEXT))
@@ -713,7 +726,7 @@ namespace HC.View
             }
             else
             if (vIData.GetDataPresent(DataFormats.Text))
-                FData.InsertText(Clipboard.GetText());
+                this.InsertText(Clipboard.GetText());
             else
             if (vIData.GetDataPresent(DataFormats.Bitmap))
             {
@@ -730,7 +743,7 @@ namespace HC.View
 
                 vImageItem.RestrainSize(vTopData.Width, vImageItem.Height);
 
-                FData.InsertItem(vImageItem);
+                this.InsertItem(vImageItem);
             }
         }
 
@@ -860,6 +873,8 @@ namespace HC.View
             FData.OnDrawItemPaintBefor = DoDrawItemPaintBefor;
             FData.OnInsertItem = DoDataInsertItem;
             FData.OnRemoveItem = DoDataRemoveItem;
+            FData.OnItemReFormatRequest = DoDataItemReFormatRequest;
+            FData.OnGetScreenCoord = DoDataGetScreenCoord;
 
             // 垂直滚动条，范围在Resize中设置
             FVScrollBar = new HCScrollBar();
@@ -1092,52 +1107,68 @@ namespace HC.View
         /// <summary> 撤销 </summary>
         public void Undo()
         {
-            if (FUndoList.Enable)
+            FStyle.States.Include(HCState.hosUndoing);
+            try
             {
-                try
+                if (FUndoList.Enable)
                 {
-                    FUndoList.Enable = false;
-
-                    BeginUpdate();
                     try
                     {
-                        FUndoList.Undo();
+                        FUndoList.Enable = false;
+
+                        BeginUpdate();
+                        try
+                        {
+                            FUndoList.Undo();
+                        }
+                        finally
+                        {
+                            EndUpdate();
+                        }
                     }
                     finally
                     {
-                        EndUpdate();
+                        FUndoList.Enable = true;
                     }
                 }
-                finally
-                {
-                    FUndoList.Enable = true;
-                }
+            }
+            finally
+            {
+                FStyle.States.Exclude(HCState.hosUndoing);
             }
         }
 
         /// <summary> 重做 </summary>
         public void Redo()
         {
-            if (FUndoList.Enable)
+            FStyle.States.Include(HCState.hosRedoing);
+            try
             {
-                try
+                if (FUndoList.Enable)
                 {
-                    FUndoList.Enable = false;
-
-                    BeginUpdate();
                     try
                     {
-                        FUndoList.Redo();
+                        FUndoList.Enable = false;
+
+                        BeginUpdate();
+                        try
+                        {
+                            FUndoList.Redo();
+                        }
+                        finally
+                        {
+                            EndUpdate();
+                        }
                     }
                     finally
                     {
-                        EndUpdate();
+                        FUndoList.Enable = true;
                     }
                 }
-                finally
-                {
-                    FUndoList.Enable = true;
-                }
+            }
+            finally
+            {
+                FStyle.States.Exclude(HCState.hosRedoing);
             }
         }
 
@@ -1170,7 +1201,7 @@ namespace HC.View
                     using (HCCanvas vDataBmpCanvas = new HCCanvas(FMemDC))
                     {
                         // 控件背景
-                        vDataBmpCanvas.Brush.Color = Color.White;// $00E7BE9F;
+                        vDataBmpCanvas.Brush.Color = FStyle.BackgroundColor;// $00E7BE9F;
                         vDataBmpCanvas.FillRect(new RECT(0, 0, vViewWidth, vViewHeight));
 
                         PaintInfo vPaintInfo = new PaintInfo();

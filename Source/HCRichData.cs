@@ -303,8 +303,15 @@ namespace HC.View
                 }
 
                 if ((aStartItemNo != aEndItemNo) && (aEndItemNo >= 0)
-                    && (Items[aEndItemNo].Length > 0) && (aEndItemNoOffset == 0)
-                    && (!Items[aEndItemNo].ParaFirst))
+                    && (Items[aEndItemNo].Length > 0)
+                    && (!Items[aEndItemNo].ParaFirst)
+                    && (aEndItemNoOffset == 0
+                            || (Items[aEndItemNo].StyleNo < HCStyle.Null
+                                    && aEndItemNoOffset == HC.OffsetInner
+                                    && !(Items[aEndItemNo] as HCCustomRectItem).SelectExists()
+                               )
+                       )
+                )
                 {
                     Items[aEndItemNo].DisSelect();  // 从前往后选，鼠标移动到前一次前面，原鼠标处被移出选中范围
 
@@ -324,7 +331,14 @@ namespace HC.View
                     aStartItemOffset = GetItemOffsetAfter(aStartItemNo);
                 }
 
-                if ((aStartItemNo != aEndItemNo) && (aEndItemNoOffset == GetItemOffsetAfter(aEndItemNo)))
+                if ((aStartItemNo != aEndItemNo)
+                    && (aEndItemNoOffset == GetItemOffsetAfter(aEndItemNo)
+                            || (Items[aEndItemNo].StyleNo < HCStyle.Null
+                                    && aEndItemNoOffset == HC.OffsetInner
+                                    && !(Items[aEndItemNo] as HCCustomRectItem).SelectExists()
+                               )
+                       )
+                )
                 {
                     Items[aEndItemNo].DisSelect();  // 从后往前选，鼠标移动到前一个后面，原鼠标处被移出选中范围
 
@@ -1041,11 +1055,8 @@ namespace HC.View
                     }
                     else
                     {
-                        if (Items[i] is HCTextRectItem)
-                        {
-                            aMatchStyle.Append = !aMatchStyle.StyleHasMatch(Style, (Items[i] as HCTextRectItem).TextStyleNo);  // 根据第一个判断是添加样式还是减掉样式
+                        if ((Items[i] as HCCustomRectItem).MatchTextStyle(Style, aMatchStyle))
                             break;
-                        }
                     }
                 }
 
@@ -1174,7 +1185,8 @@ namespace HC.View
             else  // 没有选中内容
             {
                 if ((GetItemStyle(SelectInfo.StartItemNo) < HCStyle.Null)
-                    && (SelectInfo.StartItemOffset == HC.OffsetInner))
+                    && (SelectInfo.StartItemOffset == HC.OffsetInner)
+                    && !(Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsSelectComplateTheory())
                 {
                     if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
                         UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
@@ -2652,6 +2664,9 @@ namespace HC.View
                         FMouseMoveRestrain = vRestrain;
                     }
 
+                    if ((Items[FMouseMoveItemNo].StyleNo < HCStyle.Null) && (FMouseDownItemOffset == HC.OffsetInner))
+                        DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
+
                     AdjustSelectRange(ref FMouseDownItemNo, ref FMouseDownItemOffset,
                       ref FMouseMoveItemNo, ref FMouseMoveItemOffset);  // 确定SelectRang
 
@@ -2664,9 +2679,6 @@ namespace HC.View
                     else
                         CaretDrawItemNo = FMouseMoveDrawItemNo;  // 按下上一下DrawItem最后，划选到下一个开始时，没有选中内容，要更换CaretDrawIemNo
                     
-                    if ((Items[FMouseMoveItemNo].StyleNo < HCStyle.Null) && (FMouseDownItemOffset == HC.OffsetInner))
-                        DoItemMouseMove(FMouseMoveItemNo, FMouseMoveItemOffset, e);
-
                     Style.UpdateInfoRePaint();
                     Style.UpdateInfoReCaret();
                 }
@@ -2950,7 +2962,18 @@ namespace HC.View
             if ((SelectInfo.StartItemOffset == 0) && (Items[SelectInfo.StartItemNo].ParaFirst))
             {
                 HCParaStyle vParaStyle = Style.ParaStyles[vCurItem.ParaNo];
-                ApplyParaFirstIndent(vParaStyle.FirstIndent + HCUnitConversion.PixXToMillimeter(HC.TabCharWidth));
+                int vStyleNo = MatchTextStyleNoAt(SelectInfo.StartItemNo, SelectInfo.StartItemOffset);
+                if (vStyleNo < HCStyle.Null)
+                    vStyleNo = Style.GetDefaultStyleNo();
+
+                int vTabW = HC.TabCharWidth;
+                if (vStyleNo > HCStyle.Null)
+                {
+                    Style.ApplyTempStyle(vStyleNo);
+                    vTabW = Style.TempCanvas.TextWidth('荆') * 2;
+                }
+
+                ApplyParaFirstIndent(vParaStyle.FirstIndent + HCUnitConversion.PixXToMillimeter(vTabW));
             }
             else
             {
@@ -3941,6 +3964,10 @@ namespace HC.View
                             SelectInfo.StartItemOffset = HC.OffsetAfter;
                             vRectItem.Active = false;
                             Style.UpdateInfoRePaint();
+                            break;
+
+                        default:
+                            vRectItem.KeyDown(e);
                             break;
                     }
                 }

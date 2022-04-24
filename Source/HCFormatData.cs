@@ -32,9 +32,8 @@ namespace HC.View
         private bool FFormatDrawItemCountChange;
         /// <summary> 当次格式化Data高度是否发生变化 </summary>
         private bool FFormatHeightChange;
-        /// <summary> 多次格式化是否有变动，外部由此决定是否重新计算分页起始结束DrawItemNo </summary>
         private bool FFormatChange;
-
+        private EventHandler FOnFormatDirty;
         private DataItemEventHandler FOnItemReFormatRequest;
         private DataItemNoOffsetEventHandler FOnItemSetCaretRequest;
 
@@ -879,12 +878,18 @@ namespace HC.View
             }
         }
 
+        protected void DoFormatDirty()
+        {
+            if (FOnFormatDirty != null)
+                FOnFormatDirty(this, null);
+        }
+
         protected void FormatInit()
         {
             if (!FFormatChange)
             {
                 FFormatHeightChange = false;
-                FFormatStartDrawItemNo = -1;
+                FFormatStartDrawItemNo = 0;
             }
 
             FFormatDrawItemCountChange = false;
@@ -1167,6 +1172,12 @@ namespace HC.View
 
         public virtual void ItemReFormatRequest(HCCustomItem aItem)
         {
+            if (FFormatCount > 0)
+            {
+                this.FormatDirty();
+                return;
+            }
+
             if (FOnItemReFormatRequest != null)
                 FOnItemReFormatRequest(this, aItem);
         }
@@ -1180,8 +1191,11 @@ namespace HC.View
         {
             if (itemNo >= 0)
             {
-                this.DisSelect();
+                if (SelectInfo.EndItemNo >= 0)
+                    this.DisSelect();
+
                 ReSetSelectAndCaret(itemNo, offset);
+                Items[itemNo].Active = true;
                 Style.UpdateInfoReCaret(true);
                 if (FOnItemSetCaretRequest != null)
                     FOnItemSetCaretRequest(this, itemNo, offset);
@@ -1207,6 +1221,11 @@ namespace HC.View
             }
 
             return -1;
+        }
+
+        public void FormatDirty()
+        {
+            this.DoFormatDirty();
         }
 
         public void BeginFormat()
@@ -1253,6 +1272,12 @@ namespace HC.View
         public int FormatCount
         {
             get { return FFormatCount; }
+        }
+
+        public EventHandler OnFormatDirty
+        {
+            get { return FOnFormatDirty; }
+            set { FOnFormatDirty = value; }
         }
 
         public DataItemEventHandler OnItemReFormatRequest

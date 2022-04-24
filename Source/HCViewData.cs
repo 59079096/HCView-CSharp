@@ -24,6 +24,7 @@ namespace HC.View
     public delegate HCCustomItem StyleItemEventHandler(HCCustomData aData, int aStyleNo);
     public delegate bool OnCanEditEventHandler(object sender);
     public delegate bool TextEventHandler(HCCustomData aData, int aItemNo, int aOffset, string aText);
+    public delegate POINT GetScreenCoordEventHandler(int x, int y);
 
     public class HCViewData : HCViewDevData  // 富文本数据类，可做为其他显示富文本类的基类
     {
@@ -39,6 +40,7 @@ namespace HC.View
         private TextEventHandler FOnInsertTextBefor;
         private DataItemEventHandler FOnCaretItemChanged;
         private DataItemNoFunEventHandler FOnPaintDomainRegion;
+        private GetScreenCoordEventHandler FOnGetScreenCoord;
 
         protected override bool DoAcceptAction(int aItemNo, int aOffset, HCAction aAction)
         {
@@ -140,12 +142,7 @@ namespace HC.View
         {
             base.ReSetSelectAndCaret(aItemNo, aOffset, aNextWhenMid);
             if (!this.Style.States.Contain(HCState.hosBatchInsert))
-            {
-                if (FDomainCount > 0)
-                    GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
-                else
-                    FActiveDomain.Clear();
-            }
+                GetActiveDomain();
         }
 
         protected override void DoCaretItemChanged()
@@ -331,6 +328,14 @@ namespace HC.View
                 return true;
         }
 
+        protected void GetActiveDomain()
+        {
+            if (FDomainCount > 0) // 获取当前光标处ActiveDeGroup信息
+                GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
+            else
+                FActiveDomain.Clear();
+        }
+
         protected override void CreateBefor()
         {
             base.CreateBefor();
@@ -454,11 +459,7 @@ namespace HC.View
                     if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
                         vRePaint = true;
 
-                    if (FDomainCount > 0) // 获取当前光标处ActiveDeGroup信息
-                        GetDomainFrom(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, FActiveDomain);
-                    else
-                        FActiveDomain.Clear();
-
+                    GetActiveDomain();
                     if (this.Style.DrawActiveDomainRegion && (FActiveDomain.BeginNo >= 0))
                         vRePaint = true;
                 }
@@ -479,6 +480,14 @@ namespace HC.View
                 if (FOnCaretItemChanged != null)
                     FOnCaretItemChanged(this, Items[SelectInfo.StartItemNo]);
             }
+        }
+
+        public override POINT GetScreenCoord(int x, int y)
+        {
+            if (FOnGetScreenCoord != null)
+                return FOnGetScreenCoord(x, y);
+            else
+                return new POINT();
         }
 
         public override bool DeleteSelected()
@@ -1423,6 +1432,12 @@ namespace HC.View
         {
             get { return FOnPaintDomainRegion; }
             set { FOnPaintDomainRegion = value; }
+        }
+
+        public GetScreenCoordEventHandler OnGetScreenCoord
+        {
+            get { return FOnGetScreenCoord; }
+            set { FOnGetScreenCoord = value; }
         }
     }
 }

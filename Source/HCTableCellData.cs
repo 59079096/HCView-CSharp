@@ -31,7 +31,7 @@ namespace HC.View
         private bool FCellSelectedAll;
 
         private int FCellHeight;  // 所属单元格高度(因合并或手动拖高，单元格高度会大于等于其内数据高度)
-        private EventHandler FOnFormatDirty, FOnSetFormatHeightChange;
+        private EventHandler FOnSetFormatHeightChange;
         private GetRootDataEventHandler FOnGetRootData;
         private GetFormatTopFun FOnGetFormatTop;
 
@@ -71,6 +71,7 @@ namespace HC.View
                 this.SelectInfo.Initialize();
                 this.SelectInfo.StartItemNo = aItemNo;
                 this.SelectInfo.StartItemOffset = aOffset;
+                this.GetActiveDomain();
             }
         }
 
@@ -83,12 +84,6 @@ namespace HC.View
                 this.SetFormatHeightChange();
                 this.DoFormatDirty();
             }
-        }
-
-        protected void DoFormatDirty()
-        {
-            if (FOnFormatDirty != null)
-                FOnFormatDirty(this, null);
         }
 
         protected void DoSetFormatHeightChange()
@@ -291,12 +286,6 @@ namespace HC.View
         {
             get { return FOnGetFormatTop; }
             set { FOnGetFormatTop = value; }
-        }
-
-        public EventHandler OnFormatDirty
-        {
-            get { return FOnFormatDirty; }
-            set { FOnFormatDirty = value; }
         }
 
         public EventHandler OnSetFormatHeightChange

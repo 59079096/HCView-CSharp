@@ -710,8 +710,8 @@ namespace HC.View
             if (!aData.CanEdit())
                 return false;
 
-            if (aData.FloatItemIndex >= 0)
-                return false;
+            //if (aData.FloatItemIndex >= 0)
+            //    return false;
 
             bool Result = aAction();  // 处理变动
 
@@ -1078,6 +1078,8 @@ namespace HC.View
                         break;
                 }
             }
+            else
+                FActiveData.KeyDown(e);
         }
 
         public void KeyUp(KeyEventArgs e)
@@ -2080,6 +2082,10 @@ namespace HC.View
             FPage.Clear();
             FPages.ClearEx();
             FActivePageIndex = 0;
+
+            FHeader.FormatChange = false;
+            FFooter.FormatChange = false;
+            FPage.FormatChange = false;
         }
 
         public virtual void MouseDown(MouseEventArgs e)
@@ -2582,6 +2588,10 @@ namespace HC.View
                 if (FPage.FloatItems[i].PageIndex > FPages.Count - 1)
                     FPage.FloatItems.RemoveAt(i);
             }
+
+            FHeader.FormatChange = false;
+            FFooter.FormatChange = false;
+            FPage.FormatChange = false;
         }
 
         public bool DeleteSelected()
