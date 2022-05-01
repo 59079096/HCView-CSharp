@@ -257,6 +257,7 @@ namespace EMRView
         public DeItem(string aText) : base(aText)
         {
             FPropertys = new Dictionary<string, string>();
+            FScripts = new Dictionary<string, string>();
             FEditProtect = false;
             FDeleteAllow = true;
             FMouseIn = false;
