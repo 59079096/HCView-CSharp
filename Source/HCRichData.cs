@@ -1355,9 +1355,7 @@ namespace HC.View
 
             bool Result = false;
             bool vSelectSeekStart = IsSelectSeekStart();
-
             int vDelCount = 0;
-            this.InitializeField();  // 删除后原鼠标处可能已经没有了
 
             int vFormatFirstDrawItemNo = -1, vFormatFirstItemNo = -1, vFormatLastItemNo = -1,
                 vParaFirstItemNo = -1, vParaLastItemNo = -1, vUnDeleteSeekItemNo = -1;
@@ -1690,6 +1688,7 @@ namespace HC.View
 
             base.DeleteSelected();
 
+            this.InitializeField();
             ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, !vSelectSeekStart);
             return true;
         }
