@@ -100,6 +100,8 @@ namespace HC.View
             FDisplayFirstPageIndex,  // 屏显第一页
             FDisplayLastPageIndex;   // 屏显最后一页
         protected int FHeaderOffset;  // 页眉顶部偏移
+        protected int FPageNoOffset;
+        protected HCTextHorAlign FPageNoHorAlign;
         protected string FPageNoFormat;
         protected int FPageNoFrom;  // 页码从几开始
 
@@ -780,6 +782,8 @@ namespace HC.View
             FPageNoVisible = true;
             FPageNoFrom = 1;
             FPageNoFormat = "{0}/{1}";
+            FPageNoHorAlign = HCTextHorAlign.hthaCenter;
+            FPageNoOffset = 0;
             FHeaderOffset = 20;
             FViewModel = HCViewModel.hvmFilm;
             FPagePadding = 20;
@@ -2787,6 +2791,10 @@ namespace HC.View
                 if (aSaveParts.Contains(SectionArea.saPage))  // 存页面
                     FPage.SaveToStream(aStream);
             }
+
+            aStream.WriteByte((byte)FPageNoHorAlign);
+            vBuffer = BitConverter.GetBytes(FPageNoOffset);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
             //
             vBuffer = BitConverter.GetBytes(vBegPos);
 
@@ -2890,6 +2898,22 @@ namespace HC.View
 
             if (vLoadParts.Contains(SectionArea.saPage))
                 FPage.LoadFromStream(aStream, FStyle, aFileVersion);
+
+            if (aFileVersion > 58)
+            {
+                vBuffer = new byte[1];
+                aStream.Read(vBuffer, 0, 1);
+                FPageNoHorAlign = (HCTextHorAlign)vBuffer[0];
+
+                vBuffer = BitConverter.GetBytes(FPageNoOffset);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FPageNoOffset = BitConverter.ToInt32(vBuffer, 0);
+            }
+            else
+            {
+                FPageNoHorAlign = HCTextHorAlign.hthaCenter;
+                FPageNoOffset = FFooter.Height;
+            }
 
             BuildSectionPages(0);
         }
@@ -3139,6 +3163,18 @@ namespace HC.View
         {
             get { return FPageNoFormat; }
             set { SetPageNoFormat(value); }
+        }
+
+        public int PageNoOffset
+        {
+            get { return FPageNoOffset; }
+            set { FPageNoOffset = value; }
+        }
+
+        public HCTextHorAlign PageNoHorAlign
+        {
+            get { return FPageNoHorAlign; }
+            set { FPageNoHorAlign = value; }
         }
 
         public byte PagePadding
