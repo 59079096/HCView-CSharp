@@ -136,10 +136,17 @@ namespace HC.View
             // 4.5 ResizeItem存CanResize属性
             // 4.6 节存储页码格式
 
-            HC_FileVersion = "5.9";
+            HC_FileVersion = "6.0";
 
 		public const ushort
-            HC_FileVersionInt = 59;
+            HC_FileVersionInt = 60;
+
+        public const Byte
+            // 文件流的数据类型
+            HC_STREAM_VIEW = 0,
+            HC_STREAM_LITE = 1,
+            HC_STREAM_ITEM = 2,
+            HC_STREAM_GRID = 3;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat

@@ -911,6 +911,7 @@ namespace HC.View
         public void SaveItemToStreamAlone(Stream aStream, HCCustomItem aItem)
         {
             HC._SaveFileFormatAndVersion(aStream);
+            aStream.WriteByte(HC.HC_STREAM_ITEM);
             Style.SaveToStream(aStream);
             aItem.SaveToStream(aStream);
         }
@@ -925,6 +926,12 @@ namespace HC.View
             HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref vFileVersion, ref vLan);  // 文件格式和版本
             if ((vFileExt != HC.HC_EXT) && (vFileExt != "cff."))
                 throw new Exception("加载失败，不是" + HC.HC_EXT + "文件！");
+
+            if (vFileVersion > 59)
+            {
+                if ((byte)aStream.ReadByte() != HC.HC_STREAM_ITEM)
+                    return;
+            }
 
             HCStyle vStyle = new HCStyle();
             vStyle.LoadFromStream(aStream, vFileVersion);

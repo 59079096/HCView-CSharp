@@ -39,6 +39,12 @@ namespace HC.View
                 throw new Exception("加载失败，当前编辑器最高支持版本为"
                     + HC.HC_FileVersionInt.ToString() + "的文件，无法打开版本为" + vFileVersion.ToString() + "的文件！");
 
+            if (vFileVersion > 59)
+            {
+                if ((byte)stream.ReadByte() != HC.HC_STREAM_VIEW)
+                    return;
+            }
+
             DoLoadStreamBefor(stream, vFileVersion);  // 触发加载前事件
             style.LoadFromStream(stream, vFileVersion);  // 加载样式表
 
@@ -131,6 +137,12 @@ namespace HC.View
             ushort vFileVersion = 0;
             byte vLang = 0;
             HC._LoadFileFormatAndVersion(stream, ref vFileFormat, ref vFileVersion, ref vLang);
+            if (vFileVersion > 59)
+            {
+                if ((byte)stream.ReadByte() != HC.HC_STREAM_LITE)
+                    return;
+            }
+
             using (HCStyle vStyle = new HCStyle())
             {
                 vStyle.LoadFromStream(stream, vFileVersion);
@@ -415,6 +427,7 @@ namespace HC.View
             try
             {
                 HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
+                aStream.WriteByte(HC.HC_STREAM_VIEW);
                 DoSaveStreamBefor(aStream);
 
                 HashSet<SectionArea> vArea = aAreas;
