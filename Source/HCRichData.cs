@@ -5237,14 +5237,14 @@ namespace HC.View
 
                     CharType vPosType;
                     if (vItemOffset > 0)
-                        vPosType = HC.GetUnicodeCharType((ushort)vText[vItemOffset - 1]);
+                        vPosType = GetUnicodeCharType((ushort)vText[vItemOffset - 1]);
                     else
-                        vPosType = HC.GetUnicodeCharType((ushort)vText[1 - 1]);
+                        vPosType = GetUnicodeCharType((ushort)vText[1 - 1]);
 
                     int vStartOffset = 0;
                     for (int i = vItemOffset - 1; i >= 1; i--)  // 往前找Char类型不一样的位置
                     {
-                        if (HC.GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
+                        if (GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
                         {
                             vStartOffset = i;
                             break;
@@ -5254,7 +5254,7 @@ namespace HC.View
                     int vEndOffset = vText.Length;
                     for (int i = vItemOffset + 1; i <= vText.Length; i++)  // 往后找Char类型不一样的位置
                     {
-                        if (HC.GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
+                        if (GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
                         {
                             vEndOffset = i - 1;
                             break;

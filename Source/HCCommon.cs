@@ -49,7 +49,7 @@ namespace HC.View
         public static Color HyperTextColor = Color.FromArgb(0x05, 0x63, 0xC1);
         public static Color HCTransparentColor = Color.Transparent;  // 透明色
         //public static char[] HCBoolText = { '0', '1' };
-
+        public static byte HCFormatVersion = 3;
         public const uint HC_TEXTMAXSIZE = 4294967295;
 
         public static System.Windows.Forms.Cursor GCursor;
@@ -92,9 +92,11 @@ namespace HC.View
                 + UnPlaceholderChar
             #endif
                 ,
-            DontLineLastChar = @"/\＼“‘",
-            /// <summary> 可以挤压宽度的字符 </summary>
-            LineSqueezeChar = "，。；、？“”",
+            DontLineLastCharLessV3 = @"/\＼“‘",
+            LineSqueezeCharLessV3 = "，。；、？“”",
+
+            DontLineLastCharV3 = "/\\＼“\"‘'",
+            LineSqueezeCharV3 = "，。；、？”’",
             sLineBreak = "\r\n",
             RecordSeparator = "\u001E",
             UnitSeparator = "\u001F",
@@ -880,64 +882,6 @@ namespace HC.View
         public static string HCDeleteBreak(string s)
         {
             return s.Replace(sLineBreak, "");
-        }
-
-        public static CharType GetUnicodeCharType(uint aChar)
-        {
-            if ((aChar >= 0x2E80) && (aChar <= 0x2EF3)  // 部首扩展 115
-                || (aChar >= 0x2F00) && (aChar <= 0x2FD5)  // 熙部首 214
-                || (aChar >= 0x2FF0) && (aChar <= 0x2FFB)  // 汉字结构 12
-                || (aChar == 0x3007)  // 〇 1
-                || (aChar >= 0x3105) && (aChar <= 0x312F)  // 汉字注音 43
-                || (aChar >= 0x31A0) && (aChar <= 0x31BA)  // 注音扩展 22
-                || (aChar >= 0x31C0) && (aChar <= 0x31E3)  // 汉字笔划 36
-                || (aChar >= 0x3400) && (aChar <= 0x4DB5)  // 扩展A 6582个
-                || (aChar >= 0x4E00) && (aChar <= 0x9FA5)  // 基本汉字 20902个
-                || (aChar >= 0x9FA6) && (aChar <= 0x9FEF)  // 基本汉字补充 74个
-                || (aChar >= 0xE400) && (aChar <= 0xE5E8)  // 部件扩展 452
-                || (aChar >= 0xE600) && (aChar <= 0xE6CF)  // PUA增补 207
-                || (aChar >= 0xE815) && (aChar <= 0xE86F)  // PUA(GBK)部件 81
-                || (aChar >= 0xF900) && (aChar <= 0xFAD9)  // 兼容汉字 477
-                || (aChar >= 0x20000) && (aChar <= 0x2A6D6)  // 扩展B 42711个
-                || (aChar >= 0x2A700) && (aChar <= 0x2B734)  // 扩展C 4149
-                || (aChar >= 0x2B740) && (aChar <= 0x2B81D)  // 扩展D 222
-                || (aChar >= 0x2B820) && (aChar <= 0x2CEA1)  // 扩展E 5762
-                || (aChar >= 0x2CEB0) && (aChar <= 0x2EBE0)  // 扩展F 7473
-                || (aChar >= 0x2F800) && (aChar <= 0x2FA1D)  // 兼容扩展 542
-                )
-                return CharType.jctHZ;  // 汉字
-
-            if ((aChar >= 0x0F00) && (aChar <= 0x0FFF))
-                return CharType.jctHZ;  // 汉字，藏文
-
-            if ((aChar >= 0x1800) && (aChar <= 0x18AF))
-                return CharType.jctHZ;  // 汉字，蒙古字符
-
-            if (   ((aChar >= 0x21) && (aChar <= 0x2F))  // !"#$%&'()*+,-./
-                || ((aChar >= 0x3A) && (aChar <= 0x40))  // :;<=>?@
-                || ((aChar >= 0x5B) && (aChar <= 0x60))  // [\]^_`
-                || ((aChar >= 0x7B) && (aChar <= 0x7E))  // {|}~      
-                || (aChar == 0xFFE0)  // ￠
-                )
-            {
-                return CharType.jctFH;
-            }
-
-            //0xFF01..0xFF0F,  // ！“＃￥％＆‘（）×＋，－。、
-
-            if ((aChar >= 0x30) && (aChar <= 0x39))
-            {
-                return CharType.jctSZ;  // 0..9
-            }
-
-            if (   ((aChar >= 0x41) && (aChar <= 0x5A))  // A..Z
-                || ((aChar >= 0x61) && (aChar <= 0x7A))  // a..z               
-                )
-            {
-                return CharType.jctZM;
-            }
-               
-            return CharType.jctBreak;
         }
 
         public static bool PtInRect(RECT aRect, POINT aPt)
