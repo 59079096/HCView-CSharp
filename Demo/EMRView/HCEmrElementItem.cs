@@ -325,6 +325,7 @@ namespace EMRView
             FEditProtect = (source as DeItem).EditProtect;
             FDeleteAllow = (source as DeItem).DeleteAllow;
             FCopyProtect = (source as DeItem).CopyProtect;
+            FAllocOnly = (source as DeItem).AllocOnly;
             FAllocValue = (source as DeItem).AllocValue;
             FOutOfRang = (source as DeItem).OutOfRang;
             HC.View.HC.AssignProperty((source as DeItem).Propertys, ref FPropertys);
@@ -412,6 +413,9 @@ namespace EMRView
                         if (FEditProtect || FAllocOnly)
                             vResult = aOffset == this.Length;
                         break;
+
+                    case HCAction.actDeleteItem:
+                        return !FEditProtect;
                 }
             }
 
@@ -1893,6 +1897,268 @@ namespace EMRView
 
             string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
             HC.View.HC.SetPropertyString(vProp, FPropertys);
+        }
+
+        public void ToJson(string aJsonObj)
+        {
+
+        }
+
+        public void ParseJson(string aJsonObj)
+        {
+
+        }
+
+        public bool EditProtect
+        {
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
+        }
+
+        public bool DeleteAllow
+        {
+            get { return FDeleteAllow; }
+            set { FDeleteAllow = value; }
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
+        }
+    }
+
+    public class DeBarCodeItem : HCBarCodeItem
+    {
+        private bool FEditProtect, FDeleteAllow;
+        private Dictionary<string, string> FPropertys;
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            HC.View.HC.HCSetProperty(FPropertys, key, value);
+        }
+
+        public DeBarCodeItem(HCCustomData aOwnerData, string text) : base(aOwnerData, text)
+        {
+            FDeleteAllow = true;
+            FPropertys = new Dictionary<string, string>();
+        }
+
+        ~DeBarCodeItem()
+        {
+
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FEditProtect = (source as DeBarCodeItem).EditProtect;
+            FDeleteAllow = (source as DeBarCodeItem).DeleteAllow;
+            HC.View.HC.AssignProperty((source as DeBarCodeItem).Propertys, ref FPropertys);
+        }
+
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStreamRange(aStream, aStart, aEnd);
+
+            byte vByte = 0;
+            if (FEditProtect)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FDeleteAllow)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
+
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            if (aFileVersion > 60)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
+
+                string vS = "";
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FPropertys);
+            }
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
+            if (FDeleteAllow)
+                aNode.SetAttribute("deleteallow", "1");
+
+            aNode.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+
+            if (aNode.HasAttribute("deleteallow"))
+                FDeleteAllow = aNode.GetAttribute("deleteallow") == "1";
+            else
+                FDeleteAllow = true;
+
+            if (aNode.HasAttribute("property"))
+            {
+                string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+                HC.View.HC.SetPropertyString(vProp, FPropertys);
+            }
+        }
+
+        public void ToJson(string aJsonObj)
+        {
+
+        }
+
+        public void ParseJson(string aJsonObj)
+        {
+
+        }
+
+        public bool EditProtect
+        {
+            get { return FEditProtect; }
+            set { FEditProtect = value; }
+        }
+
+        public bool DeleteAllow
+        {
+            get { return FDeleteAllow; }
+            set { FDeleteAllow = value; }
+        }
+
+        public Dictionary<string, string> Propertys
+        {
+            get { return FPropertys; }
+        }
+
+        public string this[string aKey]
+        {
+            get { return GetValue(aKey); }
+            set { SetValue(aKey, value); }
+        }
+    }
+
+    public class DeQRCodeItem : HCQRCodeItem
+    {
+        private bool FEditProtect, FDeleteAllow;
+        private Dictionary<string, string> FPropertys;
+
+        private string GetValue(string key)
+        {
+            if (FPropertys.Keys.Contains(key))
+                return FPropertys[key];
+            else
+                return "";
+        }
+
+        private void SetValue(string key, string value)
+        {
+            FPropertys[key] = value;
+        }
+
+        public DeQRCodeItem(HCCustomData aOwnerData, string text) : base(aOwnerData, text)
+        {
+            FDeleteAllow = true;
+            FPropertys = new Dictionary<string, string>();
+        }
+
+        ~DeQRCodeItem()
+        {
+
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FEditProtect = (source as DeQRCodeItem).EditProtect;
+            FDeleteAllow = (source as DeQRCodeItem).DeleteAllow;
+            HC.View.HC.AssignProperty((source as DeQRCodeItem).Propertys, ref FPropertys);
+        }
+
+        public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
+        {
+            base.SaveToStreamRange(aStream, aStart, aEnd);
+
+            byte vByte = 0;
+            if (FEditProtect)
+                vByte = (byte)(vByte | (1 << 7));
+
+            if (FDeleteAllow)
+                vByte = (byte)(vByte | (1 << 6));
+
+            aStream.WriteByte(vByte);
+
+            HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
+        {
+            base.LoadFromStream(aStream, aStyle, aFileVersion);
+            if (aFileVersion > 60)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
+
+                string vS = "";
+                HC.View.HC.HCLoadTextFromStream(aStream, ref vS, aFileVersion);
+                HC.View.HC.SetPropertyString(vS, FPropertys);
+            }
+        }
+
+        public override void ToXml(XmlElement aNode)
+        {
+            base.ToXml(aNode);
+            if (FEditProtect)
+                aNode.SetAttribute("editprotect", "1");
+
+            if (FDeleteAllow)
+                aNode.SetAttribute("deleteallow", "1");
+
+            aNode.SetAttribute("property", HC.View.HC.GetPropertyString(FPropertys));
+        }
+
+        public override void ParseXml(XmlElement aNode)
+        {
+            base.ParseXml(aNode);
+            FEditProtect = aNode.GetAttribute("editprotect") == "1";
+
+            if (aNode.HasAttribute("deleteallow"))
+                FDeleteAllow = aNode.GetAttribute("deleteallow") == "1";
+            else
+                FDeleteAllow = true;
+
+            if (aNode.HasAttribute("property"))
+            {
+                string vProp = HC.View.HC.GetXmlRN(aNode.Attributes["property"].Value);
+                HC.View.HC.SetPropertyString(vProp, FPropertys);
+            }
         }
 
         public void ToJson(string aJsonObj)

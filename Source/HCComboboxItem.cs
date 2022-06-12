@@ -294,8 +294,11 @@ namespace HC.View
 
         public override void KeyDown(KeyEventArgs e)
         {
-            if (!FStatic && this.Enabled)
+            if (!FStatic && (e.KeyCode != Keys.Back && e.KeyCode != Keys.Delete))
                 base.KeyDown(e);
+            else
+            if (OnKeyDown != null)
+                OnKeyDown(this, e);
         }
 
         public override void KeyPress(ref char key)

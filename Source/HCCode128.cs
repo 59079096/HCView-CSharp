@@ -134,6 +134,12 @@ namespace HC.View
         {
             if (this.FText != Value)
             {
+                for (int i = 0; i < Value.Length; i++)
+                {
+                    if ((ushort)Value[i] > 128)
+                        return;
+                }
+
                 this.FText = Value;
                 try
                 {

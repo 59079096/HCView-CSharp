@@ -89,6 +89,12 @@ namespace EMRView
                 case EMR.EMRSTYLE_FANGJIAO:
                     return new EmrFangJiaoItem(aData, "", "", "", "");
 
+                case HCStyle.BarCode:
+                    return new DeBarCodeItem(aData, "");
+
+                case HCStyle.QRCode:
+                    return new DeQRCodeItem(aData, "");
+
                 case HCStyle.FloatBarCode:
                     return new DeFloatBarCodeItem(aData);
 

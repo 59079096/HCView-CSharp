@@ -5403,7 +5403,7 @@ namespace HC.View
 
             for (int i = vAddStartNo; i < aSrcData.Items.Count; i++)
             {
-                if (!aSrcData.IsEmptyLine(i))
+                //if (!aSrcData.IsEmptyLine(i))
                 {
                     HCCustomItem vItem = CreateItemByStyle(aSrcData.Items[i].StyleNo);
                     vItem.Assign(aSrcData.Items[i]);

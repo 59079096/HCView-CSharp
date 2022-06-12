@@ -3649,7 +3649,10 @@ namespace HC.View
         /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>
         public override bool WantKeyDown(KeyEventArgs e)
         {
-            return true;
+            if (e.KeyCode == Keys.Control || e.KeyCode == Keys.Shift || e.KeyCode == Keys.Menu)
+                return false;
+            else
+                return true;
         }
 
         #region CheckFormatPageBreak子方法
