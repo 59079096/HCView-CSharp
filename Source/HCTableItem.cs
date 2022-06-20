@@ -2429,7 +2429,6 @@ namespace HC.View
                     vCell = FRows[vRow].CreateCell(OwnerData.Style);
                     vCell.Width = vWidth;
                     vCell.Height = FRows[vRow].Height;
-                    InitializeCellData(vCell.CellData);
 
                     if ((aCol < FColWidths.Count) && (FRows[vRow][aCol].ColSpan < 0))
                     {
@@ -2447,6 +2446,8 @@ namespace HC.View
                         if (vRow == viDestRow + FRows[viDestRow][viDestCol].RowSpan)
                             FRows[viDestRow][viDestCol].ColSpan = FRows[viDestRow][viDestCol].ColSpan + 1;
                     }
+                    else
+                        InitializeCellData(vCell.CellData);
 
                     FRows[vRow].Insert(aCol, vCell);
                 }
@@ -2492,6 +2493,8 @@ namespace HC.View
                         if (vCol == viDestCol + FRows[viDestRow][viDestCol].ColSpan)
                             FRows[viDestRow][viDestCol].RowSpan = FRows[viDestRow][viDestCol].RowSpan + 1;  // 目标行包含的合并源增加1
                     }
+                    else
+                        InitializeCellData(vTableRow[vCol].CellData);
                 }
 
                 FRows.Insert(aRow, vTableRow);
@@ -5178,6 +5181,7 @@ namespace HC.View
                 
                 // 原合并目标单元格正下面的单元格作为拆分后，下面合并源的新目标
                 FRows[vCurRow + 1][vCurCol].CellData = new HCTableCellData(OwnerData.Style);
+                InitializeCellData(FRows[vCurRow + 1][vCurCol].CellData);
                 FRows[vCurRow + 1][vCurCol].RowSpan = vSrcRow - (vCurRow + 1);
                 FRows[vCurRow + 1][vCurCol].ColSpan = vSrcCol - vCurCol;
             }
@@ -5299,6 +5303,7 @@ namespace HC.View
 
                 // 原合并目标单元格右侧的单元格作为拆分后，右侧合并源的新目标
                 FRows[vCurRow][vCurCol + 1].CellData = new HCTableCellData(OwnerData.Style);
+                InitializeCellData(FRows[vCurRow][vCurCol + 1].CellData);
                 FRows[vCurRow][vCurCol + 1].RowSpan = vSrcRow - vCurRow;
                 FRows[vCurRow][vCurCol + 1].ColSpan = vSrcCol - (vCurCol + 1);
             }
