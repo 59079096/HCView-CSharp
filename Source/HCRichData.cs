@@ -982,6 +982,25 @@ namespace HC.View
 
             if (!SelectExists())
             {
+                if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+                {
+                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
+                        UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                    else
+                        UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ApplySelectTextStyle(Style, aMatchStyle);
+                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsFormatDirty)
+                    {
+                        // 如果改变会引起RectItem宽度变化，则需要格式化到最后一个Item
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    }
+                    else
+                        this.FormatInit();
+                }
+                else
                 if (CurStyleNo > HCStyle.Null)
                 {
                     aMatchStyle.Append = !aMatchStyle.StyleHasMatch(Style, CurStyleNo);  // 根据当前判断是添加样式还是减掉样式
