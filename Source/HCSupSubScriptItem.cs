@@ -91,15 +91,15 @@ namespace HC.View
 
         protected override void DoPaint(HCStyle aStyle, RECT aDrawRect, int aDataDrawTop, int aDataDrawBottom, 
             int aDataScreenTop, int aDataScreenBottom, HCCanvas aCanvas, PaintInfo aPaintInfo)
-        {
-            if (this.Active && (!aPaintInfo.Print))
-            {
-                aCanvas.Brush.Color = HC.clBtnFace;
-                aCanvas.FillRect(aDrawRect);
-            }
-                      
+        {                      
             if (!aPaintInfo.Print)
             {
+                if (this.Active)
+                {
+                    aCanvas.Brush.Color = HC.clBtnFace;
+                    aCanvas.FillRect(aDrawRect);
+                }
+
                 RECT vFocusRect = new RECT();
                 if (FActiveArea != ExpressArea.ceaNone)
                 {
