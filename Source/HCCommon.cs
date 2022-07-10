@@ -1284,14 +1284,16 @@ namespace HC.View
         public event EventHandler<NListEventArgs<T>> OnInsert = null;
 
         public event EventHandler<EventArgs> OnClear = null;
+        public event EventHandler<EventArgs> OnChange = null;
 
         public new void Add(T item)
         {
             base.Add(item);
             if (OnInsert != null)
-            {
                 OnInsert.Invoke(this, new NListEventArgs<T>(item, this.Count));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void Clear()
@@ -1305,15 +1307,19 @@ namespace HC.View
             base.Clear();
             if (OnClear != null)
                 OnClear.Invoke(this, new EventArgs());
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void Insert(int index, T item)
         {
             base.Insert(index, item);
             if (OnInsert != null)
-            {
                 OnInsert.Invoke(this, new NListEventArgs<T>(item, index));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void Remove(T item)
@@ -1321,18 +1327,20 @@ namespace HC.View
             Int32 index = base.IndexOf(item);
             base.Remove(item);
             if (OnDelete != null)
-            {
                 OnDelete.Invoke(this, new NListEventArgs<T>(item, index));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
         public new void RemoveAt(Int32 index)
         {
             T item = base[index];
             base.RemoveAt(index);
             if (OnDelete != null)
-            {
                 OnDelete.Invoke(this, new NListEventArgs<T>(item, index));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void RemoveRange(int index, int count)
@@ -1355,6 +1363,9 @@ namespace HC.View
                 }
                 Index++;
             }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void InsertRange(int index, IEnumerable<T> collection)
@@ -1368,6 +1379,9 @@ namespace HC.View
                 }
                 index++;
             }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public void Delete(int index)

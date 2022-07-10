@@ -46,7 +46,7 @@ namespace HC.View
     public class HCComboboxItem : HCEditItem
     {
         private bool FSaveItem, FStatic;
-        private List<HCCbbItem> FItems;
+        private HCList<HCCbbItem> FItems;
         private List<HCCbbItem> FItemValues;
         private int FItemIndex, FMoveItemIndex;
         private RECT FButtonRect, FButtonDrawRect;
@@ -92,7 +92,7 @@ namespace HC.View
             return Result;
         }
 
-        private void DoItemsChange(Object Sender)
+        private void DoItemsChange(Object Sender, EventArgs e)
         {
             if (FItems.Count < DROPDOWNCOUNT)
                 FPopupForm.Height = DROPDOWNITEMHEIGHT * FItems.Count;
@@ -390,7 +390,8 @@ namespace HC.View
             FPaddingRight = BTNWIDTH;
             FSaveItem = true;
             FStatic = false;
-            FItems = new List<HCCbbItem>();
+            FItems = new HCList<HCCbbItem>();
+            FItems.OnChange += DoItemsChange;
             FItemValues = new List<HCCbbItem>();
 
             FScrollBar = new HCComScrollBar();
@@ -585,7 +586,7 @@ namespace HC.View
                 FStatic = bool.Parse(aNode.GetAttribute("static"));
         }
 
-        public List<HCCbbItem> Items
+        public HCList<HCCbbItem> Items
         {
             get { return FItems; }
         }
