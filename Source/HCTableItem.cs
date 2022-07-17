@@ -1525,15 +1525,12 @@ namespace HC.View
 
             if (Resizing)
             {
+                vResizeInfo = GetCellAt(FMouseDownX, FMouseDownY, ref vUpRow, ref vUpCol, false);
                 if (FResizeInfo.TableSite == TableSite.tsBorderRight)
                 {
                     vCellPt.X = e.X - FMouseDownX;  // 不使用FResizeInfo.DestX(会造成按下处弹出也有偏移)
                     if (vCellPt.X != 0)
                     {
-                        // AReDest为False用于处理拖动改变列宽时，如拖动处列是合并源，其他行此列并无合并操作
-                        // 这时弹起，如果取拖动列目标列变宽，则其他行拖动处的列并没变宽
-                        vResizeInfo = GetCellAt(FMouseDownX, FMouseDownY, ref vUpRow, ref vUpCol, false);
-                        
                         if ((vResizeInfo.TableSite != TableSite.tsOutside) && (vCellPt.X != 0))
                         {
                             if (vCellPt.X > 0)
@@ -1584,10 +1581,10 @@ namespace HC.View
                     vCellPt.Y = e.Y - FMouseDownY;  // 不使用FResizeInfo.DestY(会造成按下处弹出也有偏移)
                     if (vCellPt.Y != 0)
                     {
-                        Undo_RowResize(FMouseDownRow, FRows[FMouseDownRow].Height, FRows[FMouseDownRow].Height + vCellPt.Y);
-                        vCellPt.Y = FRows[FMouseDownRow].Height + vCellPt.Y;
-                        FRows[FMouseDownRow].Height = vCellPt.Y;
-                        FRows[FMouseDownRow].AutoHeight = (vCellPt.Y != FRows[FMouseDownRow].Height);
+                        Undo_RowResize(vUpRow, FRows[vUpRow].Height, FRows[vUpRow].Height + vCellPt.Y);
+                        vCellPt.Y = FRows[vUpRow].Height + vCellPt.Y;
+                        FRows[vUpRow].Height = vCellPt.Y;
+                        FRows[vUpRow].AutoHeight = (vCellPt.Y != FRows[vUpRow].Height);
                     }
                 }
 
