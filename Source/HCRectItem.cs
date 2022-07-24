@@ -892,7 +892,7 @@ namespace HC.View
                 if (aStyle != null)
                     FTextStyleNo = OwnerData.Style.GetStyleNo(aStyle.TextStyles[FTextStyleNo], true);
                 else
-                    FTextStyleNo = 0;
+                    FTextStyleNo = OwnerData.Style.GetDefaultStyleNo();
             }
             else
             if ((aStyle != null) && (FTextStyleNo > aStyle.TextStyles.Count - 1))  // 兼容历史错误(删除多余样式时没有)
