@@ -2452,6 +2452,9 @@ namespace HC.View
                 FColWidths.Insert(aCol, vWidth);  // 右侧插入列
             }
 
+            if (FResizeKeepWidth)
+                AdjustWidth(false);
+
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
             this.FormatDirty();

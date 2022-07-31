@@ -665,7 +665,7 @@ namespace EMRView
 
     public class DeTableRow : HCTableRow
     {
-        private bool FEditProtect;
+        private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -690,6 +690,7 @@ namespace EMRView
             : base(style, colCount)
         {
             FEditProtect = false;
+            FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
         }
 
@@ -705,6 +706,9 @@ namespace EMRView
             if (FEditProtect)
                 vByte = (byte)(vByte | (1 << 7));
 
+            //if (FDeleteAllow)
+            //    vByte = (byte)(vByte | (1 << 5));
+
             stream.WriteByte(vByte);
             HC.View.HC.HCSaveTextToStream(stream, HC.View.HC.GetPropertyString(FPropertys));
         }
@@ -718,6 +722,8 @@ namespace EMRView
                 {
                     byte vByte = (byte)stream.ReadByte();
                     FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
+                    //if (fileVersion > 61)
+                    //    FDeleteAllow = HC.View.HC.IsOdd(vByte >> 5);
                 }
 
                 string vS = "";
@@ -755,11 +761,17 @@ namespace EMRView
             get { return GetValue(aKey); }
             set { SetValue(aKey, value); }
         }
+
+        public bool DeleteAllow
+        {
+            get { return FDeleteAllow; }
+            set { FDeleteAllow = value; }
+        }
     }
 
     public class DeTableCell : HCTableCell
     {
-        private bool FEditProtect;
+        private bool FEditProtect, FDeleteAllow;
         private Dictionary<string, string> FPropertys;
 
         private string GetValue(string key)
@@ -786,6 +798,7 @@ namespace EMRView
             : base(style)
         {
             FEditProtect = false;
+            FDeleteAllow = true;
             FPropertys = new Dictionary<string, string>();
         }
 
@@ -801,6 +814,9 @@ namespace EMRView
             if (FEditProtect)
                 vByte = (byte)(vByte | (1 << 7));
 
+            //if (FDeleteAllow)
+            //    vByte = (byte)(vByte | (1 << 6));
+
             stream.WriteByte(vByte);
             HC.View.HC.HCSaveTextToStream(stream, HC.View.HC.GetPropertyString(FPropertys));
         }
@@ -814,6 +830,9 @@ namespace EMRView
                 {
                     byte vByte = (byte)stream.ReadByte();
                     FEditProtect = HC.View.HC.IsOdd(vByte >> 7);
+
+                    //if (fileVersion > 61)
+                    //    FDeleteAllow = HC.View.HC.IsOdd(vByte >> 6);
                 }
 
                 string vS = "";
@@ -856,6 +875,12 @@ namespace EMRView
         {
             get { return FEditProtect; }
             set { SetEditProtect(value); }
+        }
+
+        public bool DeleteAllow
+        {
+            get { return FDeleteAllow; }
+            set { FDeleteAllow = value; }
         }
     }
 

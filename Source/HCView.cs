@@ -1824,7 +1824,7 @@ namespace HC.View
         public void DisSelect()
         {
             ActiveSection.DisSelect();
-            DoSectionDataCheckUpdateInfo(this, null);
+            CheckUpdateInfo();
         }
 
         /// <summary> 删除选中内容 </summary>

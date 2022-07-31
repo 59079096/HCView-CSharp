@@ -107,6 +107,9 @@ namespace EMRView
             if (FDeleteAllow)
                 vByte = (byte)(vByte | (1 << 3));
 
+            if (this.Empty)
+                vByte = (byte)(vByte | (1 << 4));
+
             aStream.WriteByte(vByte);
 
             byte[] buffer = System.BitConverter.GetBytes(FTextStyleNo);
@@ -123,6 +126,7 @@ namespace EMRView
             {
                 byte vByte = (byte)aStream.ReadByte();
                 FDeleteAllow = HC.View.HC.IsOdd(vByte >> 3);
+                this.Empty = HC.View.HC.IsOdd(vByte >> 4);
             }
             else
                 FDeleteAllow = false;
