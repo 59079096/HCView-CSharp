@@ -2632,9 +2632,11 @@ namespace HC.View
             // 必需保证行、列数量一致
             base.Assign(source);
             HCTableItem vSrcTable = source as HCTableItem;
+            this.ResetRowCol(vSrcTable.Width, vSrcTable.RowCount, vSrcTable.ColCount);
 
             FBorderVisible = vSrcTable.BorderVisible;
             BorderWidthPt = vSrcTable.BorderWidthPt;
+            FResizeKeepWidth = vSrcTable.ResizeKeepWidth;
             CellHPaddingMM = vSrcTable.CellHPaddingMM;
             CellVPaddingMM = vSrcTable.CellVPaddingMM;
             FFixRow = vSrcTable.FixRow;

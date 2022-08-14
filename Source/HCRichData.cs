@@ -5412,13 +5412,14 @@ namespace HC.View
             this.InitializeField();
 
             int vAddStartNo = 0;
+            if (IsEmptyData())
+                this.Items.Clear();
+            else
             if ((this.Items.Count > 0) && (Items[Items.Count - 1].CanConcatItems(aSrcData.Items[0])))
             {
                 Items[Items.Count - 1].Text = Items[Items.Count - 1].Text + aSrcData.Items[0].Text;
                 vAddStartNo = 1;
             }
-            else
-                vAddStartNo = 0;
 
             for (int i = vAddStartNo; i < aSrcData.Items.Count; i++)
             {
