@@ -1795,7 +1795,7 @@ namespace HC.View
                 {
                     FUndoList.Enable = false;
                     FSections[0].Clear();
-                    FUndoList.Clear();
+                    ClearUndo();
                 }
                 finally
                 {
@@ -3228,7 +3228,7 @@ namespace HC.View
 
                 if (!aQuick)
                 {
-                    FUndoList.Clear();
+                    ClearUndo();
                     DeleteUnUsedStyle(FStyle, FSections, vArea);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
                 }
 
@@ -3265,7 +3265,7 @@ namespace HC.View
             try
             {
                 // 清除撤销恢复数据
-                FUndoList.Clear();
+                ClearUndo();
                 FUndoList.SaveState();
                 try
                 {
@@ -3333,7 +3333,7 @@ namespace HC.View
             FStyle.States.Include(HCState.hosSaving);
             try
             {
-                FUndoList.Clear();
+                ClearUndo();
                 HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
                 DeleteUnUsedStyle(FStyle, FSections, vParts);
 
@@ -3397,7 +3397,7 @@ namespace HC.View
             this.BeginUpdate();
             try
             {
-                FUndoList.Clear();
+                ClearUndo();
                 FUndoList.SaveState();
                 try
                 {
@@ -3467,7 +3467,7 @@ namespace HC.View
         /// <param name="aSeparateSrc">True：图片等保存到文件夹，False以base64方式存储到页面中</param>
         public void SaveToHtml(string aFileName, bool aSeparateSrc = false)
         {
-            FUndoList.Clear();
+            ClearUndo();
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
             DeleteUnUsedStyle(FStyle, FSections, vParts);
 
