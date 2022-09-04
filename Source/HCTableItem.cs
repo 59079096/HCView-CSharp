@@ -3165,7 +3165,7 @@ namespace HC.View
                 }
             }
             else
-                e.Handled = true; ;
+                e.Handled = true;
         }
 
         public override void KeyPress(ref Char key)
@@ -5175,7 +5175,7 @@ namespace HC.View
                 GetSourceCell(vCurRow, vCurCol, ref vSrcRow, ref vSrcCol);  // 得到范围
 
                 FRows[vCurRow][vCurCol].RowSpan = 0;  // 目标不再向下合并单元格了
-                for (int i = vCurRow; i <= vSrcRow; i++)  // 从目标行下一行开始，重新设置合并目
+                for (int i = vCurRow + 1; i <= vSrcRow; i++)  // 从目标行下一行开始，重新设置合并目
                 {
                     for (int vC = vCurCol; vC <= vSrcCol; vC++)  // 遍历拆分前光标所在的行各
                         FRows[i][vC].RowSpan = FRows[i][vC].RowSpan + 1;
@@ -5297,7 +5297,7 @@ namespace HC.View
                 GetSourceCell(vCurRow, vCurCol, ref vSrcRow, ref vSrcCol);  // 得到范围
                 
                 this[vCurRow, vCurCol].ColSpan = 0;  // 合并目标不再向右合并单元格了
-                for (int i = vCurCol; i <= vSrcCol; i++)  // 目标列同行右侧的重新设置合并目
+                for (int i = vCurCol + 1; i <= vSrcCol; i++)  // 目标列同行右侧的重新设置合并目
                 {
                     for (int vR = vCurRow; vR <= vSrcRow; vR++)  // 遍历拆分前光标所在的行各
                         FRows[vR][i].ColSpan = FRows[vR][i].ColSpan + 1;
