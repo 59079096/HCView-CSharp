@@ -24,7 +24,7 @@ namespace HC.View
     public class HCCheckBoxItem : HCControlItem
     {
         private string FText;
-        private bool FChecked, FItemHit, FBoxRight;
+        private bool FChecked, FItemHit, FBoxRight, FAutoWrap;
         private EventHandler FOnCheckChanged;
 
         private RECT GetBoxRect()
@@ -236,6 +236,12 @@ namespace HC.View
         {
             get { return FBoxRight; }
             set { FBoxRight = value; }
+        }
+
+        public bool AutoWrap
+        {
+            get { return FAutoWrap; }
+            set { FAutoWrap = value; }
         }
 
         public EventHandler OnCheckChanged
