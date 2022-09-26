@@ -138,10 +138,10 @@ namespace HC.View
             // 4.5 ResizeItem存CanResize属性
             // 4.6 节存储页码格式
 
-            HC_FileVersion = "6.1";
+            HC_FileVersion = "6.2";
 
 		public const ushort
-            HC_FileVersionInt = 61;
+            HC_FileVersionInt = 62;
 
         public const Byte
             // 文件流的数据类型

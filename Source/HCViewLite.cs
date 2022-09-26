@@ -47,6 +47,7 @@ namespace HC.View
 
             DoLoadStreamBefor(stream, vFileVersion);  // 触发加载前事件
             style.LoadFromStream(stream, vFileVersion);  // 加载样式表
+            DoLoadMutMargin(stream, style, vFileVersion);
 
             if (vFileVersion > 55)
             {
@@ -109,6 +110,17 @@ namespace HC.View
         protected virtual HCCustomItem DoSectionCreateStyleItem(HCCustomData data, int styleNo)
         {
             return null;
+        }
+
+        protected virtual void DoSaveMutMargin(Stream stream)
+        {
+            stream.WriteByte(0);
+        }
+
+        protected virtual void DoLoadMutMargin(Stream stream, HCStyle style, ushort fileVersion)
+        {
+            if (fileVersion > 61)
+                stream.ReadByte();
         }
 
         protected virtual void DoSaveStreamBefor(Stream stream)
@@ -443,6 +455,7 @@ namespace HC.View
                     DeleteUnUsedStyle(FStyle, FSections, vArea);
 
                 FStyle.SaveToStream(aStream);
+                DoSaveMutMargin(aStream);
 
                 byte vByte = 0;
                 aStream.WriteByte(vByte);

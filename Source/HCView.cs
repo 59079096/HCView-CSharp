@@ -215,6 +215,7 @@ namespace HC.View
 
             DoLoadStreamBefor(aStream, vFileVersion);  // 触发加载前事件
             aStyle.LoadFromStream(aStream, vFileVersion);  // 加载样式表
+            DoLoadMutMargin(aStream, aStyle, vFileVersion);
 
             if (vFileVersion > 55)
             {
@@ -1221,6 +1222,19 @@ namespace HC.View
         {
             if (FOnPaintViewAfter != null)
                 FOnPaintViewAfter(aCanvas, aPaintInfo);
+        }
+
+        protected virtual void DoSaveMutMargin(Stream stream)
+        {
+            stream.WriteByte(0);
+        }
+
+        protected virtual void DoLoadMutMargin(Stream stream, HCStyle style, ushort fileVersion)
+        {
+            if (fileVersion > 61)
+            {
+                byte vByte = (byte)stream.ReadByte();
+            }
         }
 
         /// <summary> 保存文档前触发事件，便于订制特征数据 </summary>
@@ -2474,13 +2488,13 @@ namespace HC.View
                         vStream.Dispose();
                     }
                 }
-                else
-                if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
-                {
-                    string vs = vIData.GetData(DataFormats.Rtf).ToString();
-                    HCRtfRW vRtfRW = new HCRtfRW();
-                    vRtfRW.InsertString(this, vs);
-                }
+                //else
+                //if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
+                //{
+                //    string vs = vIData.GetData(DataFormats.Rtf).ToString();
+                //    HCRtfRW vRtfRW = new HCRtfRW();
+                //    vRtfRW.InsertString(this, vs);
+                //}
                 else
                 if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                     InsertText(Clipboard.GetText());
@@ -3233,6 +3247,7 @@ namespace HC.View
                 }
 
                 FStyle.SaveToStream(aStream);
+                DoSaveMutMargin(aStream);
 
                 byte vByte = 0;
                 aStream.WriteByte(vByte);

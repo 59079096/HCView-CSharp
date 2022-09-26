@@ -2795,6 +2795,7 @@ namespace HC.View
             aStream.WriteByte((byte)FPageNoHorAlign);
             vBuffer = BitConverter.GetBytes(FPageNoOffset);
             aStream.Write(vBuffer, 0, vBuffer.Length);
+            aStream.WriteByte(0);
             //
             vBuffer = BitConverter.GetBytes(vBegPos);
 
@@ -2914,6 +2915,9 @@ namespace HC.View
                 FPageNoHorAlign = HCTextHorAlign.hthaCenter;
                 FPageNoOffset = FFooter.Height;
             }
+
+            if (aFileVersion > 61)
+                aStream.ReadByte();
 
             BuildSectionPages(0);
         }

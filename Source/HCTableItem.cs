@@ -2546,7 +2546,7 @@ namespace HC.View
         protected bool DeleteRow(int aRow)
         {
             if (aRow == 0 && FRows.Count == 1)
-                return;
+                return false;
 
             if (!RowCanDelete(aRow))
                 return false;
