@@ -379,7 +379,7 @@ namespace HC.View
             else  // 下一个可以放在行首，当前位置能否放置到行尾
             {
                 vChar = aText[aPos - 1];  // 当前位置字符
-                if (HC.PosCharHC(vChar, HC.DontLineLastChar) > 0)  // 是不能放在行尾的字符
+                if (CharCannotEndOfLine(vChar))  // 是不能放在行尾的字符
                 {
                     aPos--;  // 再往前寻找截断位置
                     GetHeadTailBreak(aText, ref aPos);
@@ -489,8 +489,8 @@ namespace HC.View
             if (aBreakRough)
                 return;
 
-            CharType vPosCharType = HC.GetUnicodeCharType((ushort)(aText[aPos - 1]));  // 当前类型
-            CharType vNextCharType = HC.GetUnicodeCharType((ushort)(aText[aPos + 1 - 1]));  // 下一个字符类型
+            CharType vPosCharType = GetUnicodeCharType((ushort)(aText[aPos - 1]));  // 当前类型
+            CharType vNextCharType = GetUnicodeCharType((ushort)(aText[aPos + 1 - 1]));  // 下一个字符类型
 
             if (MatchBreak(vPosCharType, vNextCharType, aText, aPos + 1) != BreakPosition.jbpPrev)  // 不能在当前截断，当前往前找截断
             {
@@ -500,7 +500,7 @@ namespace HC.View
                     CharType vPrevCharType;
                     for (int i = aPos - 1; i >= aStartPos; i--)
                     {
-                        vPrevCharType = HC.GetUnicodeCharType((ushort)(aText[i - 1]));
+                        vPrevCharType = GetUnicodeCharType((ushort)(aText[i - 1]));
                         if (MatchBreak(vPrevCharType, vPosCharType, aText, i + 1) == BreakPosition.jbpPrev)
                         {
                             aPos = i;
@@ -592,14 +592,14 @@ namespace HC.View
                 viBreakOffset = aCharOffset;
             else
             {
-                if (Style.FormatVersion == 2)
+                if (Style.FormatVersion > 1)
                 {
                     vSqueeze = false;
                     for (int i = aCharOffset - 1; i <= vItemLen - 1; i++)
                     {
                         if (vCharWidths[i] - aBasePos > aPlaceWidth)
                         {
-                            if (!vSqueeze && HC.PosCharHC(vText[i], HC.LineSqueezeChar) > 0)
+                            if (!vSqueeze && CharCanSqueeze(vText[i]))
                             {
                                 if (vCharWidths[i] - aBasePos - aPlaceWidth > 3)  // (vCharWidths[i] - vCharWidths[i - 1]) / 2
                                 {
@@ -714,6 +714,9 @@ namespace HC.View
                         else
                             viPlaceOffset = viBreakOffset - 1;
                     }
+
+                    if (vSqueeze && viPlaceOffset < viBreakOffset - 1 && Style.FormatVersion > 2)
+                        vSqueeze = false;
 
                     vRect.Left = aPos.X;
                     vRect.Top = aPos.Y;
@@ -1095,6 +1098,94 @@ namespace HC.View
             }
             else
                 FFormatHeightChange = vFmtHeightChange;
+        }
+
+        protected CharType GetUnicodeCharType(uint aChar)
+        {
+            if ((aChar >= 0x2E80) && (aChar <= 0x2EF3)  // 部首扩展 115
+                || (aChar >= 0x2F00) && (aChar <= 0x2FD5)  // 熙部首 214
+                || (aChar >= 0x2FF0) && (aChar <= 0x2FFB)  // 汉字结构 12
+                || (aChar == 0x3007)  // 〇 1
+                || (aChar >= 0x3105) && (aChar <= 0x312F)  // 汉字注音 43
+                || (aChar >= 0x31A0) && (aChar <= 0x31BA)  // 注音扩展 22
+                || (aChar >= 0x31C0) && (aChar <= 0x31E3)  // 汉字笔划 36
+                || (aChar >= 0x3400) && (aChar <= 0x4DB5)  // 扩展A 6582个
+                || (aChar >= 0x4E00) && (aChar <= 0x9FA5)  // 基本汉字 20902个
+                || (aChar >= 0x9FA6) && (aChar <= 0x9FEF)  // 基本汉字补充 74个
+                || (aChar >= 0xE400) && (aChar <= 0xE5E8)  // 部件扩展 452
+                || (aChar >= 0xE600) && (aChar <= 0xE6CF)  // PUA增补 207
+                || (aChar >= 0xE815) && (aChar <= 0xE86F)  // PUA(GBK)部件 81
+                || (aChar >= 0xF900) && (aChar <= 0xFAD9)  // 兼容汉字 477
+                || (aChar >= 0x20000) && (aChar <= 0x2A6D6)  // 扩展B 42711个
+                || (aChar >= 0x2A700) && (aChar <= 0x2B734)  // 扩展C 4149
+                || (aChar >= 0x2B740) && (aChar <= 0x2B81D)  // 扩展D 222
+                || (aChar >= 0x2B820) && (aChar <= 0x2CEA1)  // 扩展E 5762
+                || (aChar >= 0x2CEB0) && (aChar <= 0x2EBE0)  // 扩展F 7473
+                || (aChar >= 0x2F800) && (aChar <= 0x2FA1D)  // 兼容扩展 542
+                )
+                return CharType.jctHZ;  // 汉字
+
+            if (aChar >= 0x0F0B && aChar <= 0x0F0D)
+                return CharType.jctBreak;
+
+            if ((aChar >= 0x1800) && (aChar <= 0x18AF))
+                return CharType.jctHZ;
+
+            if ((aChar == 0x201C) || (aChar == 0x201D) || (aChar == 0xFFE5) || (aChar == 0x2018)
+                || (aChar == 0x00D7) || (aChar == 0x3002) || (aChar == 0x3001) || (aChar == 0xFF01)
+                || (aChar == 0xFF03) || (aChar == 0xFF05) || (aChar == 0xFF06) || (aChar == 0xFF08)
+                || (aChar == 0xFF09) || (aChar == 0xFF0B) || (aChar == 0xFF0C) || (aChar == 0xFF0D)
+                )
+            {
+                if (Style.FormatVersion > 2)
+                    return CharType.jctFH;
+                else
+                    return CharType.jctBreak;
+            }
+
+            if (((aChar >= 0x21) && (aChar <= 0x2F))  // !"#$%&'()*+,-./
+                || ((aChar >= 0x3A) && (aChar <= 0x40))  // :;<=>?@
+                || ((aChar >= 0x5B) && (aChar <= 0x60))  // [\]^_`
+                || ((aChar >= 0x7B) && (aChar <= 0x7E))  // {|}~      
+                || (aChar == 0xFFE0)  // ￠
+                )
+            {
+                return CharType.jctFH;
+            }
+
+            //0xFF01..0xFF0F,  // ！“＃￥％＆‘（）×＋，－。、
+
+            if ((aChar >= 0x30) && (aChar <= 0x39))
+            {
+                return CharType.jctSZ;  // 0..9
+            }
+
+            if (((aChar >= 0x41) && (aChar <= 0x5A))  // A..Z
+                || ((aChar >= 0x61) && (aChar <= 0x7A))  // a..z               
+                )
+            {
+                return CharType.jctZM;
+            }
+
+            return CharType.jctBreak;
+        }
+
+        /// <summary> 是不能放置在行尾的字符 </summary>
+        protected bool CharCannotEndOfLine(char aChar)
+        {
+            if (Style.FormatVersion > 2)
+                return HC.PosCharHC(aChar, HC.DontLineLastCharV3) > 0;
+            else
+                return HC.PosCharHC(aChar, HC.DontLineLastCharLessV3) > 0;
+        }
+
+        /// <summary> 是可挤压后放置的字符 </summary>
+        protected bool CharCanSqueeze(char aChar)
+        {
+            if (Style.FormatVersion > 2)
+                return HC.PosCharHC(aChar, HC.LineSqueezeCharV3) > 0;
+            else
+                return HC.PosCharHC(aChar, HC.LineSqueezeCharLessV3) > 0;
         }
 
         public HCFormatData(HCStyle aStyle)

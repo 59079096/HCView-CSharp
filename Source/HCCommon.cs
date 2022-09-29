@@ -49,7 +49,7 @@ namespace HC.View
         public static Color HyperTextColor = Color.FromArgb(0x05, 0x63, 0xC1);
         public static Color HCTransparentColor = Color.Transparent;  // 透明色
         //public static char[] HCBoolText = { '0', '1' };
-
+        public static byte HCFormatVersion = 3;
         public const uint HC_TEXTMAXSIZE = 4294967295;
 
         public static System.Windows.Forms.Cursor GCursor;
@@ -92,9 +92,11 @@ namespace HC.View
                 + UnPlaceholderChar
             #endif
                 ,
-            DontLineLastChar = @"/\＼“‘",
-            /// <summary> 可以挤压宽度的字符 </summary>
-            LineSqueezeChar = "，。；、？“”",
+            DontLineLastCharLessV3 = @"/\＼“‘",
+            LineSqueezeCharLessV3 = "，。；、？“”",
+
+            DontLineLastCharV3 = "/\\＼“\"‘'",
+            LineSqueezeCharV3 = "，。；、？”’",
             sLineBreak = "\r\n",
             RecordSeparator = "\u001E",
             UnitSeparator = "\u001F",
@@ -136,10 +138,17 @@ namespace HC.View
             // 4.5 ResizeItem存CanResize属性
             // 4.6 节存储页码格式
 
-            HC_FileVersion = "5.8";
+            HC_FileVersion = "6.2";
 
 		public const ushort
-            HC_FileVersionInt = 58;
+            HC_FileVersionInt = 62;
+
+        public const Byte
+            // 文件流的数据类型
+            HC_STREAM_VIEW = 0,
+            HC_STREAM_LITE = 1,
+            HC_STREAM_ITEM = 2,
+            HC_STREAM_GRID = 3;
 
         private static DataFormats.Format hcExtFormat = null;
         public static DataFormats.Format HCExtFormat
@@ -875,64 +884,6 @@ namespace HC.View
             return s.Replace(sLineBreak, "");
         }
 
-        public static CharType GetUnicodeCharType(uint aChar)
-        {
-            if ((aChar >= 0x2E80) && (aChar <= 0x2EF3)  // 部首扩展 115
-                || (aChar >= 0x2F00) && (aChar <= 0x2FD5)  // 熙部首 214
-                || (aChar >= 0x2FF0) && (aChar <= 0x2FFB)  // 汉字结构 12
-                || (aChar == 0x3007)  // 〇 1
-                || (aChar >= 0x3105) && (aChar <= 0x312F)  // 汉字注音 43
-                || (aChar >= 0x31A0) && (aChar <= 0x31BA)  // 注音扩展 22
-                || (aChar >= 0x31C0) && (aChar <= 0x31E3)  // 汉字笔划 36
-                || (aChar >= 0x3400) && (aChar <= 0x4DB5)  // 扩展A 6582个
-                || (aChar >= 0x4E00) && (aChar <= 0x9FA5)  // 基本汉字 20902个
-                || (aChar >= 0x9FA6) && (aChar <= 0x9FEF)  // 基本汉字补充 74个
-                || (aChar >= 0xE400) && (aChar <= 0xE5E8)  // 部件扩展 452
-                || (aChar >= 0xE600) && (aChar <= 0xE6CF)  // PUA增补 207
-                || (aChar >= 0xE815) && (aChar <= 0xE86F)  // PUA(GBK)部件 81
-                || (aChar >= 0xF900) && (aChar <= 0xFAD9)  // 兼容汉字 477
-                || (aChar >= 0x20000) && (aChar <= 0x2A6D6)  // 扩展B 42711个
-                || (aChar >= 0x2A700) && (aChar <= 0x2B734)  // 扩展C 4149
-                || (aChar >= 0x2B740) && (aChar <= 0x2B81D)  // 扩展D 222
-                || (aChar >= 0x2B820) && (aChar <= 0x2CEA1)  // 扩展E 5762
-                || (aChar >= 0x2CEB0) && (aChar <= 0x2EBE0)  // 扩展F 7473
-                || (aChar >= 0x2F800) && (aChar <= 0x2FA1D)  // 兼容扩展 542
-                )
-                return CharType.jctHZ;  // 汉字
-
-            if ((aChar >= 0x0F00) && (aChar <= 0x0FFF))
-                return CharType.jctHZ;  // 汉字，藏文
-
-            if ((aChar >= 0x1800) && (aChar <= 0x18AF))
-                return CharType.jctHZ;  // 汉字，蒙古字符
-
-            if (   ((aChar >= 0x21) && (aChar <= 0x2F))  // !"#$%&'()*+,-./
-                || ((aChar >= 0x3A) && (aChar <= 0x40))  // :;<=>?@
-                || ((aChar >= 0x5B) && (aChar <= 0x60))  // [\]^_`
-                || ((aChar >= 0x7B) && (aChar <= 0x7E))  // {|}~      
-                || (aChar == 0xFFE0)  // ￠
-                )
-            {
-                return CharType.jctFH;
-            }
-
-            //0xFF01..0xFF0F,  // ！“＃￥％＆‘（）×＋，－。、
-
-            if ((aChar >= 0x30) && (aChar <= 0x39))
-            {
-                return CharType.jctSZ;  // 0..9
-            }
-
-            if (   ((aChar >= 0x41) && (aChar <= 0x5A))  // A..Z
-                || ((aChar >= 0x61) && (aChar <= 0x7A))  // a..z               
-                )
-            {
-                return CharType.jctZM;
-            }
-               
-            return CharType.jctBreak;
-        }
-
         public static bool PtInRect(RECT aRect, POINT aPt)
         {
             return PtInRect(aRect, aPt.X, aPt.Y);
@@ -1333,14 +1284,16 @@ namespace HC.View
         public event EventHandler<NListEventArgs<T>> OnInsert = null;
 
         public event EventHandler<EventArgs> OnClear = null;
+        public event EventHandler<EventArgs> OnChange = null;
 
         public new void Add(T item)
         {
             base.Add(item);
             if (OnInsert != null)
-            {
                 OnInsert.Invoke(this, new NListEventArgs<T>(item, this.Count));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void Clear()
@@ -1354,15 +1307,19 @@ namespace HC.View
             base.Clear();
             if (OnClear != null)
                 OnClear.Invoke(this, new EventArgs());
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void Insert(int index, T item)
         {
             base.Insert(index, item);
             if (OnInsert != null)
-            {
                 OnInsert.Invoke(this, new NListEventArgs<T>(item, index));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void Remove(T item)
@@ -1370,18 +1327,20 @@ namespace HC.View
             Int32 index = base.IndexOf(item);
             base.Remove(item);
             if (OnDelete != null)
-            {
                 OnDelete.Invoke(this, new NListEventArgs<T>(item, index));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
         public new void RemoveAt(Int32 index)
         {
             T item = base[index];
             base.RemoveAt(index);
             if (OnDelete != null)
-            {
                 OnDelete.Invoke(this, new NListEventArgs<T>(item, index));
-            }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void RemoveRange(int index, int count)
@@ -1404,6 +1363,9 @@ namespace HC.View
                 }
                 Index++;
             }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public new void InsertRange(int index, IEnumerable<T> collection)
@@ -1417,6 +1379,9 @@ namespace HC.View
                 }
                 index++;
             }
+
+            if (OnChange != null)
+                OnChange.Invoke(this, new EventArgs());
         }
 
         public void Delete(int index)

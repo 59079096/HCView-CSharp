@@ -982,6 +982,25 @@ namespace HC.View
 
             if (!SelectExists())
             {
+                if (Items[SelectInfo.StartItemNo].StyleNo < HCStyle.Null)
+                {
+                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).MangerUndo)
+                        UndoAction_ItemSelf(SelectInfo.StartItemNo, HC.OffsetInner);
+                    else
+                        UndoAction_ItemMirror(SelectInfo.StartItemNo, HC.OffsetInner);
+
+                    (Items[SelectInfo.StartItemNo] as HCCustomRectItem).ApplySelectTextStyle(Style, aMatchStyle);
+                    if ((Items[SelectInfo.StartItemNo] as HCCustomRectItem).IsFormatDirty)
+                    {
+                        // 如果改变会引起RectItem宽度变化，则需要格式化到最后一个Item
+                        GetFormatRange(ref vFormatFirstDrawItemNo, ref vFormatLastItemNo);
+                        FormatPrepare(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                        ReFormatData(vFormatFirstDrawItemNo, vFormatLastItemNo);
+                    }
+                    else
+                        this.FormatInit();
+                }
+                else
                 if (CurStyleNo > HCStyle.Null)
                 {
                     aMatchStyle.Append = !aMatchStyle.StyleHasMatch(Style, CurStyleNo);  // 根据当前判断是添加样式还是减掉样式
@@ -1355,9 +1374,7 @@ namespace HC.View
 
             bool Result = false;
             bool vSelectSeekStart = IsSelectSeekStart();
-
             int vDelCount = 0;
-            this.InitializeField();  // 删除后原鼠标处可能已经没有了
 
             int vFormatFirstDrawItemNo = -1, vFormatFirstItemNo = -1, vFormatLastItemNo = -1,
                 vParaFirstItemNo = -1, vParaLastItemNo = -1, vUnDeleteSeekItemNo = -1;
@@ -1690,6 +1707,7 @@ namespace HC.View
 
             base.DeleteSelected();
 
+            this.InitializeField();
             ReSetSelectAndCaret(SelectInfo.StartItemNo, SelectInfo.StartItemOffset, !vSelectSeekStart);
             return true;
         }
@@ -5238,14 +5256,14 @@ namespace HC.View
 
                     CharType vPosType;
                     if (vItemOffset > 0)
-                        vPosType = HC.GetUnicodeCharType((ushort)vText[vItemOffset - 1]);
+                        vPosType = GetUnicodeCharType((ushort)vText[vItemOffset - 1]);
                     else
-                        vPosType = HC.GetUnicodeCharType((ushort)vText[1 - 1]);
+                        vPosType = GetUnicodeCharType((ushort)vText[1 - 1]);
 
                     int vStartOffset = 0;
                     for (int i = vItemOffset - 1; i >= 1; i--)  // 往前找Char类型不一样的位置
                     {
-                        if (HC.GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
+                        if (GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
                         {
                             vStartOffset = i;
                             break;
@@ -5255,7 +5273,7 @@ namespace HC.View
                     int vEndOffset = vText.Length;
                     for (int i = vItemOffset + 1; i <= vText.Length; i++)  // 往后找Char类型不一样的位置
                     {
-                        if (HC.GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
+                        if (GetUnicodeCharType((ushort)vText[i - 1]) != vPosType)
                         {
                             vEndOffset = i - 1;
                             break;
@@ -5394,17 +5412,18 @@ namespace HC.View
             this.InitializeField();
 
             int vAddStartNo = 0;
+            if (IsEmptyData())
+                this.Items.Clear();
+            else
             if ((this.Items.Count > 0) && (Items[Items.Count - 1].CanConcatItems(aSrcData.Items[0])))
             {
                 Items[Items.Count - 1].Text = Items[Items.Count - 1].Text + aSrcData.Items[0].Text;
                 vAddStartNo = 1;
             }
-            else
-                vAddStartNo = 0;
 
             for (int i = vAddStartNo; i < aSrcData.Items.Count; i++)
             {
-                if (!aSrcData.IsEmptyLine(i))
+                //if (!aSrcData.IsEmptyLine(i))
                 {
                     HCCustomItem vItem = CreateItemByStyle(aSrcData.Items[i].StyleNo);
                     vItem.Assign(aSrcData.Items[i]);

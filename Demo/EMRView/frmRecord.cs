@@ -1676,14 +1676,14 @@ namespace EMRView
         private void MniBarCode_Click(object sender, EventArgs e)
         {
             string vS = "123456897";
-            HCBarCodeItem vHCBarCode = new HCBarCodeItem(FEmrView.ActiveSectionTopLevelData(), vS);
+            DeBarCodeItem vHCBarCode = new DeBarCodeItem(FEmrView.ActiveSectionTopLevelData(), vS);
             FEmrView.InsertItem(vHCBarCode);
         }
 
         private void MniQRCode_Click(object sender, EventArgs e)
         {
             string vS = "HCView使用了DelphiZXingQRCode二维码控件";
-            HCQRCodeItem vQRCode = new HCQRCodeItem(FEmrView.ActiveSectionTopLevelData(), vS);
+            DeQRCodeItem vQRCode = new DeQRCodeItem(FEmrView.ActiveSectionTopLevelData(), vS);
             FEmrView.InsertItem(vQRCode);
         }
 

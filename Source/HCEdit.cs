@@ -495,6 +495,8 @@ namespace HC.View
         protected void DataSaveLiteStream(Stream stream, HCProcedure proc)
         {
             HC._SaveFileFormatAndVersion(stream);
+            stream.WriteByte(HC.HC_STREAM_LITE);
+
             FStyle.SaveToStream(stream);
             proc();
         }
@@ -505,6 +507,13 @@ namespace HC.View
             ushort vFileVersion = 0;
             byte vLang = 0;
             HC._LoadFileFormatAndVersion(stream, ref vFileFormat, ref vFileVersion, ref vLang);
+
+            if (vFileVersion > 59)
+            {
+                if ((byte)stream.ReadByte() != HC.HC_STREAM_LITE)  // 不是Lite流
+                    return;
+            }
+
             using (HCStyle vStyle = new HCStyle())
             {
                 vStyle.LoadFromStream(stream, vFileVersion);
@@ -1056,6 +1065,8 @@ namespace HC.View
         public void SaveToStream(Stream aStream)
         {
             HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
+            aStream.WriteByte(HC.HC_STREAM_LITE);
+
             _DeleteUnUsedStyle();
             FStyle.SaveToStream(aStream);
             FData.SaveToStream(aStream);
@@ -1083,6 +1094,12 @@ namespace HC.View
                     HC._LoadFileFormatAndVersion(aStream, ref vFileExt, ref viVersion, ref vLang);
                     if (vFileExt != HC.HC_EXT)
                         throw new Exception("加载失败，不是" + HC.HC_EXT + "文件！");
+
+                    if (viVersion > 59)
+                    {
+                        if ((byte)aStream.ReadByte() != HC.HC_STREAM_LITE)
+                            return;
+                    }
 
                     FStyle.LoadFromStream(aStream, viVersion);
                     FData.LoadFromStream(aStream, FStyle, viVersion);

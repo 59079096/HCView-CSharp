@@ -105,6 +105,12 @@ namespace EMRView
             ushort vFileVersion = 0;
             byte vLang = 0;
             HC.View.HC._LoadFileFormatAndVersion(aStream, ref vFileFormat, ref vFileVersion, ref vLang);
+            if (vFileVersion > 59)
+            {
+                if ((byte)aStream.ReadByte() != HC.View.HC.HC_STREAM_LITE)
+                    return;
+            }
+
             HCStyle vStyle = new HCStyle();
             try
             {

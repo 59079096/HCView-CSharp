@@ -631,11 +631,20 @@ namespace HC.View
             : base(aOwnerData)
         {
             this.StyleNo = HCStyle.Domain;
+            FMarkType = MarkType.cmtBeg;
             FDrawRect = new RECT();
             FLevel = 0;
             Width = 0;
             Height = aOwnerData.Style.TextStyles[0].FontHeight;
             Empty = true;
+        }
+
+        public override void Assign(HCCustomItem source)
+        {
+            base.Assign(source);
+            FMarkType = (source as HCDomainItem).MarkType;
+            FLevel = (source as HCDomainItem).Level;
+            Empty = (source as HCDomainItem).Empty;
         }
 
         public static bool IsBeginMark(HCCustomItem aItem)
@@ -892,7 +901,7 @@ namespace HC.View
                 if (aStyle != null)
                     FTextStyleNo = OwnerData.Style.GetStyleNo(aStyle.TextStyles[FTextStyleNo], true);
                 else
-                    FTextStyleNo = 0;
+                    FTextStyleNo = OwnerData.Style.GetDefaultStyleNo();
             }
             else
             if ((aStyle != null) && (FTextStyleNo > aStyle.TextStyles.Count - 1))  // 兼容历史错误(删除多余样式时没有)

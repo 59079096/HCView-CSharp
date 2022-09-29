@@ -1464,6 +1464,31 @@ namespace EMRView
                 aDataDrawBottom, aDataScreenTop, aDataScreenBottom, aCanvas, aPaintInfo);
         }
 
+        #region 兼容付费版本的多边距和页眉页脚首页不同
+        protected override void DoSaveMutMargin(Stream stream)
+        {
+            int a = -1;
+            byte[] vBuffer1 = BitConverter.GetBytes(a);
+            stream.Write(vBuffer1, 0, vBuffer1.Length);
+            stream.Write(vBuffer1, 0, vBuffer1.Length);
+            stream.Write(vBuffer1, 0, vBuffer1.Length);
+            stream.WriteByte(0);
+        }
+
+        protected override void DoLoadMutMargin(Stream stream, HCStyle style, ushort fileVersion)
+        {
+            if (fileVersion > 61)
+            {
+                int a = -1;
+                byte[] vBuffer1 = BitConverter.GetBytes(a);
+                stream.Read(vBuffer1, 0, vBuffer1.Length);
+                stream.Read(vBuffer1, 0, vBuffer1.Length);
+                stream.Read(vBuffer1, 0, vBuffer1.Length);
+                stream.ReadByte();
+            }
+        }
+        #endregion
+
         protected override void WndProc(ref Message Message)
         {
             base.WndProc(ref Message);

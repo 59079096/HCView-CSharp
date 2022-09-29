@@ -39,7 +39,7 @@ namespace EMRView
 
     public class DeGroup : HCDomainItem
     {
-        private bool FChanged, FReadOnly;
+        private bool FChanged, FReadOnly, FDeleteAllow;
         private int FTextStyleNo = HCStyle.Domain;
         #if PROCSERIES
         private bool FIsProc;
@@ -89,9 +89,10 @@ namespace EMRView
             FPropertys = new Dictionary<string, string>();
             FScripts = new Dictionary<string, string>();
             FReadOnly = false;
-            #if PROCSERIES
+            FDeleteAllow = false;
+#if PROCSERIES
             FIsProc = false;
-            #endif
+#endif
         }
 
         ~DeGroup()
@@ -102,6 +103,15 @@ namespace EMRView
         public override void SaveToStreamRange(Stream aStream, int aStart, int aEnd)
         {
             base.SaveToStreamRange(aStream, aStart, aEnd);
+            byte vByte = 0;
+            if (FDeleteAllow)
+                vByte = (byte)(vByte | (1 << 3));
+
+            if (this.Empty)
+                vByte = (byte)(vByte | (1 << 4));
+
+            aStream.WriteByte(vByte);
+
             byte[] buffer = System.BitConverter.GetBytes(FTextStyleNo);
             aStream.Write(buffer, 0, buffer.Length);
             HC.View.HC.HCSaveTextToStream(aStream, HC.View.HC.GetPropertyString(FPropertys));
@@ -111,6 +121,15 @@ namespace EMRView
         public override void LoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             base.LoadFromStream(aStream, aStyle, aFileVersion);
+
+            if (aFileVersion > 58)
+            {
+                byte vByte = (byte)aStream.ReadByte();
+                FDeleteAllow = HC.View.HC.IsOdd(vByte >> 3);
+                this.Empty = HC.View.HC.IsOdd(vByte >> 4);
+            }
+            else
+                FDeleteAllow = false;
 
             if (aFileVersion > 52)
             {
@@ -142,6 +161,7 @@ namespace EMRView
         {
             base.Assign(source);
             FReadOnly = (source as DeGroup).ReadOnly;
+            FDeleteAllow = (source as DeGroup).DeleteAllow;
             HC.View.HC.AssignProperty((source as DeGroup).Propertys, ref FPropertys);
             CheckPropertys();
             HC.View.HC.AssignProperty((source as DeGroup).FScripts, ref FScripts);
@@ -311,6 +331,12 @@ namespace EMRView
         {
             get { return FChanged; }
             set { FChanged = value; }
+        }
+
+        public bool DeleteAllow
+        {
+            get { return FDeleteAllow; }
+            set { FDeleteAllow = value; }
         }
 
         public string Index

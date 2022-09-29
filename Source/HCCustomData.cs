@@ -125,9 +125,9 @@ namespace HC.View
     public class SelectInfo : object
     {
         private int FStartItemNo,
-            FStartItemOffset,  // 选中起始在第几个字符后面，0表示在Item最前面
+            FStartItemOffset,
             FEndItemNo,
-            FEndItemOffset;  // 选中结束在第几个字符后面
+            FEndItemOffset;
 
         private bool FStartRestrain;
 

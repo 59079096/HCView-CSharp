@@ -145,7 +145,7 @@ namespace HC.View
         private int FHeight ;  // 被合并后记录原始高、记录拖动改变后高
         private int FRowSpan;  // 单元格跨几行，用于合并目标单元格记录合并了几行，合并源记录合并到单元格的行号，0没有行合并
         private int FColSpan ;  // 单元格跨几列，用于合并目标单元格记录合并了几列，合并源记录合并到单元格的列号，0没有列合并
-
+        private int FRightOffset;
         private Color FBackgroundColor;
         private HCAlignVert FAlignVert;
         private HCBorderSides FBorderSides;
@@ -191,6 +191,7 @@ namespace HC.View
             FBackgroundColor = AStyle.BackgroundColor;
             FRowSpan = 0;
             FColSpan = 0;
+            FRightOffset = 0;
         }
 
         ~HCTableCell()
@@ -269,6 +270,9 @@ namespace HC.View
             vBuffer = BitConverter.GetBytes(FColSpan);
             aStream.Write(vBuffer, 0, vBuffer.Length);
 
+            vBuffer = BitConverter.GetBytes(FRightOffset);
+            aStream.Write(vBuffer, 0, vBuffer.Length);
+
             byte vByte = (byte)FAlignVert;
             aStream.WriteByte(vByte);  // 垂直对齐方式
 
@@ -301,6 +305,15 @@ namespace HC.View
             vBuffer = BitConverter.GetBytes(FColSpan);
             aStream.Read(vBuffer, 0, vBuffer.Length);
             FColSpan = BitConverter.ToInt32(vBuffer, 0);
+
+            if (aFileVersion > 58)
+            {
+                vBuffer = BitConverter.GetBytes(FRightOffset);
+                aStream.Read(vBuffer, 0, vBuffer.Length);
+                FRightOffset = BitConverter.ToInt32(vBuffer, 0);
+            }
+            else
+                FRightOffset = 0;
 
             if (aFileVersion > 11)
             {
@@ -452,6 +465,12 @@ namespace HC.View
         {
             get { return FColSpan; }
             set { FColSpan = value; }
+        }
+
+        public int RightOffset
+        {
+            get { return FRightOffset; }
+            set { FRightOffset = value; }
         }
 
         public Color BackgroundColor

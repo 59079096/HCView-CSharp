@@ -1525,15 +1525,12 @@ namespace HC.View
 
             if (Resizing)
             {
+                vResizeInfo = GetCellAt(FMouseDownX, FMouseDownY, ref vUpRow, ref vUpCol, false);
                 if (FResizeInfo.TableSite == TableSite.tsBorderRight)
                 {
                     vCellPt.X = e.X - FMouseDownX;  // 不使用FResizeInfo.DestX(会造成按下处弹出也有偏移)
                     if (vCellPt.X != 0)
                     {
-                        // AReDest为False用于处理拖动改变列宽时，如拖动处列是合并源，其他行此列并无合并操作
-                        // 这时弹起，如果取拖动列目标列变宽，则其他行拖动处的列并没变宽
-                        vResizeInfo = GetCellAt(FMouseDownX, FMouseDownY, ref vUpRow, ref vUpCol, false);
-                        
                         if ((vResizeInfo.TableSite != TableSite.tsOutside) && (vCellPt.X != 0))
                         {
                             if (vCellPt.X > 0)
@@ -1584,10 +1581,10 @@ namespace HC.View
                     vCellPt.Y = e.Y - FMouseDownY;  // 不使用FResizeInfo.DestY(会造成按下处弹出也有偏移)
                     if (vCellPt.Y != 0)
                     {
-                        Undo_RowResize(FMouseDownRow, FRows[FMouseDownRow].Height, FRows[FMouseDownRow].Height + vCellPt.Y);
-                        vCellPt.Y = FRows[FMouseDownRow].Height + vCellPt.Y;
-                        FRows[FMouseDownRow].Height = vCellPt.Y;
-                        FRows[FMouseDownRow].AutoHeight = (vCellPt.Y != FRows[FMouseDownRow].Height);
+                        Undo_RowResize(vUpRow, FRows[vUpRow].Height, FRows[vUpRow].Height + vCellPt.Y);
+                        vCellPt.Y = FRows[vUpRow].Height + vCellPt.Y;
+                        FRows[vUpRow].Height = vCellPt.Y;
+                        FRows[vUpRow].AutoHeight = (vCellPt.Y != FRows[vUpRow].Height);
                     }
                 }
 
@@ -2429,7 +2426,6 @@ namespace HC.View
                     vCell = FRows[vRow].CreateCell(OwnerData.Style);
                     vCell.Width = vWidth;
                     vCell.Height = FRows[vRow].Height;
-                    InitializeCellData(vCell.CellData);
 
                     if ((aCol < FColWidths.Count) && (FRows[vRow][aCol].ColSpan < 0))
                     {
@@ -2447,12 +2443,17 @@ namespace HC.View
                         if (vRow == viDestRow + FRows[viDestRow][viDestCol].RowSpan)
                             FRows[viDestRow][viDestCol].ColSpan = FRows[viDestRow][viDestCol].ColSpan + 1;
                     }
+                    else
+                        InitializeCellData(vCell.CellData);
 
                     FRows[vRow].Insert(aCol, vCell);
                 }
 
                 FColWidths.Insert(aCol, vWidth);  // 右侧插入列
             }
+
+            if (FResizeKeepWidth)
+                AdjustWidth(false);
 
             this.InitializeMouseInfo();
             FSelectCellRang.Initialize();
@@ -2492,6 +2493,8 @@ namespace HC.View
                         if (vCol == viDestCol + FRows[viDestRow][viDestCol].ColSpan)
                             FRows[viDestRow][viDestCol].RowSpan = FRows[viDestRow][viDestCol].RowSpan + 1;  // 目标行包含的合并源增加1
                     }
+                    else
+                        InitializeCellData(vTableRow[vCol].CellData);
                 }
 
                 FRows.Insert(aRow, vTableRow);
@@ -2542,6 +2545,9 @@ namespace HC.View
 
         protected bool DeleteRow(int aRow)
         {
+            if (aRow == 0 && FRows.Count == 1)
+                return false;
+
             if (!RowCanDelete(aRow))
                 return false;
 
@@ -2629,9 +2635,11 @@ namespace HC.View
             // 必需保证行、列数量一致
             base.Assign(source);
             HCTableItem vSrcTable = source as HCTableItem;
+            this.ResetRowCol(vSrcTable.Width, vSrcTable.RowCount, vSrcTable.ColCount);
 
             FBorderVisible = vSrcTable.BorderVisible;
             BorderWidthPt = vSrcTable.BorderWidthPt;
+            FResizeKeepWidth = vSrcTable.ResizeKeepWidth;
             CellHPaddingMM = vSrcTable.CellHPaddingMM;
             CellVPaddingMM = vSrcTable.CellVPaddingMM;
             FFixRow = vSrcTable.FixRow;
@@ -3160,7 +3168,7 @@ namespace HC.View
                 }
             }
             else
-                e.Handled = true; ;
+                e.Handled = true;
         }
 
         public override void KeyPress(ref Char key)
@@ -3649,7 +3657,10 @@ namespace HC.View
         /// <summary> 正在其上时内部是否处理指定的Key和Shif </summary>
         public override bool WantKeyDown(KeyEventArgs e)
         {
-            return true;
+            if (e.KeyCode == Keys.Control || e.KeyCode == Keys.Shift || e.KeyCode == Keys.Menu)
+                return false;
+            else
+                return true;
         }
 
         #region CheckFormatPageBreak子方法
@@ -5167,7 +5178,7 @@ namespace HC.View
                 GetSourceCell(vCurRow, vCurCol, ref vSrcRow, ref vSrcCol);  // 得到范围
 
                 FRows[vCurRow][vCurCol].RowSpan = 0;  // 目标不再向下合并单元格了
-                for (int i = vCurRow; i <= vSrcRow; i++)  // 从目标行下一行开始，重新设置合并目
+                for (int i = vCurRow + 1; i <= vSrcRow; i++)  // 从目标行下一行开始，重新设置合并目
                 {
                     for (int vC = vCurCol; vC <= vSrcCol; vC++)  // 遍历拆分前光标所在的行各
                         FRows[i][vC].RowSpan = FRows[i][vC].RowSpan + 1;
@@ -5175,6 +5186,7 @@ namespace HC.View
                 
                 // 原合并目标单元格正下面的单元格作为拆分后，下面合并源的新目标
                 FRows[vCurRow + 1][vCurCol].CellData = new HCTableCellData(OwnerData.Style);
+                InitializeCellData(FRows[vCurRow + 1][vCurCol].CellData);
                 FRows[vCurRow + 1][vCurCol].RowSpan = vSrcRow - (vCurRow + 1);
                 FRows[vCurRow + 1][vCurCol].ColSpan = vSrcCol - vCurCol;
             }
@@ -5288,7 +5300,7 @@ namespace HC.View
                 GetSourceCell(vCurRow, vCurCol, ref vSrcRow, ref vSrcCol);  // 得到范围
                 
                 this[vCurRow, vCurCol].ColSpan = 0;  // 合并目标不再向右合并单元格了
-                for (int i = vCurCol; i <= vSrcCol; i++)  // 目标列同行右侧的重新设置合并目
+                for (int i = vCurCol + 1; i <= vSrcCol; i++)  // 目标列同行右侧的重新设置合并目
                 {
                     for (int vR = vCurRow; vR <= vSrcRow; vR++)  // 遍历拆分前光标所在的行各
                         FRows[vR][i].ColSpan = FRows[vR][i].ColSpan + 1;
@@ -5296,6 +5308,7 @@ namespace HC.View
 
                 // 原合并目标单元格右侧的单元格作为拆分后，右侧合并源的新目标
                 FRows[vCurRow][vCurCol + 1].CellData = new HCTableCellData(OwnerData.Style);
+                InitializeCellData(FRows[vCurRow][vCurCol + 1].CellData);
                 FRows[vCurRow][vCurCol + 1].RowSpan = vSrcRow - vCurRow;
                 FRows[vCurRow][vCurCol + 1].ColSpan = vSrcCol - (vCurCol + 1);
             }

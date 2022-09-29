@@ -207,8 +207,15 @@ namespace HC.View
                 throw new Exception("加载失败，当前编辑器最高支持版本为"
                     + HC.HC_FileVersionInt.ToString() + "的文件，无法打开版本为" + vFileVersion.ToString() + "的文件！");
 
+            if (vFileVersion > 59)
+            {
+                if ((byte)aStream.ReadByte() != HC.HC_STREAM_VIEW)
+                    return;
+            }
+
             DoLoadStreamBefor(aStream, vFileVersion);  // 触发加载前事件
             aStyle.LoadFromStream(aStream, vFileVersion);  // 加载样式表
+            DoLoadMutMargin(aStream, aStyle, vFileVersion);
 
             if (vFileVersion > 55)
             {
@@ -1217,6 +1224,19 @@ namespace HC.View
                 FOnPaintViewAfter(aCanvas, aPaintInfo);
         }
 
+        protected virtual void DoSaveMutMargin(Stream stream)
+        {
+            stream.WriteByte(0);
+        }
+
+        protected virtual void DoLoadMutMargin(Stream stream, HCStyle style, ushort fileVersion)
+        {
+            if (fileVersion > 61)
+            {
+                byte vByte = (byte)stream.ReadByte();
+            }
+        }
+
         /// <summary> 保存文档前触发事件，便于订制特征数据 </summary>
         protected virtual void DoSaveStreamBefor(Stream aStream) { }
 
@@ -1512,6 +1532,7 @@ namespace HC.View
         protected void DataSaveLiteStream(Stream stream, HCProcedure proc)
         {
             HC._SaveFileFormatAndVersion(stream);
+            stream.WriteByte(HC.HC_STREAM_LITE);
             FStyle.SaveToStream(stream);
             proc();
         }
@@ -1522,6 +1543,12 @@ namespace HC.View
             ushort vFileVersion = 0;
             byte vLang = 0;
             HC._LoadFileFormatAndVersion(stream, ref vFileFormat, ref vFileVersion, ref vLang);
+            if (vFileVersion > 59)
+            {
+                if ((byte)stream.ReadByte() != HC.HC_STREAM_LITE)
+                    return;
+            }
+
             using (HCStyle vStyle = new HCStyle())
             {
                 vStyle.LoadFromStream(stream, vFileVersion);
@@ -1782,7 +1809,7 @@ namespace HC.View
                 {
                     FUndoList.Enable = false;
                     FSections[0].Clear();
-                    FUndoList.Clear();
+                    ClearUndo();
                 }
                 finally
                 {
@@ -1811,7 +1838,7 @@ namespace HC.View
         public void DisSelect()
         {
             ActiveSection.DisSelect();
-            DoSectionDataCheckUpdateInfo(this, null);
+            CheckUpdateInfo();
         }
 
         /// <summary> 删除选中内容 </summary>
@@ -2461,13 +2488,13 @@ namespace HC.View
                         vStream.Dispose();
                     }
                 }
-                else
-                if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
-                {
-                    string vs = vIData.GetData(DataFormats.Rtf).ToString();
-                    HCRtfRW vRtfRW = new HCRtfRW();
-                    vRtfRW.InsertString(this, vs);
-                }
+                //else
+                //if (vIData.GetDataPresent(DataFormats.Rtf) && DoPasteRequest(User.CF_TEXT))
+                //{
+                //    string vs = vIData.GetData(DataFormats.Rtf).ToString();
+                //    HCRtfRW vRtfRW = new HCRtfRW();
+                //    vRtfRW.InsertString(this, vs);
+                //}
                 else
                 if (vIData.GetDataPresent(DataFormats.Text) && DoPasteRequest(User.CF_TEXT))
                     InsertText(Clipboard.GetText());
@@ -3200,6 +3227,8 @@ namespace HC.View
             try
             {
                 HC._SaveFileFormatAndVersion(aStream);  // 文件格式和版本
+                aStream.WriteByte(HC.HC_STREAM_VIEW);
+
                 DoSaveStreamBefor(aStream);
 
                 HashSet<SectionArea> vArea = aAreas;
@@ -3213,11 +3242,12 @@ namespace HC.View
 
                 if (!aQuick)
                 {
-                    FUndoList.Clear();
+                    ClearUndo();
                     DeleteUnUsedStyle(FStyle, FSections, vArea);  // 删除不使用的样式(可否改为把有用的存了，加载时Item的StyleNo取有用)
                 }
 
                 FStyle.SaveToStream(aStream);
+                DoSaveMutMargin(aStream);
 
                 byte vByte = 0;
                 aStream.WriteByte(vByte);
@@ -3250,7 +3280,7 @@ namespace HC.View
             try
             {
                 // 清除撤销恢复数据
-                FUndoList.Clear();
+                ClearUndo();
                 FUndoList.SaveState();
                 try
                 {
@@ -3318,7 +3348,7 @@ namespace HC.View
             FStyle.States.Include(HCState.hosSaving);
             try
             {
-                FUndoList.Clear();
+                ClearUndo();
                 HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
                 DeleteUnUsedStyle(FStyle, FSections, vParts);
 
@@ -3382,7 +3412,7 @@ namespace HC.View
             this.BeginUpdate();
             try
             {
-                FUndoList.Clear();
+                ClearUndo();
                 FUndoList.SaveState();
                 try
                 {
@@ -3452,7 +3482,7 @@ namespace HC.View
         /// <param name="aSeparateSrc">True：图片等保存到文件夹，False以base64方式存储到页面中</param>
         public void SaveToHtml(string aFileName, bool aSeparateSrc = false)
         {
-            FUndoList.Clear();
+            ClearUndo();
             HashSet<SectionArea> vParts = new HashSet<SectionArea> { SectionArea.saHeader, SectionArea.saPage, SectionArea.saFooter };
             DeleteUnUsedStyle(FStyle, FSections, vParts);
 
