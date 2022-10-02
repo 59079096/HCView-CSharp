@@ -2508,6 +2508,9 @@ namespace HC.View
 
         protected bool DeleteCol(int aCol)
         {
+            if (FColWidths.Count == 1)
+                return false;
+
             if (!ColCanDelete(aCol))
                 return false;
 
