@@ -800,14 +800,18 @@ namespace HC.View
                                 if (vDrawDefault && !aPaintInfo.Print)
                                 {
                                     if (IsFixCol(vC))
+                                    {
                                         aCanvas.Brush.Color = FFixColor;
+                                        aCanvas.FillRect(vCellRect);
+                                    }
                                     else
-                                        if (FRows[vDestRow][vDestCol].BackgroundColor != HC.HCTransparentColor)
-                                            aCanvas.Brush.Color = FRows[vDestRow][vDestCol].BackgroundColor;
-                                        else
-                                            aCanvas.Brush.Style = HCBrushStyle.bsClear;
-
-                                    aCanvas.FillRect(vCellRect);
+                                    if (FRows[vDestRow][vDestCol].BackgroundColor != HC.HCTransparentColor)
+                                    {
+                                        aCanvas.Brush.Color = FRows[vDestRow][vDestCol].BackgroundColor;
+                                        aCanvas.FillRect(vCellRect);
+                                    }
+                                    else
+                                        aCanvas.Brush.Style = HCBrushStyle.bsClear;
                                 }
                             }
 
