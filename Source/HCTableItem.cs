@@ -799,7 +799,7 @@ namespace HC.View
 
                                 if (vDrawDefault && !aPaintInfo.Print)
                                 {
-                                    if (IsFixCol(vC))
+                                    if (IsFixRow(vR) || IsFixCol(vC))
                                     {
                                         aCanvas.Brush.Color = FFixColor;
                                         aCanvas.FillRect(vCellRect);
