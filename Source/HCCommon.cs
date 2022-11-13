@@ -1553,6 +1553,22 @@ namespace HC.View
             else
                 base.InsertRange(index, collection);
         }
+
+        public T First()
+        {
+            if (this.Count == 0)
+                return default(T);
+            else
+                return base[0];
+        }
+
+        public T Last()
+        {
+            if (this.Count == 0)
+                return default(T);
+            else
+                return base[this.Count - 1];
+        }
     }
 
     public class NListInhEventArgs<T> : EventArgs

@@ -4119,7 +4119,7 @@ namespace HC.View
         public override string ToHtml(string aPath)
         {
             string Result = "<table border=\"" + FBorderWidthPix.ToString()
-                + "\" cellpadding=\"0\"; cellspacing=\"0\"";
+                + "\" cellpadding=\"0\"; cellspacing=\"0\">";
             for (int vR = 0; vR <= FRows.Count - 1; vR++)
             {
                 Result = Result + HC.sLineBreak + "<tr>";

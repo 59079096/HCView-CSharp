@@ -1798,22 +1798,30 @@ namespace HC.View
             this.BeginUpdate();
             try
             {
-                FStyle.Initialize();  // 先清样式，防止Data初始化为EmptyData时空Item样式赋值为CurStyleNo
-                FSections.RemoveRange(1, FSections.Count - 1);
-                FActiveSectionIndex = 0;
-                FDisplayFirstSection = -1;
-                FDisplayLastSection = -1;
-
-                FUndoList.SaveState();
+                FStyle.States.Include(HCState.hosClearing);
                 try
                 {
-                    FUndoList.Enable = false;
-                    FSections[0].Clear();
-                    ClearUndo();
+                    FStyle.Initialize();  // 先清样式，防止Data初始化为EmptyData时空Item样式赋值为CurStyleNo
+                    FSections.RemoveRange(1, FSections.Count - 1);
+                    FActiveSectionIndex = 0;
+                    FDisplayFirstSection = -1;
+                    FDisplayLastSection = -1;
+
+                    FUndoList.SaveState();
+                    try
+                    {
+                        FUndoList.Enable = false;
+                        FSections[0].Clear();
+                        ClearUndo();
+                    }
+                    finally
+                    {
+                        FUndoList.RestoreState();
+                    }
                 }
                 finally
                 {
-                    FUndoList.RestoreState();
+                    FStyle.States.Exclude(HCState.hosClearing);
                 }
 
                 FHScrollBar.Position = 0;
