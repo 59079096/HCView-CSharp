@@ -2016,7 +2016,8 @@ namespace HC.View
 
         public bool SelectInSameItem()
         {
-            return FSelectInfo.StartItemNo == FSelectInfo.EndItemNo;
+            return (FSelectInfo.StartItemNo >= 0)
+                && (FSelectInfo.EndItemNo < 0 || FSelectInfo.StartItemNo == FSelectInfo.EndItemNo);
         }
 
         /// <summary> 取消选中 </summary>
