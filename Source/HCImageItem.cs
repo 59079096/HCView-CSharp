@@ -60,9 +60,9 @@ namespace HC.View
                 aCanvas.StretchPrintDrawBitmap(aDrawRect, FImage);
             }
             else
+            if (!FEmpty)
                 aCanvas.StretchDraw(aDrawRect, FImage);
-
-            if (FEmpty)
+            else            
             {
                 aCanvas.Pen.BeginUpdate();
                 try
@@ -104,7 +104,8 @@ namespace HC.View
 
         ~HCImageItem()
         {
-            FImage.Dispose();
+            if (FImage != null)
+                FImage.Dispose();
         }
 
         public override void Assign(HCCustomItem source)
@@ -280,9 +281,12 @@ namespace HC.View
             // 图像不能直接写流，会导致流前面部分数据错误
             using (MemoryStream vImgStream = new MemoryStream())
             {
-                using (Bitmap vBitmap = new Bitmap(FImage))
-                {
-                    vBitmap.Save(vImgStream, ImageFormat.Jpeg);
+                if (!FEmpty)
+                { 
+                    using (Bitmap vBitmap = new Bitmap(FImage))
+                    {
+                        vBitmap.Save(vImgStream, ImageFormat.Jpeg);
+                    }
                 }
 
                 // write bitmap data size
@@ -332,6 +336,12 @@ namespace HC.View
                 FShapeManager.LoadFromStream(aStream);
         }
 
+        public void LoadFromBase64(string base64)
+        {
+            FImage = new Bitmap(HC.Base64ToGraphic(base64));
+            DoImageChange(this);
+        }
+
         public override string ToHtml(string aPath)
         {
             if (aPath != "")  // 保存到指定的文件夹中
@@ -346,7 +356,7 @@ namespace HC.View
             }
             else  // 保存为Base64
                 return "<img width=\"" + Width.ToString() + "\" height=\"" + Height.ToString()
-                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FImage, FImage.RawFormat) + "\" alt=\"HCImageItem\" />";
+                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FImage, ImageFormat.Jpeg) + "\" alt=\"HCImageItem\" />";
         }
 
         public override void ToXml(XmlElement aNode)
@@ -355,7 +365,7 @@ namespace HC.View
 
             XmlElement vNode = aNode.OwnerDocument.CreateElement("img");
             if (!FEmpty)
-                vNode.InnerText = HC.GraphicToBase64(FImage, FImage.RawFormat);
+                vNode.InnerText = HC.GraphicToBase64(FImage, ImageFormat.Jpeg);
 
             aNode.AppendChild(vNode);
 
