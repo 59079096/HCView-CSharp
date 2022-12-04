@@ -356,7 +356,7 @@ namespace HC.View
             }
             else  // 保存为Base64
                 return "<img width=\"" + Width.ToString() + "\" height=\"" + Height.ToString()
-                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FImage, ImageFormat.Jpeg) + "\" alt=\"HCImageItem\" />";
+                    + "\" src=\"data:image/jpg;base64," + HC.GraphicToBase64(FImage, ImageFormat.Jpeg) + "\" alt=\"HCImageItem\" />";
         }
 
         public override void ToXml(XmlElement aNode)

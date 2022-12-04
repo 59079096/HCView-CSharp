@@ -180,7 +180,7 @@ namespace HC.View
             }
             else  // 保存为Base64
                 return "<img width=\"" + Width.ToString() + "\" height=\"" + Height.ToString()
-                    + "\" src=\"data:img/jpg;base64," + HC.GraphicToBase64(FGifImage, System.Drawing.Imaging.ImageFormat.Gif) + "\" alt=\"HCGifItem\" />";
+                    + "\" src=\"data:image/jpg;base64," + HC.GraphicToBase64(FGifImage, System.Drawing.Imaging.ImageFormat.Gif) + "\" alt=\"HCGifItem\" />";
         }
 
         public override void ToXml(XmlElement aNode)
