@@ -1424,7 +1424,7 @@ namespace HC.View
             
             if (vResizeInfo.TableSite == TableSite.tsCell)
             {
-                if (FMouseLBDowning || (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None))
+                if ((FMouseLBDowning && e.Button != MouseButtons.None) || (e.Button == MouseButtons.Left) && (Control.ModifierKeys == Keys.None))
                 {
                     if (FDraging || OwnerData.Style.UpdateInfo.DragingSelected)
                     {
