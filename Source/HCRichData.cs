@@ -2887,6 +2887,12 @@ namespace HC.View
                     SelectInfo.EndItemOffset = -1;
                 }
                 else  // 非拖拽、非划选
+                if (e.Button == MouseButtons.Right && CoordInSelect(e.X, e.Y, vUpItemNo, vUpItemOffset, vRestrain))
+                {
+                    if (Items[vUpItemNo].StyleNo < HCStyle.Null)
+                        DoItemMouseUp(vUpItemNo, vUpItemOffset, vRestrain, e);
+                }
+                else
                 {
                     if (SelectExists(false))
                         DisSelect();

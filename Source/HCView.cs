@@ -1325,8 +1325,8 @@ namespace HC.View
             if (FStyle.UpdateInfo.Selecting)
                 AutoScrollTimer(false);
 
-            if (e.Button == System.Windows.Forms.MouseButtons.Right)
-                return;
+            //if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            //    return;
 
             if (FActiveSectionIndex >= 0)
             {
