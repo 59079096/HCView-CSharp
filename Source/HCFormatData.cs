@@ -793,6 +793,7 @@ namespace HC.View
                 vRect.Right = vRect.Left;
                 vRect.Bottom = vRect.Top + FItemFormatHeight;
                 NewDrawItem(aItemNo, aOffset, vItem.Length, vRect, vParaFirst, vLineFirst, ref aLastDrawItemNo);
+                vRemainderWidth = aFmtRight - aPos.X;
             }
             else
             if (vItem.StyleNo < HCStyle.Null)
