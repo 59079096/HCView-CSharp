@@ -677,10 +677,13 @@ namespace HC.View
                     else  // 整体下移到下一行
                     {
                         vRemainderWidth = aPlaceWidth;
-                        FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
+                        if (aLastDrawItemNo >= 0)
+                            FinishLine(aItemNo, aLastDrawItemNo, vRemainderWidth);
                         // 偏移到下一行开始计算
                         aPos.X = aFmtLeft;
-                        aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
+                        if (aLastDrawItemNo >= 0)
+                            aPos.Y = DrawItems[aLastDrawItemNo].Rect.Bottom;
+
                         DoFormatTextItemToDrawItems(vItem, aOffset, vText, aCharOffset, aFmtRight - aPos.X, aBasePos,
                             aItemNo, vItemLen, aFmtLeft, aContentWidth, aFmtRight, vCharWidths, aParaStyle,
                             ref vParaFirst, ref vLineFirst, ref aPos, ref vRect, ref vRemainderWidth, ref aLastDrawItemNo);
