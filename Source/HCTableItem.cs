@@ -5439,6 +5439,18 @@ namespace HC.View
                 return false;
         }
 
+        public bool IsEmptyRow(int row)
+        {
+            for (int vC = 0; vC < FRows[row].ColCount; vC++)
+            {
+                if (this.FRows[row][vC].CellData != null)
+                    if (!this.FRows[row][vC].CellData.IsEmptyData())
+                        return false;
+            }
+
+            return true;
+        }
+
         public int GetFixRowHeight()
         {
             if (FFixRow < 0)
