@@ -1325,8 +1325,8 @@ namespace HC.View
             if (FStyle.UpdateInfo.Selecting)
                 AutoScrollTimer(false);
 
-            //if (e.Button == System.Windows.Forms.MouseButtons.Right)
-            //    return;
+            if (e.Button == System.Windows.Forms.MouseButtons.Right && this.ContextMenuStrip != null)  // 响应右键菜单
+                return;
 
             if (FActiveSectionIndex >= 0)
             {
@@ -1922,8 +1922,9 @@ namespace HC.View
 
                         if (aFileVersion > 42)
                         {
-                            ActiveSection.SeekStreamToArea(aStream, vStyle, aFileVersion, SectionArea.saPage, false);
-                            vResult = ActiveSection.InsertStream(aStream, vStyle, aFileVersion);
+                            if (ActiveSection.SeekStreamToArea(aStream, vStyle, aFileVersion, SectionArea.saPage, false))
+                                vResult = ActiveSection.InsertStream(aStream, vStyle, aFileVersion);
+
                             return;
                         }
 

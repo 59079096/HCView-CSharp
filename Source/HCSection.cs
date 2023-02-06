@@ -3499,7 +3499,7 @@ namespace HC.View
             return Result;
         }
 
-        public void SeekStreamToArea(Stream stream, HCStyle style, ushort fileVersion, SectionArea part, bool usePaper)
+        public bool SeekStreamToArea(Stream stream, HCStyle style, ushort fileVersion, SectionArea part, bool usePaper)
         {
             Int64 vDataSize = 0;
             bool vArea = false;
@@ -3563,7 +3563,7 @@ namespace HC.View
                 vBuffer = BitConverter.GetBytes(FHeaderOffset);
                 stream.Read(vBuffer, 0, vBuffer.Length);
                 if (part == SectionArea.saHeader)
-                    return;
+                    return true;
 
                 vBuffer = BitConverter.GetBytes(vDataSize);
                 stream.Read(vBuffer, 0, vBuffer.Length);
@@ -3572,10 +3572,10 @@ namespace HC.View
             }
 
             if (part == SectionArea.saHeader)
-                return;
+                return true;
 
             if (part == SectionArea.saFooter)
-                return;
+                return true;
 
             if (vLoadParts.Contains(SectionArea.saFooter))
             {
@@ -3585,13 +3585,36 @@ namespace HC.View
                 stream.Position += vDataSize;
             }
 
-            vBuffer = BitConverter.GetBytes(Page.ShowUnderLine);
-            stream.Read(vBuffer, 0, vBuffer.Length);
-
-            vBuffer = BitConverter.GetBytes(vDataSize);
-            stream.Read(vBuffer, 0, vBuffer.Length);
             if (part == SectionArea.saPage)
-                return;
+            {
+                if (fileVersion > 63)
+                {
+                    stream.ReadByte();  // Page.ShowUnderLine、Page.ShowBorder 
+                    stream.ReadByte();  // Page.LineStyle;
+
+                    //HC.HCLoadColorFromStream(stream, ref vLineColor);
+                    stream.ReadByte();  // a
+                    stream.ReadByte();  // r
+                    stream.ReadByte();  // g
+                    stream.ReadByte();  // b
+
+                    vBuffer = BitConverter.GetBytes(vDataSize);
+                    stream.Read(vBuffer, 0, vBuffer.Length);
+
+                    stream.ReadByte();  // Page.FormatDirection
+                }
+                else
+                {
+                    vBuffer = BitConverter.GetBytes(Page.ShowUnderLine);
+                    stream.Read(vBuffer, 0, vBuffer.Length);
+                    vBuffer = BitConverter.GetBytes(vDataSize);
+                    stream.Read(vBuffer, 0, vBuffer.Length);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         public string ToHtml(string aPath)
