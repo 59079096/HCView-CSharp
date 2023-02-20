@@ -364,7 +364,7 @@ namespace HC.View
                         {
                             FText = FText.Remove(FCaretOffset - 1, 1);
                             FCaretOffset--;
-                            CalcTextSize();
+                            //CalcTextSize();
                         }
 
                         ScrollAdjust(FCaretOffset);
@@ -396,7 +396,7 @@ namespace HC.View
                         if (FCaretOffset < FText.Length)
                         {
                             FText = FText.Remove(FCaretOffset, 1);
-                            CalcTextSize();
+                            //CalcTextSize();
                         }
 
                         ScrollAdjust(FCaretOffset);
@@ -438,7 +438,6 @@ namespace HC.View
         {
             FText = FText.Insert(FCaretOffset, aText);
             FCaretOffset += (short)aText.Length;
-            CalcTextSize();
             ScrollAdjust(FCaretOffset);
             this.FormatDirty();
             return true;
