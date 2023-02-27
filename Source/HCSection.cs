@@ -2888,17 +2888,17 @@ namespace HC.View
                 aStream.Read(vBuffer, 0, vBuffer.Length);
                 FHeaderOffset = BitConverter.ToInt32(vBuffer, 0);
                 FHeader.Width = FPage.Width;
-                FHeader.LoadFromStream(aStream, FStyle, aFileVersion);
+                FHeader.LoadFromStream(aStream, aStyle, aFileVersion);
             }
 
             if (vLoadParts.Contains(SectionArea.saFooter))
             {
                 FFooter.Width = FPage.Width;
-                FFooter.LoadFromStream(aStream, FStyle, aFileVersion);
+                FFooter.LoadFromStream(aStream, aStyle, aFileVersion);
             }
 
             if (vLoadParts.Contains(SectionArea.saPage))
-                FPage.LoadFromStream(aStream, FStyle, aFileVersion);
+                FPage.LoadFromStream(aStream, aStyle, aFileVersion);
 
             if (aFileVersion > 58)
             {
