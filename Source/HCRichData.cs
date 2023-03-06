@@ -473,7 +473,7 @@ namespace HC.View
         protected override void DoLoadFromStream(Stream aStream, HCStyle aStyle, ushort aFileVersion)
         {
             FReadOnly = false;
-            if (!CanEdit())
+            if (!Loading && !CanEdit())
                 return;
 
             base.DoLoadFromStream(aStream, aStyle, aFileVersion);
@@ -1730,7 +1730,7 @@ namespace HC.View
             if (vDataSize == 0)
                 return false;
 
-            if (!CanEdit())
+            if (!Loading && !CanEdit())
                 return false;
 
             if (!DeleteSelected())
