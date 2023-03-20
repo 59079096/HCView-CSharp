@@ -1799,6 +1799,11 @@ namespace HC.View
             return FItems[itemNo].StyleNo < HCStyle.Null;
         }
 
+        public bool IsTextItem(int itemNo)
+        {
+            return FItems[itemNo].StyleNo > HCStyle.Null;
+        }
+
         /// <summary> 返回Item的文本样式 </summary>
         public int GetItemStyle(int aItemNo)
         {
