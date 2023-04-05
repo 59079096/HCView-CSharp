@@ -200,6 +200,7 @@ namespace HC.View
             aCellData.OnGetFormatTop = DoCellDataGetFormatTop;
             aCellData.OnFormatDirty = DoCellDataFormatDirty;
             aCellData.OnSetFormatHeightChange = DoCellDataSetFormatHeightChange;
+            aCellData.OnGetScreenCoord = (OwnerData as HCViewData).OnGetScreenCoord;
         }
 
         private HCCustomData DoCellDataGetRootData()
