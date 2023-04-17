@@ -541,7 +541,7 @@ namespace HC.View
 
         public void PaintTo(HCCanvas canvas, RECT rect)
         {
-            int vX = 0, vHeight = this.Height, vW = 0;
+            int vX = 0, vHeight = rect.Height, vW = 0;
             HCCodeLineType vLineType = HCCodeLineType.White;
             if (this.FTextVisible)
                 vHeight -= 12;
