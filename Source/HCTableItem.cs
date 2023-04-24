@@ -1189,7 +1189,7 @@ namespace HC.View
             {
                 if (CoordInSelect(e.X, e.Y))
                 {
-                    if (FMouseLBDowning)
+                    if (e.Clicks != 2 && FMouseLBDowning)
                         FDraging = true;
 
                     if ((FMouseDownRow != vMouseDownRow) || (FMouseDownCol != vMouseDownCol))
