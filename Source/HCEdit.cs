@@ -615,6 +615,10 @@ namespace HC.View
                             return;
                     }
                     break;
+
+                case User.WM_IME_CHAR:
+                    Message.Result = (IntPtr)1;
+                    return;
             }
 
             base.WndProc(ref Message);
