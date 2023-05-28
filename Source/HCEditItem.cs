@@ -222,7 +222,7 @@ namespace HC.View
             if (x <= FPaddingLeft)
                 return HC.OffsetBefor;
             else
-                if (x >= Width - FPaddingRight)
+                if (x >= Width)
                     return HC.OffsetAfter;
                 else
                     return HC.OffsetInner;
