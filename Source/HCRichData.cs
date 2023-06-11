@@ -2565,7 +2565,7 @@ namespace HC.View
                 if (Items[vMouseDownItemNo].StyleNo < HCStyle.Null)
                     DoItemMouseDown(vMouseDownItemNo, vMouseDownItemOffset, e);
 
-                if (FMouseLBDowning && !SelectedResizing())
+                if (e.Clicks != 2 && FMouseLBDowning && !SelectedResizing())
                 {
                     FDraging = true;
                     Style.UpdateInfo.DragingSelected = true;
