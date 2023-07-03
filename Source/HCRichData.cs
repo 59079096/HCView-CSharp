@@ -2920,7 +2920,8 @@ namespace HC.View
             if (!CanEdit())
                 return;
 
-            //DeleteSelected();
+            if (!DeleteSelected())
+                return;
 
             HCCustomItem vCarteItem = GetActiveItem();
             if (vCarteItem == null)
