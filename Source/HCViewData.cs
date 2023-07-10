@@ -492,8 +492,10 @@ namespace HC.View
 
         public override bool DeleteSelected()
         {
+            bool ret = base.DeleteSelected();
             FDomainStartDeletes.Clear();
-            return base.DeleteSelected();
+            return ret;
+
         }
 
         public bool DeleteActiveDomain()
