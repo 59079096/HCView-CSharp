@@ -279,7 +279,17 @@ namespace HC.View
             else
                 return;
 
-            ACanvas.Pen.Color = Color.Black;
+            ACanvas.Pen.BeginUpdate();
+            try
+            {
+                ACanvas.Pen.Color = Color.Black;
+                ACanvas.Pen.Style = HCPenStyle.psSolid;
+            }
+            finally
+            {
+                ACanvas.Pen.EndUpdate();
+            }
+
             int vLeft = FButtonDrawRect.Left + (BTNWIDTH - 7) / 2;
             int vTop = FButtonDrawRect.Top + (FButtonDrawRect.Height - 4) / 2;
 
