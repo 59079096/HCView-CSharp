@@ -716,6 +716,8 @@ namespace HC.View
                     UndoAction_ItemMirror(aItemNo, HC.OffsetInner);
 
                 (vItem as HCCustomRectItem).ApplySelectTextStyle(Style, aMatchStyle);
+                if (vItem is HCTextRectItem)
+                    CurStyleNo = (vItem as HCTextRectItem).TextStyleNo;
             }
             else  // 文本
             {
@@ -858,12 +860,16 @@ namespace HC.View
                     UndoAction_ItemMirror(aItemNo, SelectInfo.StartItemOffset);
 
                 (vItem as HCCustomRectItem).ApplySelectTextStyle(Style, aMatchStyle);
+                if (vItem is HCTextRectItem)
+                    CurStyleNo = (vItem as HCTextRectItem).TextStyleNo;
             }
             else  // 文本
             {
                 int vStyleNo = aMatchStyle.GetMatchStyleNo(Style, vItem.StyleNo);
                 if (vItem.StyleNo != vStyleNo)
                 {
+                    CurStyleNo = vStyleNo;
+
                     if (vItem.IsSelectComplate)
                     {
                         UndoAction_ItemStyle(aItemNo, 0, vStyleNo);
