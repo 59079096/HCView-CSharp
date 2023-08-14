@@ -563,7 +563,7 @@ namespace HC.View
             vRect.Top = aPos.Y;
             vRect.Right = vRect.Left + vWidth;
             vRect.Bottom = vRect.Top + FItemFormatHeight;
-            NewDrawItem(vDrawItem.ItemNo, vLen - 1, 1, vRect, false, true, ref aDrawItemNo);
+            NewDrawItem(vDrawItem.ItemNo, vLen, 1, vRect, false, true, ref aDrawItemNo);
             vParaFirst = false;
             aPos.X = vRect.Right;
 
@@ -973,8 +973,23 @@ namespace HC.View
 
                 while (Result > 0)
                 {
-                    if (DrawItems[Result].LineFirst)
+                    if (DrawItems[Result].LineFirst)  // XL20230807001
+                    {
+                        if (Result == aDrawItemNo - 1
+                            && Items[DrawItems[Result].ItemNo].StyleNo > HCStyle.Null
+                            && DrawItems[Result].CharLen == 1
+                            && Items[DrawItems[aDrawItemNo].ItemNo].StyleNo > HCStyle.Null
+                        )
+                        {
+                            if (HC.DontLineFirstChar.IndexOf(Items[DrawItems[aDrawItemNo].ItemNo].Text[0]) >= 0)
+                            {
+                                Result--;
+                                continue;
+                            }
+                        }
+
                         break;
+                    }
                     else
                         Result--;
                 }
@@ -1273,7 +1288,7 @@ namespace HC.View
                 return;
             }
 
-            if (FOnItemReFormatRequest != null)
+            if (!Style.States.Contain(HCState.hosBatchInsert) && FOnItemReFormatRequest != null)
                 FOnItemReFormatRequest(this, aItem);
         }
 
