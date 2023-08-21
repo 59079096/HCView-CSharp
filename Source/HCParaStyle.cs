@@ -100,7 +100,7 @@ namespace HC.View
             FLineSpaceMode = ParaLineSpaceMode.pls150;
             FLineSpace = 1;
             FBreakRough = false;
-            FBackColor = Color.Silver;
+            FBackColor = HC.HCTransparentColor;
             FAlignHorz = ParaAlignHorz.pahJustify;
             FAlignVert = ParaAlignVert.pavCenter;
         }
