@@ -927,6 +927,7 @@ namespace HC.View
         }
     }
 
+    public delegate void KeyPressHandler(ref Char key);
     public class HCControlItem : HCTextRectItem
     {
         private int FTag = 0;
@@ -934,6 +935,7 @@ namespace HC.View
         private bool FEnabled;
         private EventHandler FOnClick;
         private KeyEventHandler FOnKeyDown;
+        private KeyPressHandler FOnKeyPress;
         protected bool FMouseIn;
         protected byte FPaddingLeft, FPaddingTop, FPaddingRight, FPaddingBottom;
         protected int FMinWidth, FMinHeight;
@@ -989,6 +991,12 @@ namespace HC.View
             //base.KeyDown(e);
             if (FOnKeyDown != null)
                 FOnKeyDown(this, e);
+        }
+
+        public override void KeyPress(ref char key)
+        {
+            if (FOnKeyPress != null)
+                FOnKeyPress(ref key);
         }
 
         public override void SaveToStreamRange(Stream aStream, int aStart, int  aEnd)
