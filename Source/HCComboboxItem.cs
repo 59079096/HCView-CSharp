@@ -320,7 +320,8 @@ namespace HC.View
         public override bool MouseDown(MouseEventArgs e)
         {
             if (this.Enabled && !this.ReadOnly && OwnerData.CanEdit()
-                && (e.Button == MouseButtons.Left) && HC.PtInRect(FButtonRect, e.X, e.Y))
+                && (e.Button == MouseButtons.Left) && ((FStatic && HC.PtInRect(this.ClientRect(), e.X, e.Y))
+                || HC.PtInRect(FButtonRect, e.X, e.Y)))
             {
                 DoPopup();
                 return true;
@@ -352,7 +353,10 @@ namespace HC.View
                     FMouseInButton = false;
                     OwnerData.Style.UpdateInfoRePaint();
                 }
-                
+
+                if (FStatic && HC.PtInRect(this.ClientRect(), e.X, e.Y))
+                    HC.GCursor = Cursors.Default;
+
                 return base.MouseMove(e);
             }
         }
